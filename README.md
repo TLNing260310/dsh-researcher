@@ -1,21 +1,34 @@
 # dsh-researcher
 
-**项目研究 Project Research** — a read-only project-intelligence agent preset for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
+**项目研究 Project Research** — a read-only build-shaping agent preset for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 > Understand the project before deciding what to do with it.
 > 先理解项目现状，再决定要不要动手。
 
-**只读项目研究模式**：把项目当文物读，产出证据分级（C0–C4）、逐条可复核的诊断报告；结论可以是 **"暂不建议行动"**。零修改保证不靠提示词祈祷，而靠四层机制（无写工具 + 沙箱只读 + 审批永不升级 + 写代码不进入注意力面）。
+**只读 Build-Shaping Agent**：在任何修改发生以前，建立项目真实状态模型，判断下一步到底**值得构建什么**——每个主要发现以 **BUILD / DON'T BUILD / INVESTIGATE** 收束，"不知道"是合法输出。它是 Plan Mode 的**认知上游**，是重大开发方向进入 Plan 之前的决策层，而不只是"迷茫时看看"。零修改保证不靠提示词祈祷，而靠四层机制（永拒桩工具 + 沙箱只读 + 审批永不升级 + 写代码不进入注意力面）。
 
-## 定位
+## 四角色闭环
 
-| Mode | 核心问题 | 最终产物 |
-|---|---|---|
-| **Research（本模式）** | 现在到底是什么情况？要不要动？ | understanding / diagnosis |
-| Plan | 准备怎么改？ | implementation plan |
-| Code | 怎么做？ | implementation |
+```
+Researcher（本模式）   What should we build, if anything? → evidence + diagnosis + direction
+        ↓ BUILD 项
+Plan                   How should we build it? → implementation specification
+        ↓
+Coding Agent           Build it. → working implementation
+        ↓
+Verifier / Eval        Did it actually work? → evidence ───→ 回到 Researcher
+```
 
-Research 是 Plan 的上游：诊断 →【你的决策】→ Plan（新会话）→【你的批准】→ Code。研究会话**永远**不会获得写能力——交接是跨会话、经过你的。
+实施成本被 Agent 快速压低后，软件生产的瓶颈正在从 "How do we build it?" 移到 "What should we build?"——本模式拥有后者的全部预算（受 Andrew Ng《AI Engineering Skills Map》"Shaping the build" 启发；作为行业框架参考，非严格定律）。
+
+## 十一部管道
+
+```
+DISCOVER → RECONSTRUCT（项目模型）→ EVIDENCE MAP（C0–C4 + 裁决）→ DIAGNOSE（问题链）
+→ TRADEOFF ANALYSIS（12 维度）→ EXTERNAL RESEARCH（含 GitHub 复用项目）→ COMPARE
+→ CHALLENGE（反证检索）→ SHAPE → CLASSIFY（BUILD/DON'T BUILD/INVESTIGATE）
+→ SELF-EVAL（10 项自查）→ HANDOFF（仅 BUILD 项交 Plan）
+```
 
 ## 快速安装
 
@@ -46,12 +59,13 @@ cd dsh-researcher
 
 ## 它输出什么
 
-十四节《项目体检报告》：执行摘要与置信度 → 研究范围与方法 → 项目目的理解（声称 vs 代码重建 vs 历史）→ 架构地图 → 技术实现水平 → **证据台账（claim 卡片：Claim / Status / Evidence / Missing evidence / Confidence）** → 宣传与实现差距 → **竞品矩阵 + GitHub 可复用项目候选清单** → 优势 → 风险与现实环境问题 → 未验证假设 → 最大价值改进点 → **建议（可为 NONE + 辩证权衡的候选优化方案）** → 交接包（粘贴到 Plan 会话首条消息即可接手）。
+十四节《项目体检报告》：执行摘要（含 BUILD/DON'T BUILD/INVESTIGATE 分类汇总）→ 研究范围与方法（含自查摘要）→ **项目模型重建**（Mission/User/Problem/Value/Architecture/State/Evidence/Constraints + 初始假设→反证→修正假设）→ 架构地图 → 技术实现水平 → **证据台账（claim 卡片：层级 + 裁决 Known/Likely/Claimed/Unknown/Contradicted）** → 宣传与实现差距 → **竞品矩阵 + GitHub 可复用项目候选清单** → 优势 → **问题与权衡（Problem-Before-Solution 链 + 12 维度扫描）** → 未验证假设 → 候选改进点（预分类）→ **建议与分类 + 交接包（仅含 BUILD 项，粘贴到 Plan 会话即可接手）** → 置信度、自查结果与附录。
 
 ## 为什么不是"只读版 Plan Mode"
 
-- Plan Mode 回答 "How should we change this?"，默认存在一个待实现的任务；Research 回答 "What the hell is this, and should we change it at all?"，连"是否继续开发"都当作待验证假设。
-- Plan Mode 是行为指引（guides rather than enforces）——工具目录不变，write 权限仍在；Research 是**结构性零写能力**：write/edit 被 per-agent 永拒桩替换、tool-fs 注入的写指引段被同段名遮蔽、沙箱 read-only、审批 never，四层叠加。
+- Plan Mode 回答 "How should we change this?"，默认存在一个待实现的任务；Research 回答 "What should we build, if anything?"，连"是否继续开发"都当作待验证假设，并以 BUILD / DON'T BUILD / INVESTIGATE 收束。
+- Plan Mode 是行为指引（guides rather than enforces）——工具目录不变，write 权限仍在；Research 是**结构性零写能力**：write/edit 被 per-agent 永拒桩替换、写指引段被同段名遮蔽、沙箱 read-only、审批 never，四层叠加。
+- **只读是机制而非限制**：能修复所见的 Agent 会滑向修复（goal drift）；本模式被制度性禁止执行，token 全部花在理解、怀疑、比较与判断上——这正是稀缺之处。
 - Research 强制把仓库放回现实世界（papers / competitors / standards / **GitHub 可复用项目**），Plan Mode 的信息结构只有 User task + Repository。
 
 ## 目录结构
@@ -61,7 +75,7 @@ researcher/
 ├── preset.yml                         # 显示名与描述
 ├── agent.cordis.yml                   # 组合：工具行 + persona + 限制行
 ├── plugins/tool-restrict/index.js     # write/edit 永拒桩 + 指引段遮蔽（随预设分发）
-├── skills/project-research-methodology/SKILL.md   # 证据阶梯 + 八步方法
+├── skills/project-research-methodology/SKILL.md   # 六模块 + 十一部 + 自查清单
 ├── skills/research-report-template/SKILL.md       # 十四节报告骨架
 └── README.md                          # 模式文档
 ```
@@ -78,6 +92,7 @@ researcher/
 - [ ] workflow 接入，大规模主张核验 fan-out
 - [ ] 上游贡献：permission preset 绑定 agent preset、`read-only+never` 命名预设
 - [ ] 方法论规范独立发布（可移植到其他 Agent 生态）
+- [ ] 待《AI Engineering Skills Map》二级技能表发布后，逐项映射到本模式能力树
 
 ## License
 

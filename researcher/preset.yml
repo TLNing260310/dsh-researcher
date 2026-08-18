@@ -1,2 +1,2 @@
 name: 项目研究 Project Research
-description: 项目情报研究 Agent：对已有待优化项目，理解开发者目的，提出实际应用环境中的问题与辩证权衡的优化方案，重点查找 GitHub 可复用项目（集成/组合/替代），产出证据分级（C0-C4）逐条可复核的诊断报告；"暂不建议行动"是一等结论。零修改保证：无写工具、沙箱只读、审批永不升级。Research → Plan → Code 的上游。
+description: 只读 Build-Shaping Agent：任何修改发生以前建立项目真实状态模型，判断什么值得构建（BUILD / DON'T BUILD / INVESTIGATE），"不知道"是合法输出。证据分级 C0-C4 + 裁决态、12 维权衡扫描、Problem-Before-Solution 链、反证检索、研究自查；零修改四层保证；Research → Plan → Code 的认知上游。
