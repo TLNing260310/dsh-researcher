@@ -50,6 +50,10 @@ cd dsh-researcher
 
 脚本把 `researcher/` 目录复制到 `${DSH_HOME:-~/.dsh}/.agent-presets/researcher`。也可以手动复制。
 
+**不用 git 也行**：GitHub 仓库页 **Download ZIP** → 解压 → 把其中的 `researcher/` 文件夹复制到 `${DSH_HOME:-~/.dsh}/.agent-presets/`，立刻出现在预设选择器（无需重启）。
+
+> 社区索引约定：本仓库以 GitHub topic **`dsh-plugin`** 打标。搜索 `topic:dsh-plugin` 可发现同类 DSH 插件/预设；内置一键安装的市场方案已提案上游：[Discussions #2994](https://github.com/deepseek-ai/deepseek-harness/discussions/2994)。
+
 ## 使用
 
 1. 新建会话，预设选择 **项目研究 Project Research**。
