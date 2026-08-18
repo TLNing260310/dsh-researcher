@@ -19,7 +19,7 @@ Coding Agent           Build it. → working implementation
 Verifier / Eval        Did it actually work? → evidence ───→ 回到 Researcher
 ```
 
-实施成本被 Agent 快速压低后，软件生产的瓶颈正在从 "How do we build it?" 移到 "What should we build?"——本模式拥有后者的全部预算（受 Andrew Ng《AI Engineering Skills Map》"Shaping the build" 启发；作为行业框架参考，非严格定律）。
+实施成本被 Agent 快速压低后，软件生产的瓶颈正在从 "How do we build it?" 移到 "What should we build?"——本模式拥有后者的全部预算。本定位与 v0.2.0 的七项修改受 Andrew Ng《The AI Engineering Skills Map》启发（含四个能力的逐项映射与方法论保留意见，详见 [docs/ai-engineering-skills-map.md](./docs/ai-engineering-skills-map.md)）。
 
 ## 十一部管道
 

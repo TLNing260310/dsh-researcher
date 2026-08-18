@@ -64,7 +64,7 @@ HANDOFF           仅 BUILD 项交给 Plan（跨会话、经你的决策）
 
 ## 参考框架与保留意见
 
-本版升级受 Andrew Ng《AI Engineering Skills Map》启发（四类能力中"Shaping the build"正是本模式的理论依据）。保留意见：该文公布的是行业能力框架（1 万+招聘信息 + 访谈 + 调查），未公开完整数据集、聚类方法与权重，应视为有用框架而非严格定律；待其二级 Skills Map 发布后，值得将每个二级技能逐项映射到本模式的能力树。
+本版升级受 Andrew Ng《The AI Engineering Skills Map》启发（四类能力中"Shaping the build"正是本模式的理论依据）。保留意见：该文公布的是行业能力框架（1 万+招聘信息 + 访谈 + 调查），未公开完整数据集、聚类方法与权重，应视为有用框架而非严格定律；待其二级 Skills Map 发布后，值得将每个二级技能逐项映射到本模式的能力树。四个能力到本模式机制的完整映射、七项修改清单见仓库文档 [docs/ai-engineering-skills-map.md](https://github.com/TLNing260310/dsh-researcher/blob/main/docs/ai-engineering-skills-map.md)。
 
 ## 目录结构
 
