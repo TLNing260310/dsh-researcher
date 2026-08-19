@@ -79,7 +79,9 @@ HANDOFF           仅 BUILD 项交给 Plan（跨会话、经你的决策）
 researcher/
 ├── preset.yml                         # 显示名与描述
 ├── agent.cordis.yml                   # 组合：工具行 + persona + 限制行
-├── plugins/tool-restrict/index.js     # write/edit 永拒桩 + 指引段遮蔽（随预设分发）
+├── plugins/tool-restrict/index.js     # 只读守卫：环境预检 + 永拒桩 + 指引段遮蔽
+├── plugins/research-state/index.js    # 证据状态机：台账/依赖图/局部失效/会话日志重放
+├── plugins/git-read/index.js          # 白名单只读 git 工具（唯一的子进程能力，无 shell）
 ├── skills/project-research-methodology/SKILL.md   # 六模块 + 十一部 + 自查清单
 ├── skills/research-report-template/SKILL.md       # 十四节报告骨架
 └── README.md

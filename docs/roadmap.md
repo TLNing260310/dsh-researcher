@@ -6,19 +6,29 @@
 - **v0.2.0** — Build-Shaping 升级：项目模型、裁决态、Tradeoff Scanner、Problem-Before-Solution、BUILD/DON'T BUILD/INVESTIGATE、反证检索、研究自查（受 AI Engineering Skills Map 启发）。
 - **v0.3.0** — 工程硬化：fail-closed 守卫、Research State（局部失效 + 会话日志持久化）、L0→L2 令牌层、compaction 调优、版本预检。
 - **v0.4.0** — 环境自包含：启动预检验证 sandbox=read-only 与 approval=never，显式错误配置拒绝启动、未钉住会话收紧；状态自动重放（会话日志重建推理图）+ export/import；"阶段完成=状态提交"教义。
+- **v0.4.1** — Correctness hardening：修复 replay 死代码（arguments 是 JSON string）、单 reducer（runtime ≡ replay）、view export 键丢失、hypothesis material-change 失效、per-knob 预检；**移除 pwsh，白名单 git_read 工具上线（模型不再拥有任意进程执行原语）**；7 个 reducer 测试 + CI 全绿。
+
+## v0.4.2 — Test / Compatibility Harness（下一步）
+
+**问题**：设计领先于验证。guard preflight、zero-write、环境预检目前只有源码级验证。
+
+**范围**：
+
+- **Golden Research Fixtures**：3 个埋了已知事实的项目（small / medium / monorepo）：README 声称有测试而实际没有；声称支持 Linux 而代码只支持 Windows；一个看似无用的模块实际是关键依赖；一个看似值得 BUILD 的功能实际已有实现。测试 Researcher 能否正确发现、评级、反证、分类。
+- **guard 冒烟测试**：真实会话（或测试驱动）验证环境预检三态（unset→tighten / safe→keep / unsafe→refuse）、永拒桩可见性、指引段遮蔽。
+- **zero-write 冒烟**：会话前后 `git status --porcelain` 一致，作为 CI 可执行步骤。
+- **兼容性探针**：DSH rc.7 / rc.8 上重跑 preflight + 挂载校验，产出兼容性矩阵。
 
 ## v0.5 — Research Cache Layer（设计已定）
 
 **问题**：大型 monorepo 下重复研究成本高；compaction 只能清理历史，不能省去已经花掉的读取 token。
 
-**设计**：
+**设计**（v0.4.1 后更新——与依赖失效统一为 Research Dependency Engine）：
 
-- 位置：`$DSH_HOME/researcher-cache/<repo-fingerprint>/` —— Harness sidecar，**不是项目目录**。零写契约定义的是 zero project mutation；sidecar 缓存是显式例外，且永远不写项目树。
-- 键：`sha256(repo_fingerprint + module_path + git_blob_hashes + research_schema_version + question_class)` —— 用 Git object hash 做失效，不用 mtime/语义相似。
-- 值：evidence packet 形态 `{ module, commit, summary, claims[], evidence_refs[], unknowns[] }`。
-- 语义：相关 blob 未变 → cache hit，不重读源码；一个文件变 → 只失效包含该 blob 的模块条目。与 v0.3.0 的依赖失效是同一个机制的两端。
-- 读写路径：research_checkpoint 增加 `cache_get` / `cache_put` 动作；agent 用 `git hash-object`（只读）算 blob hash 后查询。
-- 沙箱边界注意：read-only 沙箱下 DSH fs 缝禁止一切文件写，cache 的 sidecar 写需要走受控路径（预设插件在宿主进程内，写路径严格限制在 sidecar 目录），这一例外必须在文档中显式声明。
+- 统一节点抽象：`Git Blob → Evidence Packet → Claim → Hypothesis → Project Model → Diagnosis → Classification`，所有节点共享 `{ id, kind, revision, dependencies, sourceFingerprint, dirty }`——缓存失效与推理失效不再是两个系统。
+- 位置：`$DSH_HOME/researcher-cache/<repo-fingerprint>/` —— Harness sidecar，**不是项目目录**。
+- 键：`sha256(repo_fingerprint + module_path + git_blob_hashes + research_schema_version + question_class)`（`git_read hash-object` 已提供只读 blob 哈希）。
+- 语义：相关 blob 未变 → cache hit；一个文件变 → 只失效包含该 blob 的模块条目。
 
 ## v0.6 — 自动评测体系（设计已定）
 

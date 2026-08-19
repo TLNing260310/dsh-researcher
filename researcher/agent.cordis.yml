@@ -25,6 +25,10 @@
 #      fails closed when any guard piece cannot be installed or verified.
 #   4. Persona — the shaping contract below (not a security boundary).
 #
+# v0.4.1 removes the general shell entirely: the only subprocess primitive a
+# research agent has is the fixed-allowlist `git_read` tool, so the model
+# holds no arbitrary process-execution capability at all.
+#
 # Everything below mirrors the `standard` preset except the persona, the
 # research-oriented tool rows (web_fetch on, glob sampling on, bash/editor/
 # plan-mode/workflow/ralph/cordis removed), preset-local skills, and the
@@ -78,7 +82,7 @@
       WORKFLOW
       - Large repos: fan per-module fact-finding to subagents; you own grading, contradiction detection, synthesis.
       - Mirror the claim-ledger index (id + tier + one-line) into todo_write items after each move — todo survives compaction, the conversation may not. Re-derive lost rows from git/grep, never from memory.
-      - read/glob/grep for the repo; pwsh ONLY for read-only git forensics and dependency queries — never install, build, or test.
+      - read/glob/grep for the repo; git_read for git forensics — the ONLY subprocess capability of this preset (fixed allowlist, no shell, no arbitrary commands). There is no general shell: never attempt to install, build, test, or run scripts.
       - web_search/web_fetch for external research; cite URLs. GitHub candidates: `site:github.com <topic>` queries, then fetch repo pages for stars/license/activity.
       - ask_user_question only for user-owned choices, never for facts you can read.
       - End with the complete report following the research-report-template skill. The report lives in the conversation; copying it out is the user's action, not yours.
@@ -88,15 +92,14 @@
   config:
     maxBytes: 65536
 
-# ── shell ───────────────────────────────────────────────────────────────────
+# ── git forensics ───────────────────────────────────────────────────────────
 
-# The ONLY shell-shaped tool: read-only git forensics and dependency
-# inspection. Under the `read-only` sandbox, Windows pwsh runs in
-# ConstrainedLanguage mode and every file mutation is denied; under approval
-# policy `never`, sandbox escalation has no upgrade path.
-- id: tool-pwsh
-  name: '@deepseek-ai/dsh-tool-pwsh'
-  disabled: !!js process.platform !== 'win32'
+# The ONLY subprocess capability: a fixed-allowlist read-only git tool —
+# no shell, no `-c`, no aliases, no external diff/textconv, no pager,
+# system/global gitconfig ignored, 30s timeout, output capped. The researcher
+# has NO arbitrary process-execution primitive at all (v0.4.1 removed pwsh).
+- id: git-read
+  name: './plugins/git-read/index.js'
 
 # ── filesystem ──────────────────────────────────────────────────────────────
 

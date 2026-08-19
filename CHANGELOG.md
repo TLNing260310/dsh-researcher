@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1 (2026-08-18)
+
+Correctness hardening — design had outpaced implementation reliability.
+
+- **P0-A — replay bug fixed**: DSH `tool/call` events carry `arguments: string` (the model's raw JSON); the replay loop checked `typeof === 'object'` and silently folded nothing. Now `parseCheckpointArgs` accepts both forms and malformed events fail loudly.
+- **P0-B — single reducer**: `applyCheckpoint` (parse + importState + mutation) is the ONE entry point for live execution AND session replay — runtime semantics ≡ replay semantics (real event sourcing).
+- **P0-C — export bug fixed**: view export mapped a nonexistent `v.name` (views are keyed by name, not fielded); now uses `Map.entries()`; export→import round-trips (covered by tests).
+- **P0-D — material-change invalidation**: hypotheses now dirty their dependents on ANY material change (statement / status / dependencies), not only on → invalidated.
+- **P0-E — per-knob environment preflight**: unset → tighten, explicit-safe → keep, explicit-unsafe → refuse, independently for sandbox and approval. No more "explicitly wrong sandbox + missing approval → silently fixed".
+- **P1 — pwsh removed; git_read added**: fixed-allowlist read-only git tool (status/log/show/diff/ls-files/blame/rev-parse/hash-object), spawned via execFile with `--no-pager --no-ext-diff --no-textconv`, system/global gitconfig ignored, 30s timeout, output capped. The researcher holds NO arbitrary process-execution primitive at all — the upstream loopback-control-plane class of concerns is answered structurally, not by prompt.
+- **Tests + CI**: `tests/research-state.test.js` (7 tests, incl. the replay ≡ live invariant) + `.github/workflows/test.yml` (node --test, Node 22). All green.
+- Roadmap: v0.4.2 test/compatibility harness + Golden Research Fixtures; v0.5 cache unified as a Research Dependency Engine.
+
 ## 0.4.0 (2026-08-18)
 
 Environment self-containment and state recovery.

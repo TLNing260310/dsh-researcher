@@ -97,21 +97,34 @@ cd dsh-researcher
 researcher/
 ├── preset.yml                         # 显示名与描述
 ├── agent.cordis.yml                   # 组合：工具行 + persona + 限制行
-├── plugins/tool-restrict/index.js     # write/edit 永拒桩 + 指引段遮蔽（随预设分发）
+├── plugins/tool-restrict/index.js     # 只读守卫：环境预检 + 永拒桩 + 指引段遮蔽
+├── plugins/research-state/index.js    # 证据状态机：台账/依赖图/局部失效/会话日志重放
+├── plugins/git-read/index.js          # 白名单只读 git 工具（唯一的子进程能力，无 shell）
 ├── skills/project-research-methodology/SKILL.md   # 六模块 + 十一部 + 自查清单
 ├── skills/research-report-template/SKILL.md       # 十四节报告骨架
 └── README.md                          # 模式文档
+```
+
+## 测试
+
+```
+tests/research-state.test.js           # reducer 不变量：replay ≡ live、失效可达性、export/import、确定性
+.github/workflows/test.yml             # CI：node --test（Node 22）
 ```
 
 ## 兼容性
 
 - **已验证版本**: DeepSeek Harness `0.1.0-rc.6`（本预设的只读机制依赖该版本的 agent scope 分层与事件路由）。
 - 机制经 `agentPresets.standingKeyFor` 挂载校验与源码级验证；**真实会话的端到端验收**见"使用"第 4 步。
-- 已知边界：沙箱词汇只覆盖文件效果（不含网络/进程策略）；pwsh 是唯一的壳形工具，仅用于只读 git 取证。承诺的是**零文件修改**，不是网络隔离。
+- 已知边界：v0.4.1 起研究者**没有任何通用 shell**——唯一的子进程能力是白名单 `git_read`（无 `-c`/别名/外部 diff/textconv，系统与全局 gitconfig 忽略，30s 超时）；承诺是**零文件修改**，不是网络隔离（web_search/web_fetch 仍是网络能力）。
 
 ## 路线图
 
-- [ ] 专用只读 git 工具（白名单子命令、无壳），替换 pwsh，彻底移除升级字段语义
+- [x] 专用只读 git 工具（白名单子命令、无壳），替换 pwsh（v0.4.1）
+- [ ] v0.4.2 测试/兼容性 harness：guard preflight 与 zero-write 的自动化冒烟、Golden Research Fixtures（3 个埋了已知事实的项目）
+- [ ] v0.5 Research Cache Layer（Git blob hash 键、与依赖失效统一的 Research Dependency Engine）
+- [ ] v0.6 评测体系（架构理解准确率、BUILD/DON'T BUILD/INVESTIGATE 精确率、修改避免率）
+- [ ] v0.7 Project Intelligence Capsule + Memory Bridge（Researcher 永不拥有 memory_write）
 - [ ] workflow 接入，大规模主张核验 fan-out
 - [ ] 上游贡献：permission preset 绑定 agent preset、`read-only+never` 命名预设
 - [ ] 方法论规范独立发布（可移植到其他 Agent 生态）

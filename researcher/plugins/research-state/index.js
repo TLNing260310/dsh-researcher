@@ -1,4 +1,4 @@
-// In-session research state with evidence-driven partial invalidation (v2).
+// In-session research state with evidence-driven partial invalidation (v2.1).
 //
 // The claim ledger is the single source of truth; the project model, the
 // diagnosis, and the classification are DERIVED VIEWS over it. This plugin
@@ -8,17 +8,20 @@
 //
 // Dependency semantics (no rollback, only invalidation + recomputation):
 //   evidence ──dependsOn──> claim ──> hypothesis ──> view (project model /
-//   diagnosis / classification). Revising a claim invalidates every dependent
-//   recursively: hypotheses flip to `invalidated` (versioned, never deleted)
-//   and dirty views are recomputed individually — the pipeline is never
-//   re-run as a whole and files are never re-read for a node that is clean.
+//   diagnosis / classification). Revising a claim — or MATERIALLY CHANGING a
+//   hypothesis (statement/status/dependencies) — invalidates every dependent
+//   recursively: dependent hypotheses flip to `invalidated` (versioned, never
+//   deleted) and dirty views are recomputed individually. The pipeline is
+//   never re-run as a whole and files are never re-read for a clean node.
 //
-// Persistence contract (v2): tool/call events are durable session events
-// carrying { name, arguments }. On `agent/created`, this plugin REPLAYS every
-// logged `research_checkpoint` call of the agent's session and rebuilds the
-// state — so a resumed session, a process restart, or a compaction that lost
-// the projection all recover the same reasoning graph. An explicit
-// `export`/`importState` pair provides a compact transfer path.
+// Event-sourcing contract (v2.1): DSH `tool/call` events carry
+// `arguments: string` (the model's raw JSON). ONE reducer — applyCheckpoint —
+// serves BOTH the live execute path and the session-log replay path, so
+// runtime semantics === replay semantics. On `agent/created` the plugin folds
+// every logged `research_checkpoint` call of the agent's session and rebuilds
+// the state: resumed sessions, process restarts, and compaction losses all
+// recover the same reasoning graph. `export`/`importState` provide a compact
+// transfer path.
 //
 // Why not state.json: under the read-only sandbox the DSH fs seam denies ALL
 // file writes — by design, that includes the preset directory. The session
@@ -70,8 +73,16 @@ const invalidate = (state, nodeId, seen) => {
   }
 }
 
-// Fold one research_checkpoint argument object into a state (the reducer).
-const reduce = (state, args) => {
+const sameList = (a, b) => {
+  if (!Array.isArray(a) || !Array.isArray(b)) return a === b
+  if (a.length !== b.length) return false
+  const sa = [...a].sort()
+  const sb = [...b].sort()
+  return sa.every((value, index) => value === sb[index])
+}
+
+// Mutation reducer over already-parsed argument objects.
+const reduceMutation = (state, args) => {
   if (typeof args.phase === 'string' && args.phase.length > 0) state.phase = args.phase
 
   for (const claim of args.revise || []) {
@@ -92,14 +103,21 @@ const reduce = (state, args) => {
 
   for (const hypothesis of args.hypotheses || []) {
     const old = state.hypotheses.get(hypothesis.id)
-    state.hypotheses.set(hypothesis.id, {
+    const next = {
       id: hypothesis.id,
       statement: hypothesis.statement !== undefined ? hypothesis.statement : old && old.statement,
       status: hypothesis.status !== undefined ? hypothesis.status : (old ? old.status : 'active'),
       dependsOn: hypothesis.dependsOn !== undefined ? hypothesis.dependsOn : (old ? old.dependsOn : []),
       revision: (old ? old.revision : 0) + 1,
-    })
-    if (hypothesis.status === 'invalidated') invalidate(state, hypothesis.id, new Set())
+    }
+    const changed = !old
+      || old.statement !== next.statement
+      || old.status !== next.status
+      || !sameList(old.dependsOn, next.dependsOn)
+    state.hypotheses.set(hypothesis.id, next)
+    // Material change (not only -> invalidated): any upstream knowledge change
+    // must dirty everything derived from it.
+    if (changed) invalidate(state, hypothesis.id, new Set())
   }
 
   for (const view of args.views || []) {
@@ -125,7 +143,11 @@ const fullExport = (state) => ({
   phase: state.phase,
   claims: [...state.claims.values()],
   hypotheses: [...state.hypotheses.values()],
-  views: [...state.views.values()].map((v) => ({ name: v.name, dependsOn: v.dependsOn, revision: v.revision })),
+  views: [...state.views.entries()].map(([name, v]) => ({
+    name,
+    dependsOn: v.dependsOn,
+    revision: v.revision,
+  })),
   dirty: [...state.dirty],
 })
 
@@ -150,6 +172,25 @@ const importState = (state, payload) => {
   state.hypotheses = new Map((payload.hypotheses || []).map((h) => [h.id, { ...h, revision: h.revision ?? 1 }]))
   state.views = new Map((payload.views || []).map((v) => [v.name, { dependsOn: v.dependsOn || [], revision: v.revision ?? 1 }]))
   state.dirty = new Set(payload.dirty || [])
+}
+
+// Accept the live object form (tool execution) or the DSH event form
+// (arguments: string). Throws on anything else — malformed events must not
+// silently no-op.
+const parseCheckpointArgs = (raw) => {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw
+  if (typeof raw === 'string') {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+  }
+  throw new Error('invalid research_checkpoint arguments: ' + String(raw).slice(0, 120))
+}
+
+// THE single reducer: live execution and session replay both go through here.
+const applyCheckpoint = (state, rawArgs) => {
+  const args = parseCheckpointArgs(rawArgs)
+  if (args.importState !== undefined) importState(state, JSON.parse(args.importState))
+  reduceMutation(state, args)
 }
 
 module.exports = {
@@ -222,14 +263,11 @@ module.exports = {
           state = makeState()
           states.set(agent, state)
         }
-        if (args.importState !== undefined) {
-          try {
-            importState(state, JSON.parse(args.importState))
-          } catch (error) {
-            return 'research_checkpoint: import failed: ' + (error && error.message ? error.message : String(error))
-          }
+        try {
+          applyCheckpoint(state, args)
+        } catch (error) {
+          return 'research_checkpoint: rejected: ' + (error && error.message ? error.message : String(error))
         }
-        reduce(state, args)
         if (args.export === true) {
           return JSON.stringify({ kind: 'full-export', ...fullExport(state) })
         }
@@ -243,7 +281,8 @@ module.exports = {
     ctx.tools.register(definition)
 
     // Session-log replay: rebuild each agent's state from its own logged
-    // research_checkpoint calls (durable tool/call events).
+    // research_checkpoint calls (durable tool/call events; arguments are the
+    // model's raw JSON strings). Same reducer as live execution.
     ctx.on('agent/created', (payload) => {
       const agent = payload && payload.agent
       if (!agent || !agent.session || !Array.isArray(agent.session.events)) return
@@ -254,15 +293,21 @@ module.exports = {
           states.set(agent, state)
         }
         for (const event of agent.session.events) {
-          if (event && event.type === 'tool/call' && event.data && event.data.name === 'research_checkpoint') {
-            const args = event.data.arguments
-            if (args && typeof args === 'object') reduce(state, args)
+          if (!event || event.type !== 'tool/call') continue
+          if (!event.data || event.data.name !== 'research_checkpoint') continue
+          try {
+            applyCheckpoint(state, event.data.arguments)
+          } catch (error) {
+            // One malformed historical call must not veto publication; skip it
+            // and keep folding the rest.
           }
         }
       } catch (error) {
-        // Replay is best-effort: a malformed historical call must not veto
-        // agent publication; the model can always re-import or re-derive.
+        // Replay is best-effort at the event-array level: the model can always
+        // re-import or re-derive.
       }
     })
   },
+  // Test hooks: the reducer is nearly pure; unit tests exercise these.
+  __test: { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState, projection },
 }
