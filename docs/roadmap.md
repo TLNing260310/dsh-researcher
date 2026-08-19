@@ -7,8 +7,9 @@
 - **v0.3.0** — 工程硬化：fail-closed 守卫、Research State（局部失效 + 会话日志持久化）、L0→L2 令牌层、compaction 调优、版本预检。
 - **v0.4.0** — 环境自包含：启动预检验证 sandbox=read-only 与 approval=never，显式错误配置拒绝启动、未钉住会话收紧；状态自动重放（会话日志重建推理图）+ export/import；"阶段完成=状态提交"教义。
 - **v0.4.1** — Correctness hardening：修复 replay 死代码（arguments 是 JSON string）、单 reducer（runtime ≡ replay）、view export 键丢失、hypothesis material-change 失效、per-knob 预检；**移除 pwsh，白名单 git_read 工具上线（模型不再拥有任意进程执行原语）**；7 个 reducer 测试 + CI 全绿。
+- **v0.4.2** — 定位锐化：三失效模式（局部最优/上下文保真/时间漂移）正式化；"腐蚀 vs 演化"之问进入 CHALLENGE；L0/L1 整合、L2+L3 为核心的定位确立（docs/landscape.md）。
 
-## v0.4.2 — Test / Compatibility Harness（下一步）
+## v0.4.3 — Test / Compatibility Harness（下一步）
 
 **问题**：设计领先于验证。guard preflight、zero-write、环境预检目前只有源码级验证。
 
@@ -19,16 +20,12 @@
 - **zero-write 冒烟**：会话前后 `git status --porcelain` 一致，作为 CI 可执行步骤。
 - **兼容性探针**：DSH rc.7 / rc.8 上重跑 preflight + 挂载校验，产出兼容性矩阵。
 
-## v0.5 — Research Cache Layer（设计已定）
+## v0.5 — Integration Seams，然后才是自建缓存（设计已定，顺序修正）
 
-**问题**：大型 monorepo 下重复研究成本高；compaction 只能清理历史，不能省去已经花掉的读取 token。
+**原则修正**：L0/L1 是商品能力——先接现有优秀项目，不在它们之后再自建知识图谱。
 
-**设计**（v0.4.1 后更新——与依赖失效统一为 Research Dependency Engine）：
-
-- 统一节点抽象：`Git Blob → Evidence Packet → Claim → Hypothesis → Project Model → Diagnosis → Classification`，所有节点共享 `{ id, kind, revision, dependencies, sourceFingerprint, dirty }`——缓存失效与推理失效不再是两个系统。
-- 位置：`$DSH_HOME/researcher-cache/<repo-fingerprint>/` —— Harness sidecar，**不是项目目录**。
-- 键：`sha256(repo_fingerprint + module_path + git_blob_hashes + research_schema_version + question_class)`（`git_read hash-object` 已提供只读 blob 哈希）。
-- 语义：相关 blob 未变 → cache hit；一个文件变 → 只失效包含该 blob 的模块条目。
+- **第一步（v0.5a）集成缝**：定义 Research Dependency Engine 节点模型（Git Blob → Evidence Packet → Claim → Hypothesis → Project Model → Diagnosis → Classification，统一 `{id, kind, revision, dependencies, sourceFingerprint, dirty}`），并接入：GitNexus MCP（impact/trace/detect_changes）、Cairn blueprint 对比（drift findings 作为 C1 级证据输入）、Understand Anything 导出图（L0 制图输入）。接入即"证据"，不复制数据。
+- **第二步（v0.5b）sidecar 缓存**：`$DSH_HOME/researcher-cache/<repo-fingerprint>/`，键 = `sha256(repo_fingerprint + module_path + git_blob_hashes + research_schema_version + question_class)`（`git_read hash-object` 已就绪），失效与推理失效共用同一引擎。
 
 ## v0.6 — 自动评测体系（设计已定）
 

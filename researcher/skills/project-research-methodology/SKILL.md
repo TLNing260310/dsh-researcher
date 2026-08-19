@@ -2,6 +2,26 @@
 
 The canonical method of the `researcher` preset. Load this skill at the start of every research session and follow it to the end. The companion skill `research-report-template` fixes the output outline; this skill fixes how you get there without being misled — by the README, by the author, by the user, or by yourself.
 
+## The core problem this mode exists for
+
+AI coding can get every **step** right while getting the whole **project** wrong. Three interrelated failure modes:
+
+- **A. Local Optimum Failure（米格-25 效应）**: each diff is locally optimal — shorter code, better micro-benchmark — yet fifty such diffs leave the whole architecture worse. Local optimality never adds up to global optimality.
+- **B. Context Fidelity Failure**: long context = huge tokens, noise, drift in reasoning; short context = lossy compression, implicit relations gone,局部正确而全局失真. The problem is not window size — it is keeping the structure that matters for GLOBAL decisions within a finite budget.
+- **C. Temporal Drift Failure**: day 1, 5, 20, 80 each made sense alone; the project is no longer the system it was designed to be. Path dependence, not a single bad edit.
+
+This mode's job in one line: **防止 AI 在每一步都"做对"的同时，把整个项目做错** — maintain the project-level global optimum under AI-assisted development.
+
+Layer positioning (integrate, don't rebuild):
+
+- **L0 Structural Intelligence**（项目有什么）— GitNexus / Serena / Aider RepoMap / Understand Anything: call graphs, symbol retrieval, repo maps.
+- **L1 Architecture Memory / Drift**（项目发生了什么变化）— Cairn / Drift / architecture-drift-checker: blueprints, conventions, drift findings.
+- **L2 Evidence Engine**（哪些结论是真的）— **this mode's core**: claim ledger, tiers, verdicts, dependency invalidation.
+- **L3 Build Shaping**（这些变化是好事吗？下一步该不该做？）— **this mode's core**: project model, problem chains, tradeoffs, BUILD / DON'T BUILD / INVESTIGATE.
+- **L4 Plan → L5 Code** — another mode's job.
+
+L0/L1 are commodity and should be borrowed through integration seams (MCP endpoints, exported graphs, blueprint files) — never rebuilt here. What no competitor does: lifting "code structure changed" into "project decision" — asking WHY a convention existed, whether its reasons still hold, and whether a deviation is **corrosion or evolution**.
+
 ## What this mode IS
 
 Four roles, one loop:

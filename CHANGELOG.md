@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.2 (2026-08-19)
+
+Positioning sharpening (no new mechanisms).
+
+- Core problem reframed: "AI coding 可以在每一步都做对的同时，把整个项目做错" — three failure modes formalized: Local Optimum (米格-25), Context Fidelity, Temporal Drift; the mode's job is maintaining the project-level global optimum.
+- Persona/methodology: the **corrosion-vs-evolution question** — every deviation from a convention is interrogated (why did the convention exist, do its reasons still hold) before it counts as a finding; DIAGNOSE now checks candidates for "locally optimal, globally worse".
+- Layer positioning: L0/L1 (structural intelligence, architecture memory) are commodity to be INTEGRATED (GitNexus / Serena / Aider RepoMap / Cairn / Drift / Understand Anything); L2 (evidence engine) + L3 (build shaping) are this project's core. New docs/landscape.md with the competitive table and integration strategy.
+- Roadmap renumbered: v0.4.3 test/compatibility harness; v0.5 integration seams before any self-built knowledge graph.
+
 ## 0.4.1 (2026-08-18)
 
 Correctness hardening — design had outpaced implementation reliability.
