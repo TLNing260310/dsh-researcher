@@ -12,7 +12,7 @@ The canonical output outline of the `researcher` preset. Load this skill before 
 One paragraph: what the project actually is (C1+ evidence), its maturity level, top 3 risks — and the headline: the classification summary, e.g. **N 项发现 → X BUILD / Y DON'T BUILD / Z INVESTIGATE**，以及 Recommended action（可能为 NONE）。End with overall confidence.
 
 ## 2. 研究范围与方法
-What was read (directories, file count), the sampling strategy, which of the eleven moves were completed at which depth, tier + verdict definitions (one line each), and — explicitly — what was NOT verified and why (e.g. runtime behavior: read-only mode does not run the project). Include the **research self-check summary**: which of the 10 items passed, which failed and were fixed, which were disclosed.
+What was read (directories, file count), the sampling strategy, which of the eleven moves were completed at which depth, tier + verdict definitions (one line each), and — explicitly — what was NOT verified and why (e.g. runtime behavior: read-only mode does not run the project). Include the **research state summary** (claims / hypotheses / views counts, final dirty set — should be empty or explained) and the **research self-check summary**: which of the 10 items passed, which failed and were fixed, which were disclosed.
 
 ## 3. 项目模型重建
 The Project Model table: Mission / User / Problem / Value mechanism / Architecture / Current state / Evidence / Constraints — each field with a citation. Then the hypothesis track: **初始假设 → 反证检索（CHALLENGE 执行了什么）→ 修正后的假设**。And the purpose comparison: claimed purpose (C0) vs code-reconstructed purpose (C1) vs what history shows (git).

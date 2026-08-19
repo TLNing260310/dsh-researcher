@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (2026-08-18)
+
+Pipeline robustness and zero-write contract hardening.
+
+- **P0 — fail-closed read-only guard**: `tool-restrict` defaults to STRICT mode — stub registration, prompt-shadow installation, and an agent-view preflight (`agent.ctx.tools.get(name, agent)` must resolve to the refusing stubs) all must succeed, or the synchronous `agent/created` listener throws and the session refuses to start. `config.mode: 'compat'` restores degrade-with-warning behavior.
+- **P1 — research state plugin** (`plugins/research-state`): `research_checkpoint` tool keeps the claim ledger + hypothesis/view dependency graph per agent in memory, with revision bumping and recursive dependent invalidation (no rollback; hypotheses are versioned, not deleted). Writes only to the DSH session log via the tool call itself — zero filesystem writes. todo_write downgraded to a checkpoint index.
+- **P2 — token layer L0→L2**: cartography-only L0, subagent evidence packets at L1 (never raw repo dumps), evidence promotion at L2; compaction tuned (thresholdRatio 0.68, retainRatio 0.12, maxTokens 4096, retries 1/1) and pruner tightened (6144/3072/768).
+- Install scripts: dsh version preflight (verified 0.1.0-rc.6; warn otherwise, explain fail-closed behavior).
+- Persona/methodology: "RESEARCH STATE — evidence-driven partial invalidation" section; pipeline moves read the current ledger and revisit only dirty views.
+- P3 (project intelligence capsule + memory bridge + freshness gates) remains on the roadmap, not shipped.
+
 ## 0.2.0 (2026-08-17)
 
 Build-Shaping upgrade, inspired by the AI Engineering Skills Map framework (treated as an industry framework, not a strict law).

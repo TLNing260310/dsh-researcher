@@ -12,6 +12,19 @@ $dshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFIL
 $targetRoot = Join-Path $dshHome '.agent-presets'
 $target = Join-Path $targetRoot 'researcher'
 
+# Version preflight: verified against DeepSeek Harness 0.1.0-rc.6.
+$verifiedVersion = '0.1.0-rc.6'
+try {
+  $dshVersion = (& dsh --version 2>$null | Select-Object -First 1)
+} catch {
+  $dshVersion = $null
+}
+if ($null -eq $dshVersion -or $dshVersion.Trim() -eq '') {
+  Write-Warning "Could not detect a dsh install. The preset will only work inside DeepSeek Harness (verified on $verifiedVersion)."
+} elseif ($dshVersion -notmatch [regex]::Escape($verifiedVersion)) {
+  Write-Warning "Verified on DSH $verifiedVersion; you are running '$($dshVersion.Trim())'. The preset's read-only guard fails closed on incompatible runtimes (STRICT mode), so a broken session is expected rather than silent degradation. Update or pin the preset accordingly."
+}
+
 if (Test-Path $target) {
   throw "target preset already exists: $target (back it up and remove it first)"
 }

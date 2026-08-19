@@ -1,4 +1,4 @@
-// Read-only capability removal for the researcher preset.
+// Read-only capability guard for the researcher preset (v3: fail-closed).
 //
 // Why this exists: `@deepseek-ai/dsh-tool-fs` registers read/read_image/write/
 // edit together, with no per-tool config. On the Web deployment the tool rows
@@ -30,6 +30,22 @@
 //     deployments where the tools ARE global (TUI); it throws there being no
 //     global names to deny on the Web, and the throw is expected and ignored.
 //
+// Failure policy (v3): the zero-write contract is the product. A guard that
+// silently degrades to sandbox-only after a DSH API change would keep starting
+// sessions while the capability layer is gone. Default mode is STRICT:
+//   - strict: any guard failure (stub registration, prompt shadow, or the
+//     visibility preflight) throws inside the synchronous `agent/created`
+//     listener, which vetoes agent publication — the session refuses to start
+//     with a loud error instead of quietly losing a layer.
+//   - compat (`config.mode: 'compat'`): degrades to sandbox-only enforcement
+//     with an error log. For users who prefer availability over the contract.
+//
+// Preflight: the agent object IS its own scope key (the loop builds the agent
+// scope with createScope(loopCtx, agent)), so `agent.ctx.tools.get(name,
+// agent)` reads exactly the agent's own view: it must resolve write/edit to
+// THIS plugin's refusing stubs. If that lookup path changes in a future DSH,
+// strict mode fails closed rather than trusting an unverifiable registration.
+//
 // This is capability removal at the tool layer, NOT an authority boundary:
 // the session sandbox (read-only) and the approval policy (never) remain the
 // real enforcement. Start researcher sessions with read-only + never.
@@ -52,10 +68,28 @@ const stubDefinition = (name) => ({
   },
 })
 
+const WRITE_GUIDANCE = {
+  name: 'tool:write',
+  order: 101,
+  text: 'The write tool is disabled in this research session: this preset is strictly read-only, so no file is ever created or replaced here. Report every finding in the conversation instead.',
+}
+const EDIT_GUIDANCE = {
+  name: 'tool:edit',
+  order: 102,
+  text: 'The edit tool is disabled in this research session: this preset is strictly read-only, so no file is ever modified here. Report every finding in the conversation instead.',
+}
+const DELIVERABLES_GUIDANCE = {
+  name: 'ui:deliverable-file-references',
+  order: 190,
+  text: 'This session is strictly read-only: no files are created or modified, so there are no produced files to mention; every deliverable lives in the conversation.',
+}
+
 module.exports = {
   name: 'tool-restrict',
   inject: ['tools', 'agents'],
-  apply(ctx) {
+  apply(ctx, config) {
+    const mode = config && config.mode === 'compat' ? 'compat' : 'strict'
+
     // 1) Global-layer deny mask (TUI deployments where the tools are global).
     try {
       ctx.tools.restrict({ deny: DENY })
@@ -64,44 +98,41 @@ module.exports = {
       // names, so the registry rejects the filter. The stubs below do the job.
     }
 
-    // 2) Per-agent always-refusing stubs (the guarantee on this deployment).
+    // 2) Per-agent always-refusing stubs + prompt shadows, fail-closed.
     const stubs = new WeakMap()
-
-    // tool-fs registers "Use the write tool…" / "Use the edit tool…" prompt
-    // guidance unconditionally; these same-name sections shadow them per agent.
-    const WRITE_GUIDANCE = {
-      name: 'tool:write',
-      order: 101,
-      text: 'The write tool is disabled in this research session: this preset is strictly read-only, so no file is ever created or replaced here. Report every finding in the conversation instead.',
-    }
-    const EDIT_GUIDANCE = {
-      name: 'tool:edit',
-      order: 102,
-      text: 'The edit tool is disabled in this research session: this preset is strictly read-only, so no file is ever modified here. Report every finding in the conversation instead.',
-    }
-    // The Web shell also registers a GLOBAL section asking the model to mention
-    // "files it successfully created or modified" — pure write-attention noise
-    // for a read-only agent; a scoped section shadows the global one by name.
-    const DELIVERABLES_GUIDANCE = {
-      name: 'ui:deliverable-file-references',
-      order: 190,
-      text: 'This session is strictly read-only: no files are created or modified, so there are no produced files to mention; every deliverable lives in the conversation.',
-    }
 
     const shadow = (agent) => {
       if (stubs.has(agent)) return
-      let disposers = []
+      const disposers = []
       try {
-        disposers = DENY.map((name) => agent.ctx.tools.register(stubDefinition(name)))
+        for (const name of DENY) {
+          disposers.push(agent.ctx.tools.register(stubDefinition(name)))
+        }
         const systemPrompt = agent.ctx.get('systemPrompt')
-        if (systemPrompt !== undefined) {
-          disposers.push(systemPrompt.section(WRITE_GUIDANCE))
-          disposers.push(systemPrompt.section(EDIT_GUIDANCE))
-          disposers.push(systemPrompt.section(DELIVERABLES_GUIDANCE))
+        if (systemPrompt === undefined) {
+          throw new Error('systemPrompt service unavailable to the guard')
+        }
+        disposers.push(systemPrompt.section(WRITE_GUIDANCE))
+        disposers.push(systemPrompt.section(EDIT_GUIDANCE))
+        disposers.push(systemPrompt.section(DELIVERABLES_GUIDANCE))
+
+        // Preflight: the agent's own view must resolve write/edit to OUR stubs.
+        for (const name of DENY) {
+          const seen = agent.ctx.tools.get(name, agent)
+          if (seen === undefined || seen === null || String(seen.description).indexOf('DISABLED') < 0) {
+            throw new Error('preflight failed: the agent-layer "' + name + '" tool does not resolve to the refusing stub')
+          }
         }
       } catch (error) {
-        // Never veto agent publication; degrade to sandbox-only enforcement.
         for (const dispose of disposers) dispose()
+        if (mode === 'strict') {
+          throw new Error(
+            '[dsh-researcher] read-only capability guard failed; refusing to start this agent (strict mode). ' +
+            'The current DSH runtime is incompatible or a guard row did not apply. ' +
+            'Cause: ' + (error && error.message ? error.message : String(error)),
+          )
+        }
+        console.error('[dsh-researcher] read-only guard DEGRADED to sandbox-only enforcement (compat mode):', error && error.message ? error.message : error)
         return
       }
       stubs.set(agent, disposers)
