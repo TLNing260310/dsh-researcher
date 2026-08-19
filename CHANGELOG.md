@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.3 (2026-08-19)
+
+Zero-write contract hardening (P0) and real hypothesis versioning.
+
+- **git_read option-injection class closed**: model-controlled `ref` values can no longer smuggle git options (`--output=…` wrote files; `-c`/`-w` re-opened config/object-database vectors) — every revision is validated (no leading `-`, no control characters, length cap); every path is validated, resolved against the repo root, and confined inside it (no `../../outside` reads); all paths go after `--` including `hash-object` (`-w` can no longer become an option). New tests cover `--output=x`, `-c`, `-w`, `../../outside`, control characters.
+- **Hypothesis history is real**: hypotheses now keep a version history array (previous statement/status/dependencies per revision, capped at 20), including auto-flips to `invalidated`; the persona's "versioned, not overwritten" claim is now true in the state layer, not just in the prompt. export/import round-trips history.
+- Tests: 14 total, all green (5 git_read argument-boundary tests + 2 history tests + 7 reducer tests).
+- Roadmap: Golden Research Fixtures (incl. dsh-researcher researching dsh-researcher as Fixture 0 — dogfooding the project's own thesis), Delta Research (corrosion-vs-evolution over commit ranges), StructuralEvidence integration seam.
+
 ## 0.4.2 (2026-08-19)
 
 Positioning sharpening (no new mechanisms).

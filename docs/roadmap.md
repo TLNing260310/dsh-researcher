@@ -8,23 +8,33 @@
 - **v0.4.0** — 环境自包含：启动预检验证 sandbox=read-only 与 approval=never，显式错误配置拒绝启动、未钉住会话收紧；状态自动重放（会话日志重建推理图）+ export/import；"阶段完成=状态提交"教义。
 - **v0.4.1** — Correctness hardening：修复 replay 死代码（arguments 是 JSON string）、单 reducer（runtime ≡ replay）、view export 键丢失、hypothesis material-change 失效、per-knob 预检；**移除 pwsh，白名单 git_read 工具上线（模型不再拥有任意进程执行原语）**；7 个 reducer 测试 + CI 全绿。
 - **v0.4.2** — 定位锐化：三失效模式（局部最优/上下文保真/时间漂移）正式化；"腐蚀 vs 演化"之问进入 CHALLENGE；L0/L1 整合、L2+L3 为核心的定位确立（docs/landscape.md）。
+- **v0.4.3** — 零写契约硬化 P0：git_read 参数边界修死（ref/path 校验、仓库内路径限制、`--` 隔离、`--output`/`-w`/`-c` 注入全拒，5 个恶意参数测试）；hypothesis 真版本化（history 数组 + 自动失效翻转也记录）；14 个测试全绿。
 
-## v0.4.3 — Test / Compatibility Harness（下一步）
+## v0.4.4 — Golden Research Fixtures（下一步）
 
-**问题**：设计领先于验证。guard preflight、zero-write、环境预检目前只有源码级验证。
+**问题**：机制有了，但还没证明"真的产生更好的 Research"。这是项目现在最大的短板。
 
-**范围**：
+**范围**（比 Cache 更优先）：
 
-- **Golden Research Fixtures**：3 个埋了已知事实的项目（small / medium / monorepo）：README 声称有测试而实际没有；声称支持 Linux 而代码只支持 Windows；一个看似无用的模块实际是关键依赖；一个看似值得 BUILD 的功能实际已有实现。测试 Researcher 能否正确发现、评级、反证、分类。
-- **guard 冒烟测试**：真实会话（或测试驱动）验证环境预检三态（unset→tighten / safe→keep / unsafe→refuse）、永拒桩可见性、指引段遮蔽。
-- **zero-write 冒烟**：会话前后 `git status --porcelain` 一致，作为 CI 可执行步骤。
-- **兼容性探针**：DSH rc.7 / rc.8 上重跑 preflight + 挂载校验，产出兼容性矩阵。
+- **Fixture 0（dogfooding）**：让 dsh-researcher 研究 dsh-researcher——验证它能否自动发现"README 架构图落后于实际实现"这类文档漂移（本项目自己的论点必须第一个在自己身上验证）。
+- **Fixture A**：README 与实现不一致（声称有测试/跨平台，实际没有）。
+- **Fixture B**：每个局部优化都合理，但累积形成循环依赖/架构腐化 → 应判 BUILD 前的全局警告。
+- **Fixture C**：旧 convention 已过时 → 不应误判为 corrosion，应判合理演化。
+- **Fixture D**：用户要求加 feature，真实瓶颈不是 feature 数量 → DON'T BUILD。
+- **Fixture E**：证据不足 → INVESTIGATE。
+- **对照**：Researcher vs DSH Plan Mode vs 临时 Research Prompt，人工标注 ground truth，产出第一份"有效果"证据。
+- **guard/zero-write 冒烟（并入）**：环境预检三态（unset→tighten / safe→keep / unsafe→refuse）、永拒桩可见性、会话前后 `git status --porcelain` 一致，作为 CI 可执行步骤。
+- **兼容性探针（并入）**：DSH rc.7 / rc.8 上重跑 preflight + 挂载校验，产出兼容性矩阵。
+
+## v0.4.5 — Delta Research（候选，看 fixtures 结果）
+
+- baseline → 20 commits → `research --delta`：哪些结构改变？哪些旧 Claim 失效？哪些 INVESTIGATE 变成 BUILD？这是腐蚀还是演化？——与 Temporal Drift Failure 完全闭环，是 Fixtures 之后的自然能力延伸。
 
 ## v0.5 — Integration Seams，然后才是自建缓存（设计已定，顺序修正）
 
 **原则修正**：L0/L1 是商品能力——先接现有优秀项目，不在它们之后再自建知识图谱。
 
-- **第一步（v0.5a）集成缝**：定义 Research Dependency Engine 节点模型（Git Blob → Evidence Packet → Claim → Hypothesis → Project Model → Diagnosis → Classification，统一 `{id, kind, revision, dependencies, sourceFingerprint, dirty}`），并接入：GitNexus MCP（impact/trace/detect_changes）、Cairn blueprint 对比（drift findings 作为 C1 级证据输入）、Understand Anything 导出图（L0 制图输入）。接入即"证据"，不复制数据。
+- **第一步（v0.5a）集成缝**：定义**极小的标准输入** `StructuralEvidence`：`{ source, subject, relation, target?, evidence[], confidence?, fingerprint? }`——GitNexus（impact/trace/detect_changes）、Cairn（drift findings）、Serena（symbol 关系）、Understand Anything（导出图）的输出统一转成 Structural Evidence 进入 L2 Evidence Engine，成为 C1 级证据；接入即"证据"，不复制数据。节点模型统一为 `{id, kind, revision, dependencies, sourceFingerprint, dirty}`（Research Dependency Engine）。
 - **第二步（v0.5b）sidecar 缓存**：`$DSH_HOME/researcher-cache/<repo-fingerprint>/`，键 = `sha256(repo_fingerprint + module_path + git_blob_hashes + research_schema_version + question_class)`（`git_read hash-object` 已就绪），失效与推理失效共用同一引擎。
 
 ## v0.6 — 自动评测体系（设计已定）

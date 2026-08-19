@@ -136,6 +136,36 @@ test('replay is deterministic across repetitions', () => {
   assert.deepEqual(fullExport(a), fullExport(b))
 })
 
+test('hypotheses keep version history, not just a revision counter', () => {
+  const state = makeState()
+  applyCheckpoint(state, {
+    hypotheses: [{ id: 'H001', statement: 'project is a CLI', status: 'active', dependsOn: ['C001'] }],
+  })
+  applyCheckpoint(state, {
+    hypotheses: [{ id: 'H001', statement: 'project is actually a web product', status: 'active', dependsOn: ['C001'] }],
+  })
+  const h = state.hypotheses.get('H001')
+  assert.equal(h.statement, 'project is actually a web product')
+  assert.equal(h.history.length, 1)
+  assert.equal(h.history[0].statement, 'project is a CLI')
+  assert.equal(h.history[0].revision, 1)
+})
+
+test('auto-flip to invalidated also records the previous version', () => {
+  const state = makeState()
+  applyCheckpoint(state, {
+    revise: [{ id: 'C001', statement: 'X', tier: 'C1', verdict: 'Known', evidence: ['a:1'], confidence: 0.8 }],
+    hypotheses: [{ id: 'H001', statement: 'depends on C001', status: 'active', dependsOn: ['C001'] }],
+  })
+  applyCheckpoint(state, {
+    revise: [{ id: 'C001', statement: 'X revised', tier: 'C0', verdict: 'Contradicted', evidence: ['b:2'], confidence: 0.3 }],
+  })
+  const h = state.hypotheses.get('H001')
+  assert.equal(h.status, 'invalidated')
+  assert.ok(h.history.length >= 1)
+  assert.equal(h.history[h.history.length - 1].status, 'active')
+})
+
 test('parseCheckpointArgs accepts object and string, rejects garbage', () => {
   const ok = { phase: 'DISCOVER' }
   assert.deepEqual(parseCheckpointArgs(ok), ok)

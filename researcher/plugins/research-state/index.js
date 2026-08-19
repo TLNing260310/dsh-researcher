@@ -64,6 +64,10 @@ const invalidate = (state, nodeId, seen) => {
     if (state.hypotheses.has(dep)) {
       const h = state.hypotheses.get(dep)
       if (h.status === 'active') {
+        // Auto-flip is itself a version event: record the previous state.
+        const history = h.history || []
+        history.push({ revision: h.revision, statement: h.statement, status: h.status, dependsOn: h.dependsOn })
+        h.history = history.slice(-20)
         h.status = 'invalidated'
         h.revision += 1
       }
@@ -103,11 +107,18 @@ const reduceMutation = (state, args) => {
 
   for (const hypothesis of args.hypotheses || []) {
     const old = state.hypotheses.get(hypothesis.id)
+    const historyEntry = old ? {
+      revision: old.revision,
+      statement: old.statement,
+      status: old.status,
+      dependsOn: old.dependsOn,
+    } : null
     const next = {
       id: hypothesis.id,
       statement: hypothesis.statement !== undefined ? hypothesis.statement : old && old.statement,
       status: hypothesis.status !== undefined ? hypothesis.status : (old ? old.status : 'active'),
       dependsOn: hypothesis.dependsOn !== undefined ? hypothesis.dependsOn : (old ? old.dependsOn : []),
+      history: historyEntry ? [...(old.history || []), historyEntry].slice(-20) : [],
       revision: (old ? old.revision : 0) + 1,
     }
     const changed = !old
