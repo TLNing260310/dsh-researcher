@@ -51,7 +51,11 @@ const confinePath = (cwd, filePath) => {
   const root = path.resolve(cwd)
   const abs = path.resolve(root, filePath)
   const rel = path.relative(root, abs)
-  if (rel === '..' || rel.startsWith('..' + path.sep) || path.isAbsolute(rel)) {
+  // Normalize separators so escape attempts are rejected on EVERY platform:
+  // a backslash-style traversal must not slip through on POSIX (and vice
+  // versa — uniform defense, not platform-dependent).
+  const norm = rel.split(path.sep).join('/')
+  if (norm === '..' || norm.startsWith('../') || path.isAbsolute(rel)) {
     throw new Error('git_read: path escapes the repository root')
   }
   return abs
