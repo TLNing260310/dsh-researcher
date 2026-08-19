@@ -57,7 +57,7 @@ HANDOFF           仅 BUILD 项交给 Plan（跨会话、经你的决策）
 - **证据分级 C0–C4**：Claimed / Implemented / Tested / Observed / Externally verified——README 说做到 ≠ 代码实现 ≠ 测试证明 ≠ 运行观察 ≠ 外部复现。
 - **裁决态**：每条主张给 Known / Likely / Claimed / Unknown / Contradicted——杜绝"把作者意图当项目现实"。
 - **研究状态（v0.3.0）**：`research_checkpoint` 工具维护主张台账与依赖图；新证据推翻旧判断时**局部失效 + 只重算脏节点**，不整管重跑、不重读已读文件；假设版本化演化，报告呈现轨迹。
-- **只读四层保证**：write/edit 永拒桩 + 指引段遮蔽（工具层）｜沙箱 read-only（强制）｜审批 never（无升级通道）｜人格契约（行为约束）。v0.3.0 起守卫 **fail-closed**：装不上就拒绝启动会话，绝不静默降级。只读是**机制**而非限制：能修复所见的 Agent 会滑向修复（goal drift），本模式被制度性禁止执行，token 全部花在理解、怀疑、比较与判断上。
+- **只读四层保证（v0.4.0 起自包含）**：环境预检（验证 sandbox=read-only + approval=never，选错配置**拒绝启动**，子会话自动收紧）｜write/edit 永拒桩 + 指引段遮蔽（工具层，fail-closed）｜沙箱 read-only（强制）｜审批 never（无升级通道）｜人格契约（行为约束）。只读是**机制**而非限制：能修复所见的 Agent 会滑向修复（goal drift），本模式被制度性禁止执行，token 全部花在理解、怀疑、比较与判断上。
 
 ## 用法
 

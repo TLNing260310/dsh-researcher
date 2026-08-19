@@ -86,7 +86,7 @@ const DELIVERABLES_GUIDANCE = {
 
 module.exports = {
   name: 'tool-restrict',
-  inject: ['tools', 'agents'],
+  inject: ['tools', 'agents', 'sandboxPolicy', 'approval'],
   apply(ctx, config) {
     const mode = config && config.mode === 'compat' ? 'compat' : 'strict'
 
@@ -98,6 +98,41 @@ module.exports = {
       // names, so the registry rejects the filter. The stubs below do the job.
     }
 
+    // 0) Environment preflight (v0.4): the authority layers — sandbox and
+    // approval — are pinned into the session at creation. The preset no longer
+    // ASSUMES the user picked read-only + never; it VERIFIES, and refuses an
+    // explicit wrong configuration instead of running in a writable
+    // environment. Sessions without explicit pins (programmatic/child
+    // sessions) are tightened to read-only + never, never relaxed.
+    const verifyEnvironment = (agent, session) => {
+      const sandboxOverride = ctx.sandboxPolicy.overrideOf(session)
+      const approvalOverride = ctx.approval.overrideOf(session)
+
+      if (sandboxOverride === undefined || approvalOverride === undefined) {
+        try {
+          ctx.sandboxPolicy.setSandboxMode(session, 'read-only')
+          ctx.approval.setPolicy(agent, 'never')
+        } catch (error) {
+          throw new Error('environment preflight: cannot pin an un-pinned session to read-only/never: ' + (error && error.message ? error.message : String(error)))
+        }
+      }
+
+      const resolvedMode = ctx.sandboxPolicy.resolve({ session }).mode
+      const resolvedPolicy = ctx.approval.overrideOf(session)
+      if (resolvedMode !== 'read-only') {
+        throw new Error(
+          '[dsh-researcher] environment preflight: session sandbox is "' + resolvedMode + '", the researcher preset requires "read-only". ' +
+          'Create the session with the read-only permission preset; the preset refuses to run under writable environments.',
+        )
+      }
+      if (resolvedPolicy !== 'never') {
+        throw new Error(
+          '[dsh-researcher] environment preflight: session approval policy is "' + (resolvedPolicy === undefined ? 'unknown' : resolvedPolicy) + '", the researcher preset requires "never" ' +
+          '(write escalation must have no upgrade path). Create the session with approval never; the preset refuses to run otherwise.',
+        )
+      }
+    }
+
     // 2) Per-agent always-refusing stubs + prompt shadows, fail-closed.
     const stubs = new WeakMap()
 
@@ -105,6 +140,10 @@ module.exports = {
       if (stubs.has(agent)) return
       const disposers = []
       try {
+        const session = agent.session
+        if (!session) throw new Error('agent has no live session')
+        verifyEnvironment(agent, session)
+
         for (const name of DENY) {
           disposers.push(agent.ctx.tools.register(stubDefinition(name)))
         }

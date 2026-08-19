@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 (2026-08-18)
+
+Environment self-containment and state recovery.
+
+- **P0 — environment preflight**: the guard now verifies the session's EFFECTIVE sandbox mode (`sandboxPolicy.resolve`/`overrideOf`) and approval policy (`approval.overrideOf`) on `agent/created`. Explicit wrong configuration (e.g. workspace-write + ask) refuses agent startup with a loud error instead of running the researcher in a writable environment; un-pinned programmatic/child sessions are tightened to read-only + never, never relaxed. The zero-write contract is no longer user-dependent.
+- **P1 — research state v2**: `research_checkpoint` claims now carry `confidence`; new `export`/`importState` compact transfer; **session-log auto-replay** — on `agent/created` the plugin rebuilds each agent's state graph by folding its logged `research_checkpoint` tool/call events, so resumed sessions, process restarts, and compaction losses all recover the same reasoning graph. Completion doctrine: a move is complete only when its results are committed to the state (text summaries are not completion).
+- **P2/P3 designs adopted as roadmap**: research cache layer keyed by git blob hashes ($DSH_HOME/researcher-cache sidecar, v0.5) and an evaluation benchmark system (architecture-understanding accuracy, BUILD/DON'T BUILD/INVESTIGATE precision, modification-avoidance rate, v0.6) — see docs/roadmap.md.
+- README/persona: the four-layer guarantee is now described as self-enforcing (verified and refused, not assumed).
+
 ## 0.3.0 (2026-08-18)
 
 Pipeline robustness and zero-write contract hardening.

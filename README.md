@@ -40,13 +40,14 @@ DISCOVER → RECONSTRUCT（项目模型）→ EVIDENCE MAP（C0–C4 + 裁决）
 
 管道是**逻辑线性、状态可回边**的：证据台账（`research_checkpoint` 状态工具）是唯一事实源，项目模型/诊断/分类都是它的派生视图。新证据推翻旧判断时只**局部失效 + 重算脏节点**，绝不整管重跑、绝不重读已读文件；假设带版本演化（H1 v1 → invalidated），报告呈现演化轨迹。
 
-## v0.3.0 工程化升级
+## v0.3.0 / v0.4.0 工程化升级
 
-- **Fail-closed 只读守卫**：`tool-restrict` 默认 STRICT——桩注册、指引段遮蔽、可见性预检任一失败即拒绝启动会话（响亮报错），不再静默退化为 sandbox-only；`compat` 模式可选。
-- **Research State 插件**：`research_checkpoint` 工具维护主张台账 + 假设/视图依赖图（revision + dirty set），只写 DSH 会话日志、零文件系统写入；todo_write 降级为索引。
-- **令牌层 L0→L2**：制图只看结构 → 子代理只回证据包（非原始仓库倾倒）→ 只有改变主张/模型/分类的信息进入主上下文。
-- **Compaction 参数调优**（thresholdRatio 0.68 / retainRatio 0.12 / maxTokens 4096 + 更积极的 pruner）。
+- **环境自包含（v0.4.0）**：启动预检验证会话的**有效** sandbox=read-only 与 approval=never——用户显式选错配置（workspace-write + ask）→ 会话**拒绝启动**；未钉住的子会话自动收紧。零写契约不再依赖用户配置正确。
+- **Fail-closed 只读守卫**：桩注册、指引段遮蔽、可见性预检任一失败即拒绝启动（STRICT 默认；`compat` 可选）。
+- **Research State**：`research_checkpoint` 维护主张台账 + 假设/视图依赖图（revision + dirty set + confidence）；只写会话日志、零文件写入；**会话恢复自动重放日志重建推理图**；"阶段完成=状态提交"。
+- **令牌层 L0→L2**：制图只看结构 → 子代理只回证据包 → 只有改变主张/模型/分类的信息进入主上下文；compaction 参数调优。
 - **安装脚本版本预检**：verified `0.1.0-rc.6`，其余版本告警并说明 fail-closed 行为。
+- v0.5 缓存层 / v0.6 评测体系设计见 [docs/roadmap.md](./docs/roadmap.md)。
 
 ## 快速安装
 
