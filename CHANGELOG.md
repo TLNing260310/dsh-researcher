@@ -10,6 +10,10 @@
 - **env-drift fail-closed（P0）**：执行时守卫改为**每次调用重验环境**——会话中途 /permission 切换立即回退拒绝，不再信任缓存的 verified 状态；新增回归测试。
 - **Evaluation Framework**：`docs/evaluation.md` — 三条证据线（自己跑/历史盲测/真人测试）与三级反馈通道（默认关闭 + 匿名指标 + 脱敏主张包，全部本地优先、绝不自动上传、尊重 DO_NOT_TRACK）。
 - **Feedback Export**：`bin/feedback.js export <session.jsonl.zstd> [--claims]` — 本地生成脱敏 feedback bundle（schema v1），无网络、无上传。
+- **Sample Selection Protocol（⑤a）**：`evaluation/candidate_pool.json`（19 个候选 + 元数据，frozen_at 记录）、`selection_rules.json`、`random_seed.txt`（`dsh-researcher-v0.6-phase-a`）与 `fixtures/blind/sample-selector.js`（mulberry32 种子 PRNG + 语言分层抽样）全部**运行前 commit**。Phase A 机械选出：`pallets/flask`、`tj/commander.js`、`cheeriojs/cheerio`。`github/gh-aw` 只入 stress pool。
+- **Dual Adjudication（⑤b）**：`evaluation/adjudication-schema.json` + `fixtures/blind/adjudicate.js`（双人裁决合并：一致收录/排除、分歧 ambiguous 不进主 Recall、agreement_rate）。
+- **Evaluation Freeze**：`evaluation/scoring-schema.json`（Recall / Precision / Researcher Lift / **False Alarm Burden** / Cost-adjusted）+ `fixtures/blind/eval-lock.js`（冻结协议/裁决/评分/选择/ground truth/snapshot/prompt/preset/模型/预算的 sha256；`--check` 任何变化即 LOCK BROKEN → protocol bump + 全量重跑）。
+- **⑥a/⑥b 基础设施审计规则**：Repo 1 先跑 12 次（Standard/Plan/Quick/Deep ×3），只许修 parser/metrics/session/runner 基建 bug，禁止改 scoring/prompt/ground truth/T0/mode；基建修复 → protocol bump → Repo 1 全量重跑。
 - **Quick / Deep 两档深度**：Quick = 5 moves（小仓库/单一问题），Deep = 11 moves；按规模/历史/歧义度/影响半径自动建议，用户可否决。
 - **Handoff 接口**：`docs/handoff-schema.md` — `research_handoff.json`（schema v1：build_items 带 id/problem/evidence/confidence/scope/do_not_touch）；报告模板与 persona 强制双形态交接（JSON + Markdown）。
 - **证书审计入口**：`docs/runtime-certificates/` — 长期项目的多运行审计用法（Run # / Evidence 占比 / 新不确定性）。

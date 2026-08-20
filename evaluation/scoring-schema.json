@@ -1,0 +1,19 @@
+{
+  "schema": "dsh-researcher/scoring-schema/v1",
+  "frozen_at": "2026-08-20",
+  "metrics": {
+    "recall": "matched_ground_truth / total_ground_truth",
+    "precision": "supported_significant_findings / scored_significant_findings",
+    "researcher_lift": {
+      "definition": "findings the baseline (Standard/Plan) missed, Researcher found, and that were later proven important",
+      "reported_as": "absolute_pp + relative_pct"
+    },
+    "false_alarm_burden": "unsupported_significant_findings / session (NOT masked by precision)",
+    "cost_adjusted": [
+      "critical_findings_per_1M_tokens",
+      "useful_findings_per_minute",
+      "unsupported_claims_per_10_findings"
+    ]
+  },
+  "reporting": "mean + range/variance per cell; all positive AND negative results published; conclusion labeled Preliminary, not statistically conclusive."
+}

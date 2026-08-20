@@ -1,0 +1,14 @@
+{
+  "schema": "dsh-researcher/selection-rules/v1",
+  "frozen_at": "2026-08-20",
+  "min_history_months": 12,
+  "max_push_idle_months": 3,
+  "size_kb_min": 1000,
+  "size_kb_max": 30000,
+  "sample_size": 3,
+  "stratify_by_language": true,
+  "notes": [
+    "T0 后 ≥3 个月活跃与 issue/PR 可裁决性在选中仓库的 adjudication 阶段按 protocol-v1 §1 复核（池阶段只有元数据代理）。",
+    "排除：作者深度参与的项目、agent-engineering 邻域项目（gh-aw 只入 stress pool）、纯依赖升级仓库。"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "dsh-researcher/candidate-pool/v1",
+  "frozen_at": "2026-08-20",
+  "note": "候选池与选择规则在任何运行之前冻结并 commit；元数据来自 GitHub API（frozen_at 当天）。",
+  "stress_pool": ["github/gh-aw (adversarial/stress benchmark only — too close to the problem domain, self-refactoring with agents, extreme activity; NOT eligible for Phase A)"],
+  "repos": [
+    { "repo": "psf/requests", "language": "Python", "created_at": "2011-02-13T18:38:17Z", "pushed_at": "2026-08-17T19:03:16Z", "size_kb": 13573, "open_issues": 233 },
+    { "repo": "pallets/flask", "language": "Python", "created_at": "2010-04-06T11:11:59Z", "pushed_at": "2026-08-16T18:35:35Z", "size_kb": 12368, "open_issues": 3 },
+    { "repo": "encode/httpx", "language": "Python", "created_at": "2019-04-04T12:27:00Z", "pushed_at": "2026-03-29T00:19:16Z", "size_kb": 8594, "open_issues": 143 },
+    { "repo": "pytest-dev/pluggy", "language": "Python", "created_at": "2015-04-28T15:32:26Z", "pushed_at": "2026-08-18T04:51:50Z", "size_kb": 1100, "open_issues": 54 },
+    { "repo": "python-poetry/poetry", "language": "Python", "created_at": "2018-02-28T15:23:47Z", "pushed_at": "2026-08-17T22:01:20Z", "size_kb": 24996, "open_issues": 563 },
+    { "repo": "tj/commander.js", "language": "JavaScript", "created_at": "2011-08-14T21:33:58Z", "pushed_at": "2026-08-19T10:22:35Z", "size_kb": 3951, "open_issues": 8 },
+    { "repo": "cheeriojs/cheerio", "language": "TypeScript", "created_at": "2011-10-09T04:23:20Z", "pushed_at": "2026-08-20T03:17:19Z", "size_kb": 21995, "open_issues": 54 },
+    { "repo": "axios/axios", "language": "JavaScript", "created_at": "2014-08-18T22:30:27Z", "pushed_at": "2026-08-20T09:15:58Z", "size_kb": 28459, "open_issues": 74 },
+    { "repo": "iamkun/dayjs", "language": "JavaScript", "created_at": "2018-04-10T09:26:44Z", "pushed_at": "2026-08-18T04:15:17Z", "size_kb": 6160, "open_issues": 1298 },
+    { "repo": "gin-gonic/gin", "language": "Go", "created_at": "2014-06-16T23:57:25Z", "pushed_at": "2026-08-15T05:44:19Z", "size_kb": 10619, "open_issues": 762 },
+    { "repo": "spf13/cobra", "language": "Go", "created_at": "2013-09-03T20:40:26Z", "pushed_at": "2026-07-11T00:43:07Z", "size_kb": 2107, "open_issues": 435 },
+    { "repo": "urfave/cli", "language": "Go", "created_at": "2013-07-13T19:32:06Z", "pushed_at": "2026-08-18T01:24:26Z", "size_kb": 12598, "open_issues": 71 },
+    { "repo": "clap-rs/clap", "language": "Rust", "created_at": "2015-02-25T13:36:33Z", "pushed_at": "2026-08-20T18:02:02Z", "size_kb": 21105, "open_issues": 445 },
+    { "repo": "tokio-rs/tracing", "language": "Rust", "created_at": "2019-01-11T18:17:15Z", "pushed_at": "2026-05-30T06:42:00Z", "size_kb": 9296, "open_issues": 881 },
+    { "repo": "serde-rs/serde", "language": "Rust", "created_at": "2013-11-13T15:22:58Z", "pushed_at": "2026-07-25T14:58:07Z", "size_kb": 8760, "open_issues": 397 },
+    { "repo": "expressjs/morgan", "language": "JavaScript", "created_at": "2014-02-08T19:19:14Z", "pushed_at": "2026-08-20T15:32:00Z", "size_kb": 276, "open_issues": 30, "excluded_by_hand": "too small (276KB) — pre-excluded by size rule" },
+    { "repo": "socketio/socket.io", "language": "TypeScript", "created_at": "2010-03-11T18:24:48Z", "pushed_at": "2026-07-24T14:44:59Z", "size_kb": 33489, "open_issues": 191, "excluded_by_hand": "too large (33MB) — pre-excluded by size rule" },
+    { "repo": "sqlalchemy/sqlalchemy", "language": "Python", "created_at": "2018-11-27T03:35:03Z", "pushed_at": "2026-08-20T16:51:09Z", "size_kb": 102475, "open_issues": 214, "excluded_by_hand": "too large (102MB) — pre-excluded by size rule" },
+    { "repo": "junit-team/junit5", "language": "Java", "created_at": "2015-01-11T19:06:10Z", "pushed_at": "2026-08-20T06:14:23Z", "size_kb": 44250, "open_issues": 113, "excluded_by_hand": "too large (44MB) — pre-excluded by size rule" }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "dsh-researcher/eval-lock/v1",
+  "generated_at": "2026-08-20T19:13:33.335Z",
+  "hashes": {
+    "protocol": "b42751121e30b00c0f244bca89554522b0b50320218c4976898f7a82fb85c0aa",
+    "adjudication_schema": "459e131c69be265ca8f069859c9cb3ab56aa5d07752c23f8d62a9d1501493a16",
+    "scoring_schema": "b74cd929ef53e0c0da3d0800565514a7aa931a9f6a9baf3a49a09dff685eb1cc",
+    "selection_result": "63cfbce20ce3a2babb4cc77cb14a880374e9c81b009f25d5eb69b5b821983860",
+    "ground_truth": "c856bf82d7c1930314c5fcc509fab5547276a90950ffbaaeaed3355daecc970e",
+    "snapshot": "253f2bfe506b9611de8c660053d814c6cb2ea5ed8cc4a4611f16bc07126242ab",
+    "prompt": "152113f354e1132ca4cbf785b23113904596b2bea111422c897e31315d780010",
+    "preset": "d2513c5fa74561b1e9122132aec68b6a41219123d45bcffcc1a3c5efb7286f9a"
+  },
+  "config": {
+    "model": "test-model",
+    "reasoning": "max",
+    "token_budget": "200k"
+  }
+}

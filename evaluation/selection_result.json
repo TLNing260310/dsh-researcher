@@ -1,0 +1,57 @@
+{
+  "schema": "dsh-researcher/selection-result/v1",
+  "generated_at": "2026-08-20T19:12:45.896Z",
+  "seed": "dsh-researcher-v0.6-phase-a",
+  "pool_size": 19,
+  "eligible_count": 14,
+  "excluded": [
+    {
+      "repo": "encode/httpx",
+      "reasons": [
+        "pushed 4.7m ago (> 3m)"
+      ]
+    },
+    {
+      "repo": "expressjs/morgan",
+      "reasons": [
+        "excluded_by_hand: too small (276KB) — pre-excluded by size rule",
+        "size 276KB outside [1000,30000]"
+      ]
+    },
+    {
+      "repo": "socketio/socket.io",
+      "reasons": [
+        "excluded_by_hand: too large (33MB) — pre-excluded by size rule",
+        "size 33489KB outside [1000,30000]"
+      ]
+    },
+    {
+      "repo": "sqlalchemy/sqlalchemy",
+      "reasons": [
+        "excluded_by_hand: too large (102MB) — pre-excluded by size rule",
+        "size 102475KB outside [1000,30000]"
+      ]
+    },
+    {
+      "repo": "junit-team/junit5",
+      "reasons": [
+        "excluded_by_hand: too large (44MB) — pre-excluded by size rule",
+        "size 44250KB outside [1000,30000]"
+      ]
+    }
+  ],
+  "selected": [
+    {
+      "repo": "pallets/flask",
+      "language": "Python"
+    },
+    {
+      "repo": "tj/commander.js",
+      "language": "JavaScript"
+    },
+    {
+      "repo": "cheeriojs/cheerio",
+      "language": "TypeScript"
+    }
+  ]
+}

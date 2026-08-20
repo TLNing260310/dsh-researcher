@@ -65,6 +65,33 @@ T0 选定后记录 commit hash 与日期，写入 snapshot.json。
 
 报告 **mean + range/variance**（stochastic system 单次数字无意义）。所有正负结果、traces、成本全部公开。
 
+## 5a. Sample Selection（候选池 + 机械随机抽样）
+
+- 候选池 ≥15 个（`evaluation/candidate_pool.json`，元数据抓取自 GitHub API 并记录 frozen_at）。
+- 规则冻结（`evaluation/selection_rules.json`）：历史 ≥12 月、近期活跃、规模 1–30MB、排除作者深度参与/agent 邻域/纯依赖仓。
+- **种子冻结**（`evaluation/random_seed.txt`：`dsh-researcher-v0.6-phase-a`），PRNG = mulberry32(sha256(seed))，按语言分层抽样。
+- `node fixtures/blind/sample-selector.js` 生成 `evaluation/selection_result.json`——**全部在运行前 commit**。任何人可复现：相同输入 → 相同选择。
+- **Phase A 已选出**（2026-08-20 冻结）：`pallets/flask`（Python）、`tj/commander.js`（JavaScript）、`cheeriojs/cheerio`（TypeScript）。
+- 特殊项目：`github/gh-aw` 只入 **stress/adversarial pool**（与问题域过近、自重构、activity 极高），不进 Phase A。
+
+## 5b. Dual Adjudication（双人裁决）
+
+- Evaluator A / B 各自只看 T0 后的 issue / PR / commits / release notes（固定观察窗口 T0 → T0+120 天，机械抓取 merged PR / closed issue，标签含 bug / refactor / architecture / cleanup / technical debt / docs / regression / performance / deprecation）。
+- 独立判断："这个未来变化的 root cause 在 T0 是否已经潜伏？" 一致→收录/排除；分歧→讨论；仍分歧→ **ambiguous，不进主 Recall**。
+- 格式 `evaluation/adjudication-schema.json`；合并器 `node fixtures/blind/adjudicate.js <A.json> <B.json>` 输出 status 与 **agreement_rate**（数据量大后升级 Cohen's κ）。
+
+## 6a/6b. Infrastructure Audit（先 12 次运行，只修基建）
+
+- Repo 1：Standard / Plan / Quick / Deep × 3 = 12 runs。
+- 检查只允许修：parser crash、metrics 未抽到、session 未隔离、runner bug。
+- **禁止**根据结果修改 scoring / prompt / ground truth / T0 / mode 定义。
+- 基建修复 → **protocol 版本 bump（v1 → v1.1）→ Repo 1 全部重跑**，不保留有利旧结果。
+
+## Evaluation Freeze（evaluation/protocol-v1.lock）
+
+- `node fixtures/blind/eval-lock.js <snapshot-dir> --prompt <file> --model <s> --reasoning <s> --budget <s>` 计算并冻结：协议、裁决 schema、评分 schema（`evaluation/scoring-schema.json`）、选择结果、ground truth、snapshot、prompt、preset 全文件、模型/推理/预算。
+- 第一条正式 run 开始后任何变化 → `--check` 失败 → protocol bump + 受影响案例重跑。回答"是不是偷偷改了 prompt"这类问题。
+
 ## 7. v0.6.0 Release Gate
 
 - 30+ tests 全绿；

@@ -1,0 +1,28 @@
+{
+  "schema": "dsh-researcher/adjudication-schema/v1",
+  "note": "双人裁决：Evaluator A/B 各自只看 T0 后的 issue/PR/commits/release notes，独立判断 '该问题的 root cause 是否在 T0 已潜伏'。一致→收录/排除；分歧→讨论；仍分歧→ambiguous（不进主 Recall）。",
+  "evaluator_file": {
+    "evaluator": "A",
+    "items": [
+      {
+        "id": "GT-01",
+        "future_event": "PR #825 merges three duplicated authentication helpers",
+        "labels": ["refactor", "technical debt"],
+        "latent_at_t0": true,
+        "note": "the three helpers already existed at T0 with overlapping responsibilities"
+      }
+    ]
+  },
+  "merged_result": {
+    "items": [
+      {
+        "id": "GT-01",
+        "status": "included | excluded | ambiguous",
+        "evaluator_a": true,
+        "evaluator_b": true
+      }
+    ],
+    "agreement_rate": "agreed_items / all_candidate_items",
+    "included_for_recall": "only `included` items"
+  }
+}
