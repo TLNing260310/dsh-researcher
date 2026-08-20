@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.1 (2026-08-20)
+
+Mandatory health gate, failure-case tests, synthetic fixtures, postmortem.
+
+- **Health gate enforced**: the execution-time guard now refuses every tool until `research_doctor` has been called once per agent (write/edit are denied always). The certificate is no longer a suggestion — research literally cannot start without it. The doctor call also completes the per-agent environment verification.
+- **Failure-case tests**: guard state machine extracted as a pure function (`decideGuard`) with 4 new tests (gate before doctor, write/edit after doctor, bad environment denies even the doctor).
+- **Synthetic Case Generator**: `fixtures/payment-drift/generate.js` produces a shareable payment-service scenario (v1 layered architecture → ten locally-reasonable perf edits → Controller→DB drift + stale README + false test-count claim) with `ground-truth.json` for benchmark scoring — real projects stay private.
+- **Postmortem archived**: docs/postmortems/2026-08-20-recompose-guard-hole.md ("配置正确 ≠ 运行正确" — declared state researcher vs actual state minimal + danger-full-access).
+- Positioning: "Evidence-driven Project Intelligence Layer" (avoid Deep Research conflation), layer diagram (Coding / Plan / Researcher / Repository).
+- Tests: 23 total, all green.
+
 ## 0.5.0 (2026-08-20)
 
 Self-verification becomes a capability: the Researcher Runtime Certificate.

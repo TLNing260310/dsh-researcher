@@ -2,7 +2,7 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const { __test } = require('../researcher/plugins/tool-restrict/index.js')
-const { envVerdict, readOnlyDenial, stubDefinition } = __test
+const { envVerdict, readOnlyDenial, stubDefinition, decideGuard, DOCTOR_GATE_DENIAL } = __test
 
 test('envVerdict: read-only + never is the only accepted environment', () => {
   assert.equal(envVerdict('read-only', 'never'), undefined)
@@ -30,4 +30,33 @@ test('stub definitions are refusing stubs, not real tools', () => {
     assert.ok(!('content' in stub.parameters.properties))
     assert.ok(!('sandbox_permissions' in stub.parameters.properties))
   }
+})
+
+test('health gate: no research tool runs before research_doctor', () => {
+  const fresh = { envVerified: false, doctorCalled: false }
+  // A read tool before the doctor: denied with the gate message.
+  const gated = decideGuard('read', fresh, { mode: 'read-only', policy: 'never' })
+  assert.equal(gated.deny, DOCTOR_GATE_DENIAL)
+  assert.equal(gated.st.doctorCalled, false)
+  // The doctor itself passes and flips the gate.
+  const after = decideGuard('research_doctor', fresh, { mode: 'read-only', policy: 'never' })
+  assert.equal(after.deny, undefined)
+  assert.equal(after.st.doctorCalled, true)
+  // After the doctor, reads pass.
+  const read = decideGuard('read', after.st)
+  assert.equal(read.deny, undefined)
+})
+
+test('health gate: write/edit denied even after the doctor', () => {
+  const state = { envVerified: true, doctorCalled: true }
+  for (const name of ['write', 'edit']) {
+    assert.match(decideGuard(name, state).deny, /strictly read-only/)
+  }
+})
+
+test('health gate: a bad environment denies even the doctor, with the env reason', () => {
+  const fresh = { envVerified: false, doctorCalled: false }
+  const bad = decideGuard('research_doctor', fresh, { mode: 'danger-full-access', policy: 'never' })
+  assert.match(bad.deny, /sandbox is "danger-full-access".*requires "read-only"/)
+  assert.equal(bad.st.doctorCalled, false)
 })

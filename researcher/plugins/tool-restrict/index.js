@@ -77,6 +77,22 @@ const envVerdict = (mode, policy) => {
 
 const readOnlyDenial = (name) => 'Refused: research mode is strictly read-only; the "' + name + '" tool is disabled by the researcher preset, so no file can be created or modified in this session.'
 
+const DOCTOR_GATE_DENIAL = '[dsh-researcher] health gate: run research_doctor first — the Researcher Runtime Certificate must be SAFE before research begins (this is enforced, not a suggestion).'
+
+// Pure guard decision machine (unit-tested): write/edit always denied; the
+// environment is verified once per agent; every other tool is denied until
+// research_doctor has been called at least once (mandatory health gate).
+const decideGuard = (name, st, env) => {
+  if (name === 'write' || name === 'edit') return { deny: readOnlyDenial(name), st }
+  if (env !== undefined) {
+    const verdict = envVerdict(env.mode, env.policy)
+    if (verdict !== undefined) return { deny: verdict, st }
+  }
+  if (name === 'research_doctor') return { deny: undefined, st: { envVerified: true, doctorCalled: true } }
+  if (!st.doctorCalled) return { deny: DOCTOR_GATE_DENIAL, st }
+  return { deny: undefined, st }
+}
+
 const stubDefinition = (name) => ({
   name,
   description: 'DISABLED in research mode. This preset is strictly read-only: this tool is a stub that always refuses, so nothing is ever created or modified.',
@@ -217,29 +233,38 @@ module.exports = {
       if (agent) release(agent)
     })
 
-    // 3) Execution-time guard (v0.4.4): layer-based, not event-based — applies
-    // to every agent under this preset, including agents that joined via
-    // recompose after `agent/created` already fired (the preset-switch path).
-    // write/edit are always denied; everything else is denied until the
-    // agent's environment has been verified once (fail-closed at first use).
-    const verifiedAgents = new WeakSet()
+    // 3) Execution-time guard (v0.4.4/v0.5.1): layer-based, not event-based —
+    // applies to every agent under this preset, including agents that joined
+    // via recompose after `agent/created` already fired (the preset-switch
+    // path). write/edit are always denied; the environment is verified once
+    // per agent; every other tool is denied until research_doctor has run
+    // once (mandatory health gate — the certificate is enforced, not
+    // suggested).
+    const guardStates = new WeakMap()
     ctx.tools.guard((exec) => {
       const name = exec && exec.name
-      if (name === 'write' || name === 'edit') return readOnlyDenial(name)
       const agent = exec && exec.agent
-      if (!agent) return undefined
-      if (verifiedAgents.has(agent)) return undefined
-      try {
-        if (!agent.session) return '[dsh-researcher] environment preflight failed: agent has no live session'
-        const mode = ctx.sandboxPolicy.resolve({ session: agent.session }).mode
-        const policy = ctx.approval.overrideOf(agent.session)
-        const verdict = envVerdict(mode, policy)
-        if (verdict === undefined) verifiedAgents.add(agent)
-        return verdict
-      } catch (error) {
-        return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
+      if (!agent) return name === 'write' || name === 'edit' ? readOnlyDenial(name) : undefined
+      let st = guardStates.get(agent)
+      if (st === undefined) {
+        st = { envVerified: false, doctorCalled: false }
+        guardStates.set(agent, st)
       }
+      let env
+      if (!st.envVerified) {
+        try {
+          env = {
+            mode: ctx.sandboxPolicy.resolve({ session: agent.session }).mode,
+            policy: ctx.approval.overrideOf(agent.session),
+          }
+        } catch (error) {
+          return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
+        }
+      }
+      const outcome = decideGuard(name, st, env)
+      guardStates.set(agent, outcome.st)
+      return outcome.deny
     })
   },
-  __test: { envVerdict, stubDefinition, readOnlyDenial },
+  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, DOCTOR_GATE_DENIAL },
 }
