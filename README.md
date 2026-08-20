@@ -75,25 +75,15 @@ DISCOVER → RECONSTRUCT（项目模型）→ EVIDENCE MAP（C0–C4 + 裁决）
 
 ## 快速安装
 
-**Windows (PowerShell):**
-
-```powershell
-git clone https://github.com/TLNing260310/dsh-researcher.git
-cd dsh-researcher
-.\install.ps1
-```
-
-**macOS / Linux (bash):**
+**一行安装（推荐，无需 clone，无需 npm 发布）：**
 
 ```bash
-git clone https://github.com/TLNing260310/dsh-researcher.git
-cd dsh-researcher
-./install.sh
+npx -y github:TLNing260310/dsh-researcher
 ```
 
-脚本把 `researcher/` 目录复制到 `${DSH_HOME:-~/.dsh}/.agent-presets/researcher`。也可以手动复制。
+npx 直接从 GitHub 仓库运行跨平台安装器，把 `researcher/` 复制到 `${DSH_HOME:-~/.dsh}/.agent-presets/researcher`。重复安装会提示；`npx -y github:TLNing260310/dsh-researcher --force` 覆盖更新。
 
-**不用 git 也行**：GitHub 仓库页 **Download ZIP** → 解压 → 把其中的 `researcher/` 文件夹复制到 `${DSH_HOME:-~/.dsh}/.agent-presets/`，立刻出现在预设选择器（无需重启）。
+**其他方式**：`git clone` + `.\install.ps1` / `./install.sh`；或 Download ZIP 后手动复制 `researcher/` 目录。
 
 > 社区索引约定：本仓库以 GitHub topic **`dsh-plugin`** 打标。搜索 `topic:dsh-plugin` 可发现同类 DSH 插件/预设；内置一键安装的市场方案已提案上游：[Discussions #2994](https://github.com/deepseek-ai/deepseek-harness/discussions/2994)。
 

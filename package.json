@@ -1,0 +1,22 @@
+{
+  "name": "dsh-researcher",
+  "version": "0.5.3",
+  "description": "Evidence-driven Project Intelligence Layer for DeepSeek Harness — a read-only build-shaping preset with runtime verification (Runtime Certificate, evidence state machine, zero-write guard).",
+  "license": "MIT",
+  "bin": {
+    "dsh-researcher": "bin/install.js"
+  },
+  "files": [
+    "bin/",
+    "researcher/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TLNing260310/dsh-researcher.git"
+  },
+  "engines": {
+    "node": ">=16.7"
+  }
+}

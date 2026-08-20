@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 (2026-08-20)
+
+One-line install.
+
+- `package.json` + cross-platform `bin/install.js`: `npx -y github:TLNing260310/dsh-researcher` installs the preset straight from the GitHub repository (no clone, no npm publish required). Idempotent (refuses existing target) with `--force` for updates; DSH version preflight included. install.ps1/sh and ZIP remain as manual alternatives.
+
 ## 0.5.2 (2026-08-20)
 
 Runtime proof completes the trustworthy-runtime loop.
