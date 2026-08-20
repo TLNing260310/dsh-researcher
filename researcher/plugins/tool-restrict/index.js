@@ -40,6 +40,17 @@
 //   - compat (`config.mode: 'compat'`): degrades to sandbox-only enforcement
 //     with an error log. For users who prefer availability over the contract.
 //
+// v0.4.4 — execution-time guard (fixes the recompose hole): agents that join
+// this preset LATER (preset switch before the first message, resume, etc.)
+// miss the `agent/created` installation window. The standing-scope
+// `tools.guard` below is layer-based, not event-based: it applies to EVERY
+// agent under this preset regardless of when it joined, and
+//   - always denies `write`/`edit` execution (belt for the stubs);
+//   - verifies the environment on each agent's first tool call and denies
+//     EVERYTHING until sandbox=read-only + approval=never hold (fail-closed),
+//     so a writable environment cannot run the researcher even when the
+//     creation-time preflight never fired.
+//
 // Preflight: the agent object IS its own scope key (the loop builds the agent
 // scope with createScope(loopCtx, agent)), so `agent.ctx.tools.get(name,
 // agent)` reads exactly the agent's own view: it must resolve write/edit to
@@ -51,6 +62,20 @@
 // real enforcement. Start researcher sessions with read-only + never.
 
 const DENY = ['write', 'edit']
+
+// Pure environment verdict used by both the creation-time preflight and the
+// execution-time guard (unit-testable).
+const envVerdict = (mode, policy) => {
+  if (mode !== 'read-only') {
+    return '[dsh-researcher] environment preflight: session sandbox is "' + mode + '", the researcher preset requires "read-only". Create the session with the read-only permission preset; the preset refuses to run under writable environments.'
+  }
+  if (policy !== 'never') {
+    return '[dsh-researcher] environment preflight: session approval policy is "' + (policy === undefined ? 'unknown' : policy) + '", the researcher preset requires "never" (write escalation must have no upgrade path). Create the session with approval never; the preset refuses to run otherwise.'
+  }
+  return undefined
+}
+
+const readOnlyDenial = (name) => 'Refused: research mode is strictly read-only; the "' + name + '" tool is disabled by the researcher preset, so no file can be created or modified in this session.'
 
 const stubDefinition = (name) => ({
   name,
@@ -191,5 +216,30 @@ module.exports = {
       const agent = payload && payload.agent
       if (agent) release(agent)
     })
+
+    // 3) Execution-time guard (v0.4.4): layer-based, not event-based — applies
+    // to every agent under this preset, including agents that joined via
+    // recompose after `agent/created` already fired (the preset-switch path).
+    // write/edit are always denied; everything else is denied until the
+    // agent's environment has been verified once (fail-closed at first use).
+    const verifiedAgents = new WeakSet()
+    ctx.tools.guard((exec) => {
+      const name = exec && exec.name
+      if (name === 'write' || name === 'edit') return readOnlyDenial(name)
+      const agent = exec && exec.agent
+      if (!agent) return undefined
+      if (verifiedAgents.has(agent)) return undefined
+      try {
+        if (!agent.session) return '[dsh-researcher] environment preflight failed: agent has no live session'
+        const mode = ctx.sandboxPolicy.resolve({ session: agent.session }).mode
+        const policy = ctx.approval.overrideOf(agent.session)
+        const verdict = envVerdict(mode, policy)
+        if (verdict === undefined) verifiedAgents.add(agent)
+        return verdict
+      } catch (error) {
+        return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
+      }
+    })
   },
+  __test: { envVerdict, stubDefinition, readOnlyDenial },
 }

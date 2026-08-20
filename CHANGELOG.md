@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.4 (2026-08-20)
+
+Execution-time guard — fixes the recompose hole found in the first real run.
+
+- **The hole**: a session created on another preset and switched to researcher before the first message (preset recompose) joins the standing composition AFTER `agent/created` fired — so the per-agent stubs, prompt shadows, and environment preflight never installed. Forensics on the first real research session confirmed it: real `write` schema (no stub), `danger-full-access` sandbox, guard absent — zero-write was held by persona alone.
+- **The fix**: a standing-scope `tools.guard` (layer-based, not event-based) now applies to EVERY agent under this preset regardless of how it joined: `write`/`edit` execution is always denied with the read-only reason, and every other tool is denied until the agent's environment has been verified once (sandbox=read-only, approval=never) — fail-closed at first use. The creation-time preflight remains for stubs/shadowing on the normal path.
+- Tests: 17 total, all green (3 new guard-logic tests: env verdict matrix, refusal text, stub shape).
+
 ## 0.4.3 (2026-08-19)
 
 Zero-write contract hardening (P0) and real hypothesis versioning.
