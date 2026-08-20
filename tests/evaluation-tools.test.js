@@ -59,14 +59,15 @@ test('eval lock: --check passes unchanged and fails after a mutation', () => {
   fs.writeFileSync(path.join(snapshot, 'snapshot.json'), JSON.stringify({ cutoff_date: '2026-01-01T00:00:00Z', ground_truth_sha256: null }))
   const promptFile = path.join(dir, 'prompt.md')
   fs.writeFileSync(promptFile, 'research prompt v1')
-  const args = [snapshot, '--prompt', promptFile, '--model', 'test-model', '--reasoning', 'max', '--budget', '200k']
+  const lockFile = path.join(dir, 'protocol.lock')
+  const args = [snapshot, '--prompt', promptFile, '--model', 'test-model', '--reasoning', 'max', '--budget', '200k', '--lock', lockFile]
   const lock = runNode(path.join(root, 'fixtures', 'blind', 'eval-lock.js'), args)
   assert.equal(lock.status, 0, lock.stderr)
-  const check = runNode(path.join(root, 'fixtures', 'blind', 'eval-lock.js'), [snapshot, '--prompt', promptFile, '--model', 'test-model', '--reasoning', 'max', '--budget', '200k', '--check'])
+  const check = runNode(path.join(root, 'fixtures', 'blind', 'eval-lock.js'), [snapshot, '--prompt', promptFile, '--model', 'test-model', '--reasoning', 'max', '--budget', '200k', '--lock', lockFile, '--check'])
   assert.equal(check.status, 0, check.stdout + check.stderr)
   // Mutate the ground truth: the lock must break.
   fs.writeFileSync(path.join(snapshot, 'ground-truth', 'future.json'), JSON.stringify({ ground_truth: [{ id: 'GT-99' }] }))
-  const broken = runNode(path.join(root, 'fixtures', 'blind', 'eval-lock.js'), [snapshot, '--prompt', promptFile, '--model', 'test-model', '--reasoning', 'max', '--budget', '200k', '--check'])
+  const broken = runNode(path.join(root, 'fixtures', 'blind', 'eval-lock.js'), [snapshot, '--prompt', promptFile, '--model', 'test-model', '--reasoning', 'max', '--budget', '200k', '--lock', lockFile, '--check'])
   assert.equal(broken.status, 1)
   assert.match(broken.stdout, /LOCK BROKEN/)
   fs.rmSync(dir, { recursive: true, force: true })

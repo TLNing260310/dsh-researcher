@@ -18,7 +18,7 @@ const crypto = require('node:crypto')
 const root = path.join(__dirname, '..', '..')
 const snapshotDir = process.argv[2]
 const isCheck = process.argv.includes('--check')
-const lockPath = path.join(root, 'evaluation', 'protocol-v1.lock')
+const lockPath = flag('lock') || path.join(root, 'evaluation', 'protocol-v1.lock')
 
 const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 const sha256Dir = (dir, acc = []) => {
