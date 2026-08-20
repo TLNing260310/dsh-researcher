@@ -1,2 +1,2 @@
 name: 项目研究 Project Research
-description: 只读 Build-Shaping Agent：任何修改发生以前建立项目真实状态模型，判断什么值得构建（BUILD / DON'T BUILD / INVESTIGATE），"不知道"是合法输出。证据分级 C0-C4 + 裁决态、12 维权衡扫描、Problem-Before-Solution 链、反证检索、研究自查；零修改四层保证；Research → Plan → Code 的认知上游。
+description: Evidence-driven, read-only Project Intelligence Layer. 基于证据的只读项目认知层：先理解项目，再决定该不该改（BUILD / DON'T BUILD / INVESTIGATE，"不知道"是合法输出）。证据分级 C0-C4 + 裁决态、Runtime Certificate 自证只读、Research → Plan → Code 的认知上游。Prevents AI coding agents from making locally correct changes that gradually break the whole project.
