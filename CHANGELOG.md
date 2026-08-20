@@ -4,10 +4,14 @@
 
 发布纪律变更：从 v0.5.3 起，小改动只进 main 不贴 tag；功能攒成有意义的版本再正式发布（频繁小版本会向外部传递"设计边界未稳定"的信号）。v0.6.0 的目标：从"研究预设"到"具备验证、评估与持续认知能力的项目智能层"。
 
-- **Benchmark Suite**：`fixtures/benchmark/` — 三个公开可复现案例（architecture-drift / documentation-drift / false-progress），每个含 `ground-truth.json`（marker 级期望判定）与 `expected-result.md`；`benchmark-runner.js` 支持 `generate` 与 `score`（报告 marker 打分）。这是第一道护城河：别人可以写 Research Prompt，我们提供公开评测标准。
+- **Benchmark Suite**：`fixtures/benchmark/` — 三个公开可复现案例（architecture-drift / documentation-drift / false-progress），每个含 `ground-truth.json`（marker 级期望判定）与 `expected-result.md`；`benchmark-runner.js` 支持 `generate` 与 `score`（报告 marker 打分），新增 `metrics`（token/时长/工具调用/claims/证书抽取，供 A/B 对比）。这是第一道护城河：别人可以写 Research Prompt，我们提供公开评测标准。
+- **Evaluation Framework**：`docs/evaluation.md` — 三条证据线（自己跑/历史盲测/真人测试）与三级反馈通道（默认关闭 + 匿名指标 + 脱敏主张包，全部本地优先、绝不自动上传、尊重 DO_NOT_TRACK）。
+- **Historical Blind Benchmark 脚手架**：`fixtures/blind/blind-snapshot.js`（T0 快照创建 + snapshot.json ground-truth 模板）——"在当时不知道未来的情况下，能否提前发现后来真实开发者也认为是问题的问题"。
+- **Feedback Export**：`bin/feedback.js export <session.jsonl.zstd> [--claims]` — 本地生成脱敏 feedback bundle（schema v1），无网络、无上传。
+- **Quick / Deep 两档深度**：Quick = 5 moves（小仓库/单一问题），Deep = 11 moves；按规模/历史/歧义度/影响半径自动建议，用户可否决。
 - **Handoff 接口**：`docs/handoff-schema.md` — `research_handoff.json`（schema v1：build_items 带 id/problem/evidence/confidence/scope/do_not_touch）；报告模板与 persona 强制双形态交接（JSON + Markdown）。
 - **证书审计入口**：`docs/runtime-certificates/` — 长期项目的多运行审计用法（Run # / Evidence 占比 / 新不确定性）。
-- **README 最终稳定版**：按陌生用户认知路径 + When to use / Non-goals / Benchmark Proof 重构，目标半年不动。
+- **README 最终稳定版**：按陌生用户认知路径 + When to use / Non-goals / Benchmark Proof 重构，中英双语并置，目标半年不动。
 
 ## 0.5.3 (2026-08-20)
 

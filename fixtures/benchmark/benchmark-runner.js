@@ -71,5 +71,41 @@ if (command === 'score') {
   process.exit(matched === total ? 0 : 1)
 }
 
-console.error('usage: node benchmark-runner.js <generate|score> ...')
+if (command === 'metrics') {
+  const reportFile = process.argv[3]
+  const outFlag = process.argv.indexOf('--out')
+  const outFile = outFlag >= 0 && process.argv[outFlag + 1] ? process.argv[outFlag + 1] : null
+  if (!reportFile || !fs.existsSync(reportFile)) {
+    console.error('usage: node benchmark-runner.js metrics <report.md> [--out <metrics.json>]')
+    process.exit(1)
+  }
+  const report = fs.readFileSync(reportFile, 'utf8')
+  const metrics = {
+    schema: 'dsh-researcher/metrics/v1',
+    token_input: null,
+    token_output: null,
+    tool_calls: null,
+    llm_duration: null,
+    claim_cards: (report.match(/C\d+/g) || []).length,
+    build_count: (report.match(/BUILD/g) || []).length,
+    dont_build_count: (report.match(/DON'T\s*BUILD/g) || []).length,
+    investigate_count: (report.match(/INVESTIGATE/g) || []).length,
+    certificate: (report.match(/Overall:\s*(\w+)/) || [])[1] || null,
+  }
+  const usage = report.match(/输入\s*([\d.]+[KM]?)\s*tok[^·]*·\s*输出\s*([\d.]+[KM]?)\s*tok/)
+  if (usage) {
+    metrics.token_input = usage[1]
+    metrics.token_output = usage[2]
+  }
+  const toolMatch = report.match(/工具调用\s*([\d.]+)\s*s/)
+  if (toolMatch) metrics.tool_calls = toolMatch[1]
+  const durationMatch = report.match(/LLM\s*([\d.m]+s)/)
+  if (durationMatch) metrics.llm_duration = durationMatch[1]
+  const json = JSON.stringify(metrics, null, 2)
+  if (outFile) fs.writeFileSync(outFile, json)
+  console.log(json)
+  process.exit(0)
+}
+
+console.error('usage: node benchmark-runner.js <generate|score|metrics> ...')
 process.exit(1)

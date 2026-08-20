@@ -13,17 +13,17 @@
 - **v0.5.0** — Self-verification：`research_doctor` Runtime Certificate；定位 Evidence-driven Project Intelligence；案例库开启。
 - **v0.5.1** — 健康门禁强制化（doctor 执行级强制首步）+ 失败案例测试 + 合成案例生成器（payment-drift fixture）+ recompose 洞事后分析归档；23 测试。
 
-## v0.6 — Delta Research：Claim Delta（下一步，不加新机制直到它成立）
+## v0.6 — Evaluation-first（进行中）
 
-**核心定义**：不是 `git diff + 重新研究`，而是**代码变化 → 哪些认知失效**。
+**版本目标不再是"Researcher 更聪明"，而是"我们终于知道 Researcher 到底有没有更聪明"。** Measure → Learn → Simplify → Amplify。
 
-- Baseline 研究（Claims/Hypotheses/Views 入库，`export` 基线存档）
-- ↓ N commits 之后
-- Claim Delta：哪些 Claim 的 evidence 已变、哪些被 invalidated、哪些 INVESTIGATE 变 BUILD
-- 每个失效标注：**腐蚀还是演化**（复用 v0.4.2 的腐蚀之问）
-- 输出 Delta 报告：`C12 invalidated（cache 引入，瓶颈转移）→ 新问题：cache invalidation risk`
-- 实现路径：基线 export 对比当前状态 + git_read log/diff 定位证据变化；与 fixtures/benchmark 共用 ground-truth 打分
-- 前置：Golden Fixtures 集（Fixtures A–E 设计见下，payment-drift 生成器已就绪）先跑通 Researcher vs Plan Mode vs 临时 Prompt 的对照，产出第一份"有效果"证据
+- **P0 — Evaluation Framework**：`benchmark-runner.js metrics`（token/时长/工具调用/claims/最终建议/证书抽取）+ A/B harness（Researcher vs Plan vs Standard，统一 metrics.json 对比）；设计见 [docs/evaluation.md](./evaluation.md)。
+- **P0.5 — Historical Blind Benchmark**：`fixtures/blind/blind-snapshot.js`（T0 快照创建）+ 10–20 个真实仓库快照（future_issues/future_prs/known_architecture_changes 作为 ground truth）。目标 README 级证据："20 repos · 47 known future issues · Plan 21/47 · Researcher 35/47"。
+- **P1 — Feedback Export + Opt-in Metrics**：`bin/feedback.js export`（Level 1 匿名指标 / Level 2 脱敏主张包，本地生成、绝不自动上传、尊重 DO_NOT_TRACK）。
+- **P1 — Quick / Deep 两档深度**：Quick（5 moves）与 Deep（11 moves），按仓库规模/历史跨度/歧义度/影响半径自动建议。
+- **P2 — Claim Delta**：仅在 benchmark 证明 claim system 本身有增益之后再做（否则是在错误方向加复杂度）。
+- **P3 — 外部事实层**：GitNexus / Serena / RepoMap / Cairn 集成缝（L0/L1 商品化）。
+- **P4 — Cross-Harness portability**：方法论与报告规范的平台无关化（DSH 仍是 developer preview，runtime surface 不宜过快扩张）。
 
 ## v0.7 — DSH 生态化
 

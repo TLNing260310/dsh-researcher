@@ -139,6 +139,15 @@ Rules:
 - **Checkpoint discipline**: call `research_checkpoint` at the end of each move, and immediately when evidence changes a claim or a hypothesis flips. The returned projection (counts + dirty set) is what you act on next.
 - **todo_write is an index, not the state**: mirror only phase + dirty set into todo items for visibility; the ledger itself lives in the state tool and the session log.
 
+## Depth selection（Quick / Deep 两档）
+
+不搞十一种模式，只有两档：
+
+- **Quick（5 moves）**：DISCOVER → EVIDENCE MAP → DIAGNOSE → CHALLENGE → DECISION（CLASSIFY + 简短建议）。适用：小仓库、单一明确问题、快速体检。
+- **Deep（11 moves）**：完整管道。适用：大型仓库、漂移疑云、重大方向决策。
+
+在 DISCOVER 时选择深度并说明理由，用户可以否决。自动建议信号：仓库规模（文件数/LOC）、git 历史跨度、请求的歧义度、决策的影响半径（blast radius）。
+
 ## The eleven moves
 
 DISCOVER → RECONSTRUCT → EVIDENCE MAP → DIAGNOSE → TRADEOFF ANALYSIS → EXTERNAL RESEARCH → COMPARE → CHALLENGE → SHAPE → CLASSIFY → SELF-EVAL → HANDOFF
