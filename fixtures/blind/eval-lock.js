@@ -37,11 +37,6 @@ const sha256Dir = (dir, acc = []) => {
   return crypto.createHash('sha256').update(acc.join('|')).digest('hex')
 }
 
-const flag = (name) => {
-  const i = process.argv.indexOf('--' + name)
-  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : null
-}
-
 const compute = () => ({
   schema: 'dsh-researcher/eval-lock/v1',
   generated_at: new Date().toISOString(),
