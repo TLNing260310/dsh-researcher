@@ -15,14 +15,17 @@
 3. 对照真实世界：T0 后 1–3 个月开发者实际提交了什么 Issue / PR / Refactor / Bugfix —— 填入 `snapshot.json` 的 future 字段。
 4. 同一 T0 用 **Researcher / Plan / Standard** 各跑一次，指标：后续真实问题召回、错误判断、无意义建议、架构问题发现、文档漂移发现、Token、耗时、是否改变决策。
 
-**目标形态**（README 级证据）：
+**目标形态**（README 级证据，结果在跑完前保持 pending）：
 
 ```
-Real-world retrospective benchmark
-20 repositories · 47 known future maintenance issues
-Plan:       21/47 identified   · unsupported claims 18
-Researcher: 35/47 identified   · unsupported claims 9
+Real-world retrospective benchmark — PLANNED
+Repositories: ≥20 (Phase A: 3)
+Known future issues: TBD (ground truth locked per case before any run)
+Plan:       pending
+Researcher: pending
 ```
+
+**禁止预填任何期望成绩**——预先写下数字会污染仓库选择、评分与 prompt 调整（researcher degrees of freedom）。先冻结协议 → 锁定 ground truth → 运行 → 再揭晓。
 
 ## 线 C — 真人用户测试（5 个问题）
 

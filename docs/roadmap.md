@@ -18,7 +18,7 @@
 **版本目标不再是"Researcher 更聪明"，而是"我们终于知道 Researcher 到底有没有更聪明"。** Measure → Learn → Simplify → Amplify。
 
 - **P0 — Evaluation Framework**：`benchmark-runner.js metrics`（token/时长/工具调用/claims/最终建议/证书抽取）+ A/B harness（Researcher vs Plan vs Standard，统一 metrics.json 对比）；设计见 [docs/evaluation.md](./evaluation.md)。
-- **P0.5 — Historical Blind Benchmark**：`fixtures/blind/blind-snapshot.js`（T0 快照创建）+ 10–20 个真实仓库快照（future_issues/future_prs/known_architecture_changes 作为 ground truth）。目标 README 级证据："20 repos · 47 known future issues · Plan 21/47 · Researcher 35/47"。
+- **P0.5 — Historical Blind Benchmark**：`fixtures/blind/blind-snapshot.js`（T0 快照创建 + 历史截断 + 金丝雀）+ `blind-doctor.js`（失明完整性校验）+ [evaluation-protocol-v1](./evaluation-protocol-v1.md)（先冻结协议与 ground truth，再运行，再揭晓——不预填任何期望成绩）。
 - **P1 — Feedback Export + Opt-in Metrics**：`bin/feedback.js export`（Level 1 匿名指标 / Level 2 脱敏主张包，本地生成、绝不自动上传、尊重 DO_NOT_TRACK）。
 - **P1 — Quick / Deep 两档深度**：Quick（5 moves）与 Deep（11 moves），按仓库规模/历史跨度/歧义度/影响半径自动建议。
 - **P2 — Claim Delta**：仅在 benchmark 证明 claim system 本身有增益之后再做（否则是在错误方向加复杂度）。

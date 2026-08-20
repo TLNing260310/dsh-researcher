@@ -245,13 +245,13 @@ module.exports = {
       if (agent) release(agent)
     })
 
-    // 3) Execution-time guard (v0.4.4/v0.5.1): layer-based, not event-based —
-    // applies to every agent under this preset, including agents that joined
-    // via recompose after `agent/created` already fired (the preset-switch
-    // path). write/edit are always denied; the environment is verified once
-    // per agent; every other tool is denied until research_doctor has run
-    // once (mandatory health gate — the certificate is enforced, not
-    // suggested).
+    // 3) Execution-time guard (v0.4.4/v0.5.1/v0.6.0): layer-based, not
+    // event-based — applies to every agent under this preset regardless of
+    // how it joined (created, recomposed, resumed). write/edit are always
+    // denied; the doctor gate applies until research_doctor has run once; and
+    // the environment is re-verified ON EVERY CALL — a mid-session permission
+    // switch (/permission, setSandboxMode, setPolicy) flips the session back
+    // to fail-closed instead of riding a stale "verified" cache.
     const guardStates = new WeakMap()
     ctx.tools.guard((exec) => {
       const name = exec && exec.name
@@ -259,19 +259,17 @@ module.exports = {
       if (!agent) return name === 'write' || name === 'edit' ? readOnlyDenial(name) : undefined
       let st = guardStates.get(agent)
       if (st === undefined) {
-        st = { envVerified: false, doctorCalled: false, envFailed: false }
+        st = { doctorCalled: false }
         guardStates.set(agent, st)
       }
       let env
-      if (!st.envVerified && !st.envFailed) {
-        try {
-          env = {
-            mode: ctx.sandboxPolicy.resolve({ session: agent.session }).mode,
-            policy: ctx.approval.overrideOf(agent.session),
-          }
-        } catch (error) {
-          return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
+      try {
+        env = {
+          mode: ctx.sandboxPolicy.resolve({ session: agent.session }).mode,
+          policy: ctx.approval.overrideOf(agent.session),
         }
+      } catch (error) {
+        return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
       }
       const outcome = decideGuard(name, st, env)
       guardStates.set(agent, outcome.st)

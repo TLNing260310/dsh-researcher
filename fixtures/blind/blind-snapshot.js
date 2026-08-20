@@ -1,16 +1,26 @@
 #!/usr/bin/env node
-// Historical blind benchmark — snapshot creator.
+// Historical blind benchmark — snapshot creator (v2, blindness-integrity).
 //
 // Usage: node blind-snapshot.js create <repo-url> <commit> <out-dir>
 //
-// Clones the repository at the given historical commit (the "T0" cutoff) into
-// <out-dir>/project, and scaffolds snapshot.json for you to fill in the
-// GROUND TRUTH gathered from what the project ACTUALLY did after T0
-// (issues/PRs/refactors in the following 1-3 months).
+// Creates <out-dir> with the STRICT physical layout:
 //
-// The blind protocol: a research run may only see the T0 checkout; scoring
-// compares its findings against snapshot.json's future facts. See
-// docs/evaluation.md.
+//   <out-dir>/
+//     workspace/          ← the ONLY thing a research session may read
+//       (repository at T0; .git truncated so that NOTHING after T0 exists)
+//     ground-truth/       ← future facts + canary; NEVER readable by the run
+//       future.json
+//       SECRET_FUTURE_CANARY_<nonce>.txt
+//     snapshot.json       ← protocol metadata (operator-side only)
+//
+// Truncation procedure: temp clone → detach at T0 → delete every other ref
+// (branches, tags, remotes) → expire reflog → gc --prune=now → verify that no
+// reachable commit is newer than T0. The research agent therefore cannot
+// "predict" the future by reading .git.
+//
+// The run protocol (see docs/evaluation-protocol-v1.md) requires a fresh
+// session with cwd = workspace/ and a clean profile; the canary must never
+// appear in any output — if it does, the run is INVALID.
 const fs = require('node:fs')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
@@ -27,52 +37,68 @@ if (!repoUrl || !commit || !outDir) {
   console.error('usage: node blind-snapshot.js create <repo-url> <commit> <out-dir>')
   process.exit(1)
 }
-
-const projectDir = path.join(outDir, 'project')
-if (fs.existsSync(projectDir)) {
-  console.error('target already exists: ' + projectDir)
+if (fs.existsSync(outDir)) {
+  console.error('target already exists: ' + outDir)
   process.exit(1)
 }
+
+const workspace = path.join(outDir, 'workspace')
+const groundTruthDir = path.join(outDir, 'ground-truth')
+const tmp = path.join(outDir, '.tmp-clone')
 fs.mkdirSync(outDir, { recursive: true })
 
-const clone = spawnSync('git', ['clone', '--no-checkout', repoUrl, projectDir], { stdio: 'inherit' })
-if (clone.status !== 0) {
-  console.error('git clone failed')
-  process.exit(1)
+const run = (args, cwd) => spawnSync('git', args, { cwd, encoding: 'utf8' })
+const fail = (msg) => { console.error(msg); process.exit(1) }
+
+if (run(['clone', '--no-checkout', repoUrl, tmp]).status !== 0) fail('git clone failed')
+if (run(['-C', tmp, 'checkout', '--detach', commit]).status !== 0) fail('git checkout failed')
+
+// Cutoff time of T0 (author date, seconds).
+const cutoff = Number(String(run(['-C', tmp, 'show', '-s', '--format=%ct', 'HEAD']).stdout).trim())
+if (!Number.isFinite(cutoff)) fail('cannot read T0 commit time')
+
+// Delete every ref except HEAD (branches, tags, remotes) so later commits
+// become unreachable.
+const refs = String(run(['-C', tmp, 'for-each-ref', '--format=%(refname)']).stdout).trim().split('\n').filter(Boolean)
+for (const ref of refs) {
+  if (ref === 'HEAD') continue
+  run(['-C', tmp, 'update-ref', '-d', ref])
 }
-const checkout = spawnSync('git', ['-C', projectDir, 'checkout', '--detach', commit], { stdio: 'inherit' })
-if (checkout.status !== 0) {
-  console.error('git checkout failed; snapshot dir left at ' + projectDir)
-  process.exit(1)
+run(['-C', tmp, 'reflog', 'expire', '--expire=now', '--all'])
+run(['-C', tmp, 'gc', '--prune=now', '--aggressive'])
+
+// Verify: no reachable commit newer than T0.
+const log = String(run(['-C', tmp, 'log', '--all', '--format=%ct']).stdout).trim()
+for (const line of log.split('\n').filter(Boolean)) {
+  if (Number(line) > cutoff) fail('TRUNCATION FAILED: a commit newer than T0 is still reachable (' + line + ' > ' + cutoff + ')')
 }
 
-const snapshot = {
+fs.renameSync(tmp, workspace)
+fs.mkdirSync(groundTruthDir, { recursive: true })
+
+const nonce = Math.random().toString(16).slice(2, 10)
+fs.writeFileSync(path.join(groundTruthDir, 'SECRET_FUTURE_CANARY_' + nonce + '.txt'),
+  'canary-' + nonce + ' — if any agent output mentions this token, the run is INVALID\n')
+fs.writeFileSync(path.join(groundTruthDir, 'future.json'), JSON.stringify({
+  schema: 'dsh-researcher/blind-ground-truth/v1',
+  note: 'FILL BEFORE ANY RUN, then lock with sha256 (see docs/evaluation-protocol-v1.md)',
+  cutoff_commit: commit,
+  cutoff_date: new Date(cutoff * 1000).toISOString(),
+  ground_truth: [],
+}, null, 2))
+fs.writeFileSync(path.join(outDir, 'snapshot.json'), JSON.stringify({
   schema: 'dsh-researcher/blind-snapshot/v1',
   repo: repoUrl,
   commit,
-  cutoff_date: '<ISO date of the T0 commit — fill in>',
-  research_window: '1-3 months after cutoff',
-  future_issues: [
-    // { id: 812, title: '...', summary: 'what the project actually fixed', found_by: null }
-  ],
-  future_prs: [],
-  known_architecture_changes: [],
-  known_doc_updates: [],
-  scoring: {
-    // After running a mode (Researcher / Plan / Standard) on project/,
-    // record: identified_future_issues: N, wrong_judgements: N, useless_suggestions: N,
-    // unsupported_claims: N, token_usage: { input: N, output: N }, duration_sec: N,
-    // changed_decision: true/false
-  },
-}
-fs.writeFileSync(path.join(outDir, 'snapshot.json'), JSON.stringify(snapshot, null, 2))
-fs.writeFileSync(path.join(outDir, 'README.md'), [
-  '# Blind snapshot at ' + commit,
-  '',
-  '- `project/` — the repository checked out at T0 (research runs must only see this).',
-  '- `snapshot.json` — fill `future_issues` / `future_prs` / `known_architecture_changes` from what the project ACTUALLY did in the following 1–3 months (issues, PRs, refactors, doc fixes).',
-  '- Scoring workflow and the A/B harness: docs/evaluation.md.',
-  '',
-].join('\n'))
+  cutoff_date: new Date(cutoff * 1000).toISOString(),
+  workspace: 'workspace/',
+  ground_truth_dir: 'ground-truth/',
+  canary_file: 'SECRET_FUTURE_CANARY_' + nonce + '.txt',
+  ground_truth_sha256: null,
+}, null, 2))
+
 console.log('snapshot created at ' + outDir)
-console.log('next: fill snapshot.json with future facts, then run Researcher / Plan / Standard on project/ and score per docs/evaluation.md')
+console.log('  workspace/   — T0-truncated repository (verified: no reachable commit after ' + new Date(cutoff * 1000).toISOString() + ')')
+console.log('  ground-truth/ — future facts + canary (never readable by the run)')
+console.log('next: fill ground-truth/future.json BEFORE any run, lock it with sha256, then run the isolation doctor:')
+console.log('  node fixtures/blind/blind-doctor.js <out-dir>')

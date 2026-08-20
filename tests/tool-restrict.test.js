@@ -54,6 +54,17 @@ test('health gate: write/edit denied even after the doctor', () => {
   }
 })
 
+test('health gate: a bad environment denies even after the doctor (env drift fail-closed)', () => {
+  // Doctor passed under a good environment...
+  const good = decideGuard('research_doctor', { doctorCalled: false }, { mode: 'read-only', policy: 'never' })
+  assert.equal(good.deny, undefined)
+  assert.equal(good.st.doctorCalled, true)
+  // ...then the session's permission was switched mid-run: every call is
+  // re-verified, so the next read must be denied with the env reason.
+  const drifted = decideGuard('read', good.st, { mode: 'danger-full-access', policy: 'never' })
+  assert.match(drifted.deny, /sandbox is "danger-full-access".*requires "read-only"/)
+})
+
 test('health gate: bad environment — doctor still runs (to report UNSAFE), everything else stays denied', () => {
   const fresh = { envVerified: false, doctorCalled: false, envFailed: false }
   const bad = decideGuard('research_doctor', fresh, { mode: 'danger-full-access', policy: 'never' })
