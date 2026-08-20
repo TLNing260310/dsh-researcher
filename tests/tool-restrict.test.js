@@ -33,7 +33,7 @@ test('stub definitions are refusing stubs, not real tools', () => {
 })
 
 test('health gate: no research tool runs before research_doctor', () => {
-  const fresh = { envVerified: false, doctorCalled: false }
+  const fresh = { envVerified: false, doctorCalled: false, envFailed: false }
   // A read tool before the doctor: denied with the gate message.
   const gated = decideGuard('read', fresh, { mode: 'read-only', policy: 'never' })
   assert.equal(gated.deny, DOCTOR_GATE_DENIAL)
@@ -48,15 +48,19 @@ test('health gate: no research tool runs before research_doctor', () => {
 })
 
 test('health gate: write/edit denied even after the doctor', () => {
-  const state = { envVerified: true, doctorCalled: true }
+  const state = { envVerified: true, doctorCalled: true, envFailed: false }
   for (const name of ['write', 'edit']) {
     assert.match(decideGuard(name, state).deny, /strictly read-only/)
   }
 })
 
-test('health gate: a bad environment denies even the doctor, with the env reason', () => {
-  const fresh = { envVerified: false, doctorCalled: false }
+test('health gate: bad environment — doctor still runs (to report UNSAFE), everything else stays denied', () => {
+  const fresh = { envVerified: false, doctorCalled: false, envFailed: false }
   const bad = decideGuard('research_doctor', fresh, { mode: 'danger-full-access', policy: 'never' })
-  assert.match(bad.deny, /sandbox is "danger-full-access".*requires "read-only"/)
-  assert.equal(bad.st.doctorCalled, false)
+  assert.equal(bad.deny, undefined) // the doctor must be able to produce the certificate
+  assert.equal(bad.st.doctorCalled, true)
+  assert.equal(bad.st.envFailed, true)
+  // After the failed environment, reads stay denied with the env-failed reason.
+  const read = decideGuard('read', bad.st)
+  assert.match(read.deny, /environment failed verification/)
 })

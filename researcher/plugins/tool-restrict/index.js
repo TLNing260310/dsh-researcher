@@ -80,16 +80,28 @@ const readOnlyDenial = (name) => 'Refused: research mode is strictly read-only; 
 const DOCTOR_GATE_DENIAL = '[dsh-researcher] health gate: run research_doctor first — the Researcher Runtime Certificate must be SAFE before research begins (this is enforced, not a suggestion).'
 
 // Pure guard decision machine (unit-tested): write/edit always denied; the
-// environment is verified once per agent; every other tool is denied until
-// research_doctor has been called at least once (mandatory health gate).
+// doctor itself ALWAYS runs (it must be able to report UNSAFE); every other
+// tool is denied until the doctor has run once, and is permanently denied
+// when the environment failed verification (fail-closed; the certificate
+// remains available as the explanation).
 const decideGuard = (name, st, env) => {
   if (name === 'write' || name === 'edit') return { deny: readOnlyDenial(name), st }
-  if (env !== undefined) {
-    const verdict = envVerdict(env.mode, env.policy)
-    if (verdict !== undefined) return { deny: verdict, st }
+  const envFailure = env !== undefined ? envVerdict(env.mode, env.policy) : undefined
+  if (name === 'research_doctor') {
+    return {
+      deny: undefined,
+      st: {
+        envVerified: envFailure === undefined,
+        envFailed: envFailure !== undefined,
+        doctorCalled: true,
+      },
+    }
   }
-  if (name === 'research_doctor') return { deny: undefined, st: { envVerified: true, doctorCalled: true } }
   if (!st.doctorCalled) return { deny: DOCTOR_GATE_DENIAL, st }
+  if (st.envFailed) {
+    return { deny: '[dsh-researcher] environment failed verification — the Runtime Certificate is UNSAFE; fix the listed checks and start a new session. Run research_doctor again for the certificate details.', st }
+  }
+  if (envFailure !== undefined) return { deny: envFailure, st }
   return { deny: undefined, st }
 }
 
@@ -247,11 +259,11 @@ module.exports = {
       if (!agent) return name === 'write' || name === 'edit' ? readOnlyDenial(name) : undefined
       let st = guardStates.get(agent)
       if (st === undefined) {
-        st = { envVerified: false, doctorCalled: false }
+        st = { envVerified: false, doctorCalled: false, envFailed: false }
         guardStates.set(agent, st)
       }
       let env
-      if (!st.envVerified) {
+      if (!st.envVerified && !st.envFailed) {
         try {
           env = {
             mode: ctx.sandboxPolicy.resolve({ session: agent.session }).mode,

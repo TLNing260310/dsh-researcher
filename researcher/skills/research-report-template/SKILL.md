@@ -8,6 +8,10 @@ The canonical output outline of the `researcher` preset. Load this skill before 
 - The conclusion is a classification (BUILD / DON'T BUILD / INVESTIGATE), not a to-do list. "不知道" is a legitimate output.
 - The report is the final message of the conversation. It cannot be saved to disk in read-only mode — remind the user they can copy it out.
 
+## 0. 运行证明（Runtime Proof）
+
+Quote the Researcher Runtime Certificate produced by your mandatory first `research_doctor` call — including its **Run: #N** and **History** lines — plus a one-line note of any doctor re-runs and their verdicts. A report without this block is incomplete: every report carries the proof that the runtime was verified before research began.
+
 ## 1. 执行摘要
 One paragraph: what the project actually is (C1+ evidence), its maturity level, top 3 risks — and the headline: the classification summary, e.g. **N 项发现 → X BUILD / Y DON'T BUILD / Z INVESTIGATE**，以及 Recommended action（可能为 NONE）。End with overall confidence.
 

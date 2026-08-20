@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.2 (2026-08-20)
+
+Runtime proof completes the trustworthy-runtime loop.
+
+- **Doctor runs are numbered and remembered**: `research_doctor` now emits `Run: #N` (counted from prior doctor calls in the session log) and `History: #1 SAFE · #2 DEGRADED …` (reconstructed from tool/call + tool/result events) — every run has identity and every certificate is durable in the session log.
+- **The doctor always runs, even in a bad environment**: the health gate now lets `research_doctor` execute under a failed environment so it can render the UNSAFE certificate as the explanation, while every other tool stays permanently denied (fail-closed). Guard semantics updated + tests.
+- **Runtime Proof in every report**: report template §0 mandates quoting the certificate (Run + History); the persona requires it in the final message. "Research Run #17 / Certificate: SAFE" is now part of every deliverable.
+- Tests: 25 total, all green.
+
 ## 0.5.1 (2026-08-20)
 
 Mandatory health gate, failure-case tests, synthetic fixtures, postmortem.

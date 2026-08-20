@@ -25,8 +25,14 @@
 
 const { makeState, foldCheckpointEvents, fullExport } = require('../research-state/index.js')
 
-const renderCertificate = (checks) => {
+const renderCertificate = (checks, meta) => {
   const lines = ['Researcher Runtime Certificate']
+  if (meta && meta.run !== undefined) lines.push('Run: #' + meta.run)
+  if (meta && Array.isArray(meta.history) && meta.history.length > 0) {
+    lines.push('History: ' + meta.history.map((h) => '#' + h.run + ' ' + h.overall).join(' · '))
+  } else if (meta) {
+    lines.push('History: none (first run)')
+  }
   let worst = 0 // 0 = pass, 1 = warn, 2 = fail
   for (const c of checks) {
     lines.push(c.name + ': ' + c.status + (c.detail ? ' (' + c.detail + ')' : ''))
@@ -36,6 +42,38 @@ const renderCertificate = (checks) => {
   const overall = worst === 2 ? 'UNSAFE' : worst === 1 ? 'DEGRADED' : 'SAFE'
   lines.push('Overall: ' + overall)
   return lines.join('\n')
+}
+
+// Reconstruct prior research_doctor runs from the session log: pair doctor
+// tool/call events with their tool/result events and extract each Overall.
+const certificateHistory = (events) => {
+  const list = Array.isArray(events) ? events : []
+  const doctorCalls = []
+  const resultsByCallId = new Map()
+  for (const event of list) {
+    if (!event || typeof event !== 'object') continue
+    if (event.type === 'tool/call' && event.data && event.data.name === 'research_doctor') {
+      doctorCalls.push(event.data.callId)
+    }
+    if (event.type === 'tool/result' && event.data && event.data.callId !== undefined) {
+      resultsByCallId.set(event.data.callId, event.data)
+    }
+  }
+  const history = []
+  let index = 0
+  for (const callId of doctorCalls) {
+    index++
+    const result = resultsByCallId.get(callId)
+    let overall = 'unknown'
+    if (result && result.content !== undefined) {
+      const content = result.content
+      const text = typeof content === 'string' ? content : Array.isArray(content) ? content.map((b) => (b && b.text) || '').join('\n') : ''
+      const match = text.match(/Overall:\s*(\w+)/)
+      if (match) overall = match[1]
+    }
+    history.push({ run: index, overall })
+  }
+  return history
 }
 
 module.exports = {
@@ -112,11 +150,12 @@ module.exports = {
         } catch (error) {
           checks.push({ name: 'Runtime', status: 'FAIL', detail: error && error.message ? error.message : String(error) })
         }
-        return renderCertificate(checks)
+        const history = certificateHistory(Array.isArray(session.events) ? session.events : [])
+        return renderCertificate(checks, { run: history.length + 1, history })
       },
     }
 
     ctx.tools.register(definition)
   },
-  __test: { renderCertificate },
+  __test: { renderCertificate, certificateHistory },
 }

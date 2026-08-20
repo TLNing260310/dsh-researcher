@@ -13,9 +13,33 @@ test('certificate renders SAFE when every check passes', () => {
     { name: 'Shell surface', status: 'PASS', detail: 'git_read=present, shell=absent' },
     { name: 'Checkpoint', status: 'PASS', detail: 'available' },
     { name: 'Replay', status: 'PASS', detail: 'live state matches log (15 claims)' },
-  ])
+  ], { run: 17, history: [{ run: 1, overall: 'SAFE' }, { run: 2, overall: 'DEGRADED' }] })
   assert.match(text, /Overall: SAFE/)
   assert.match(text, /Preset: PASS/)
+  assert.match(text, /Run: #17/)
+  assert.match(text, /History: #1 SAFE · #2 DEGRADED/)
+})
+
+test('certificate history is reconstructed from session tool/call and tool/result events', () => {
+  const events = [
+    { type: 'tool/call', data: { name: 'research_doctor', callId: 'c1' } },
+    { type: 'tool/result', data: { callId: 'c1', content: [{ type: 'text', text: '...\nOverall: SAFE' }] } },
+    { type: 'tool/call', data: { name: 'read', callId: 'c2' } },
+    { type: 'tool/result', data: { callId: 'c2', content: [{ type: 'text', text: 'x' }] } },
+    { type: 'tool/call', data: { name: 'research_doctor', callId: 'c3' } },
+    { type: 'tool/result', data: { callId: 'c3', content: '...\nOverall: DEGRADED' } },
+  ]
+  const history = doctor.certificateHistory(events)
+  assert.deepEqual(history, [
+    { run: 1, overall: 'SAFE' },
+    { run: 2, overall: 'DEGRADED' },
+  ])
+})
+
+test('certificate with no meta reports first run', () => {
+  const text = doctor.renderCertificate([{ name: 'Sandbox', status: 'PASS', detail: 'mode=read-only' }], { run: 1, history: [] })
+  assert.match(text, /Run: #1/)
+  assert.match(text, /History: none \(first run\)/)
 })
 
 test('any FAIL makes the verdict UNSAFE; WARN degrades to DEGRADED', () => {

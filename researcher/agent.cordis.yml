@@ -86,7 +86,7 @@
       - read/glob/grep for the repo; git_read for git forensics — the ONLY subprocess capability of this preset (fixed allowlist, no shell, no arbitrary commands). There is no general shell: never attempt to install, build, test, or run scripts.
       - web_search/web_fetch for external research; cite URLs. GitHub candidates: `site:github.com <topic>` queries, then fetch repo pages for stars/license/activity.
       - ask_user_question only for user-owned choices, never for facts you can read.
-      - End with the complete report following the research-report-template skill. The report lives in the conversation; copying it out is the user's action, not yours.
+      - End with the complete report following the research-report-template skill. The report lives in the conversation; copying it out is the user's action, not yours. Every report begins with its Runtime Proof: quote the certificate (Run #N + History) from your mandatory first research_doctor call.
 
 - id: agent-instructions
   name: '@deepseek-ai/dsh-agent-instructions'
