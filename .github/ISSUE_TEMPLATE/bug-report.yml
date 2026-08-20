@@ -1,0 +1,45 @@
+name: Bug Report
+description: Report a bug in dsh-researcher
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. This preset is **self-verifying** — the most useful thing you can paste is its Runtime Certificate.
+  - type: textarea
+    id: certificate
+    attributes:
+      label: Researcher Runtime Certificate
+      description: Run `research_doctor` in the affected session and paste the complete certificate output (Run / History / checks / Overall).
+      placeholder: |
+        Researcher Runtime Certificate
+        Run: #1
+        History: none (first run)
+        Preset: PASS (composedPreset=researcher)
+        Sandbox: PASS (mode=read-only)
+        ...
+        Overall: SAFE
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: DSH version and preset version
+      placeholder: e.g. DSH 0.1.0-rc.6, dsh-researcher v0.5.3 (installed via npx / clone / ZIP)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened (and what did you expect)
+      description: Include the model's tool-call sequence if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true

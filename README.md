@@ -73,6 +73,21 @@ DISCOVER → RECONSTRUCT（项目模型）→ EVIDENCE MAP（C0–C4 + 裁决）
 - **安装脚本版本预检**：verified `0.1.0-rc.6`，其余版本告警并说明 fail-closed 行为。
 - v0.5 缓存层 / v0.6 评测体系设计见 [docs/roadmap.md](./docs/roadmap.md)。
 
+## 它能抓到什么（30 秒演示）
+
+合成案例 `fixtures/payment-drift/generate.js` 生成一个 payment-service：
+
+- **v1**：干净的 `Controller → Service → Repository → DB` 分层；
+- **十次"局部合理"的性能修改之后**：Controller 直连 DB、缓存侵入 Controller、README 仍描述旧架构、并声称"42 个测试通过"（实际 3 个）。
+
+Researcher 预期输出（附 `file:line` 证据）：
+1. `Claim: 遵循分层架构` → **Contradicted**（`src/controller.ts` 直接 import db）；
+2. `Claim: 42 个测试通过` → **Contradicted**（`tests/` 只有 3 个）；
+3. 性能修改 → **腐蚀，而非演化**（分层破裂 + 控制器私有缓存一致性风险）；
+4. 分类：修复文档与分层 = BUILD；继续叠加性能补丁 = DON'T BUILD。
+
+真实案例（匿名化，经所有者授权后收录）见 [docs/case-studies/](./docs/case-studies/)；首个内部验证案例曾在一个 700 文件的研究原型上发现"README 声称 94/94 通过但从未执行"的 Contradicted 声明。
+
 ## 快速安装
 
 **一行安装（推荐，无需 clone，无需 npm 发布）：**
