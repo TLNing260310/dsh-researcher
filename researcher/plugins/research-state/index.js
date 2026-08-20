@@ -204,6 +204,22 @@ const applyCheckpoint = (state, rawArgs) => {
   reduceMutation(state, args)
 }
 
+// Fold a session's logged research_checkpoint tool/call events into a state
+// (used by live replay AND by the research_doctor replay-consistency check).
+const foldCheckpointEvents = (events, state) => {
+  const target = state || makeState()
+  for (const event of Array.isArray(events) ? events : []) {
+    if (!event || event.type !== 'tool/call') continue
+    if (!event.data || event.data.name !== 'research_checkpoint') continue
+    try {
+      applyCheckpoint(target, event.data.arguments)
+    } catch (error) {
+      // Skip one malformed historical call; keep folding the rest.
+    }
+  }
+  return target
+}
+
 module.exports = {
   name: 'research-state',
   inject: ['tools'],
@@ -320,5 +336,5 @@ module.exports = {
     })
   },
   // Test hooks: the reducer is nearly pure; unit tests exercise these.
-  __test: { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState, projection },
+  __test: { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState, projection, foldCheckpointEvents },
 }

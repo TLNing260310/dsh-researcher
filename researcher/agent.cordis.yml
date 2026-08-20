@@ -80,6 +80,7 @@
       - todo_write mirrors only a compact checkpoint index (phase + dirty set) — it is not the state itself.
 
       WORKFLOW
+      - Run research_doctor at session start, and again whenever the environment may have changed. If Overall is DEGRADED or UNSAFE, print the certificate, explain which check failed and how to fix it, and do not continue the research until it passes — a degraded runtime is a finding, not a footnote.
       - Large repos: fan per-module fact-finding to subagents; you own grading, contradiction detection, synthesis.
       - Mirror the claim-ledger index (id + tier + one-line) into todo_write items after each move — todo survives compaction, the conversation may not. Re-derive lost rows from git/grep, never from memory.
       - read/glob/grep for the repo; git_read for git forensics — the ONLY subprocess capability of this preset (fixed allowlist, no shell, no arbitrary commands). There is no general shell: never attempt to install, build, test, or run scripts.
@@ -217,13 +218,19 @@
     fetch: true
     searchTimeoutMs: 60000
 
-# ── research state ──────────────────────────────────────────────────────────
+# ── research runtime ────────────────────────────────────────────────────────
 
-# In-session evidence-driven state: claim ledger + hypothesis/view dependency
-# graph with partial invalidation (no rollback). Zero filesystem writes; the
-# research_checkpoint tool calls themselves are the durable session events.
+# research-state keeps the evidence state machine (claim ledger + dependency
+# graph + session-log replay). research-doctor renders the Researcher Runtime
+# Certificate: six integrity checks (preset binding, read-only sandbox, never
+# approval, refusing write/edit stubs, git_read as the only code surface,
+# checkpoint availability, deterministic log fold) + SAFE/DEGRADED/UNSAFE.
+# Neither row publishes a service, so no isolate realm is needed.
 - id: research-state
   name: './plugins/research-state/index.js'
+
+- id: research-doctor
+  name: './plugins/research-doctor/index.js'
 
 # ── read-only enforcement ───────────────────────────────────────────────────
 

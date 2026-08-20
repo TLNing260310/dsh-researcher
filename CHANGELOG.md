@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 (2026-08-20)
+
+Self-verification becomes a capability: the Researcher Runtime Certificate.
+
+- New `research_doctor` tool (plugins/research-doctor): renders a certificate with per-check PASS/WARN/FAIL and an overall SAFE/DEGRADED/UNSAFE verdict. Checks: preset binding (live scope chain), effective sandbox=read-only, approval=never, write/edit resolve to the refusing stubs (mechanically catches the recompose hole), git_read as the only code surface (no pwsh/bash), research_checkpoint availability, and deterministic session-log fold (same log → same state, double-fold equality).
+- Persona: run research_doctor at session start and after any environment change; on DEGRADED/UNSAFE, print the certificate and stop until fixed.
+- Positioning upgrade: "Evidence-driven Project Intelligence Agent — 基于证据的 AI 项目认知与健康审计 Agent"; new pitch: 防止 AI 在长期开发中逐渐失去项目全局认知. Case Library opened (docs/case-studies/).
+- First real-run forensics (the airecimmunity session) drove this release: the methodology and evidence engine worked end-to-end (15 claims with tiers/verdicts, hypothesis dependency graph, Contradicted finding), and the preset-switch (recompose) path was confirmed to bypass creation-time guards — fixed in v0.4.4 and now self-detectable via the certificate.
+- Tests: 20 total, all green.
+
 ## 0.4.4 (2026-08-20)
 
 Execution-time guard — fixes the recompose hole found in the first real run.

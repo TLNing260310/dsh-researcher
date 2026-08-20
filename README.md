@@ -1,11 +1,22 @@
 # dsh-researcher
 
-**项目研究 Project Research** — a read-only build-shaping agent preset for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
+**Evidence-driven Project Intelligence Agent** — 基于证据的 AI 项目认知与健康审计 Agent，a read-only build-shaping preset for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 > Understand the project before deciding what to do with it.
 > 先理解项目现状，再决定要不要动手。
+> **防止 AI 在长期开发中逐渐失去项目全局认知。**
 
-**只读 Build-Shaping Agent**：在任何修改发生以前，建立项目真实状态模型，判断下一步到底**值得构建什么**——每个主要发现以 **BUILD / DON'T BUILD / INVESTIGATE** 收束，"不知道"是合法输出。它是 Plan Mode 的**认知上游**，是重大开发方向进入 Plan 之前的决策层，而不只是"迷茫时看看"。零修改保证不靠提示词祈祷，而靠四层机制（永拒桩工具 + 沙箱只读 + 审批永不升级 + 写代码不进入注意力面）。
+**只读 Build-Shaping Agent**：在任何修改发生以前，建立项目真实状态模型，判断下一步到底**值得构建什么**——每个主要发现以 **BUILD / DON'T BUILD / INVESTIGATE** 收束，"不知道"是合法输出。它是 Plan Mode 的**认知上游**，是重大开发方向进入 Plan 之前的决策层，而不只是"迷茫时看看"。零修改保证不靠提示词祈祷，而靠机制（永拒桩 + 执行时守卫 + 沙箱只读 + 审批永不升级 + 写代码不进入注意力面）——并且**能自证**：`research_doctor` 输出 Runtime Certificate（六项完整性检查 + SAFE/DEGRADED/UNSAFE）。
+
+## 三层结构
+
+```
+第一层 理解项目   代码 / 文档 / 历史 / 实验 / Issue / 外部信息 ──→ Project Model
+第二层 判断状态   Claim → Evidence → Confidence → Contradiction → Diagnosis
+第三层 控制方向   BUILD / DON'T BUILD / INVESTIGATE ──→ Plan Mode
+```
+
+真实案例库（匿名化）：[docs/case-studies/](./docs/case-studies/)——首次真实运行已在 700 文件研究原型上发现"README 声称 94/94 通过但从未执行"的 Contradicted 声明。
 
 ## 它要解决的现实问题
 
