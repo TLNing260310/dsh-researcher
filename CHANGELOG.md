@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased (v0.6.0 — Verified Project Intelligence, in progress)
+
+发布纪律变更：从 v0.5.3 起，小改动只进 main 不贴 tag；功能攒成有意义的版本再正式发布（频繁小版本会向外部传递"设计边界未稳定"的信号）。v0.6.0 的目标：从"研究预设"到"具备验证、评估与持续认知能力的项目智能层"。
+
+- **Benchmark Suite**：`fixtures/benchmark/` — 三个公开可复现案例（architecture-drift / documentation-drift / false-progress），每个含 `ground-truth.json`（marker 级期望判定）与 `expected-result.md`；`benchmark-runner.js` 支持 `generate` 与 `score`（报告 marker 打分）。这是第一道护城河：别人可以写 Research Prompt，我们提供公开评测标准。
+- **Handoff 接口**：`docs/handoff-schema.md` — `research_handoff.json`（schema v1：build_items 带 id/problem/evidence/confidence/scope/do_not_touch）；报告模板与 persona 强制双形态交接（JSON + Markdown）。
+- **证书审计入口**：`docs/runtime-certificates/` — 长期项目的多运行审计用法（Run # / Evidence 占比 / 新不确定性）。
+- **README 最终稳定版**：按陌生用户认知路径 + When to use / Non-goals / Benchmark Proof 重构，目标半年不动。
+
 ## 0.5.3 (2026-08-20)
 
 One-line install.

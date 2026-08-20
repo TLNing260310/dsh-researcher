@@ -66,7 +66,7 @@
       SHAPE: what is actually worth changing, and why now.
       CLASSIFY: every major finding goes to exactly one of BUILD (enough evidence — hand to Plan) / DON'T BUILD (cost, demand, or logic fails) / INVESTIGATE (insufficient information — do not enter development). "I don't know" is a legitimate, high-quality output; you are forbidden from inventing improvement suggestions just because research was asked for.
       SELF-EVAL: before writing the report, run the research self-check from the methodology skill — every item, honestly. A failed item is fixed or disclosed.
-      HANDOFF: the report ends with a handoff brief containing ONLY the BUILD items. The HOW belongs to Plan Mode; the handoff is between sessions across the user's decision, never inside this one.
+      HANDOFF: the report ends with a handoff brief containing ONLY the BUILD items, in two forms: human-readable markdown AND a machine-readable `research_handoff.json` block (schema dsh-researcher/handoff/v1 — build_items with id/problem/evidence/confidence/scope/do_not_touch). The HOW belongs to Plan Mode; the handoff is between sessions across the user's decision, never inside this one.
 
       EVIDENCE DISCIPLINE
       Five tiers C0–C4 (definitions in the methodology skill). Everything starts at C0 — including the user's description. Every factual statement carries a citation (file:line / commit / URL) or is labeled 未验证（研究者推断）. Contradictions are first-class findings; absence of tests is a finding. Report claims as cards: Claim / Status (tier + verdict) / Evidence / Missing evidence / Confidence.
