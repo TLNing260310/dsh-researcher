@@ -1,6 +1,6 @@
 {
   "schema": "dsh-researcher/eval-lock/v1",
-  "generated_at": "2026-08-21T05:19:29.009Z",
+  "generated_at": "2026-08-21T05:24:07.646Z",
   "hashes": {
     "protocol": "b42751121e30b00c0f244bca89554522b0b50320218c4976898f7a82fb85c0aa",
     "adjudication_schema": "459e131c69be265ca8f069859c9cb3ab56aa5d07752c23f8d62a9d1501493a16",
@@ -10,11 +10,11 @@
     "runtime_manifest": "fd3f241f0f7bc386f5bc4d55f8cdc9729760a0eabfbbf399e271305e14ef9969",
     "prompts": "376239f5c77d5f7dd81124e35f1216a1da530a7cfd5e40d88a7f990f38e1e181",
     "eval_presets": "d2305473c613eb6f21081ca20a038b5485d2a74a4b71bd42d84729e128a4fefe",
-    "eval_runtime": "8df9624b9436c02da2a1a8ac795a1128f4f5f846e819496c7405cccfe2c30330",
+    "eval_runtime": "a8296be0772210c40ceaf5f5e830cdf0961c3267cfb8822047f48b40819314f7",
     "ground_truth": "e5b3825be56048662fbeea04ff33bfca80dc75bf229015b0ba83c72dfb124ecf",
     "snapshot": "84baf1c14746f04c04d36a1529eadf235580920a2efe9aa1aeffe03d3a1d7815",
     "prompt": "4c8d0246963b25f0e1092a2dc05072006c8c94d4e83fcfefc3db6ccffc66f722",
-    "preset": "d2513c5fa74561b1e9122132aec68b6a41219123d45bcffcc1a3c5efb7286f9a"
+    "preset": "f7bd2928e71cf254c25cf075fcb1c9e4874ef3102375025197a3ae92b6525ad9"
   },
   "config": {
     "model": "deepseek-official/deepseek-v4-pro",
