@@ -1,18 +1,21 @@
 # dsh-researcher
 
-## Evidence-driven Project Intelligence Layer for DeepSeek Harness
-## 基于证据的项目认知层（DeepSeek Harness）
+## Project Cognition Layer for AI Software Engineering
+## AI 软件工程项目认知层
 
-**EN** — A read-only research preset that helps AI coding agents understand a project **before** changing it.
-**中文** — 一个只读研究预设：让 AI 编码 Agent 在动手修改项目**之前**，先真正理解它。
+**EN** — AI coding agents are becoming increasingly capable at modifying code. The next challenge is understanding the systems they modify.
 
-> **EN** — Prevent AI coding agents from making locally correct changes that gradually break the whole project.
-> Coding agents accelerate implementation. **dsh-researcher restores project understanding.**
-> **中文** — 防止 AI 编码 Agent 用一次次"局部正确"的修改，把整个项目逐渐改坏。
-> Coding Agent 加速构建，Researcher 恢复认知。
+dsh-researcher builds an evidence-backed model of a software project — its purpose, architecture, constraints, risks, and change impact — **before any code is changed**.
 
-Before asking *"How do we build it?"*, ask *"Should we build it?"*
-在问"怎么做"之前，先问"该不该做"。
+**中文** — AI 编码 Agent 正在变得越来越擅长修改代码。下一个瓶颈，是理解正在被修改的系统。
+
+dsh-researcher 在动手修改之前，建立一份基于证据的软件项目认知模型：项目目的、架构、约束、风险与修改影响。
+
+> **EN** — The problem is not that AI can't write code. It's that AI can modify code quickly while not knowing **why the project was designed this way**.
+> **中文** — 问题不是 AI 不会写代码，而是 AI 可以快速修改代码，却不知道**这个项目为什么这样设计**。
+>
+> **EN** — Local correctness does not guarantee global correctness. Coding agents accelerate implementation; **dsh-researcher maintains project cognition.**
+> **中文** — 局部正确不保证全局正确。Coding Agent 加速实现；**Researcher 维护项目认知。**
 
 **零修改承诺是"可证明"而非"声称"**：别的 Agent 说 *trust me*，本层回答 **verify me** —— 每次研究开始前强制产出 Runtime Certificate，不 SAFE 不开始。
 **The zero-write promise is proven, not claimed**: other agents say *trust me*; this layer answers **verify me** — a Runtime Certificate is enforced before research begins, and no research starts unless it is SAFE.
@@ -26,10 +29,11 @@ Before asking *"How do we build it?"*, ask *"Should we build it?"*
                       ↑
         ┌─────────────┴─────────────┐
         │        Researcher         │
-        │  Project Intelligence     │
-        │  ├─ Evidence              │
+        │    Project Cognition      │
+        │  ├─ Evidence Ledger       │
+        │  ├─ Risk Discovery        │
         │  ├─ Runtime Verification  │
-        │  └─ Drift Detection       │
+        │  └─ Consistency (Checkpoint; Drift Detection: roadmap v0.7+) │
         └─────────────┬─────────────┘
                 Repository（只读 / read-only）
 ```
@@ -54,31 +58,37 @@ Before asking *"How do we build it?"*, ask *"Should we build it?"*
 
 **✅ 适合 / Use it when**
 - 接手陌生的大型仓库 / taking over a large unfamiliar repository
-- AI 已连续修改项目几十次以上 / AI has modified the project dozens of times
-- 重构之前 / before a refactor
+- 重构之前，先建立认知基线 / before a refactor, establish a cognition baseline
+- **风险改动前的影响评估**：改认证、换缓存层、动数据模型之前，先知道波及面 / **change-impact check before risky changes** (auth, caching, data model …)
 - 开源项目评估 / 技术尽调 / OSS evaluation or technical due diligence
-- 技术债分析 / technical debt analysis
+- 长期项目的认知维护：定期 refresh，检测认知过期（roadmap v0.7+）/ long-term cognition maintenance with periodic refresh (roadmap v0.7+)
 
 **❌ 不适合 / Skip it when**（直接用 Coding Agent 更快 / a coding agent is faster）
 - 修改一个小函数 / changing one small function
 - 修一个明显的 bug / fixing an obvious bug
 - 简单 CRUD 需求 / simple CRUD work
 
-## Position — 定位：Researcher 不是另一个 Coding Agent
+## Position — 定位：Researcher 是认知层，不是另一个 Coding Agent
 
-**EN** — Researcher is not another coding agent.
+**EN** — Researcher is not another coding agent, not an upgraded Plan Mode, not an AI architect, and not a bug predictor. It is the **cognition layer** they all build on.
+**中文** — Researcher 不是另一个 Coding Agent，不是 Plan Mode 的加强版，不是 AI 架构师，也不是 Bug 预测器。它是它们共同依赖的**认知层**。
 
 | 问题 Question | Coding Agent | Plan Mode | **Researcher** |
 |---|---|---|---|
-| EN | How to implement it | How to change it | **Whether to change it at all** |
-| 中文 | 怎么实现 | 怎么修改 | **是否应该修改** |
-| 目标 Goal (EN/中文) | produce code / 产生代码 | produce a plan / 产生方案 | restore project cognition / 恢复项目认知 |
-| 输出 Output | patch | implementation plan | diagnosis + direction |
-| 失败代价 Failure cost | 写错 wrong code | 计划错误 wrong plan | 方向错误 wrong direction |
+| EN | How to implement it | How to change it | **What is this project, and what should change, if anything** |
+| 中文 | 怎么实现 | 怎么修改 | **这个项目是什么，以及该不该动、动哪里** |
+| 目标 Goal (EN/中文) | produce code / 产生代码 | produce a plan / 产生方案 | maintain project cognition / 建立并维护项目认知 |
+| 输出 Output | patch | implementation plan | Project Cognition Report + Decision Memo |
+| 失败代价 Failure cost | 写错 wrong code | 计划错误 wrong plan | 认知失真 distorted cognition |
+
+**分层宣传 / layered messaging**：
+- **官方定位（第一层）**：Project Cognition Layer（AI 软件工程项目认知层）。
+- **用户理解（第二层）**：Architecture Intelligence Assistant（架构智能分析助手）——提供**架构师式的理解流程**，不是替代架构师。
+- **营销话术（第三层）**：为 AI Coding Agent 提供"架构师级别的项目理解能力"。
 
 ```
-Researcher      What should we build, if anything? → evidence + diagnosis + direction
-     ↓ 仅 BUILD 项交接（Markdown 简述 + research_handoff.json）
+Researcher      What is this project? → evidence + cognition + Decision Memo
+     ↓ 仅 BUILD/INVESTIGATE 项交接（Markdown 简述 + research_handoff.json）
 Plan            How should we build it? → implementation specification
      ↓
 Coding Agent    Build it. → working implementation
@@ -86,8 +96,8 @@ Coding Agent    Build it. → working implementation
 Verifier / Eval Did it actually work? → evidence ──→ 回到 Researcher
 ```
 
-**EN** — Researcher does not replace Plan Mode. **It decides what deserves a Plan.** Uncertain items remain INVESTIGATE — it never manufactures tasks.
-**中文** — Researcher 不取代 Plan Mode。**它决定什么值得进入 Plan。** 不确定的项保持 INVESTIGATE——它从不强行生成任务。
+**EN** — Researcher does not replace Plan Mode. **It maintains the cognition Plan Mode builds on.** Uncertain items remain INVESTIGATE — it never manufactures tasks.
+**中文** — Researcher 不取代 Plan Mode。**它维护 Plan Mode 所依赖的认知。** 不确定的项保持 INVESTIGATE——它从不强行生成任务。
 
 ## Why not just a Prompt — 为什么不只是一段 Prompt：Project Cognition State
 
@@ -140,23 +150,45 @@ node fixtures/benchmark/benchmark-runner.js score <case-dir> <report.md>
 
 （marker 打分是下限，证据引用与证书由人工复核。/ Marker matching is a floor; citations and the certificate are human-reviewed.）
 
+### Historical Blind Benchmark — Phase A（范围声明，不是广告）
+
+**EN** — The first real-world blind evaluation (pallets/flask @ 2025-11-17, 4 modes × 3 runs, deepseek-v4-flash, full protocol in [docs/evaluation-protocol-v1.md](./docs/evaluation-protocol-v1.md)) is published as-is in [evaluation/cases/flask/evaluation-result.md](./evaluation/cases/flask/evaluation-result.md). The honest summary:
+**中文** — 第一次真实仓库盲测（pallets/flask @ 2025-11-17，4 模式 × 3 次，deepseek-v4-flash，完整协议见 [docs/evaluation-protocol-v1.md](./docs/evaluation-protocol-v1.md)）原样公开在 [evaluation/cases/flask/evaluation-result.md](./evaluation/cases/flask/evaluation-result.md)。诚实的结论：
+
+| 指标 Metric | 结果 Result | 解读 Reading |
+|---|---|---|
+| Future Issue Recall（机会性指标） | **0/60** | Researcher 不是 Bug 预测器；未来 issue 召回不在能力面。**这是范围声明，不是缺陷。** |
+| Precision（重要发现证据支持率，mean） | Standard 80% / Plan 76% / Quick 85% / Deep 81% | 四种模式的发现均高度证据锚定 |
+| 认知重建 | 12/12 运行正确重建项目主导现实（3.2 上下文合并 + shim + 文档漂移） | 项目理解是真实能力 |
+| Risk Discovery | 全模式收敛发现 shim/文档/语义破坏类风险；Deep 额外发现 CVE-2026-27205、devcontainer 损坏、MethodView 405 等已验证缺陷 | **发现"未来容易错的地方"（Risk）≠ 预测具体 Bug** |
+
+**EN** — What the experiment proved: structured project understanding (claims ledger, evidence tiers, architecture mapping, risk analysis, handoff, certificate) — what ordinary agents do not natively produce. What it did not prove: prediction of specific future bugs. The benchmark suite is being extended with Understanding / Risk / Change Impact / Drift benchmarks (see [docs/evaluation.md](./docs/evaluation.md)).
+**中文** — 实验证明的：结构化项目理解（claims ledger、证据分级、架构映射、风险分析、交接包、证书）——普通 Agent 不天然具备的能力。实验没有证明的：预测具体未来 Bug。评测套件正在扩展 Understanding / Risk / Change Impact / Drift 四个基准（见 [docs/evaluation.md](./docs/evaluation.md)）。
+
 ## How it works — 工作原理（三层 / three layers）
 
-**Layer 1 — Understand 理解**：Repository → Code / Docs / History / Tests / Issues / External context → **Project Model**
-**Layer 2 — Judge 判断**：Claim → Evidence → Confidence → Contradiction → **Diagnosis**（证据分级 evidence tiers C0–C4 + 裁决态 verdicts Known/Likely/Claimed/Unknown/Contradicted）
-**Layer 3 — Guide 引导**：Diagnosis → **BUILD / DON'T BUILD / INVESTIGATE** → Plan Mode
+**Layer 1 — Understand 理解**：Repository → Code / Docs / History / Tests / Issues / External context → **Project Model**（项目身份 / 架构地图 / 核心组件 / 设计决策）
+**Layer 2 — Judge 判断**：Claim → Evidence → Confidence → Contradiction → **Risk Map**（证据分级 evidence tiers C0–C4 + 裁决态 verdicts Known/Likely/Claimed/Unknown/Contradicted；风险 = "这里未来容易错"，不是"这里错了"）
+**Layer 3 — Guide 引导**：Risk Map → **Decision Memo（BUILD / DON'T BUILD / INVESTIGATE）** → Plan Mode
 
 十一阶段管道 Pipeline：`DISCOVER → RECONSTRUCT → EVIDENCE MAP → DIAGNOSE → TRADEOFF ANALYSIS → EXTERNAL RESEARCH → COMPARE → CHALLENGE → SHAPE → CLASSIFY → SELF-EVAL → HANDOFF`。**The pipeline is linear in execution but stateful in reasoning. 执行是线性的，推理是有状态的。**
+
+### Output — 输出：Project Cognition Report（双层）
+
+**EN** — A readable **user layer** (7 sections: Project Identity / Architecture Map / Critical Components / Design Decisions / Risk Map / Change Impact Analysis / Decision Memo) sits on top of an **AI-internal layer** that is never deleted, only summarized: Evidence Ledger, Claims, Confidence, Certificate, Checkpoint State. Like a cockpit: passengers see altitude and speed; pilots keep the full instrument panel.
+**中文** — 可读的**用户层**（7 节：项目身份 / 架构地图 / 核心组件 / 设计决策 / 风险地图 / 修改影响分析 / 决策建议）之下，保留**AI 内部层**（证据台账、主张、置信度、证书、checkpoint 状态）——不删除，只摘要呈现。像飞机驾驶舱：乘客看到高度、速度；飞行员拥有完整仪表。
 
 ## Non-goals — 明确不做什么
 
 Researcher is **NOT**：
 - ❌ 一个 Coding Agent（它从不修改代码）/ a coding agent (it never modifies code)
 - ❌ 自动重构工具（它只诊断，不执行）/ an automatic refactoring tool (it diagnoses, it does not execute)
+- ❌ **Bug 预测器（未来 issue 召回 0/60 是范围声明）**/ a bug predictor (0/60 future-issue recall is the scope statement)
+- ❌ **AI 架构师（它提供架构师式的理解流程，不承诺最优架构决策）**/ an AI architect (it offers architect-style understanding, not architecture decisions)
 - ❌ 通用网页调研器（它面向代码仓库，不是 Deep Research）/ a general web researcher (it targets code repositories, not web deep research)
 - ❌ 架构分析工具的替代品（GitNexus / Serena / RepoMap 等 L0/L1 能力应被整合，见 [docs/landscape.md](./docs/landscape.md)）/ a replacement for architecture tools (integrate L0/L1 instead)
 
-它负责 It does：✅ Understanding 理解 ✅ Evidence 证据 ✅ Decision 决策。
+它负责 It does：✅ Understanding 理解 ✅ Evidence 证据 ✅ Risk Discovery 风险发现 ✅ Decision 决策依据。
 
 ## Install — 快速安装
 
@@ -174,6 +206,7 @@ npx -y github:TLNing260310/dsh-researcher
 
 | 入口 Entry | 内容 Contents |
 |---|---|
+| [docs/repositioning-v0.7.md](./docs/repositioning-v0.7.md) | v0.7 定位重构备忘录 / repositioning memo（认知层定位、PCR 结构、评测调整、分阶段计划） |
 | [docs/landscape.md](./docs/landscape.md) | 竞品格局与 L0–L5 分层 / competitive landscape & L0–L5 layering（Cairn / Drift / GitNexus / Serena / Understand Anything） |
 | [docs/roadmap.md](./docs/roadmap.md) | 路线图 / roadmap（Claim Delta、生态化、集成缝、Capsule） |
 | [docs/ai-engineering-skills-map.md](./docs/ai-engineering-skills-map.md) | 与 AI Engineering Skills Map 的能力映射与方法论保留 / capability mapping & methodological caveats |

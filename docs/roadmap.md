@@ -25,12 +25,27 @@
 - **P3 — 外部事实层**：GitNexus / Serena / RepoMap / Cairn 集成缝（L0/L1 商品化）。
 - **P4 — Cross-Harness portability**：方法论与报告规范的平台无关化（DSH 仍是 developer preview，runtime surface 不宜过快扩张）。
 
+## v0.7.0 — Product Alignment（定位一致化，不做功能开发）
+
+版本目标：让 README、agent persona、report schema、evaluation 体系与 **Project Cognition Layer** 定位完全一致。**不增加能力、不修改核心运行逻辑、保留 Flask 实验（含 0/60 范围声明）。**
+
+- 定位：Project Cognition Layer（官方）→ Architecture Intelligence Assistant（用户层）→ "架构师级别的项目理解"（营销层）。
+- 输出：Project Cognition Report（7 节用户层 + AI 内部层附录）。
+- 评测：Researcher Benchmark Suite（Understanding / Risk / Change Impact / Drift；Issue Recall 降为次级）。
+- 文档：README / preset.yml / persona 定位段 / report template / docs/evaluation.md（见 docs/repositioning-v0.7.md）。
+- 治理：persona/模板变更后 Flask lock 的 `--check` 按预期失败（历史冻结），新实验需 protocol v1.1 bump + 重锁。
+
+## v0.7.1 — Risk Map 深化
+
+- 最容易证明价值的一步：把 Risk Map（PCR §5）从"诊断的自然产物"升级为正式输出契约——每条风险 = 问题链 + 严重性 + 证据 + 反证 + 置信度，并接入 B2（ARD）评测。
+- 范围：methodology skill 的 Risk Map 指令 + 输出 schema 校验，不新增工具。
+
 ## v0.7 — DSH 生态化
 
 - Plugin showcase 持续维护（讨论帖 #2651）
 - 安装流程打磨（install 脚本 + ZIP + 市场提案 #2994 跟进）
 - 与 Plan Mode 的 handoff 演示（交接包 + 新会话接线）
-- 合成案例集 3–5 个 + 公开评测报告（v0.6 产物）
+- 公开评测报告（v0.6 产物 + v0.7 基准套件）
 
 ## v0.8 — 集成缝与缓存（顺序不变）
 

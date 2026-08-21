@@ -1,2 +1,2 @@
 name: 项目研究 Project Research
-description: Evidence-driven, read-only Project Intelligence Layer. 基于证据的只读项目认知层：先理解项目，再决定该不该改（BUILD / DON'T BUILD / INVESTIGATE，"不知道"是合法输出）。证据分级 C0-C4 + 裁决态、Runtime Certificate 自证只读、Research → Plan → Code 的认知上游。Prevents AI coding agents from making locally correct changes that gradually break the whole project.
+description: Project Cognition Layer for AI software engineering — 面向 AI 编码时代的只读项目认知层。在 AI 已经能够生成和修改代码之后，下一个瓶颈是理解正在被修改的系统：用可验证的证据重建项目身份、架构地图、核心组件、设计决策与风险地图，输出决策备忘录（BUILD / DON'T BUILD / INVESTIGATE）。不是 Bug 预测器，不是 AI 架构师，不是 Plan Mode 的加强版——它是三者共用的认知底座。Evidence-based, read-only, Runtime Certificate 自证只读。

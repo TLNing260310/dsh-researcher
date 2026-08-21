@@ -165,3 +165,16 @@
 ## 结论（v0.7 一句话）
 
 **Researcher v0.7 的产品定位：AI Coding Agent 的只读项目认知层 —— 用可验证证据重建项目认知、绘制风险地图、输出决策备忘录；它不是 bug 预测器（0/60 是范围声明不是缺陷），不是架构师（不承诺设计正确性），不是 Plan Mode 加强版（交付的是认知产物而非方案）——它是三者共用的认知底座。**
+
+---
+
+## 附录 A — 采纳的最终决策（2026-08-21 产品评审后）
+
+1. **定位层级确认**：官方 = Project Cognition Layer；用户层 = Architecture Intelligence Assistant（架构智能分析助手）；营销层 = "为 AI Coding Agent 提供架构师级别的项目理解能力"——类比 Copilot 的 "pair programmer" 而非 "software engineer"。**禁用 "AI Architect Assistant" 作为官方定位。**
+2. **认知不抽象**：README 核心问题改为"AI 可以快速修改代码，但不知道这个项目为什么这样设计"；用户路径：陌生项目 → 建立理解 → 识别约束 → 评估修改影响 → 生成决策依据。
+3. **Bug Discovery → Risk Discovery**：不放弃发现叙事，改为风险叙事（"这里未来容易错" vs "这里错了"）。Flask GT-01 未命中（teardown chain abort）但发现了 cleanup lifecycle risk —— 这属于 Risk Discovery 命中。
+4. **PCR 双层**：用户层 7 节 + AI 内部层（Evidence Ledger / Claims / Confidence / Certificate / Checkpoint State）不删除只摘要——驾驶舱隐喻。
+5. **Researcher Benchmark Suite**：Understanding（GUS）/ Risk（ARD）/ Change Impact（DQ）/ Drift（CDD）四基准；Issue Recall 降为次级，Flask 实验保留。
+6. **版本节奏**：v0.7.0 = 定位一致化（README / persona / report template / evaluation 文档，零核心代码改动）；v0.7.1 = Risk Map 深化（最易证明价值）；v0.8 = Structural Evidence；v0.9 = Project Intelligence Capsule。
+7. **最应避免**：① 急着加 Agent 能力（问题不是"不够聪明"而是"价值未被正确测量与呈现"）；② 与 DeepSeek/Codex 比写代码；③ 宣传 AI Architect。
+8. **执行形态**：v0.7.0 是 Product Alignment 而非 Feature Development——统一定位、输出、评价体系；任何核心运行逻辑修改暂缓。

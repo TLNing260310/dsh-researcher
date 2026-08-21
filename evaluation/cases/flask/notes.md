@@ -80,3 +80,19 @@
   so the dsh process's stderr (NativeCommandError) aborted the iteration
   before the execution-log line was written. Fixed to 'Continue' + explicit
   `$LASTEXITCODE` checks.
+
+## N-05 — v0.7.0 Product Alignment: lock is now a historical freeze (2026-08-21)
+
+- After the Flask Phase A experiment completed and was published, v0.7.0
+  alignment changed the researcher preset persona + report template + README
+  (positioning only; no core runtime logic touched). The eval variants were
+  regenerated via `sync-presets.js` to carry the same persona text.
+- Consequence: `eval-lock --check` on the flask lock now reports
+  `hash:preset` / `hash:eval_presets` differences — **expected and
+  deliberate**. The lock is a historical freeze of what the completed runs
+  experienced; it is NOT re-frozen (that would misrepresent the runs).
+- New experiments (commander/cheerio, or any v0.7 run) require a protocol
+  version bump (v1.1) and a fresh lock against the new preset — per the
+  existing lock discipline.
+- The Flask evaluation-result.md remains untouched (0/60 included as the
+  scope statement).

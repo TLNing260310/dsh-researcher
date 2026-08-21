@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (v0.7.0 — Product Alignment, in progress)
+
+从"研究预设"到"AI 编码时代的项目认知层"的定位一致化：**不增加能力、不修改核心运行逻辑、保留 Flask 实验（含 0/60 范围声明）**。
+
+- **定位重构（v0.7.0）**：官方定位 = Project Cognition Layer（AI 软件工程项目认知层）；用户层 = Architecture Intelligence Assistant（架构智能分析助手，提供架构师式理解流程，不替代架构师）；营销层 = "为 AI Coding Agent 提供架构师级别的项目理解能力"。README 首屏改为"AI 可以快速修改代码，但不知道这个项目为什么这样设计"痛点绑定；Non-goals 明确"不是 Bug 预测器（0/60 是范围声明）"、"不是 AI 架构师"。
+- **Project Cognition Report（PCR）双层输出**：报告模板从 14 节研究报告重构为用户层 7 节（Project Identity / Architecture Map / Critical Components / Design Decisions / Risk Map / Change Impact Analysis / Decision Memo）+ AI 内部层附录（Evidence Ledger / Checkpoint State / 外部事实 / 自查）——驾驶舱隐喻：乘客看高度速度，飞行员看完整仪表。每节声明"必须来自代码证据 vs 允许模型推理（须标注）"。
+- **Risk Discovery 取代 Bug Discovery 叙事**：风险 = "这里未来容易错"，不是"这里错了"；persona 与 README 同步。
+- **Researcher Benchmark Suite（评测体系）**：Understanding（GUS）/ Risk（ARD）/ Change Impact（DQ）/ Drift（CDD）四个主基准；Future Issue Recall 降级为次级（机会性）指标；Flask 实验不删除。
+- **治理**：persona/模板/README 变更发生于 Flask Phase A 完成之后——`evaluation/locks/flask.protocol-v1.lock` 是历史冻结，变更后 `--check` 按预期失败；新实验需 protocol v1.1 bump + 重锁。核心运行逻辑（tool-restrict / research-doctor / research-state / git-read）零改动。
+
 ## Unreleased (v0.6.0 — Verified Project Intelligence, in progress)
 
 发布纪律变更：从 v0.5.3 起，小改动只进 main 不贴 tag；功能攒成有意义的版本再正式发布（频繁小版本会向外部传递"设计边界未稳定"的信号）。v0.6.0 的目标：从"研究预设"到"具备验证、评估与持续认知能力的项目智能层"。
