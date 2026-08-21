@@ -1,0 +1,26 @@
+{
+  "schema": "dsh-researcher/phase-a-adjudication/v1",
+  "case": "flask",
+  "instructions": "Evaluator fills verdicts per run. GT verdict: matched | partial | unmatched | ambiguous (do not force matches; ambiguous when unsure). Precision: list the run's significant findings (id, claim, evidence support: supported | partial | unsupported, severity), then totals.",
+  "gt_definitions": {
+    "GT-01": "teardown callback chain aborts on first raising callback; cleanup skipped; fixed by #5928",
+    "GT-02": "provide_automatic_options can only be disabled, not enabled; #5916/#5917",
+    "GT-03": "should_ignore_error always-False dead weight, per-request call, removed; #5816/#5899",
+    "GT-04": "tutorial flaskr instance folder OSError silently swallowed; #5903",
+    "GT-05": "docs/patterns/javascript.rst claims 400 for wrong Content-Type, actual 415; #5825/#5827"
+  },
+  "runs": {
+    "flask-standard-01": { "mode": "standard", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-standard-02": { "mode": "standard", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-standard-03": { "mode": "standard", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-plan-01": { "mode": "plan", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-plan-02": { "mode": "plan", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-plan-03": { "mode": "plan", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-quick-01": { "mode": "quick", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-quick-02": { "mode": "quick", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-quick-03": { "mode": "quick", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-deep-01": { "mode": "deep", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-deep-02": { "mode": "deep", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } },
+    "flask-deep-03": { "mode": "deep", "gt": {}, "precision": { "findings": [], "significant_total": 0, "supported": 0, "partial_support": 0, "unsupported": 0 } }
+  }
+}
