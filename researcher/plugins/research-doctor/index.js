@@ -95,12 +95,15 @@ module.exports = {
         const agent = exec && exec.agent
         if (!agent) return 'research_doctor: no executing agent; cannot certify'
         const checks = []
+        let session = null
         try {
           let preset = 'unknown'
           try { preset = ctx.agentPresets.composedPreset(agent.ctx) ?? 'none' } catch (error) { preset = 'error:' + (error && error.message) }
-          checks.push({ name: 'Preset', status: preset === 'researcher' ? 'PASS' : 'FAIL', detail: 'composedPreset=' + preset })
+          // Eval variants (deviation D002) are the researcher preset under a
+          // frozen depth override; their binding passes the same check.
+          checks.push({ name: 'Preset', status: ['researcher', 'researcher-quick', 'researcher-deep'].includes(preset) ? 'PASS' : 'FAIL', detail: 'composedPreset=' + preset })
 
-          const session = agent.session
+          session = agent.session
           if (!session) throw new Error('agent has no live session')
 
           const mode = ctx.sandboxPolicy.resolve({ session }).mode
@@ -150,7 +153,11 @@ module.exports = {
         } catch (error) {
           checks.push({ name: 'Runtime', status: 'FAIL', detail: error && error.message ? error.message : String(error) })
         }
-        const history = certificateHistory(Array.isArray(session.events) ? session.events : [])
+        // `session` is hoisted out of the try (v0.5.2 regression: the block-
+        // scoped const was referenced here and threw ReferenceError on every
+        // call, so the certificate could never render).
+        const events = session && Array.isArray(session.events) ? session.events : []
+        const history = certificateHistory(events)
         return renderCertificate(checks, { run: history.length + 1, history })
       },
     }

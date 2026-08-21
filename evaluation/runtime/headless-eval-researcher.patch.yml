@@ -10,5 +10,8 @@
 # NOT apply this overlay (their natural toolset includes the shell, sandboxed
 # read-only).
 
-- disable: tool-pwsh
-- disable: tool-bash
+- id: tool-pwsh
+  disabled: true
+
+- id: tool-bash
+  disabled: true

@@ -2,11 +2,14 @@
 #
 # Applied AFTER the headless profile's own layers (bundles + cordis.patch.yml)
 # via `dsh --profile headless --patch <this-file>`. Installed together with
-# eval-headless.js into the profile directory so './eval-headless.js' resolves
-# against the same base either way the loader resolves it.
+# eval-headless.mjs into the profile directory so './eval-headless.mjs'
+# resolves against the same base either way the loader resolves it.
+#
+# Patch semantics: entries are loader rows; `id` targets an existing row and
+# the remaining keys MERGE into it (disabled/config replaced wholesale).
 #
 # Effects:
-#   - replaces the shipped headless-runner with the eval runner;
+#   - disables the shipped headless-runner (one runner per process);
 #   - boots the frozen eval settings document (model/permission/preset default);
 #   - mounts the agent-presets roster (shipped root + user root);
 #   - defines the eval-read-only permission preset (sandbox read-only +
@@ -18,7 +21,8 @@
 # sandbox-policy row reads that env var); workspaceRoot = process.cwd() = the
 # snapshot workspace the run is launched from.
 
-- disable: headless-runner
+- id: headless-runner
+  disabled: true
 
 - id: settings
   name: '@deepseek-ai/dsh-settings-file'
@@ -59,4 +63,4 @@
             trust: system
 
     - id: eval-runner
-      name: './eval-headless.js'
+      name: './eval-headless.mjs'
