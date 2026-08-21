@@ -22,8 +22,10 @@ const { spawnSync } = require('node:child_process')
 const snapshotDir = process.argv[2]
 const runFlag = process.argv.indexOf('--run-dir')
 const runDir = runFlag >= 0 ? process.argv[runFlag + 1] : null
+const gtFlag = process.argv.indexOf('--gt')
+const gtFile = gtFlag >= 0 ? process.argv[gtFlag + 1] : null
 if (!snapshotDir || !fs.existsSync(path.join(snapshotDir, 'snapshot.json'))) {
-  console.error('usage: node blind-doctor.js <snapshot-dir> [--run-dir <session-output>]')
+  console.error('usage: node blind-doctor.js <snapshot-dir> [--run-dir <session-output>] [--gt <cognition-gt.json>]')
   process.exit(1)
 }
 
@@ -74,8 +76,24 @@ if (leaked.length > 0) fail('Ground-truth isolation', 'future content leaked int
 else pass('Ground-truth isolation', 'no future content inside workspace')
 
 // 5. ground truth locked with sha256
+// v1.0: future.json locked via snapshot.json.ground_truth_sha256.
+// v1.1: cognition GT locked via snapshot.json.cognition_gt_sha256 (checked
+// only when --gt <file> is passed; the future.json placeholder is not the
+// v1.1 scoring GT, so the v1.0 check is skipped in that mode).
 const futurePath = path.join(snapshotDir, 'ground-truth', 'future.json')
-if (!fs.existsSync(futurePath)) fail('Ground-truth file', 'ground-truth/future.json missing')
+if (gtFile) {
+  if (!fs.existsSync(gtFile)) fail('GT lock', 'cognition GT file not found: ' + gtFile)
+  else {
+    const hash = crypto.createHash('sha256').update(fs.readFileSync(gtFile)).digest('hex').slice(0, 12)
+    if (snapshot.cognition_gt_sha256 && snapshot.cognition_gt_sha256 !== hash) {
+      fail('GT lock', 'recorded cognition_gt_sha256 ' + snapshot.cognition_gt_sha256 + ' ≠ current ' + hash + ' (cognition GT changed after locking)')
+    } else if (!snapshot.cognition_gt_sha256) {
+      fail('GT lock', 'not locked — set snapshot.json.cognition_gt_sha256 to ' + hash + ' BEFORE running')
+    } else {
+      pass('GT lock', 'cognition sha256 ' + hash + ' matches the lock')
+    }
+  }
+} else if (!fs.existsSync(futurePath)) fail('Ground-truth file', 'ground-truth/future.json missing')
 else {
   const hash = crypto.createHash('sha256').update(fs.readFileSync(futurePath)).digest('hex').slice(0, 12)
   if (snapshot.ground_truth_sha256 && snapshot.ground_truth_sha256 !== hash) {

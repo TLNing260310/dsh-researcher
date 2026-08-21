@@ -1,6 +1,6 @@
 {
   "schema": "dsh-researcher/eval-lock/v1",
-  "generated_at": "2026-08-21T19:19:57.580Z",
+  "generated_at": "2026-08-21T19:29:53.911Z",
   "hashes": {
     "protocol": "07200375c34df32979d8bdf63cd7b3fd2e9a99baa5209527262e3c5a792455a9",
     "adjudication_schema": "459e131c69be265ca8f069859c9cb3ab56aa5d07752c23f8d62a9d1501493a16",
@@ -14,7 +14,7 @@
     "gt": "19118a0d5d06e36a2280d88a6bbaf80c1c18b76d7f6c8762875dd6c5e710d8f3",
     "coverage": "816f5349dbe31ca102efa9b3cfa5d1cc7e37b16fdaecf7b4687bd82be8dc7025",
     "ground_truth": "ad05f760e879705065f9646c485807e98d42a72b7520a8bd34869de0659b1a3e",
-    "snapshot": "a6730de88229f68a1a5339cae22ac6e40dde042161a74e1d048936802fa2a582",
+    "snapshot": "562870761a31a9b632b73d8d83460111b9ed9d7f9148ed9f77e66b2f4a949cdc",
     "prompt": "fdb7cff2c0dd7f9efad5c9e6dc8366e7b11a20f3b1e20e0837da597ba4e75577",
     "preset": "10e7ec1adc70ed498ddf9b53592ac07ed2cb3d02709bd2a81dd0978662410d01"
   },
