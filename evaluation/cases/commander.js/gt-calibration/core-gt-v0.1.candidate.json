@@ -53,6 +53,7 @@
     "single_sided_included": 12,
     "merged_into": 2,
     "deleted": 0,
-    "weight_bucket_counts": { "architecture_relation": 15, "design_purpose": 9, "key_constraints": 15, "factual_accuracy": 2 }
+    "weight_bucket_counts": { "architecture_relation": 18, "design_purpose": 9, "key_constraints": 14, "factual_accuracy": 0 },
+    "note": "factual bucket is 0 by construction: every entry is relational/design/constraint — the no-file-listing rule was stricter than the 15% cap, which is acceptable and desirable."
   }
 }
