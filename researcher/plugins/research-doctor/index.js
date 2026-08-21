@@ -23,7 +23,7 @@
 //
 // The tool is read-only: it writes nothing and only reads live runtime facts.
 
-const { makeState, foldCheckpointEvents, fullExport } = require('../research-state/index.js')
+const { makeState, foldCheckpointEvents, fullExport } = require('../research-state/index.js').__test
 
 const renderCertificate = (checks, meta) => {
   const lines = ['Researcher Runtime Certificate']
