@@ -1,0 +1,20 @@
+{
+  "schema": "dsh-researcher/eval-run/v1",
+  "run_id": "commander-pcr-pilot-01",
+  "preset": "researcher-quick",
+  "plan_mode": false,
+  "task": "Analyze this repository at the current snapshot. Produce a Project Cognition Report: project identity, architecture map, critical components, design decisions, risk map, change impact analysis, decision memo.",
+  "session_id": "session-1862318e-4647-4669-a1ea-f6f89df189b2",
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-flash"
+  },
+  "started_at": "2026-08-21T18:36:49.119Z",
+  "finished_at": "2026-08-21T18:40:01.443Z",
+  "duration_ms": 192316,
+  "tool_calls": 43,
+  "final_reason": {
+    "kind": "completed"
+  },
+  "exit": 0
+}

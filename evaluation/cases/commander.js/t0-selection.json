@@ -1,0 +1,102 @@
+{
+  "schema": "dsh-researcher/t0-selection/v1",
+  "rule": "A",
+  "seed": "dsh-researcher-v0.6-phase-a:commander.js",
+  "candidates": [
+    {
+      "sha": "e281fe3e8c63c2518cdd7f3f1966ad2a0fbd1258",
+      "author_date": "2026-01-31T01:43:40Z",
+      "message": "Update docs for 14.0.3 (#2474)"
+    },
+    {
+      "sha": "8247364da749736570161e95682b07fc2d72497b",
+      "author_date": "2026-01-31T01:45:09Z",
+      "message": "14.0.3"
+    },
+    {
+      "sha": "fe92dc51201dfa7d971aae1b4433b3bfa381d727",
+      "author_date": "2026-02-01T23:19:39Z",
+      "message": "Bump eslint-plugin-jest from 29.2.1 to 29.12.1 (#2480)"
+    },
+    {
+      "sha": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+      "author_date": "2026-02-01T23:20:01Z",
+      "message": "Bump typescript-eslint from 8.48.0 to 8.54.0 (#2479)"
+    },
+    {
+      "sha": "77ab738226be07bc7c4ade76cfa51c3c23cdc138",
+      "author_date": "2026-02-01T23:20:20Z",
+      "message": "Bump globals from 16.5.0 to 17.3.0 (#2478)"
+    },
+    {
+      "sha": "c174291718e95c25ee8cad8ec2c99b88eba3f803",
+      "author_date": "2026-02-01T23:20:42Z",
+      "message": "Bump @types/node from 22.19.1 to 22.19.7 (#2477)"
+    },
+    {
+      "sha": "17bf62c3f87d82bfdcb14a8b2006e94a6acd7e42",
+      "author_date": "2026-02-01T23:23:25Z",
+      "message": "Bump prettier from 3.7.4 to 3.8.1 (#2476)"
+    },
+    {
+      "sha": "30e6b8c529996a68fbea09216bcea2cfb5304af2",
+      "author_date": "2026-02-03T01:49:00Z",
+      "message": "fix(examples): use dash separator to avoid MINGW64 path expansion (#2475)"
+    },
+    {
+      "sha": "ca14529d071ec072ec9999475c81d74346f40a4c",
+      "author_date": "2026-02-04T03:15:50Z",
+      "message": "Modernise tsconfig targets, and add .cjs (#2481)"
+    },
+    {
+      "sha": "b51c0ea3d012ea165d7e50bb375f4db67b9d8e75",
+      "author_date": "2026-02-09T07:51:47Z",
+      "message": "Merge from develop (#2482)"
+    },
+    {
+      "sha": "f4bd4700021c7f0258834c803f354f06241518be",
+      "author_date": "2026-02-19T05:07:09Z",
+      "message": "Switching to esm-only (#2464)"
+    },
+    {
+      "sha": "26e3ba341af46e4ac5c5fded41485a97771858c4",
+      "author_date": "2026-02-20T02:31:02Z",
+      "message": "Merge from develop into release/15.x (with minor conflicts and test migrations)"
+    },
+    {
+      "sha": "3f00f5bc8240bcac963654530c590895fb585884",
+      "author_date": "2026-02-21T04:03:02Z",
+      "message": "Update changelog and version and engine for prerelease (#2484)"
+    },
+    {
+      "sha": "7c6fd250543b6c46bcceb8b065feefc8a42402e2",
+      "author_date": "2026-02-22T01:34:57Z",
+      "message": "Use prerelease version so example can work before release (#2488)"
+    },
+    {
+      "sha": "0ea3bb3e883eaa909f1056d0d13a06cc31ec2c3c",
+      "author_date": "2026-02-27T05:54:26Z",
+      "message": "Update dependecies and lint (#2489)"
+    },
+    {
+      "sha": "987f28966c71baecb0ef4a36780e727bcd575b31",
+      "author_date": "2026-03-07T02:37:24Z",
+      "message": "Use simple match in test (to avoid warning about expensive regex) (#2485)"
+    },
+    {
+      "sha": "373f660f6febb720b82635220eea72dd9b7e0cba",
+      "author_date": "2026-03-07T02:38:09Z",
+      "message": "Use node:util stripVTControlCharacters instead of own code (#2486)"
+    }
+  ],
+  "count": 17,
+  "draw": {
+    "idx": 3,
+    "random_draw": 0.06849028146825731
+  },
+  "t0": {
+    "sha": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "author_date": "2026-02-01T23:20:01Z",
+    "message": "Bump typescript-eslint from 8.48.0 to 8.54.0 (#2479)"
+  }
+}
