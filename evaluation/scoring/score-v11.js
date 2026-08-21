@@ -78,22 +78,43 @@ for (const dir of runs) {
 }
 
 // Weighted GUS per run (only entries with verdict matched/partial counted;
-// partial = 0.5 credit).
+// partial = 0.5 credit). Cluster credits are awarded ONCE per cluster
+// (best verdict among its entries), not per entry — a cluster's max_credit
+// caps its contribution.
 const computeGus = (per) => {
   const buckets = {}
   for (const e of gt.entries) {
     const b = e.weight_bucket
-    buckets[b] = buckets[b] || { total: 0, credit: 0 }
-    buckets[b].total += entryMeta.get(e.id).credit
-    const v = per[e.id].verdict
-    if (v === 'matched') buckets[b].credit += entryMeta.get(e.id).credit
-    else if (v === 'partial') buckets[b].credit += 0.5 * entryMeta.get(e.id).credit
+    buckets[b] = buckets[b] || { independents: [], clusters: new Map() }
+    const meta = entryMeta.get(e.id)
+    if (meta.cluster) {
+      if (!buckets[b].clusters.has(meta.cluster)) buckets[b].clusters.set(meta.cluster, { ids: [], credit: meta.credit })
+      buckets[b].clusters.get(meta.cluster).ids.push(e.id)
+    } else {
+      buckets[b].independents.push(e.id)
+    }
+  }
+  const creditFor = (id) => {
+    const v = per[id].verdict
+    return v === 'matched' ? 1 : v === 'partial' ? 0.5 : 0
   }
   let gus = 0
   const parts = {}
   for (const [b, w] of Object.entries(WEIGHTS)) {
-    const s = buckets[b] ? buckets[b].credit / buckets[b].total : 0
-    parts[b] = { weight: w, score: s, credit: buckets[b] ? buckets[b].credit : 0, total: buckets[b] ? buckets[b].total : 0 }
+    const bucket = buckets[b] || { independents: [], clusters: new Map() }
+    let credit = 0
+    let total = 0
+    for (const id of bucket.independents) {
+      total += 1
+      credit += creditFor(id)
+    }
+    for (const [name, cl] of bucket.clusters) {
+      total += cl.credit
+      const best = Math.max(...cl.ids.map(creditFor))
+      credit += best
+    }
+    const s = total ? credit / total : 0
+    parts[b] = { weight: w, score: s, credit, total }
     gus += w * s
   }
   return { gus, parts }

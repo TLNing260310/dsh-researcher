@@ -1,0 +1,1208 @@
+{
+  "schema": "dsh-researcher/experiment-a/raw-results/v1",
+  "experiment": "exp-a",
+  "case": "commander.js",
+  "snapshot": "bf35c5f99c20",
+  "protocol": "evaluation-protocol-v1.1",
+  "gt": "core-gt-v0.1.json (25 entries, 23 credits)",
+  "model": "deepseek-official/deepseek-v4-flash (reasoning max, budget 500000)",
+  "rows": [
+    {
+      "run_id": "exp-a-deep-01",
+      "mode": "deep",
+      "gus": 0.7071428571428572,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.75,
+          "credit": 10.5,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.7857142857142857,
+          "credit": 5.5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-deep-01",
+        "preset": "researcher-deep",
+        "plan_mode": false,
+        "duration_ms": 490846,
+        "tokens_total": 14138458,
+        "tokens_input": 217010,
+        "tokens_output": 90280,
+        "tokens_cache_read": 13831168,
+        "tokens_reasoning": 43202,
+        "tool_calls": 105,
+        "tool_breakdown": {
+          "research_doctor": 1,
+          "todo_write": 2,
+          "glob": 2,
+          "git_read": 4,
+          "read": 47,
+          "subagent": 3,
+          "grep": 9,
+          "web_search": 9,
+          "web_fetch": 1,
+          "research_checkpoint": 11,
+          "job_list": 1,
+          "list_agents": 14,
+          "skill": 1
+        },
+        "claims": 11,
+        "doctor_calls": 1,
+        "write_attempts": 0,
+        "certificate_overall": "SAFE",
+        "final_text_chars": 1708,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "matched",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "matched",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "partial",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-deep-02",
+      "mode": "deep",
+      "gus": 0.6642857142857144,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.6785714285714286,
+          "credit": 9.5,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.7142857142857143,
+          "credit": 5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-deep-02",
+        "preset": "researcher-deep",
+        "plan_mode": false,
+        "duration_ms": 410840,
+        "tokens_total": 11890498,
+        "tokens_input": 202174,
+        "tokens_output": 67204,
+        "tokens_cache_read": 11621120,
+        "tokens_reasoning": 34428,
+        "tool_calls": 87,
+        "tool_breakdown": {
+          "research_doctor": 1,
+          "git_read": 4,
+          "glob": 4,
+          "read": 34,
+          "grep": 6,
+          "subagent": 1,
+          "research_checkpoint": 4,
+          "todo_write": 2,
+          "job_output": 2,
+          "list_agents": 7,
+          "job_list": 1,
+          "web_search": 14,
+          "web_fetch": 5,
+          "interrupt_agent": 1,
+          "send_message": 1
+        },
+        "claims": 4,
+        "doctor_calls": 1,
+        "write_attempts": 0,
+        "certificate_overall": "SAFE",
+        "final_text_chars": 20633,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "partial",
+        "GT-C07": "matched",
+        "GT-C08": "partial",
+        "GT-C09": "partial",
+        "GT-C10": "matched",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "partial",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "partial",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "partial",
+        "GT-C31": "unmatched",
+        "GT-C33": "partial",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-deep-03",
+      "mode": "deep",
+      "gus": 0.5160714285714286,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.5,
+          "credit": 7,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 0.75,
+          "credit": 1.5,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.6428571428571429,
+          "credit": 4.5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-deep-03",
+        "preset": "researcher-deep",
+        "plan_mode": false,
+        "duration_ms": 451606,
+        "tokens_total": 9154396,
+        "tokens_input": 199430,
+        "tokens_output": 80726,
+        "tokens_cache_read": 8874240,
+        "tokens_reasoning": 45998,
+        "tool_calls": 81,
+        "tool_breakdown": {
+          "research_doctor": 1,
+          "glob": 2,
+          "git_read": 5,
+          "read": 33,
+          "todo_write": 3,
+          "research_checkpoint": 7,
+          "subagent": 3,
+          "skill": 1,
+          "grep": 4,
+          "job_list": 1,
+          "list_agents": 6,
+          "web_search": 12,
+          "web_fetch": 2,
+          "interrupt_agent": 1
+        },
+        "claims": 7,
+        "doctor_calls": 1,
+        "write_attempts": 0,
+        "certificate_overall": "SAFE",
+        "final_text_chars": 751,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "partial",
+        "GT-C05": "matched",
+        "GT-C06": "partial",
+        "GT-C07": "partial",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "partial",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "partial",
+        "GT-C17": "partial",
+        "GT-C18": "partial",
+        "GT-C19": "partial",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "partial",
+        "GT-C25": "matched",
+        "GT-C29": "partial",
+        "GT-C31": "unmatched",
+        "GT-C33": "partial",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-plan-01",
+      "mode": "plan",
+      "gus": 0.75,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.7857142857142857,
+          "credit": 11,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.9285714285714286,
+          "credit": 6.5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-plan-01",
+        "preset": "standard",
+        "plan_mode": true,
+        "duration_ms": 180276,
+        "tokens_total": 1589708,
+        "tokens_input": 124884,
+        "tokens_output": 42488,
+        "tokens_cache_read": 1422336,
+        "tokens_reasoning": 16464,
+        "tool_calls": 38,
+        "tool_breakdown": {
+          "pwsh": 7,
+          "read": 28,
+          "grep": 2,
+          "exit_plan_mode": 1
+        },
+        "claims": 0,
+        "doctor_calls": 0,
+        "write_attempts": 0,
+        "certificate_overall": null,
+        "final_text_chars": 19278,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "partial",
+        "GT-C09": "matched",
+        "GT-C10": "matched",
+        "GT-C11": "matched",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "partial",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "partial",
+        "GT-C35": "matched"
+      }
+    },
+    {
+      "run_id": "exp-a-plan-02",
+      "mode": "plan",
+      "gus": 0.6785714285714286,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.6428571428571429,
+          "credit": 9,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.8571428571428571,
+          "credit": 6,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-plan-02",
+        "preset": "standard",
+        "plan_mode": true,
+        "duration_ms": 165739,
+        "tokens_total": 2174270,
+        "tokens_input": 120952,
+        "tokens_output": 36550,
+        "tokens_cache_read": 2016768,
+        "tokens_reasoning": 11460,
+        "tool_calls": 42,
+        "tool_breakdown": {
+          "pwsh": 10,
+          "glob": 1,
+          "read": 27,
+          "grep": 3,
+          "exit_plan_mode": 1
+        },
+        "claims": 0,
+        "doctor_calls": 0,
+        "write_attempts": 0,
+        "certificate_overall": null,
+        "final_text_chars": 14701,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "partial",
+        "GT-C07": "matched",
+        "GT-C08": "partial",
+        "GT-C09": "partial",
+        "GT-C10": "partial",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "partial",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "partial",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "matched",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-plan-03",
+      "mode": "plan",
+      "gus": 0.7214285714285715,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.7142857142857143,
+          "credit": 10,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.9285714285714286,
+          "credit": 6.5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-plan-03",
+        "preset": "standard",
+        "plan_mode": true,
+        "duration_ms": 166288,
+        "tokens_total": 2097290,
+        "tokens_input": 139932,
+        "tokens_output": 40174,
+        "tokens_cache_read": 1917184,
+        "tokens_reasoning": 15458,
+        "tool_calls": 37,
+        "tool_breakdown": {
+          "glob": 1,
+          "read": 28,
+          "pwsh": 5,
+          "grep": 2,
+          "exit_plan_mode": 1
+        },
+        "claims": 0,
+        "doctor_calls": 0,
+        "write_attempts": 0,
+        "certificate_overall": null,
+        "final_text_chars": 17634,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "partial",
+        "GT-C09": "matched",
+        "GT-C10": "partial",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "matched",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "partial",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "partial",
+        "GT-C35": "matched"
+      }
+    },
+    {
+      "run_id": "exp-a-quick-01",
+      "mode": "quick",
+      "gus": 0.6928571428571428,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.6785714285714286,
+          "credit": 9.5,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.8571428571428571,
+          "credit": 6,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-quick-01",
+        "preset": "researcher-quick",
+        "plan_mode": false,
+        "duration_ms": 190102,
+        "tokens_total": 1666390,
+        "tokens_input": 156004,
+        "tokens_output": 39410,
+        "tokens_cache_read": 1470976,
+        "tokens_reasoning": 20506,
+        "tool_calls": 34,
+        "tool_breakdown": {
+          "research_doctor": 1,
+          "glob": 1,
+          "git_read": 4,
+          "read": 23,
+          "web_fetch": 2,
+          "web_search": 1,
+          "grep": 1,
+          "research_checkpoint": 1
+        },
+        "claims": 1,
+        "doctor_calls": 1,
+        "write_attempts": 0,
+        "certificate_overall": "SAFE",
+        "final_text_chars": 17940,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "matched",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "matched",
+        "GT-C17": "partial",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "partial",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "matched",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-quick-02",
+      "mode": "quick",
+      "gus": 0.6785714285714286,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.6428571428571429,
+          "credit": 9,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.8571428571428571,
+          "credit": 6,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-quick-02",
+        "preset": "researcher-quick",
+        "plan_mode": false,
+        "duration_ms": 189963,
+        "tokens_total": 1855576,
+        "tokens_input": 146822,
+        "tokens_output": 31442,
+        "tokens_cache_read": 1677312,
+        "tokens_reasoning": 11388,
+        "tool_calls": 41,
+        "tool_breakdown": {
+          "research_doctor": 1,
+          "glob": 2,
+          "git_read": 4,
+          "read": 25,
+          "grep": 3,
+          "web_search": 4,
+          "web_fetch": 1,
+          "research_checkpoint": 1
+        },
+        "claims": 1,
+        "doctor_calls": 1,
+        "write_attempts": 0,
+        "certificate_overall": "SAFE",
+        "final_text_chars": 22011,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "partial",
+        "GT-C07": "matched",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "matched",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "partial",
+        "GT-C17": "partial",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "matched",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-quick-03",
+      "mode": "quick",
+      "gus": 0.6357142857142857,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.6428571428571429,
+          "credit": 9,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.6428571428571429,
+          "credit": 4.5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-quick-03",
+        "preset": "researcher-quick",
+        "plan_mode": false,
+        "duration_ms": 152458,
+        "tokens_total": 1107602,
+        "tokens_input": 84890,
+        "tokens_output": 28664,
+        "tokens_cache_read": 994048,
+        "tokens_reasoning": 11188,
+        "tool_calls": 43,
+        "tool_breakdown": {
+          "research_doctor": 1,
+          "glob": 2,
+          "git_read": 3,
+          "read": 25,
+          "grep": 6,
+          "web_search": 3,
+          "web_fetch": 1,
+          "research_checkpoint": 1,
+          "todo_write": 1
+        },
+        "claims": 1,
+        "doctor_calls": 1,
+        "write_attempts": 0,
+        "certificate_overall": "SAFE",
+        "final_text_chars": 19055,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "partial",
+        "GT-C07": "matched",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "matched",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "matched",
+        "GT-C17": "partial",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "partial",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "unmatched",
+        "GT-C31": "partial",
+        "GT-C33": "partial",
+        "GT-C35": "unmatched"
+      }
+    },
+    {
+      "run_id": "exp-a-standard-01",
+      "mode": "standard",
+      "gus": 0.7071428571428573,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.7142857142857143,
+          "credit": 10,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.8571428571428571,
+          "credit": 6,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-standard-01",
+        "preset": "standard",
+        "plan_mode": false,
+        "duration_ms": 105225,
+        "tokens_total": 1808072,
+        "tokens_input": 139572,
+        "tokens_output": 22164,
+        "tokens_cache_read": 1646336,
+        "tokens_reasoning": 7640,
+        "tool_calls": 36,
+        "tool_breakdown": {
+          "glob": 4,
+          "read": 27,
+          "pwsh": 2,
+          "grep": 3
+        },
+        "claims": 0,
+        "doctor_calls": 0,
+        "write_attempts": 0,
+        "certificate_overall": null,
+        "final_text_chars": 18175,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "partial",
+        "GT-C09": "unmatched",
+        "GT-C10": "partial",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "partial",
+        "GT-C16": "partial",
+        "GT-C17": "partial",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "partial",
+        "GT-C35": "partial"
+      }
+    },
+    {
+      "run_id": "exp-a-standard-02",
+      "mode": "standard",
+      "gus": 0.7214285714285715,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.7142857142857143,
+          "credit": 10,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.9285714285714286,
+          "credit": 6.5,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-standard-02",
+        "preset": "standard",
+        "plan_mode": false,
+        "duration_ms": 107424,
+        "tokens_total": 1301670,
+        "tokens_input": 116124,
+        "tokens_output": 19466,
+        "tokens_cache_read": 1166080,
+        "tokens_reasoning": 4964,
+        "tool_calls": 25,
+        "tool_breakdown": {
+          "pwsh": 5,
+          "glob": 1,
+          "read": 18,
+          "grep": 1
+        },
+        "claims": 0,
+        "doctor_calls": 0,
+        "write_attempts": 0,
+        "certificate_overall": null,
+        "final_text_chars": 20651,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "partial",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "matched",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "matched",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "matched",
+        "GT-C35": "partial"
+      }
+    },
+    {
+      "run_id": "exp-a-standard-03",
+      "mode": "standard",
+      "gus": 0.6785714285714286,
+      "gus_parts": {
+        "architecture_relation": {
+          "weight": 0.4,
+          "score": 0.6428571428571429,
+          "credit": 9,
+          "total": 14
+        },
+        "design_purpose": {
+          "weight": 0.25,
+          "score": 1,
+          "credit": 2,
+          "total": 2
+        },
+        "key_constraints": {
+          "weight": 0.2,
+          "score": 0.8571428571428571,
+          "credit": 6,
+          "total": 7
+        },
+        "factual_accuracy": {
+          "weight": 0.15,
+          "score": 0,
+          "credit": 0,
+          "total": 0
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      },
+      "metrics": {
+        "schema": "dsh-researcher/run-metrics/v1",
+        "run_id": "exp-a-standard-03",
+        "preset": "standard",
+        "plan_mode": false,
+        "duration_ms": 112219,
+        "tokens_total": 1099124,
+        "tokens_input": 93538,
+        "tokens_output": 23826,
+        "tokens_cache_read": 981760,
+        "tokens_reasoning": 7586,
+        "tool_calls": 38,
+        "tool_breakdown": {
+          "pwsh": 7,
+          "glob": 1,
+          "read": 27,
+          "grep": 3
+        },
+        "claims": 0,
+        "doctor_calls": 0,
+        "write_attempts": 0,
+        "certificate_overall": null,
+        "final_text_chars": 19776,
+        "exit": 0,
+        "final_reason": {
+          "kind": "completed"
+        }
+      },
+      "verdicts": {
+        "GT-C01": "matched",
+        "GT-C02": "matched",
+        "GT-C04": "matched",
+        "GT-C05": "matched",
+        "GT-C06": "matched",
+        "GT-C07": "matched",
+        "GT-C08": "unmatched",
+        "GT-C09": "partial",
+        "GT-C10": "partial",
+        "GT-C11": "partial",
+        "GT-C12": "unmatched",
+        "GT-C13": "matched",
+        "GT-C15": "unmatched",
+        "GT-C16": "partial",
+        "GT-C17": "matched",
+        "GT-C18": "matched",
+        "GT-C19": "matched",
+        "GT-C20": "matched",
+        "GT-C22": "partial",
+        "GT-C24": "matched",
+        "GT-C25": "matched",
+        "GT-C29": "matched",
+        "GT-C31": "partial",
+        "GT-C33": "partial",
+        "GT-C35": "partial"
+      }
+    }
+  ]
+}

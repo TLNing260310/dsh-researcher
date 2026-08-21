@@ -1,0 +1,127 @@
+The plan-approval channel is unavailable in this session (`exit_plan_mode` failed with "no user-questions provider is registered"), so I'll stay in plan mode and deliver the completed analysis directly. The report below is the full deliverable; no files were modified (consistent with the read-only policy).
+
+---
+
+# Project Cognition Report — commander.js @ snapshot bf35c5f (v14.0.3+)
+
+## (1) Project Identity
+
+| Attribute | Value |
+|---|---|
+| **Name** | `commander` (Commander.js) — "the complete solution for node.js command-line programs" |
+| **Repo / license** | github.com/tj/commander.js · MIT |
+| **Origins / lineage** | Created by TJ Holowaychuk (~2011); current primary maintainer John Gee (shadowspawn, 489 commits), co-maintainer abetomo; sponsorship via GitHub Sponsors + Tidelift (security contact: Tidelift) |
+| **Snapshot state** | HEAD `bf35c5f` (2026-02-02, detached HEAD, clean tree) = v14.0.3 release (2026-01-31) + 2 dependabot dev-dependency bumps; no uncommitted changes |
+| **Version / engines** | v14.0.3 · `engines: node >= 20` · `"type": "commonjs"` · semver + Keep-a-Changelog |
+| **Scale** | `lib/`: 6 files, 3,768 lines (command.js alone: 2,777 lines/87 KB — the hub); `typings/index.d.ts`: 1,113 hand-maintained lines; tests: 111 files, ~11,000 lines, **1,071 jest cases** + 287 `tsd` assertions + ESM-import tests; docs: Readme.md (43 KB) + zh-CN + `docs/*`; 45 examples |
+| **Dependencies** | **Zero runtime dependencies** (no `dependencies` field). Dev-only: jest, ts-jest, tsd, typescript, eslint 9 flat config, typescript-eslint, prettier, @types/node |
+| **Ecosystem position** | One of the most widely depended-upon packages in the Node ecosystem; majors ~every 6 months tied to Node LTS EOL; previous major gets security fixes for 12 months |
+| **CI** | GitHub Actions: `npm test` + `npm run check` on Node 20/22/24 × ubuntu/windows/macos (fail-fast off); weekly CodeQL (JS) |
+
+## (2) Architecture Map
+
+**Runtime surface (everything flows through `lib/command.js`):**
+
+```
+index.js ──► lib/command.js ──► lib/option.js (Option, DualOptions)
+ (CJS)        │  extends EventEmitter ──► lib/argument.js (Argument, humanReadableArgName)
+              │                       ──► lib/error.js (CommanderError, InvalidArgumentError)
+              │                       ──► lib/help.js (Help, stripColor)
+esm.mjs ──────┘                       ──► lib/suggestSimilar.js (Damerau–Levenshtein)
+ (ESM wrapper, named re-exports)
+typings/index.d.ts + esm.d.mts (hand-maintained; tsd + tsc verified)
+```
+
+**Parse pipeline:** `parse()/parseAsync()` → `_prepareForParse()` (save/restore state for re-parse) → `_prepareUserArgs()` (argv conventions `node|user|electron|eval`; name from script path) → `_parseCommand()` → `parseOptions()` (single-pass tokenizer: known/combined/`--opt=val`/`--` literal/negative numbers/variadic collection/positional & pass-through modes/unknown funnel) → EventEmitter `option:<name>` handlers → `_parseOptionsEnv()` → `_parseOptionsImplied()` → dispatch (subcommand, help command, default command, executable spawn via `child_process`) → `_processArguments()` → hooks (`preSubcommand`/`preAction`/`postAction`, chained via `_chainOrCall`) → action handler → legacy `command:<name>` events. All failures funnel to `error()` → `_exit(exitCode, code, message)` → `exitOverride()` callback or `process.exit()`.
+
+**Value model:** `_optionValues` + `_optionValueSources` (default|config|env|cli|implied) keyed by camelCase `attributeName()`; exposed via `opts()`, `optsWithGlobals()`, `getOptionValue(Source)`; legacy `storeOptionsAsProperties` mode.
+
+**Help subsystem:** fresh `Help` per `createHelp()` with `configureHelp()` overrides; static-style overridable methods (`visibleOptions/Commands`, `formatHelp`, `style*()` color hooks, `boxWrap`, `groupItems`); help events (`beforeAllHelp/beforeHelp/afterHelp/afterAllHelp`) + `addHelpText`; help option and help command **lazily created**.
+
+**Externals:** dual package via `exports` map (require→index.js, import→esm.mjs); published: index.js, lib/*.js, esm.mjs, typings, package-support.json.
+
+**Test architecture:** per-feature jest files; tests mutate `process.argv/env/versions` in-process *and* spawn real subprocess fixtures (`tests/fixtures`, `pm-*`); `tsd` + dual `tsc` check typings against JSDoc (checkJs) and TS usage; eslint 9 flat + prettier gate.
+
+## (3) Critical Components
+
+1. **`lib/command.js` — `Command` (2,777-line monolith hub, ~98 methods).** DSL, parsing, dispatch, executable subcommands, error/exit, output config, help integration. Highest blast radius in the repo.
+2. **`lib/option.js` — `Option` + `DualOptions` + `splitOptionFlags`.** Flag grammar (`-s`, `--long`, dual longs `--ws, --workspace`, `<>`/`[]`/variadic/negated), camelCase `attributeName()`, preset, choices, conflicts, implies, env, parseArg, mandatory; `DualOptions` resolves shared `--foo`/`--no-foo` values.
+3. **`lib/argument.js` — `Argument`.** Declarative command-argument model (`<>`/`[]`/`...`), defaults, choices, parseArg.
+4. **`lib/help.js` — `Help`.** All help generation/wrapping/grouping/styling; the customization point (subclass or `configureHelp`).
+5. **`lib/error.js` — `CommanderError`/`InvalidArgumentError`.** The typed error contract (`exitCode`, `code` like `commander.unknownOption`, `nestedError`) that `exitOverride()` consumers catch; `InvalidArgumentError` is the documented signal for user parseArg callbacks.
+6. **`lib/suggestSimilar.js`.** Damerau–Levenshtein (distance ≤3, similarity >0.4) powering "Did you mean…?" suggestions.
+7. **Entry/exports layer.** `index.js` (singleton `program`, factories, classes) + `esm.mjs`; export changes must be mirrored in package.json exports, both typings, and `tests/esm-imports-test.mjs`.
+8. **`typings/index.d.ts` (1,113 lines).** Hand-maintained public type surface; 287 tsd assertions.
+9. **Test suite (111 files).** The safety net for a zero-dependency, process-touching library; includes spawn-based executable-subcommand and signal tests.
+
+## (4) Design Decisions
+
+1. **Zero runtime dependencies** — Node built-ins only (`events`, `child_process`, `path`, `fs`, `process`).
+2. **CJS core + thin ESM wrapper** (`esm.mjs` re-exports `index.js`) — single implementation, verified by `test-esm`.
+3. **Hand-maintained typings + JSDoc** with strict-but-dialed-down `checkJs` (`noImplicitAny`/`strictNullChecks` relaxed); `tsd` + `tsc` enforce lib/typings parity in CI.
+4. **EventEmitter string-event plumbing** (`option:<name>`, `command:<name>`, help events) — extensible for users, at the cost of type safety.
+5. **Option-value provenance tracking** (`setOptionValueWithSource`; sources default/config/env/cli/implied) — backbone of env precedence, `implies()`, conflicts, and dual-option semantics.
+6. **State save/restore around parse** (v13) enabling repeated `.parse()` calls.
+7. **Exit via `process.exit()` by default, escape hatch via `exitOverride()`** — CLI-appropriate defaults with a testability contract (`CommanderError`).
+8. **Executable subcommands first-class**: `stdio: 'inherit'`, signal forwarding, inspector-port incrementing, Windows spawn-via-node, local-file lookup with legacy prefix fallback.
+9. **Lazy creation of help option/help command**; disable via `helpOption(false)`/`helpCommand(false)`.
+10. **Fluent DSL, dual declaration styles** — `.command()` action handlers vs. executable subcommands (description parameter signals executable mode).
+11. **Semver majors tied to Node LTS EOL (~6 months)** with migration tips; deprecate-then-remove policy (`docs/deprecated.md` lists 10 items); 12-month security window for previous major.
+12. **Strict-by-default evolution** — excess arguments error by default (v13), unknown options error unless `allowUnknownOption`, `requiredOption`/`makeOptionMandatory`.
+13. **Feature-contract trio** — each feature ships code + typings + tests + README (EN/zh-CN) + example + CHANGELOG.
+14. **Dependabot-managed dev deps; `npm ci` + lockfile; full quality gates in CI** across 3 OS × 3 Node majors.
+
+## (5) Risk Map
+
+| # | Risk | L | I | Mitigation / notes |
+|---|---|---|---|---|
+| R1 | `process.exit()`-centric control flow harms embedding in servers/test runners | M | H | `exitOverride()` exists and is tested; user-error risk; consider README emphasis |
+| R2 | Hand-maintained typings drift from lib behavior | M | H | 287 tsd assertions + dual `tsc` in CI; semantic drift still possible |
+| R3 | Tests mutate global state (`process.argv/env/versions`) with manual save/restore | M | M | Works today; order-dependence fragility; no `resetModules` discipline |
+| R4 | Stringly-typed events — silent typo/collision risk | M | M | Long-standing design; documented |
+| R5 | Regex/grammar edge cases (flag parsing, negative numbers, `--no-`, `--opt=val`) | M | M | v13 throws loudly on malformed flags; dedicated tests |
+| R6 | Executable-subcommand platform variance (Windows, EACCES/ENOENT, signals, inspector ports) | M | M | 3-OS CI matrix; `_checkForMissingExecutable` guidance |
+| R7 | Monolith `command.js` — cognitive load, coupling, merge surface | M | M | Well-commented; per-feature tests; refactor risk is the main cost |
+| R8 | Deprecated API surface (10 items) must be carried until next major | L | M | Documented removal list; v15 cleanup opportunity |
+| R9 | Already-shipped breaking defaults (excess-arguments error, Node ≥20) — consumer migration pain | H | M | 12-month security window; migration tips; EOL table |
+| R10 | Dependabot churn (2 of last 3 commits) | L | L | Dev-only deps; CI gates |
+| R11 | **Verification gap at this snapshot**: `node_modules` absent, sandbox read-only → tests not executed | — | — | Full static review done; run `npm ci && npm test` in a writable env before merging |
+
+## (6) Change Impact Analysis
+
+1. **`parseOptions()`/`_parseCommand()`/`_prepareUserArgs()` (core pipeline)** — highest blast radius: every parse path, ~30+ test files (`command.parse*`, `command.parseOptions`, `options.*`, `args.*`, `negatives`, positional/pass-through). Precedent: the 14.0.1 in-place refactor shipped as a patch with full-suite coverage. Requires full matrix CI.
+2. **`Option`/`Argument` semantics** — medium blast: `lib/option.js` + `argument.js` + typings + `options.*`/`argument.*`/`args.*` tests + README option sections; grammar changes are breaking by policy (v13 precedent).
+3. **`Help`/output layer** — lower blast (mostly `help.*` tests) but shared `padWidth`/`formatItem`/`boxWrap` ripple into help text expectations.
+4. **Public API surface (index.js/esm.mjs/typings/exports map)** — additive changes must be mirrored in **4+ places** (index.js, esm.mjs, index.d.ts, esm.d.mts, esm-imports test, tsd tests); removals are major-version events.
+5. **Error/exit behavior** — error strings and `commander.*` codes are de-facto public API (tests assert them; consumers match on codes); changes break `exitOverride` users.
+6. **Executable subcommands** — platform-sensitive; fixture updates + validation on all 3 OSes; interacts with `incrementNodeInspectorPort`.
+7. **Feature contract** — user-visible features require README (EN+zh-CN), docs where applicable, CHANGELOG entry, ≥1 example, per-feature tests.
+8. **Typings-only changes** — guarded by `tsd` + `tsc` (TS usage + JSDoc consistency); mismatches fail CI.
+
+**Checklist for any PR:** `npm test` (jest + tsd/tsc) and `npm run check` (eslint + prettier); verify ESM imports (`test-esm`); update code + typings + tests + README/zh-CN + CHANGELOG together; breaking changes → major bump, migration tips, release-policy EOL table, deprecated.md review.
+
+## (7) Decision Memo
+
+**Context:** v14.0.3 is a mature, zero-dependency, heavily-tested CLI framework at a stable point — post-release, clean tree, only dependabot churn since 14.0.3. Architecture is a deliberate, long-evolved design: monolith `Command` hub over EventEmitter plumbing with hand-maintained typings.
+
+**Recommendations (priority order):**
+
+1. **Do not refactor `command.js` speculatively.** Monolith risk (R7) is real but the file is well-commented and covered; any split must be behavior-preserving, incremental, and ride the full CI matrix (the 14.0.1 `parseOptions` refactor is the safe precedent).
+2. **Keep zero runtime dependencies as a hard invariant** — the package's strongest trust property; reject proposals adding runtime deps unless exceptional.
+3. **Use the next major (v15) as the deprecation cleanup window** — execute the 10 documented removals with migration tips and release-policy updates.
+4. **Extend the typings parity guardrails (`tsd` + dual `tsc`) whenever public API changes** rather than adding runtime assertions for type-only features.
+5. **Harden the test harness against global-state coupling (R3)** — a restore helper or `beforeEach` discipline reduces order-dependence as the suite grows.
+6. **Promote `exitOverride()` in README error docs (R1)** — the most common misuse of the library in long-running processes.
+7. **Continue the value-source model** — `setOptionValueWithSource`/sources are the backbone of env/implies/conflicts/dual-option semantics; extend, don't bypass.
+8. **Keep the CI matrix as-is** (Node 20/22/24 × 3 OS, fail-fast off) — primary defense for the executable-subcommand subsystem (R6); revisit only at Node-major EOL per policy.
+9. **Before any work on this snapshot:** run `npm ci && npm test && npm run check` in a writable environment (tests were not runnable under the read-only sandbox, R11); then change against the feature-contract trio.
+
+**Bottom line:** healthy, low-activity maintenance state. Risks are structural (monolith, string events, process.exit, hand-written typings) rather than immediate, and all are mitigated by mature test/CI discipline. Recommended posture: conservative, policy-driven evolution — no speculative refactors; execute deprecation removals at the next major; preserve the zero-dependency and typings-parity invariants.
+
+---
+
+*Basis: full static review of all 6 lib files, entry points, package.json/exports, typings, docs, CI workflows, CHANGELOG, and git history at HEAD bf35c5f. Tests were not executed (read-only sandbox, no `node_modules`); all code-level claims verified by direct inspection.*
+
+---
+
+**Note on process:** I attempted to submit this as the plan via `exit_plan_mode`, but the approval/review channel is unavailable in this session ("no user-questions provider is registered"), so per plan-mode rules I remain in plan mode and deliver the report here. No files were written (consistent with the read-only policy). If you want the report saved to a file (e.g., `PROJECT_COGNITION.md`) or want me to proceed with any follow-up work, switch the session out of plan mode and I'll do it.

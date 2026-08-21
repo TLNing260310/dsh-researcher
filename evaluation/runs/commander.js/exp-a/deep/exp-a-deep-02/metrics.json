@@ -1,0 +1,39 @@
+{
+  "schema": "dsh-researcher/run-metrics/v1",
+  "run_id": "exp-a-deep-02",
+  "preset": "researcher-deep",
+  "plan_mode": false,
+  "duration_ms": 410840,
+  "tokens_total": 11890498,
+  "tokens_input": 202174,
+  "tokens_output": 67204,
+  "tokens_cache_read": 11621120,
+  "tokens_reasoning": 34428,
+  "tool_calls": 87,
+  "tool_breakdown": {
+    "research_doctor": 1,
+    "git_read": 4,
+    "glob": 4,
+    "read": 34,
+    "grep": 6,
+    "subagent": 1,
+    "research_checkpoint": 4,
+    "todo_write": 2,
+    "job_output": 2,
+    "list_agents": 7,
+    "job_list": 1,
+    "web_search": 14,
+    "web_fetch": 5,
+    "interrupt_agent": 1,
+    "send_message": 1
+  },
+  "claims": 4,
+  "doctor_calls": 1,
+  "write_attempts": 0,
+  "certificate_overall": "SAFE",
+  "final_text_chars": 20633,
+  "exit": 0,
+  "final_reason": {
+    "kind": "completed"
+  }
+}

@@ -1,0 +1,172 @@
+I'll analyze the repository at this snapshot. Let me start by exploring the workspace structure and key metadata.
+
+This is commander.js v14.0.3. Let me get the full file listing and examine the core source files.
+
+Now let me check the git state of the snapshot and the size of key source files.
+
+The snapshot sits right after the v14.0.3 release. Now let me examine the core library files, starting with the main Command class.
+
+Now let me map the structure of the library by extracting method definitions and reading the smaller modules.
+
+Now let me read the core parsing flow of command.js.
+
+Now let me examine the Help class internals and the suggestion module.
+
+Let me look at the help formatting core and the recent changelog/release policy.
+
+Now let me look at the docs (release policy, deprecated features), CI configuration, and support metadata.
+
+Let me read the command registration and configuration sections of command.js.
+
+Let me check the README overview, parsing docs, and the typings exports tail.
+
+Let me gather a few remaining data points: test suite scale, hooks docs, contributing guide, and recent commit activity.
+
+I now have a complete picture of the repository. Let me compose the Project Cognition Report and present it.
+
+The plan-approval channel is unavailable in this session (no user-questions provider), so I'll deliver the analysis deliverable directly as my response. The task was pure analysis — no code changes to defer — and the report itself is the complete output.
+
+# Project Cognition Report — commander.js @ 14.0.3 snapshot
+
+Scope: full read-only analysis of the snapshot at `D:\AI_work_project\phase-a-snapshots\commander.js\workspace` (HEAD `bf35c5f`, master, immediately after the v14.0.3 release). Analysis deliverable only; no code changes accompany it.
+
+## 1. Project Identity
+
+- **Project**: Commander.js — "the complete solution for node.js command-line programs". The de-facto standard CLI argument-parsing/command framework for Node.js (repo: `tj/commander.js`, npm package `commander`).
+- **Snapshot version**: `14.0.3` (released 2026-01-31). HEAD commit `bf35c5f` ("Bump typescript-eslint … #2479") — the snapshot is the current release line with only dependabot churn since the tag.
+- **License / stewardship**: MIT; original author TJ Holowaychuk; active maintainers shadowspawn (John Gee) and abetomo (donation-backed per `package-support.json`).
+- **Runtime contract**: Node.js `>=20` (bumped in 14.0.0, aligned with Node LTS EOL policy); CommonJS package (`"type": "commonjs"`) with a thin ESM named-export wrapper (`esm.mjs`) and conditional `exports` map; hand-maintained TypeScript typings shipped (`typings/index.d.ts`, `typings/esm.d.mts`).
+- **Dependency posture**: **zero production dependencies** (only `node:` built-ins: events, child_process, path, fs, process). CONTRIBUTING states zero-dependency is a near-hard requirement for accepting PRs.
+- **Release policy** (`docs/release-policy.md`): semver; major ~every 6 months tied to Node LTS EOL; 14.x current, 13.x maintenance (security only) until 2026-05-18, <13 EOL.
+- **Engineering stack**: Jest 30 (+ ts-jest), ESLint 9 flat config with typescript-eslint type-aware linting of both JS (via JSDoc, `tsconfig.js.json`) and TS, Prettier 3, `tsd` + `tsc` typing gates, CodeQL + GitHub Actions matrix (Node 20/22/24 × ubuntu/windows/macos).
+- **Scale**: 223 tracked files; core = 6 lib modules (`command.js` 2,777 lines, `help.js` 747, `option.js` 380, `argument.js` 150, `error.js` 39, `suggestSimilar.js` 101); 109 Jest test files + 1 TS test file + ESM import test; ~45 examples (incl. extensionless executable-subcommand fixtures like `pm`, `pizza`, `deploy`); bilingual docs (English + 简体中文).
+
+## 2. Architecture Map
+
+```
+entry points:  index.js (CJS: program singleton, create*, class exports, errors)
+               esm.mjs (named-export wrapper for ESM consumers)
+               typings/index.d.ts + esm.d.mts (hand-written TS surface, tsd-tested)
+                     │
+                     ▼
+   ┌────────────────────────────────────────────────────────────────┐
+   │ Command (lib/command.js) — EventEmitter; the orchestrator      │
+   │  • registration: .command()/.addCommand(), .option()/.addOption(),│
+   │    .argument()/.addArgument(), .helpCommand(), .hook(), .action()│
+   │  • parse pipeline: parse/parseAsync → _prepareForParse          │
+   │    (save/restoreStateBeforeParse) → _prepareUserArgs            │
+   │    (argv conventions: from node/electron/user/eval)             │
+   │    → _parseCommand → parseOptions (split operands/unknown)      │
+   │    → _parseOptionsEnv → _parseOptionsImplied                    │
+   │    → subcommand dispatch | help command | default command       │
+   │    → checks (mandatory/conflict/unknown) → _processArguments    │
+   │    → preAction → action → parent 'command:name' event → postAction│
+   │  • option values via EventEmitter channels 'option:name' /      │
+   │    'optionEnv:name' + _optionValues/_optionValueSources         │
+   │    (provenance: default|config|env|cli|implied)                 │
+   │  • error path: error() → _outputConfiguration.outputError →     │
+   │    _exit(exitCode, code, message) → exitOverride callback |     │
+   │    process.exit; CommanderError codes (commander.*)             │
+   │  • executable subcommands: _executeSubCommand (spawn, search,   │
+   │    signals, inspector-port increment, exitCallback bridge)      │
+   │  • help: createHelp()/configureHelp() → Help.formatHelp;        │
+   │    outputHelp + before/after(All)Help events; addHelpText;      │
+   │    lazy help option (_getHelpOption) and help command           │
+   │    (_getHelpCommand); configureOutput (writeOut/writeErr/       │
+   │    width/color/stripColor)                                      │
+   └───────────────┬────────────────────────────────────────────────┘
+        ┌──────────┼──────────────┬───────────────┬──────────────┐
+        ▼          ▼              ▼               ▼              ▼
+   Option      Argument       Help           error.js       suggestSimilar
+   (flags→     (positional   (formatting    (CommanderError, (Damerau-
+   short/long,  args,         engine:        InvalidArgument  Levenshtein
+   required/    required/     visible*,      Error)          "Did you
+   optional/    optional/     style* for                      mean")
+   variadic/    variadic,     color, boxWrap,
+   negate,      defaults,     groupItems/
+   preset,      choices,      formatItemList)
+   choices,     parseArg)
+   conflicts,
+   implies,
+   envVar,
+   parseArg)
+        └──────────┴──────────────┴───────────────┴──────────────┘
+   runtime support: tests/ (unit suites per API surface + fixtures
+   for spawned subcommands), examples/ (documentation-as-code),
+   docs/ + README (user documentation)
+```
+
+Data flow: **argv → parseOptions (single-pass state machine) → operands/unknown → recursive dispatch down the command tree (each level strips its own options) → leaf command → processedArgs → action handler**, with hooks threaded through a promise chain (`_chainOrCall*`) so `parse` and `parseAsync` share one code path.
+
+## 3. Critical Components
+
+1. **`parseOptions` state machine** (`lib/command.js` 1748–1895) — the heart of the library. Handles `--` literal, combined short flags (`-abc`), `--flag=value`, required/optional/variadic options, negative-number disambiguation, unknown-option capture (for subcommand reprocessing), and the positional/pass-through early-exits. Recently refactored in 14.0.1 (#2409); highest-regression-risk code in the repo.
+2. **`_parseCommand` dispatch** (1550–1641) — decides between subcommand, help command, default command (`isDefault`), `*` legacy command, action handler, legacy `command:name`/`command:*` events, and help-with-error when a subcommand is missing.
+3. **`addOption` value handler** (670–733) — defaults (negated options default `true`), preset substitution, `parseArg` custom processing via `_callParseArg`, variadic `_collectValue`, and value-source tagging; combined with `_parseOptionsEnv`/`_parseOptionsImplied` for precedence (cli > env > default; implied only fills unset).
+4. **Option flag grammar** (`lib/option.js` `splitOptionFlags`, 328–377) — short/long/dual-long parsing with loud failures for malformed flags (a v13 breaking change); dual `--ws, --workspace` support added 13.1.
+5. **`_executeSubCommand`** (1202–1346) — executable-subcommand spawning: extension probing (.js/.ts/.tsx/.mjs/.cjs), script-dir + `executableDir` search with legacy name-prefix fallback, Windows always via node, signal forwarding, `commander.executeSubCommandAsync` error bridging into `exitOverride`.
+6. **Error/exit machinery** — `error()` → `_exit()` → `exitOverride()`/`process.exit`, with stable `commander.*` codes (`unknownOption`, `unknownCommand`, `missingArgument`, `excessArguments`, `conflictingOption`, `missingMandatoryOptionValue`, `invalidArgument`, `version`, `help`, …). This is the testability and embedding seam of the whole library.
+7. **`Help` formatting engine** (`lib/help.js`) — `formatHelp` assembles usage/description/arguments/grouped options/global options/grouped commands; `visible*` filters; `style*` hooks for color; `boxWrap`/`displayWidth`/`padWidth`; subclass or `configureHelp` extension points. The help text is the most visible product surface.
+8. **State save/restore** (1141–1174) — allows repeated `.parse()` (v13 feature) with lazy per-command snapshots; `storeOptionsAsProperties` mode is incompatible with re-parse and throws.
+9. **Typings** (`typings/index.d.ts`, 1,113 lines) — hand-maintained mirror of the runtime API, verified by `tsd` (`index.test-d.ts`), `tsc` JSDoc checking, and `tests/ts-imports.test.ts`; a large consumer-facing surface that drifts independently of the JS.
+
+## 4. Design Decisions
+
+- **Zero production dependencies**; everything built on Node built-ins — a deliberate, enforced constraint (CONTRIBUTING).
+- **Declarative fluent API**; `Command extends EventEmitter` and *internally* uses events (`option:name`) as the value-assignment channel, decoupling the tokenizer from value processing and enabling `program.on('option:...')` as a public escape hatch.
+- **Two command styles**: in-process action-handler commands vs. standalone executable subcommands — distinguished by the description-as-second-argument convention in `.command()`.
+- **Strict-by-default parsing**: unknown options, excess arguments (since 13.0), missing required args/options and conflicts are errors; opt-outs are explicit (`.allowUnknownOption()`, `.allowExcessArguments()`, `.enablePositionalOptions()`, `.passThroughOptions()`).
+- **Errors never throw for user input**: print via `configureOutput.outputError`, then `_exit()` → `process.exit` unless `exitOverride()` redirects to a callback/throw. All exit paths carry structured `CommanderError{exitCode, code, message, nestedError}`.
+- **Option-value provenance**: every value is tagged with its source (`default|config|env|cli|implied`) so precedence and conflict checks are data-driven rather than order-driven.
+- **Non-positional options by default** (global options allowed anywhere on the command line); positional/pass-through are opt-in per command with a guard against misconfiguration (`_checkForBrokenPassThrough`).
+- **Modern storage default**: separate `_optionValues` map; legacy `storeOptionsAsProperties` retained (with the documented re-parse incompatibility).
+- **Help as an extensible class, not string concatenation**: `Help` with static-style methods; extension via subclass (override `createHelp()`) or configuration object (`configureHelp()`); color implemented as style methods with `stripColor` when the stream lacks color support; respects `NO_COLOR`/`FORCE_COLOR` conventions (`useColor()`).
+- **Semver discipline with long deprecation runway**: deprecated features documented in `docs/deprecated.md` are kept for years (e.g., `InvalidOptionArgumentError` alias, `.command('*')`, `on('--help')`, RegExp `.option()` param, `.addHelpCommand(string)`), with removals concentrated in majors and migration tips in the CHANGELOG.
+- **Typings are hand-written and separately gated** (tsd + tsc), not generated from JSDoc — chosen for control over the public TS surface.
+- **Docs-as-code**: README + `docs/*` + ~45 runnable examples + bilingual zh-CN mirror; PRs are expected to update typings, JSDoc, tests, README, and examples together.
+
+## 5. Risk Map
+
+| # | Risk | Likelihood | Impact | Mitigation in repo |
+|---|------|-----------|--------|--------------------|
+| 1 | Regressions in `parseOptions` (many interacting modes: `--`, combos, `=`, variadic, negatives, positional, pass-through; refactored in 14.0.1 #2409) | Medium | High | Dense unit suites: `command.parseOptions`, `options.*`, `args.*`, `negatives`, `positionalOptions` |
+| 2 | Option-value provenance heuristics for dual/negated options (`DualOptions.valueFromOption`, `_conflictingOption` value-guessing) | Medium | Medium | `options.dual-options`, `options.conflicts`, `options.negatable` tests |
+| 3 | Executable-subcommand spawning is platform-sensitive (Windows always via node, ENOENT/EACCES, signals, symlink resolution) | Medium | Medium | Fixture-based suites (`command.executableSubcommand.*`, `tests/fixtures/pm*`), full OS matrix in CI |
+| 4 | Direct `process.exit` when no `exitOverride` — hostile to embedding and some test harnesses | Certain (by design) | Medium | `exitOverride` + `commander.*` codes are the sanctioned seam; `command.exitOverride`, `command.error` tests |
+| 5 | Hand-maintained typings drift from implementation | Medium | Medium | `tsd` (`index.test-d.ts`), `tsc` JSDoc check of lib, TS import test |
+| 6 | Bus factor: effectively two maintainers; donation-backed support ("time-permitting" per `package-support.json`) | Medium | Medium | Mature docs, strict semver, conservative change policy |
+| 7 | Long deprecated surface (RegExp param, `on('--help')`, `.command('*')`, `_args`, `.addHelpCommand(string)`) — removal in a future major is a breakage hazard | Low (next major) | Medium | `docs/deprecated.md` inventory; removals only in majors with migration tips |
+| 8 | Docs drift across README / docs/ / zh-CN mirror / examples / CHANGELOG | Medium | Low | Prettier + lint checks; doc PRs reviewed alongside code |
+| 9 | Dev-dependency churn (recent history dominated by dependabot bumps; 10 of last 15 commits) | High | Low | Dependabot + full CI matrix; zero runtime deps limit supply-chain surface |
+| 10 | Snapshot aging: 13.x security window closes 2026-05-18; next major expected ~mid-2026 | Scheduled | Low | Documented release policy |
+
+## 6. Change Impact Analysis
+
+Change categories and their blast radius (what a change touches, what tests gate it):
+
+- **Option flag grammar / `Option` semantics** → `Option` constructor, `splitOptionFlags`, `DualOptions`; consumers via `.option()`/`.addOption()`. Gate: `options.flags`, `options.dual-options`, `option.bad-flags`, `option.chain`, typings `Option`.
+- **Tokenizer / `parseOptions`** → broadest blast radius: subcommand dispatch, positional options, pass-through, negative numbers, combined flags, variadic options. Gate: `command.parseOptions`, `command.parse`, `command.positionalOptions`, `args.*`, `options.*`, `negatives`.
+- **Dispatch / lifecycle** (`_parseCommand`, hooks, events) → action invocation order, `preSubcommand/preAction/postAction`, legacy `command:*`/`command:name`. Gate: `command.hook`, `command.action`, `command.onCommand`, `command.nested`, `command.default`, `command.asterisk`.
+- **Help rendering** (`Help` visible*/format*/style*) → every help output; user-visible text changes break many tests. Gate: `help.*` (~20 files), `command.help*`, `command.configureHelp`, `useColor`, examples with help output.
+- **Error messages / exit codes** → any consumer doing `exitOverride` matching or text assertions. Gate: `command.error`, `command.exitOverride`, `command.unknownOption`, `command.unknownCommand`, `showHelpAfterError`, `showSuggestionAfterError`, `command.option-misuse`.
+- **Executable subcommands** → spawn/search/signals; must pass on all three CI OSes. Gate: `command.executableSubcommand.*` (5 files) + fixtures; `examples/pm*` style fixtures.
+- **State/parse re-entry** → `saveStateBeforeParse`/`restoreStateBeforeParse`; gate: `command.parse` re-entry tests, `storeOptionsAsProperties` restrictions.
+- **Typings** → `typings/index.d.ts`, `esm.d.mts`, `index.test-d.ts`, `ts-imports.test.ts`; ships in the same PR as the runtime change per CONTRIBUTING.
+- **Engine floor** (engines `>=20`) → package.json, CI matrix, README/install docs; majors only.
+- **Docs** → README + docs/* + examples + the zh-CN mirror (every English doc change has a Chinese counterpart to consider).
+- **Dependencies** → runtime additions are effectively rejected; dev-dep bumps flow through dependabot with full `npm test` + `npm run check` on the matrix.
+
+## 7. Decision Memo
+
+**Purpose**: this report is the cognition baseline for future work on the snapshot; success criterion is an accurate, decision-complete map of the project as of `bf35c5f` (post-14.0.3). No code changes accompany it.
+
+**Findings & guidance for future work**:
+
+1. **The project is in stable, maintenance-plus mode.** 14.x shipped two focused feature batches (13.1 dual long flags; 14.0 help groups + negative numbers); the commit stream since is dependabot churn. Expect small, additive changes in 14.x; breaking changes are deferred to the next major (~mid-2026, Node LTS-aligned).
+2. **Treat `parseOptions`/`_parseCommand` and option-value provenance as the critical zone.** Any change there requires the full Jest suite plus cross-platform executable-subcommand runs (`npm test`, `npm run check`), and manual verification of generated help text.
+3. **Never bypass the error seam.** New failure modes must route through `error()`/`_exit()` with a stable `commander.*` code so `exitOverride` consumers and tests remain intact; avoid new `process.exit` call sites and new thrown errors for user input.
+4. **If implementing a feature**: mirror it across JS + JSDoc, `typings/index.d.ts` (+ `esm.d.mts`), `tests/*.test.js` named after the API, README/docs, and examples; do not bump version or CHANGELOG (maintainer-owned); do not add runtime dependencies.
+5. **Deprecation hygiene**: prefer additive APIs; any removal candidate must be listed in `docs/deprecated.md` first and only land in a major with migration tips.
+6. **Watch the calendar**: 13.x security-only window closes 2026-05-18; the 14.x line becomes maintenance after the next major — plan long-lived fixes accordingly.
+
+**Open items for the reader** (no action required by this analysis): verify any planned change against Node 20 LTS behavior (oldest supported runtime), and re-check `typings` parity whenever touching `Command`/`Option`/`Argument`/`Help` public members.

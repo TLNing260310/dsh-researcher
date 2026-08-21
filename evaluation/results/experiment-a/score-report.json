@@ -1,0 +1,135 @@
+{
+  "schema": "dsh-researcher/experiment-a/score-report/v1",
+  "summary": {
+    "gus_rank": [
+      "plan",
+      "standard",
+      "quick",
+      "deep"
+    ],
+    "gus_means": {
+      "plan": 0.717,
+      "standard": 0.702,
+      "quick": 0.669,
+      "deep": 0.629
+    },
+    "deep_cost_ratio_vs_standard": {
+      "tokens": "2.3x",
+      "duration": "4.2x"
+    }
+  },
+  "per_mode": {
+    "standard": {
+      "gus": {
+        "values": [
+          0.707,
+          0.721,
+          0.679
+        ],
+        "mean": 0.702,
+        "min": 0.679,
+        "max": 0.721
+      },
+      "billed_k": {
+        "values": [
+          169,
+          141,
+          125
+        ],
+        "mean_k": 145
+      },
+      "duration_min": {
+        "values": [
+          1.8,
+          1.8,
+          1.9
+        ],
+        "mean": 1.8
+      }
+    },
+    "plan": {
+      "gus": {
+        "values": [
+          0.75,
+          0.679,
+          0.721
+        ],
+        "mean": 0.717,
+        "min": 0.679,
+        "max": 0.75
+      },
+      "billed_k": {
+        "values": [
+          184,
+          169,
+          196
+        ],
+        "mean_k": 183
+      },
+      "duration_min": {
+        "values": [
+          3,
+          2.8,
+          2.8
+        ],
+        "mean": 2.8
+      }
+    },
+    "quick": {
+      "gus": {
+        "values": [
+          0.693,
+          0.679,
+          0.636
+        ],
+        "mean": 0.669,
+        "min": 0.636,
+        "max": 0.693
+      },
+      "billed_k": {
+        "values": [
+          216,
+          190,
+          125
+        ],
+        "mean_k": 177
+      },
+      "duration_min": {
+        "values": [
+          3.2,
+          3.2,
+          2.5
+        ],
+        "mean": 3
+      }
+    },
+    "deep": {
+      "gus": {
+        "values": [
+          0.707,
+          0.664,
+          0.516
+        ],
+        "mean": 0.629,
+        "min": 0.516,
+        "max": 0.707
+      },
+      "billed_k": {
+        "values": [
+          350,
+          304,
+          326
+        ],
+        "mean_k": 327
+      },
+      "duration_min": {
+        "values": [
+          8.2,
+          6.8,
+          7.5
+        ],
+        "mean": 7.5
+      }
+    }
+  }
+}

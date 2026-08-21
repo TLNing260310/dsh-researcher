@@ -1,0 +1,371 @@
+{
+  "checkpoint_claims": [
+    {
+      "phase": "DECISION",
+      "revise": [
+        {
+          "id": "C01",
+          "statement": "Snapshot is commander.js v14.0.3, MIT, by TJ Holowaychuk — the node.js CLI framework",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "package.json:2-3,15-16",
+            "Readme.md:8"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C02",
+          "statement": "Snapshot is faithful upstream HEAD (bf35c5f, 2026-02-02), clean tree, no local modifications",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "git status empty",
+            "git log: bf35c5f dependabot bump post-14.0.3",
+            "git rev-parse HEAD bf35c5f"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C03",
+          "statement": "Zero runtime dependencies; dev-only toolchain (jest, eslint, prettier, tsd, typescript)",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "package.json:62-76",
+            "package-lock.json:7-29 root entry has no dependencies key"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C04",
+          "statement": "Core: Command extends EventEmitter; parsing is an event-driven two-stage pipeline (parseOptions loop then _parseCommand dispatch)",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "lib/command.js:13, 1550-1641, 1748-1895"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C05",
+          "statement": "Help system is a separate class with full styling/formatting extension points",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "lib/help.js:12, 443-527 formatHelp"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C06",
+          "statement": "109 jest test files, coverage collected but no enforced threshold; CI matrix node 20/22/24 x 3 OS",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "glob tests/*.test.js (109)",
+            "jest.config.js (collectCoverage, no threshold)",
+            ".github/workflows/tests.yml:14-16"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C07",
+          "statement": "Types: hand-maintained typings/index.d.ts (1113 lines), JS type-checked with checkJs, tsd + tsc tests",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "typings/index.d.ts (1113 lines)",
+            "tsconfig.js.json",
+            "package.json:26-27"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C08",
+          "statement": "Release policy: semver, major ~every 6 months aligned with Node LTS EOL, 12-month security support for old majors",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "docs/release-policy.md:3-15",
+            "CHANGELOG.md:11-21 (14.0.3)"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C09",
+          "statement": "Widely adopted: commander is in the >10M weekly downloads npm tier",
+          "tier": "C1",
+          "verdict": "Likely",
+          "evidence": [
+            "dev.to audit of >10M weekly-download packages lists commander",
+            "pkgpulse.com/packages/commander"
+          ],
+          "confidence": 0.8
+        },
+        {
+          "id": "C10",
+          "statement": "Deliberate deprecated/legacy surface still shipped (9 deprecated features documented)",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "docs/deprecated.md:1-21"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C11",
+          "statement": "Maintainership concentrated: recent commits mostly dependabot + John Gee (shadowspawn); sponsorship via 2 GitHub sponsors; Tidelift security contact",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "git log",
+            "package-support.json:12-15",
+            "SECURITY.md:3-5"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C12",
+          "statement": "14.0.3 release contains only docs and typing changes; 14.x added help groups, unescaped negative numbers, Node>=20",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "CHANGELOG.md:11-21, 45-61"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C13",
+          "statement": "No TODO/FIXME markers; only 11 targeted ts-ignore/eslint-disable escapes in lib; no coverage gate",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "grep lib TODO|FIXME (none)",
+            "grep lib @ts-ignore (11)",
+            "grep coverageThreshold (none)"
+          ],
+          "confidence": 1
+        }
+      ],
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "Snapshot is upstream commander.js at its current released state — a mature, stable, zero-dependency library in maintenance-plus-incremental-features mode",
+          "status": "active",
+          "dependsOn": [
+            "C01",
+            "C02",
+            "C03"
+          ]
+        }
+      ],
+      "views": [
+        {
+          "name": "project_model",
+          "dependsOn": [
+            "C01",
+            "C02",
+            "C03",
+            "C04",
+            "C05",
+            "C09"
+          ]
+        },
+        {
+          "name": "risk_map",
+          "dependsOn": [
+            "C06",
+            "C07",
+            "C08",
+            "C10",
+            "C11",
+            "C13"
+          ]
+        },
+        {
+          "name": "change_impact",
+          "dependsOn": [
+            "C04",
+            "C05",
+            "C10"
+          ]
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "research_doctor",
+      "arguments": "{}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"status\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"rev-parse\", \"ref\": \"HEAD\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"package.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"Readme.md\", \"limit\": 120}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 30}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"CHANGELOG.md\", \"limit\": 80}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"index.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"esm.mjs\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/error.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/suggestSimilar.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"package-support.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/option.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/argument.js\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"^  (async )?[a-zA-Z_][a-zA-Z0-9_]*\\\\(|^class |^function |^const [a-zA-Z_]+ =|^exports\\\\.\", \"path\": \"lib/command.js\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"^  (async )?[a-zA-Z_][a-zA-Z0-9_]*\\\\(|^class |^function |^const [a-zA-Z_]+ =|^exports\\\\.\", \"path\": \"lib/help.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"offset\": 1, \"limit\": 155}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"offset\": 1001, \"limit\": 230}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"limit\": 200, \"offset\": 1550}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"limit\": 155, \"offset\": 1748}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"tests/*.test.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".github/workflows/tests.yml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"SECURITY.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/release-policy.md\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"package-lock.json\", \"pattern\": \"\\\"dependencies\\\"\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/help.js\", \"limit\": 100, \"offset\": 443}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander.js npm weekly downloads 2025 TJ Holowaychuk command-line framework\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"package-lock.json\", \"limit\": 60}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"typings/index.d.ts\", \"limit\": 40}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://www.npmjs.com/package/commander\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/deprecated.md\", \"limit\": 70}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tsconfig.js.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/esm-imports-test.mjs\", \"limit\": 50}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"commander\\\" npm package \\\"weekly downloads\\\" million\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"limit\": 122, \"offset\": 1231}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"jest.config.js\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander.js github tj stars most popular node CLI library\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"lib\", \"pattern\": \"TODO|FIXME|XXX|HACK\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"lib\", \"pattern\": \"@ts-ignore|eslint-disable-next-line\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \".\", \"pattern\": \"coverageThreshold\", \"include\": \"*.json\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"DECISION\", \"revise\": [{\"id\": \"C01\", \"statement\": \"Snapshot is commander.js v14.0.3, MIT, by TJ Holowaychuk — the node.js CLI framework\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"package.json:2-3,15-16\", \"Readme.md:8\"], \"confidence\": 1.0}, {\"id\": \"C02\", \"statement\": \"Snapshot is faithful upstream HEAD (bf35c5f, 2026-02-02), clean tree, no local modifications\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"git status empty\", \"git log: bf35c5f dependabot bump post-14.0.3\", \"git rev-parse HEAD bf35c5f\"], \"confidence\": 1.0}, {\"id\": \"C03\", \"statement\": \"Zero runtime dependencies; dev-only toolchain (jest, eslint, prettier, tsd, typescript)\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"package.json:62-76\", \"package-lock.json:7-29 root entry has no dependencies key\"], \"confidence\": 1.0}, {\"id\": \"C04\", \"statement\": \"Core: Command extends EventEmitter; parsing is an event-driven two-stage pipeline (parseOptions loop then _parseCommand dispatch)\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"lib/command.js:13, 1550-1641, 1748-1895\"], \"confidence\": 1.0}, {\"id\": \"C05\", \"statement\": \"Help system is a separate class with full styling/formatting extension points\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"lib/help.js:12, 443-527 formatHelp\"], \"confidence\": 1.0}, {\"id\": \"C06\", \"statement\": \"109 jest test files, coverage collected but no enforced threshold; CI matrix node 20/22/24 x 3 OS\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"glob tests/*.test.js (109)\", \"jest.config.js (collectCoverage, no threshold)\", \".github/workflows/tests.yml:14-16\"], \"confidence\": 1.0}, {\"id\": \"C07\", \"statement\": \"Types: hand-maintained typings/index.d.ts (1113 lines), JS type-checked with checkJs, tsd + tsc tests\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"typings/index.d.ts (1113 lines)\", \"tsconfig.js.json\", \"package.json:26-27\"], \"confidence\": 1.0}, {\"id\": \"C08\", \"statement\": \"Release policy: semver, major ~every 6 months aligned with Node LTS EOL, 12-month security support for old majors\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"docs/release-policy.md:3-15\", \"CHANGELOG.md:11-21 (14.0.3)\"], \"confidence\": 0.9}, {\"id\": \"C09\", \"statement\": \"Widely adopted: commander is in the >10M weekly downloads npm tier\", \"tier\": \"C1\", \"verdict\": \"Likely\", \"evidence\": [\"dev.to audit of >10M weekly-download packages lists commander\", \"pkgpulse.com/packages/commander\"], \"confidence\": 0.8}, {\"id\": \"C10\", \"statement\": \"Deliberate deprecated/legacy surface still shipped (9 deprecated features documented)\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"docs/deprecated.md:1-21\"], \"confidence\": 1.0}, {\"id\": \"C11\", \"statement\": \"Maintainership concentrated: recent commits mostly dependabot + John Gee (shadowspawn); sponsorship via 2 GitHub sponsors; Tidelift security contact\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"git log\", \"package-support.json:12-15\", \"SECURITY.md:3-5\"], \"confidence\": 0.9}, {\"id\": \"C12\", \"statement\": \"14.0.3 release contains only docs and typing changes; 14.x added help groups, unescaped negative numbers, Node>=20\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"CHANGELOG.md:11-21, 45-61\"], \"confidence\": 1.0}, {\"id\": \"C13\", \"statement\": \"No TODO/FIXME markers; only 11 targeted ts-ignore/eslint-disable escapes in lib; no coverage gate\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"grep lib TODO|FIXME (none)\", \"grep lib @ts-ignore (11)\", \"grep coverageThreshold (none)\"], \"confidence\": 1.0}], \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"Snapshot is upstream commander.js at its current released state — a mature, stable, zero-dependency library in maintenance-plus-incremental-features mode\", \"status\": \"active\", \"dependsOn\": [\"C01\", \"C02\", \"C03\"]}], \"views\": [{\"name\": \"project_model\", \"dependsOn\": [\"C01\", \"C02\", \"C03\", \"C04\", \"C05\", \"C09\"]}, {\"name\": \"risk_map\", \"dependsOn\": [\"C06\", \"C07\", \"C08\", \"C10\", \"C11\", \"C13\"]}, {\"name\": \"change_impact\", \"dependsOn\": [\"C04\", \"C05\", \"C10\"]}]}"
+    },
+    {
+      "name": "todo_write",
+      "arguments": "{\"todos\": [{\"content\": \"DISCOVER: cartography, extract claims, initial hypothesis\", \"status\": \"completed\"}, {\"content\": \"EVIDENCE MAP: grade claims C01-C13 (tier+verdict)\", \"status\": \"completed\"}, {\"content\": \"DIAGNOSE: issue chain for observed findings\", \"status\": \"completed\"}, {\"content\": \"CHALLENGE: disconfirmation search (debt markers, typing escapes, divergence)\", \"status\": \"completed\"}, {\"content\": \"DECISION: classify findings, write Project Cognition Report\", \"status\": \"in_progress\"}]}"
+    }
+  ]
+}

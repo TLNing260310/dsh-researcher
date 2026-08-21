@@ -1,0 +1,32 @@
+{
+  "schema": "dsh-researcher/run-metrics/v1",
+  "run_id": "exp-a-quick-02",
+  "preset": "researcher-quick",
+  "plan_mode": false,
+  "duration_ms": 189963,
+  "tokens_total": 1855576,
+  "tokens_input": 146822,
+  "tokens_output": 31442,
+  "tokens_cache_read": 1677312,
+  "tokens_reasoning": 11388,
+  "tool_calls": 41,
+  "tool_breakdown": {
+    "research_doctor": 1,
+    "glob": 2,
+    "git_read": 4,
+    "read": 25,
+    "grep": 3,
+    "web_search": 4,
+    "web_fetch": 1,
+    "research_checkpoint": 1
+  },
+  "claims": 1,
+  "doctor_calls": 1,
+  "write_attempts": 0,
+  "certificate_overall": "SAFE",
+  "final_text_chars": 22011,
+  "exit": 0,
+  "final_reason": {
+    "kind": "completed"
+  }
+}

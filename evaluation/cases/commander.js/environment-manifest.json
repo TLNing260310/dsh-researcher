@@ -1,0 +1,49 @@
+{
+  "schema": "dsh-researcher/environment-manifest/v1",
+  "case": "commander.js",
+  "experiment": "exp-a",
+  "recorded_at": "2026-08-21 (post Step-0 lock check, mid-experiment 8/12)",
+  "repository": {
+    "path": "D:/AI_work_project/dsh-researcher",
+    "head": "7cb7125",
+    "clean": "false — only untracked run artifacts under evaluation/runs/commander.js/exp-a/ (expected during execution; committed after scoring)"
+  },
+  "snapshot": {
+    "dir": "D:/AI_work_project/phase-a-snapshots/commander.js",
+    "commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "cognition_gt_sha256": "19118a0d5d06",
+    "blind_doctor": "PASS (GT lock + isolation, 2026-08-21)"
+  },
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-flash",
+    "reasoningEffort": "max",
+    "source": "profile eval-settings.yaml (frozen, D003)"
+  },
+  "presets": {
+    "researcher": "installed (v0.7.0-aligned)",
+    "researcher-quick": "installed (v0.7.0-aligned, D002 override)",
+    "researcher-deep": "installed (v0.7.0-aligned, D002 override)",
+    "standard": "shipped (@deepseek-ai/dsh config/agent-presets/standard)"
+  },
+  "runner": {
+    "eval-headless.mjs": "installed in headless profile",
+    "patches": ["headless-eval.patch.yml", "headless-eval-researcher.patch.yml"],
+    "permission": "DSH_PERMISSION_MODE=read-only; approval never; sandbox read-only"
+  },
+  "frozen_inputs": {
+    "protocol": "docs/evaluation-protocol-v1.1.md",
+    "gt": "evaluation/cases/commander.js/gt-calibration/core-gt-v0.1.json",
+    "coverage": "evaluation/cases/commander.js/gt-calibration/coverage-map.json",
+    "prompt": "evaluation/prompts/exp-a-pcr.txt",
+    "preset_dir": "researcher/",
+    "lock": "evaluation/locks/commander.js.protocol-v1.1.lock",
+    "gt_lock": "evaluation/locks/commander.js.v1.1-gt-lock.json"
+  },
+  "lock_check": {
+    "eval_lock": "LOCK OK",
+    "gt_lock": "frozen; gt_hash match; coverage_hash match",
+    "blind_doctor": "PASS"
+  },
+  "run_manifest": "evaluation/runs/commander.js/exp-a/exp-a-runs-manifest.json (seed dsh-researcher-v0.6-phase-a:exp-a-runs, 12 runs, randomized order per protocol v1.1 §1)"
+}

@@ -1,0 +1,400 @@
+{
+  "checkpoint_claims": [
+    {
+      "phase": "DECISION",
+      "revise": [
+        {
+          "id": "C01",
+          "statement": "Project identity: commander — 'the complete solution for node.js command-line programs' (README:8, package.json:4); declarative CLI framework: options, arguments, subcommands, automated help, hooks, executable subcommands",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "Readme.md:8",
+            "package.json:4",
+            "lib/command.js full read",
+            "lib/option.js, lib/argument.js, lib/help.js"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C02",
+          "statement": "Snapshot: v14.0.3 at HEAD bf35c5f (2026-02-02), clean tree; release commit 8247364 '14.0.3' 2026-01-31; top 2 commits are dependabot devDep bumps touching only package-lock.json",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "git status (empty)",
+            "git log HEAD~3",
+            "git show bf35c5f (package-lock only)",
+            "package.json:3"
+          ],
+          "confidence": 0.99
+        },
+        {
+          "id": "C03",
+          "statement": "Zero runtime dependencies; lib/ uses only Node builtins (events, child_process, path, fs, process) and internal modules",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "package.json: no 'dependencies' key",
+            "grep require( in lib/ (13 matches, all builtins/internal)"
+          ],
+          "confidence": 0.98
+        },
+        {
+          "id": "C04",
+          "statement": "Node >=20 required (engines); CI matrix node 20/22/24 x ubuntu/windows/macos; jest with coverage + eslint/prettier/tsd/tsc checks; CodeQL workflow",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "package.json:79",
+            ".github/workflows/tests.yml",
+            ".github/workflows/codeql-analysis.yml",
+            "jest.config.js"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C05",
+          "statement": "Strict-by-default parsing: unknown option error + suggestion, excess arguments error (v13 breaking), negative numbers accepted when unambiguous (v14), opt-outs allowUnknownOption/allowExcessArguments",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "lib/command.js unknownOption/_excessArguments/negativeNumberArg",
+            "CHANGELOG.md 13.0.0, 14.0.0",
+            "tests/command.unknownOption.test.js, command.allowExcessArguments.test.js, negatives.test.js"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C06",
+          "statement": "Parse architecture: Command extends EventEmitter; options handled via option:/optionEnv: events; option values stored with source tracking (default/env/cli/implied/config); parseOptions() single-pass state machine splitting operands/unknown; recursive _parseCommand dispatch; promise-chained hooks",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "lib/command.js:1-13, 720-733, 1748-1895, 1550-1641",
+            "lib/option.js DualOptions"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C07",
+          "statement": "Help system fully extensible: Help class style*/format* methods, configureHelp/configureOutput, help groups (14.0.0), color conventions (NO_COLOR/FORCE_COLOR/CLICOLOR_FORCE), stripColor; color off by default (style methods identity)",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "lib/help.js full read (747 lines)",
+            "lib/command.js useColor() 2752-2774",
+            "CHANGELOG.md 14.0.0"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C08",
+          "statement": "Executable subcommands: child_process.spawn, extension probing (.js/.ts/.tsx/.mjs/.cjs), legacy name fallback, inspector port increment, signal forwarding, Windows ENOENT/EACCES handling",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "lib/command.js _executeSubCommand 1202-1346",
+            "tests/command.executableSubcommand*.test.js (6 files)",
+            "tests/fixtures-extensions/*"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C09",
+          "statement": "Typings: hand-maintained typings/index.d.ts (1113 lines) + esm.d.mts; JSDoc-based JS type checking (tsconfig.js.json); tsd type tests; TS import tests; ESM wrapper esm.mjs with exports map",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "package.json:45-61, 77",
+            "typings/index.d.ts",
+            "typings/index.test-d.ts",
+            "tests/ts-imports.test.ts",
+            "tests/esm-imports-test.mjs"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C10a",
+          "statement": "Test suite exists and is extensive: ~91 test files covering parse/options/args/help/arguments/hooks/subcommands/executables/typings; fixtures with extension matrix",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "glob tree listing (tests/)",
+            "samples: tests/command.parse.test.js, tests/options.variadic.test.js"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C10b",
+          "statement": "Test suite passes on HEAD",
+          "tier": "C0",
+          "verdict": "Claimed",
+          "evidence": [
+            "CI config .github/workflows/tests.yml runs npm test + npm run check"
+          ],
+          "confidence": 0.7
+        },
+        {
+          "id": "C11",
+          "statement": "Release policy: semver; majors ~every 6 months; node minimum raised at LTS EOL; current line gets all updates, previous major gets security-only 12 months; 13.x EOL 2026-05-18",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "docs/release-policy.md",
+            "CHANGELOG.md",
+            "git log cadence (12.1 2024-05, 13.0 2024-12, 14.0 2025-05)"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C12",
+          "statement": "Maintainers: John Gee (shadowspawn) and Abe Tomoaki (abetomo); sponsorship links in package-support.json; Tidelift security contact",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "package-support.json",
+            "git log author names",
+            "SECURITY.md"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C13",
+          "statement": "Ecosystem scale (downloads/dependents/advisories): web verification unavailable this session; search snippet places commander among packages with >10M weekly downloads",
+          "tier": "C3",
+          "verdict": "Likely",
+          "evidence": [
+            "web_search snippet (dev.to risk-map audit listing commander)",
+            "README npm badges (unverifiable this session)"
+          ],
+          "confidence": 0.6
+        },
+        {
+          "id": "C14",
+          "statement": "Backward-compat debt: 10+ documented deprecations (docs/deprecated.md), some held since v7; removal happens at majors; v13 removed multi-char short flags + default export, v12 removed CJS default import",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "docs/deprecated.md (258 lines)",
+            "CHANGELOG.md 13.0.0, 12.0.0"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C15",
+          "statement": "No corrosion found: ESM wrapper (avoids dual-package hazard), EventEmitter design (public custom-listener API), process.exit control flow (documented, exitOverride escape hatch), color-by-hooks (zero-dep constraint) are deliberate evolutions/constraints, not corrosion",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "lib/command.js exitOverride/_exit",
+            "docs/deprecated.md",
+            "README custom event listeners",
+            "lib/command.js useColor comments (references no-color.org etc.)"
+          ],
+          "confidence": 0.85
+        }
+      ],
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "commander.js is a mature library at a maintenance plateau: feature-complete for its scope, zero runtime dependencies, heavily tested; this snapshot requires no intervention",
+          "status": "active",
+          "dependsOn": [
+            "C01",
+            "C02",
+            "C03",
+            "C10a"
+          ]
+        },
+        {
+          "id": "H2",
+          "statement": "Any future change must respect invariants: zero runtime deps, strict-by-default errors, EventEmitter parse pipeline, dual typings maintenance, compat windows (13.x until 2026-05-18); the only genuine unknowns are external evidence gaps (ecosystem state, CI green-ness)",
+          "status": "active",
+          "dependsOn": [
+            "C03",
+            "C05",
+            "C09",
+            "C11",
+            "C13",
+            "C14"
+          ]
+        }
+      ],
+      "views": [
+        {
+          "name": "project_model",
+          "dependsOn": [
+            "C01",
+            "C02",
+            "C03",
+            "C04",
+            "C05",
+            "C06",
+            "C07",
+            "C08",
+            "C09",
+            "C10a",
+            "C11",
+            "C12",
+            "C14"
+          ]
+        },
+        {
+          "name": "diagnosis",
+          "dependsOn": [
+            "project_model",
+            "C10b",
+            "C13",
+            "C15"
+          ]
+        },
+        {
+          "name": "classification",
+          "dependsOn": [
+            "diagnosis"
+          ]
+        }
+      ],
+      "export": true
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "research_doctor",
+      "arguments": "{}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"status\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 30}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"C:\\\\Users\\\\jxgm\\\\AppData\\\\Local\\\\Temp\\\\dsh-spill-vVEdyH\\\\session-80ba1566204e\\\\da61ac322da7-glob-results.txt\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\package.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\Readme.md\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\CHANGELOG.md\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\index.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\esm.mjs\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\command.js\", \"limit\": 2000}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\option.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\command.js\", \"offset\": 1575, \"limit\": 2000}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\argument.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\error.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\help.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\\\\suggestSimilar.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\package-support.json\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 500, \"ref\": \"HEAD\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\docs\\\\release-policy.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\SECURITY.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\.github\\\\workflows\\\\tests.yml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\jest.config.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\typings\\\\index.d.ts\", \"limit\": 150}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://www.npmjs.com/package/commander\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander npm package weekly downloads latest version\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://security.snyk.io/package/npm/commander\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\docs\\\\deprecated.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\tests\\\\command.parse.test.js\", \"limit\": 100}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\tests\\\\options.variadic.test.js\", \"limit\": 60}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"ref\": \"bf35c5f\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"require\\\\(\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\lib\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace\\\\LICENSE\", \"limit\": 10}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"DECISION\", \"revise\": [{\"id\": \"C01\", \"statement\": \"Project identity: commander — 'the complete solution for node.js command-line programs' (README:8, package.json:4); declarative CLI framework: options, arguments, subcommands, automated help, hooks, executable subcommands\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"Readme.md:8\", \"package.json:4\", \"lib/command.js full read\", \"lib/option.js, lib/argument.js, lib/help.js\"], \"confidence\": 0.9}, {\"id\": \"C02\", \"statement\": \"Snapshot: v14.0.3 at HEAD bf35c5f (2026-02-02), clean tree; release commit 8247364 '14.0.3' 2026-01-31; top 2 commits are dependabot devDep bumps touching only package-lock.json\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"git status (empty)\", \"git log HEAD~3\", \"git show bf35c5f (package-lock only)\", \"package.json:3\"], \"confidence\": 0.99}, {\"id\": \"C03\", \"statement\": \"Zero runtime dependencies; lib/ uses only Node builtins (events, child_process, path, fs, process) and internal modules\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"package.json: no 'dependencies' key\", \"grep require( in lib/ (13 matches, all builtins/internal)\"], \"confidence\": 0.98}, {\"id\": \"C04\", \"statement\": \"Node >=20 required (engines); CI matrix node 20/22/24 x ubuntu/windows/macos; jest with coverage + eslint/prettier/tsd/tsc checks; CodeQL workflow\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"package.json:79\", \".github/workflows/tests.yml\", \".github/workflows/codeql-analysis.yml\", \"jest.config.js\"], \"confidence\": 0.95}, {\"id\": \"C05\", \"statement\": \"Strict-by-default parsing: unknown option error + suggestion, excess arguments error (v13 breaking), negative numbers accepted when unambiguous (v14), opt-outs allowUnknownOption/allowExcessArguments\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"lib/command.js unknownOption/_excessArguments/negativeNumberArg\", \"CHANGELOG.md 13.0.0, 14.0.0\", \"tests/command.unknownOption.test.js, command.allowExcessArguments.test.js, negatives.test.js\"], \"confidence\": 0.95}, {\"id\": \"C06\", \"statement\": \"Parse architecture: Command extends EventEmitter; options handled via option:/optionEnv: events; option values stored with source tracking (default/env/cli/implied/config); parseOptions() single-pass state machine splitting operands/unknown; recursive _parseCommand dispatch; promise-chained hooks\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"lib/command.js:1-13, 720-733, 1748-1895, 1550-1641\", \"lib/option.js DualOptions\"], \"confidence\": 0.9}, {\"id\": \"C07\", \"statement\": \"Help system fully extensible: Help class style*/format* methods, configureHelp/configureOutput, help groups (14.0.0), color conventions (NO_COLOR/FORCE_COLOR/CLICOLOR_FORCE), stripColor; color off by default (style methods identity)\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"lib/help.js full read (747 lines)\", \"lib/command.js useColor() 2752-2774\", \"CHANGELOG.md 14.0.0\"], \"confidence\": 0.9}, {\"id\": \"C08\", \"statement\": \"Executable subcommands: child_process.spawn, extension probing (.js/.ts/.tsx/.mjs/.cjs), legacy name fallback, inspector port increment, signal forwarding, Windows ENOENT/EACCES handling\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"lib/command.js _executeSubCommand 1202-1346\", \"tests/command.executableSubcommand*.test.js (6 files)\", \"tests/fixtures-extensions/*\"], \"confidence\": 0.9}, {\"id\": \"C09\", \"statement\": \"Typings: hand-maintained typings/index.d.ts (1113 lines) + esm.d.mts; JSDoc-based JS type checking (tsconfig.js.json); tsd type tests; TS import tests; ESM wrapper esm.mjs with exports map\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"package.json:45-61, 77\", \"typings/index.d.ts\", \"typings/index.test-d.ts\", \"tests/ts-imports.test.ts\", \"tests/esm-imports-test.mjs\"], \"confidence\": 0.9}, {\"id\": \"C10a\", \"statement\": \"Test suite exists and is extensive: ~91 test files covering parse/options/args/help/arguments/hooks/subcommands/executables/typings; fixtures with extension matrix\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"glob tree listing (tests/)\", \"samples: tests/command.parse.test.js, tests/options.variadic.test.js\"], \"confidence\": 0.95}, {\"id\": \"C10b\", \"statement\": \"Test suite passes on HEAD\", \"tier\": \"C0\", \"verdict\": \"Claimed\", \"evidence\": [\"CI config .github/workflows/tests.yml runs npm test + npm run check\"], \"confidence\": 0.7}, {\"id\": \"C11\", \"statement\": \"Release policy: semver; majors ~every 6 months; node minimum raised at LTS EOL; current line gets all updates, previous major gets security-only 12 months; 13.x EOL 2026-05-18\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"docs/release-policy.md\", \"CHANGELOG.md\", \"git log cadence (12.1 2024-05, 13.0 2024-12, 14.0 2025-05)\"], \"confidence\": 0.9}, {\"id\": \"C12\", \"statement\": \"Maintainers: John Gee (shadowspawn) and Abe Tomoaki (abetomo); sponsorship links in package-support.json; Tidelift security contact\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"package-support.json\", \"git log author names\", \"SECURITY.md\"], \"confidence\": 0.9}, {\"id\": \"C13\", \"statement\": \"Ecosystem scale (downloads/dependents/advisories): web verification unavailable this session; search snippet places commander among packages with >10M weekly downloads\", \"tier\": \"C3\", \"verdict\": \"Likely\", \"evidence\": [\"web_search snippet (dev.to risk-map audit listing commander)\", \"README npm badges (unverifiable this session)\"], \"confidence\": 0.6}, {\"id\": \"C14\", \"statement\": \"Backward-compat debt: 10+ documented deprecations (docs/deprecated.md), some held since v7; removal happens at majors; v13 removed multi-char short flags + default export, v12 removed CJS default import\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"docs/deprecated.md (258 lines)\", \"CHANGELOG.md 13.0.0, 12.0.0\"], \"confidence\": 0.95}, {\"id\": \"C15\", \"statement\": \"No corrosion found: ESM wrapper (avoids dual-package hazard), EventEmitter design (public custom-listener API), process.exit control flow (documented, exitOverride escape hatch), color-by-hooks (zero-dep constraint) are deliberate evolutions/constraints, not corrosion\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"lib/command.js exitOverride/_exit\", \"docs/deprecated.md\", \"README custom event listeners\", \"lib/command.js useColor comments (references no-color.org etc.)\"], \"confidence\": 0.85}], \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"commander.js is a mature library at a maintenance plateau: feature-complete for its scope, zero runtime dependencies, heavily tested; this snapshot requires no intervention\", \"status\": \"active\", \"dependsOn\": [\"C01\", \"C02\", \"C03\", \"C10a\"]}, {\"id\": \"H2\", \"statement\": \"Any future change must respect invariants: zero runtime deps, strict-by-default errors, EventEmitter parse pipeline, dual typings maintenance, compat windows (13.x until 2026-05-18); the only genuine unknowns are external evidence gaps (ecosystem state, CI green-ness)\", \"status\": \"active\", \"dependsOn\": [\"C03\", \"C05\", \"C09\", \"C11\", \"C13\", \"C14\"]}], \"views\": [{\"name\": \"project_model\", \"dependsOn\": [\"C01\", \"C02\", \"C03\", \"C04\", \"C05\", \"C06\", \"C07\", \"C08\", \"C09\", \"C10a\", \"C11\", \"C12\", \"C14\"]}, {\"name\": \"diagnosis\", \"dependsOn\": [\"project_model\", \"C10b\", \"C13\", \"C15\"]}, {\"name\": \"classification\", \"dependsOn\": [\"diagnosis\"]}], \"export\": true}"
+    }
+  ]
+}

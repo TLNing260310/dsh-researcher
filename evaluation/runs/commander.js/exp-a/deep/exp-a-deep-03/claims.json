@@ -1,0 +1,716 @@
+{
+  "checkpoint_claims": [
+    {
+      "phase": "DISCOVER",
+      "views": [
+        {
+          "name": "project_model",
+          "dependsOn": [
+            "C0-001",
+            "C0-002",
+            "C0-003"
+          ]
+        },
+        {
+          "name": "evidence_map",
+          "dependsOn": [
+            "C0-001",
+            "C0-002",
+            "C0-003"
+          ]
+        }
+      ],
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.",
+          "status": "active",
+          "dependsOn": [
+            "C0-001",
+            "C0-002"
+          ]
+        }
+      ],
+      "revise": [
+        {
+          "id": "C0-001",
+          "statement": "Repository is commander.js, package 'commander' v14.0.3, MIT, Node >=20, zero runtime dependencies",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "package.json:2-4,43,78-80",
+            "package.json devDependencies only (no dependencies field)"
+          ],
+          "confidence": 0.98
+        },
+        {
+          "id": "C0-002",
+          "statement": "HEAD is bf35c5f (2026-02-02), clean working tree; last release commit 8247364 '14.0.3' 2026-01-31",
+          "tier": "C3",
+          "verdict": "Known",
+          "evidence": [
+            "git log output",
+            "git status empty"
+          ],
+          "confidence": 0.98
+        },
+        {
+          "id": "C0-003",
+          "statement": "Library surface: Command, Option, Argument, Help, CommanderError, InvalidArgumentError classes plus program singleton and create* factories; CJS main with ESM wrapper esm.mjs",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "index.js:1-24",
+            "package.json exports 45-61"
+          ],
+          "confidence": 0.97
+        }
+      ]
+    },
+    {
+      "phase": "RECONSTRUCT",
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.",
+          "status": "active",
+          "dependsOn": [
+            "C0-001",
+            "C0-002",
+            "C0-003",
+            "C2-004",
+            "C2-005",
+            "C2-006"
+          ]
+        }
+      ],
+      "revise": [
+        {
+          "confidence": 0.99,
+          "evidence": [
+            "package.json:62-76 (devDependencies only)",
+            "package-lock.json:7-29 root has devDependencies only"
+          ],
+          "id": "C0-001",
+          "statement": "package 'commander' v14.0.3, MIT, Node >=20, ZERO runtime dependencies (dev-only toolchain)",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.97,
+          "evidence": [
+            "git log 500 commits: maintainers John Gee (shadowspawn) + abetomo + dependabot; feature commits rare, mostly John Gee"
+          ],
+          "id": "C2-004",
+          "statement": "Maintenance model: ~2 active maintainers, dependabot-driven dev-dep churn, ~6-month major release cadence aligned to Node LTS EOL",
+          "tier": "C3",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "docs/release-policy.md:3-15",
+            "CHANGELOG.md:11-61 (14.0.0 breaking: Node>=20)",
+            "CHANGELOG.md:82 (13.0.0 excess args error)"
+          ],
+          "id": "C2-005",
+          "statement": "Release discipline: semver, majors ~every 6 months, old majors get security-only updates for 12 months; strictness increased over time (unknown options and excess args error by default)",
+          "tier": "C3",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.98,
+          "evidence": [
+            "tests/ 109 jest files + tsd + esm-import tests",
+            "jest.config.js collectCoverage true, no threshold",
+            ".github/workflows/tests.yml Node 20/22/24 x 3 OS"
+          ],
+          "id": "C2-006",
+          "statement": "Test estate: 109 jest test files, CI matrix Node 20/22/24 x 3 OS, CodeQL; coverage collected but no threshold gate",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.97,
+          "evidence": [
+            "lib/command.js:13 (extends EventEmitter)",
+            "lib/command.js:720-730 (option:xxx event listeners)",
+            "lib/command.js:1748-1895 parseOptions emits events"
+          ],
+          "id": "C2-007",
+          "statement": "Architecture: Command extends EventEmitter; option values flow through 'option:<name>' events emitted by parseOptions and handled by listeners registered in addOption",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.98,
+          "evidence": [
+            "lib/command.js:533-539 _exit uses process.exit",
+            "lib/command.js:1940-1958 error() -> _exit",
+            "lib/command.js:508-521 exitOverride"
+          ],
+          "id": "C2-008",
+          "statement": "Default error handling terminates the process via process.exit (exitOverride is the escape hatch)",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "lib/command.js:40,905-916,925-961 storeOptionsAsProperties branches",
+            "docs/deprecated.md:1-18 ten deprecated features still supported",
+            "lib/command.js deprecated sites: 31,171,443-455,752,1608-1620,2506-2538"
+          ],
+          "id": "C2-009",
+          "statement": "Legacy/deprecation tail: ~10 deprecated APIs still live (storeOptionsAsProperties, .command('*'), on('command:*'), RegExp option param, outputHelp callback, InvalidOptionArgumentError, _args, noHelp, addHelpCommand string form); each adds branches to hot paths",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "typings/index.d.ts 1113 lines hand-written",
+            "typings/index.test-d.ts tsd tests",
+            "package.json check:type scripts"
+          ],
+          "id": "C2-010",
+          "statement": "TypeScript typings hand-maintained with tsd + tsc CI gates",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "package-support.json: response 'time-permitting', sponsors shadowspawn+abetomo",
+            "SECURITY.md Tidelift contact"
+          ],
+          "id": "C2-011",
+          "statement": "Support is best-effort ('time-permitting'), security via Tidelift, funded by sponsors",
+          "tier": "C2",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "Readme.md:73 strict unknown options error",
+            "lib/command.js:27 _allowUnknownOption=false",
+            "lib/command.js:2114-2137 unknownOption()"
+          ],
+          "id": "C0-D1",
+          "statement": "Doc claim: 'Commander is strict and displays an error for unrecognised options'",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.85,
+          "evidence": [
+            "Readme.md:192,201,246-247,364-367,529,589-592,683,743-750,774,818-825,832-838,970-976,1112-1120,1133-1134",
+            "verified against lib/command.js parseOptions/action/hook/help code"
+          ],
+          "id": "C0-D2",
+          "statement": "Doc claims: core parsing semantics (combined flags, -- literal, variadic, negated options, defaults, custom processing, action handler params, parseAsync, hooks, help command/option, showHelpAfterError, exitOverride, configureOutput) — majority directly verified in code",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.8,
+          "evidence": [
+            "CONTRIBUTING.md:40 zero production dependencies 'not a hard requirement'",
+            "package.json no dependencies"
+          ],
+          "id": "C0-D3",
+          "statement": "Doc claim: zero production dependencies is a soft policy, not hard requirement",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.7,
+          "evidence": [
+            "Readme.md:1044-1046 extra-typings companion project exists"
+          ],
+          "id": "C0-D4",
+          "statement": "Doc claim: optional 'extra-typings' companion project provides stronger inferred types",
+          "tier": "C0",
+          "verdict": "Claimed"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "Readme.md:1166-1168,1170,1174-1176 support claims",
+            "docs/release-policy.md:10-15",
+            "package-support.json"
+          ],
+          "id": "C0-D5",
+          "statement": "Doc claims: current major fully supported on Node LTS >=20; old majors security updates 12 months; community support via GitHub Issues; commercial via Tidelift",
+          "tier": "C2",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "tests/command.parse.test.js:14-17,82-95",
+            "tests/options.variadic.test.js:6-13,20-21",
+            "tests/command.executableSubcommand.mock.test.js:26-38",
+            "tests/helpGroup.test.js:10-11"
+          ],
+          "id": "C2-012",
+          "statement": "Test style: in-process unit tests via exitOverride + configureOutput(jest.fn) + jest-spied spawn; behavior-focused, regex text checks; no golden-output files",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.75,
+          "evidence": [
+            "tests/options.env.test.js:16-20,44-48 manual env cleanup",
+            "tests/esm-imports-test.mjs:16-24 standalone script outside jest",
+            "tests/command.executableSubcommand.test.js single test (spawn success path lives in lookup/search/signals suites)"
+          ],
+          "id": "C2-013",
+          "statement": "Test hygiene gaps: manual env cleanup (leak risk), ESM smoke test outside jest runner, thin direct coverage of executable-subcommand success path in sampled files",
+          "tier": "C2",
+          "verdict": "Likely"
+        }
+      ]
+    },
+    {
+      "hypotheses": [
+        {
+          "dependsOn": [
+            "C0-001",
+            "C0-002",
+            "C0-003",
+            "C2-004",
+            "C2-005",
+            "C2-006",
+            "C2-007",
+            "C2-008",
+            "C2-009",
+            "C2-010",
+            "C2-011",
+            "C0-D1",
+            "C0-D2",
+            "C0-D3",
+            "C0-D5"
+          ],
+          "id": "H1",
+          "statement": "This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.",
+          "status": "invalidated"
+        },
+        {
+          "dependsOn": [
+            "H1"
+          ],
+          "id": "H2",
+          "statement": "REVISED: commander.js v14.0.3 is a deliberately slow-moving infrastructure library: zero runtime deps, strict-by-default parsing, semver-disciplined ~6-month majors aligned to Node LTS EOL, extensive behavior-locked test estate (109 jest files), 2 active maintainers, long deprecated-API compat tail. Value = ubiquity + stability + predictability; any change must clear the bar of no new dependencies and no contract breakage. Feature growth is real but low-volume and maintainer-driven.",
+          "status": "active"
+        }
+      ],
+      "phase": "CHALLENGE"
+    },
+    {
+      "phase": "SHAPE",
+      "views": [
+        {
+          "dependsOn": [
+            "C0-001",
+            "C0-002",
+            "C0-003",
+            "C2-004",
+            "C2-005",
+            "C2-006",
+            "C2-007",
+            "C2-008",
+            "C2-009",
+            "C2-010",
+            "C2-011",
+            "C0-D1",
+            "C0-D2",
+            "C0-D3",
+            "C0-D4",
+            "C0-D5",
+            "C2-012",
+            "C2-013",
+            "H2"
+          ],
+          "name": "report"
+        }
+      ]
+    },
+    {
+      "phase": "EXTERNAL_RESEARCH",
+      "revise": [
+        {
+          "confidence": 0.85,
+          "evidence": [
+            "https://github.com/tj/commander.js/releases/tag/v15.0.0 (search result)",
+            "https://newreleases.io/project/npm/commander/release/15.0.0-0",
+            "multiple dependabot/renovate PRs bumping 14.0.3 -> 15.0.0 (PaloAltoNetworks/docusaurus-openapi-docs #1532, bitwarden/directory-connector #1134, zazuko/trifid #990)"
+          ],
+          "id": "C3-001",
+          "statement": "Upstream has since released commander v15.0.0 (with a v15.0.0-0 prerelease); this snapshot (v14.0.3, 2026-01-31) is the last of the 14.x line and sits at a major-version boundary",
+          "tier": "C3",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.75,
+          "evidence": [
+            "https://osv.dev/vulnerability/MAL-2025-192687 (commander-stable typosquat)",
+            "https://deps.dev/advisory/osv/MAL-2025-192687",
+            "https://www.cloudsek.com/blog/bridgehead-npm-typosquatting-wsl-windows-crypto-wallet-stealer"
+          ],
+          "id": "C3-002",
+          "statement": "No CVE/malicious finding found for the real 'commander' package; the malicious-package ecosystem around it is typosquats (commander-stable, commmander, comander) — absence-of-evidence claim, not proof of absence",
+          "tier": "C3",
+          "verdict": "Likely"
+        },
+        {
+          "confidence": 0.7,
+          "evidence": [
+            "https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0 (commander in >10M weekly downloads tier)",
+            "https://www.pkgpulse.com/blog/commander-vs-yargs-2026"
+          ],
+          "id": "C3-003",
+          "statement": "commander is in the top tier of npm packages (>10M weekly downloads; exact figure unverified in this session — web_fetch provider unavailable)",
+          "tier": "C3",
+          "verdict": "Likely"
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "research_doctor",
+      "arguments": "{}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 60}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"status\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"package.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"index.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"Readme.md\", \"limit\": 150}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"C:\\\\Users\\\\jxgm\\\\AppData\\\\Local\\\\Temp\\\\dsh-spill-O0xn46\\\\session-fb865c36c96b\\\\bfc18171412c-glob-results.txt\"}"
+    },
+    {
+      "name": "todo_write",
+      "arguments": "{\"todos\": [{\"content\": \"DISCOVER: cartography, claims from README/package.json/CHANGELOG\", \"status\": \"completed\"}, {\"content\": \"RECONSTRUCT: read lib/*.js core modules\", \"status\": \"in_progress\"}, {\"content\": \"RECONSTRUCT: read typings, esm.mjs, docs, CHANGELOG, tests layout\", \"status\": \"pending\"}, {\"content\": \"EVIDENCE MAP: grade claims C0-C4\", \"status\": \"pending\"}, {\"content\": \"DIAGNOSE + TRADEOFF: issue chains vs global model\", \"status\": \"pending\"}, {\"content\": \"EXTERNAL RESEARCH: ecosystem, competitors, dep health, CVEs\", \"status\": \"pending\"}, {\"content\": \"COMPARE + CHALLENGE: disconfirmation search\", \"status\": \"pending\"}, {\"content\": \"SHAPE + CLASSIFY: findings to BUILD/DON'T BUILD/INVESTIGATE\", \"status\": \"pending\"}, {\"content\": \"SELF-EVAL + HANDOFF: full report + research_handoff.json\", \"status\": \"pending\"}]}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"DISCOVER\", \"views\": [{\"name\": \"project_model\", \"dependsOn\": [\"C0-001\", \"C0-002\", \"C0-003\"]}, {\"name\": \"evidence_map\", \"dependsOn\": [\"C0-001\", \"C0-002\", \"C0-003\"]}], \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.\", \"status\": \"active\", \"dependsOn\": [\"C0-001\", \"C0-002\"]}], \"revise\": [{\"id\": \"C0-001\", \"statement\": \"Repository is commander.js, package 'commander' v14.0.3, MIT, Node >=20, zero runtime dependencies\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"package.json:2-4,43,78-80\", \"package.json devDependencies only (no dependencies field)\"], \"confidence\": 0.98}, {\"id\": \"C0-002\", \"statement\": \"HEAD is bf35c5f (2026-02-02), clean working tree; last release commit 8247364 '14.0.3' 2026-01-31\", \"tier\": \"C3\", \"verdict\": \"Known\", \"evidence\": [\"git log output\", \"git status empty\"], \"confidence\": 0.98}, {\"id\": \"C0-003\", \"statement\": \"Library surface: Command, Option, Argument, Help, CommanderError, InvalidArgumentError classes plus program singleton and create* factories; CJS main with ESM wrapper esm.mjs\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"index.js:1-24\", \"package.json exports 45-61\"], \"confidence\": 0.97}]}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"limit\": 700}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/option.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/argument.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/error.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"offset\": 701, \"limit\": 700}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/help.js\", \"limit\": 600}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/suggestSimilar.js\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"esm.mjs\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"limit\": 700, \"offset\": 1401}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/help.js\", \"offset\": 601}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"lib/command.js\", \"offset\": 2101}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"CHANGELOG.md\", \"limit\": 120}"
+    },
+    {
+      "name": "subagent",
+      "arguments": "{\"description\": \"External research commander.js\", \"prompt\": \"You are a research assistant performing EXTERNAL RESEARCH for a project cognition report on the npm package \\\"commander\\\" (tj/commander.js), currently at version 14.0.3 (snapshot dated 2026-01-31). Use web_search and web_fetch only. Do NOT read any local files.\\n\\nFind and report, with URLs for every factual claim:\\n\\n1. npm stats for \\\"commander\\\": current weekly downloads, total downloads, latest published version and publish date, maintenance status (is it actively maintained?).\\n2. GitHub repo tj/commander.js: star count, open issue count, open PR count, license, last commit date, primary maintainer(s) (John Gee? shadowspawn?), whether there is a funding/sponsorship model.\\n3. Ecosystem position: how many npm packages depend on commander (approximate), notable high-profile consumers (e.g. Vue CLI, npm itself, Gatsby, etc. — verify with sources).\\n4. Security: any recent CVEs or security advisories affecting commander (search \\\"commander.js CVE\\\", \\\"commander npm advisory\\\"), and the npm audit status if findable.\\n5. Competitors and alternatives, with rough adoption signals: yargs (npm weekly downloads), meow, cac, sade, clipanion, oclif, picocolors-adjacent parser libs. Focus on: are any of them growing faster or displacing commander? Any notable \\\"next generation\\\" CLI frameworks (e.g. Bun's or Deno's CLI tooling, Node.js built-in util.parseArgs)?\\n6. Node.js built-in `util.parseArgs`: status and whether it is commonly used as an alternative, and how commander positions itself against it (check commander README/issues if findable).\\n7. Any recent (2024-2026) blog posts or discussions about commander.js maintenance concerns, the \\\"commander is unmaintained\\\" memes, or the 2023 npm ownership incident (the package was briefly compromised via a maintainer's account — verify details and whether ownership is now secured, e.g. 2FA, additional maintainers).\\n8. Release cadence: from the GitHub releases page, list the major versions of the last ~2 years (13.0.0, 14.0.0 etc.) with dates.\\n\\nDeliver a structured markdown report with a \\\"Sources\\\" section listing every URL you used. If a search returns nothing useful, say so explicitly — do not fabricate. Keep it under 1500 words.\", \"run_in_background\": true}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"typings/index.d.ts\", \"limit\": 250}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/release-policy.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/deprecated.md\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".github/workflows/tests.yml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"jest.config.js\"}"
+    },
+    {
+      "name": "skill",
+      "arguments": "{\"name\": \"research-report-template\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"SECURITY.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"package-support.json\"}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"tests/*.test.js\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 10, \"ref\": \"v13.0.0\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"rev-parse\", \"ref\": \"HEAD\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 500}"
+    },
+    {
+      "name": "subagent",
+      "arguments": "{\"description\": \"Test suite quality review\", \"prompt\": \"You are reviewing the test suite of the commander.js repository at D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace (a Node.js CLI parsing library, v14.0.3). Read ONLY these files (use the read tool; they are all present):\\n\\n- tests/command.parse.test.js\\n- tests/help.test.js\\n- tests/options.variadic.test.js\\n- tests/options.env.test.js\\n- tests/command.executableSubcommand.test.js\\n- tests/command.executableSubcommand.mock.test.js\\n- tests/helpGroup.test.js\\n- tests/deprecated.test.js\\n- tests/negatives.test.js\\n- tests/esm-imports-test.mjs\\n- tests/ts-imports.test.ts\\n- typings/index.test-d.ts (first 150 lines is fine)\\n\\nReport, structured:\\n\\n1. Testing style: how do tests invoke commander (program.parse with argv arrays? exitOverride? jest mocks of child_process.spawn? spawnSync running fixtures?). Quote 2-3 representative snippets.\\n2. Coverage patterns per area: parsing, options, help formatting, executable subcommands, deprecations, ESM, TypeScript typings — is each area exercised directly or only indirectly?\\n3. Notable gaps or weaknesses you observe (e.g., areas of lib/command.js with no obvious direct test).\\n4. How legacy/deprecated features (storeOptionsAsProperties, .command('*'), RegExp option param, InvalidOptionArgumentError alias) are tested.\\n5. Whether tests assert exact help/error text output (golden-output style) or behavior only.\\n\\nKeep it under 900 words. Cite file:line for each observation.\", \"run_in_background\": true}"
+    },
+    {
+      "name": "subagent",
+      "arguments": "{\"description\": \"README/docs claim extraction\", \"prompt\": \"You are extracting claims from the documentation of the commander.js repository at D:\\\\AI_work_project\\\\phase-a-snapshots\\\\commander.js\\\\workspace (Node.js CLI library, v14.0.3). Read ONLY these files with the read tool:\\n\\n- Readme.md (lines 150 to end — lines 1-150 were already read; but if convenient just read the whole file)\\n- docs/terminology.md\\n- docs/options-in-depth.md (first 100 lines)\\n- docs/parsing-and-hooks.md (first 100 lines)\\n- docs/help-in-depth.md (first 100 lines)\\n- CONTRIBUTING.md (first 80 lines)\\n\\nProduce a numbered list of CLAIMS — every factual or quality assertion the docs make about the project. Categories:\\n\\n- C-FEATURE: capabilities promised (e.g., \\\"Commander is strict and displays an error for unrecognised options\\\", \\\"support for X\\\")\\n- C-SUPPORT: support/maintenance promises (e.g., release policy, node version support)\\n- C-QUALITY: quality claims (e.g., \\\"complete solution\\\", \\\"well tested\\\")\\n- C-COMPAT: compatibility promises (e.g., \\\"backwards compatible\\\", deprecated features kept)\\n\\nFor each claim give: id, category, exact claim in 1 sentence, file:line evidence, and any caveats mentioned in the docs themselves (e.g., \\\"not documented\\\", \\\"internal\\\", \\\"legacy\\\"). Aim for 25-45 claims. Do not editorialize beyond the caveats. Keep under 1200 words.\", \"run_in_background\": true}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"\\\"dependencies\\\"|\\\"node_modules/(commander|chalk|yargs)\\\"\", \"path\": \"package-lock.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"package-lock.json\", \"limit\": 50}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"typings/index.d.ts\", \"pattern\": \"^export class|^export interface|^export type|^export declare|^export \\\\{|^  parse\\\\(|^  parseAsync\\\\(|^  action\\\\(|^  exitOverride\\\\(|^  opts\\\\(|^  optsWithGlobals\\\\(|^  configureOutput\\\\(|^  configureHelp\\\\(|^  hook\\\\(|^  addHelpText\\\\(|^  showHelpAfterError\\\\(|^  showSuggestionAfterError\\\\(\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"lib\", \"pattern\": \"TODO|FIXME|HACK|XXX|deprecated|legacy\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".github/workflows/codeql-analysis.yml\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"RECONSTRUCT\", \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.\", \"status\": \"active\", \"dependsOn\": [\"C0-001\", \"C0-002\", \"C0-003\", \"C2-004\", \"C2-005\", \"C2-006\"]}], \"revise\": [{\"confidence\": 0.99, \"evidence\": [\"package.json:62-76 (devDependencies only)\", \"package-lock.json:7-29 root has devDependencies only\"], \"id\": \"C0-001\", \"statement\": \"package 'commander' v14.0.3, MIT, Node >=20, ZERO runtime dependencies (dev-only toolchain)\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.97, \"evidence\": [\"git log 500 commits: maintainers John Gee (shadowspawn) + abetomo + dependabot; feature commits rare, mostly John Gee\"], \"id\": \"C2-004\", \"statement\": \"Maintenance model: ~2 active maintainers, dependabot-driven dev-dep churn, ~6-month major release cadence aligned to Node LTS EOL\", \"tier\": \"C3\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"docs/release-policy.md:3-15\", \"CHANGELOG.md:11-61 (14.0.0 breaking: Node>=20)\", \"CHANGELOG.md:82 (13.0.0 excess args error)\"], \"id\": \"C2-005\", \"statement\": \"Release discipline: semver, majors ~every 6 months, old majors get security-only updates for 12 months; strictness increased over time (unknown options and excess args error by default)\", \"tier\": \"C3\", \"verdict\": \"Known\"}, {\"confidence\": 0.98, \"evidence\": [\"tests/ 109 jest files + tsd + esm-import tests\", \"jest.config.js collectCoverage true, no threshold\", \".github/workflows/tests.yml Node 20/22/24 x 3 OS\"], \"id\": \"C2-006\", \"statement\": \"Test estate: 109 jest test files, CI matrix Node 20/22/24 x 3 OS, CodeQL; coverage collected but no threshold gate\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.97, \"evidence\": [\"lib/command.js:13 (extends EventEmitter)\", \"lib/command.js:720-730 (option:xxx event listeners)\", \"lib/command.js:1748-1895 parseOptions emits events\"], \"id\": \"C2-007\", \"statement\": \"Architecture: Command extends EventEmitter; option values flow through 'option:<name>' events emitted by parseOptions and handled by listeners registered in addOption\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.98, \"evidence\": [\"lib/command.js:533-539 _exit uses process.exit\", \"lib/command.js:1940-1958 error() -> _exit\", \"lib/command.js:508-521 exitOverride\"], \"id\": \"C2-008\", \"statement\": \"Default error handling terminates the process via process.exit (exitOverride is the escape hatch)\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"lib/command.js:40,905-916,925-961 storeOptionsAsProperties branches\", \"docs/deprecated.md:1-18 ten deprecated features still supported\", \"lib/command.js deprecated sites: 31,171,443-455,752,1608-1620,2506-2538\"], \"id\": \"C2-009\", \"statement\": \"Legacy/deprecation tail: ~10 deprecated APIs still live (storeOptionsAsProperties, .command('*'), on('command:*'), RegExp option param, outputHelp callback, InvalidOptionArgumentError, _args, noHelp, addHelpCommand string form); each adds branches to hot paths\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"typings/index.d.ts 1113 lines hand-written\", \"typings/index.test-d.ts tsd tests\", \"package.json check:type scripts\"], \"id\": \"C2-010\", \"statement\": \"TypeScript typings hand-maintained with tsd + tsc CI gates\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"package-support.json: response 'time-permitting', sponsors shadowspawn+abetomo\", \"SECURITY.md Tidelift contact\"], \"id\": \"C2-011\", \"statement\": \"Support is best-effort ('time-permitting'), security via Tidelift, funded by sponsors\", \"tier\": \"C2\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"Readme.md\", \"pattern\": \"dependenc|Node.js v|strict|unrecognised|complete solution\"}"
+    },
+    {
+      "name": "job_list",
+      "arguments": "{}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{\"scope\": \"children\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.9, \"evidence\": [\"Readme.md:73 strict unknown options error\", \"lib/command.js:27 _allowUnknownOption=false\", \"lib/command.js:2114-2137 unknownOption()\"], \"id\": \"C0-D1\", \"statement\": \"Doc claim: 'Commander is strict and displays an error for unrecognised options'\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.85, \"evidence\": [\"Readme.md:192,201,246-247,364-367,529,589-592,683,743-750,774,818-825,832-838,970-976,1112-1120,1133-1134\", \"verified against lib/command.js parseOptions/action/hook/help code\"], \"id\": \"C0-D2\", \"statement\": \"Doc claims: core parsing semantics (combined flags, -- literal, variadic, negated options, defaults, custom processing, action handler params, parseAsync, hooks, help command/option, showHelpAfterError, exitOverride, configureOutput) — majority directly verified in code\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.8, \"evidence\": [\"CONTRIBUTING.md:40 zero production dependencies 'not a hard requirement'\", \"package.json no dependencies\"], \"id\": \"C0-D3\", \"statement\": \"Doc claim: zero production dependencies is a soft policy, not hard requirement\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.7, \"evidence\": [\"Readme.md:1044-1046 extra-typings companion project exists\"], \"id\": \"C0-D4\", \"statement\": \"Doc claim: optional 'extra-typings' companion project provides stronger inferred types\", \"tier\": \"C0\", \"verdict\": \"Claimed\"}, {\"confidence\": 0.9, \"evidence\": [\"Readme.md:1166-1168,1170,1174-1176 support claims\", \"docs/release-policy.md:10-15\", \"package-support.json\"], \"id\": \"C0-D5\", \"statement\": \"Doc claims: current major fully supported on Node LTS >=20; old majors security updates 12 months; community support via GitHub Issues; commercial via Tidelift\", \"tier\": \"C2\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"typings/esm.d.mts\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"examples/options-conflicts.js\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.9, \"evidence\": [\"tests/command.parse.test.js:14-17,82-95\", \"tests/options.variadic.test.js:6-13,20-21\", \"tests/command.executableSubcommand.mock.test.js:26-38\", \"tests/helpGroup.test.js:10-11\"], \"id\": \"C2-012\", \"statement\": \"Test style: in-process unit tests via exitOverride + configureOutput(jest.fn) + jest-spied spawn; behavior-focused, regex text checks; no golden-output files\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.75, \"evidence\": [\"tests/options.env.test.js:16-20,44-48 manual env cleanup\", \"tests/esm-imports-test.mjs:16-24 standalone script outside jest\", \"tests/command.executableSubcommand.test.js single test (spawn success path lives in lookup/search/signals suites)\"], \"id\": \"C2-013\", \"statement\": \"Test hygiene gaps: manual env cleanup (leak risk), ESM smoke test outside jest runner, thin direct coverage of executable-subcommand success path in sampled files\", \"tier\": \"C2\", \"verdict\": \"Likely\"}]}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"CHANGELOG.md\", \"limit\": 140, \"offset\": 121}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"Readme.md\", \"limit\": 60, \"offset\": 1030}"
+    },
+    {
+      "name": "todo_write",
+      "arguments": "{\"todos\": [{\"content\": \"DISCOVER: cartography, claims from README/package.json/CHANGELOG\", \"status\": \"completed\"}, {\"content\": \"RECONSTRUCT: read lib/*.js core modules\", \"status\": \"completed\"}, {\"content\": \"RECONSTRUCT: read typings, esm.mjs, docs, CHANGELOG, tests layout\", \"status\": \"completed\"}, {\"content\": \"EVIDENCE MAP: grade claims C0-C4\", \"status\": \"completed\"}, {\"content\": \"DIAGNOSE + TRADEOFF: issue chains vs global model\", \"status\": \"in_progress\"}, {\"content\": \"EXTERNAL RESEARCH: ecosystem, competitors, dep health, CVEs (subagent 30ca56dd)\", \"status\": \"in_progress\"}, {\"content\": \"COMPARE + CHALLENGE: disconfirmation search\", \"status\": \"pending\"}, {\"content\": \"SHAPE + CLASSIFY: findings to BUILD/DON'T BUILD/INVESTIGATE\", \"status\": \"pending\"}, {\"content\": \"SELF-EVAL + HANDOFF: full report + research_handoff.json\", \"status\": \"pending\"}]}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{\"scope\": \"children\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"C:\\\\Users\\\\jxgm\\\\AppData\\\\Local\\\\Temp\\\\dsh-spill-O0xn46\\\\session-fb865c36c96b\\\\c9fbdf618d6e-glob-results.txt\", \"offset\": 100}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".gitattributes\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{\"scope\": \"descendants\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".github/FUNDING.yml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"examples/help-groups.js\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"hypotheses\": [{\"dependsOn\": [\"C0-001\", \"C0-002\", \"C0-003\", \"C2-004\", \"C2-005\", \"C2-006\", \"C2-007\", \"C2-008\", \"C2-009\", \"C2-010\", \"C2-011\", \"C0-D1\", \"C0-D2\", \"C0-D3\", \"C0-D5\"], \"id\": \"H1\", \"statement\": \"This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.\", \"status\": \"invalidated\"}, {\"dependsOn\": [\"H1\"], \"id\": \"H2\", \"statement\": \"REVISED: commander.js v14.0.3 is a deliberately slow-moving infrastructure library: zero runtime deps, strict-by-default parsing, semver-disciplined ~6-month majors aligned to Node LTS EOL, extensive behavior-locked test estate (109 jest files), 2 active maintainers, long deprecated-API compat tail. Value = ubiquity + stability + predictability; any change must clear the bar of no new dependencies and no contract breakage. Feature growth is real but low-volume and maintainer-driven.\", \"status\": \"active\"}], \"phase\": \"CHALLENGE\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{\"scope\": \"children\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{\"scope\": \"children\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"SHAPE\", \"views\": [{\"dependsOn\": [\"C0-001\", \"C0-002\", \"C0-003\", \"C2-004\", \"C2-005\", \"C2-006\", \"C2-007\", \"C2-008\", \"C2-009\", \"C2-010\", \"C2-011\", \"C0-D1\", \"C0-D2\", \"C0-D3\", \"C0-D4\", \"C0-D5\", \"C2-012\", \"C2-013\", \"H2\"], \"name\": \"report\"}]}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander npm package weekly downloads 2026\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://api.npmjs.org/downloads/point/last-week/commander\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"commander\\\" npm package download stats last week api.npmjs.org\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander.js github stars open issues tj/commander.js 2026\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander npm \\\"15.0.0\\\" release Node.js\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"npmcharts commander weekly downloads million\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander.js v15.0.0 breaking changes changelog\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander npm CVE security advisory vulnerability\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"MAL-2025-192687 commander npm malicious\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander 15.0.0 \\\"node\\\" minimum version \\\"breaking\\\" release notes 2026\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"commander 15.0.0 changelog \\\"Removed\\\" OR \\\"Breaking\\\" OR \\\"deprecated\\\" options-as-properties\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"commander\\\" npm weekly downloads \\\"90\\\" OR \\\"100\\\" million OR \\\"27\\\" million per week\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"tj/commander.js github repository stars \\\"stargazers\\\" count\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{\"scope\": \"children\"}"
+    },
+    {
+      "name": "interrupt_agent",
+      "arguments": "{\"agent_id\": \"30ca56dd-f62d-458c-a7a6-9a0917513e5c\", \"reason\": \"Running far beyond expected duration; web_fetch provider unavailable in session, likely retrying fetches; fallback facts gathered directly via web_search.\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EXTERNAL_RESEARCH\", \"revise\": [{\"confidence\": 0.85, \"evidence\": [\"https://github.com/tj/commander.js/releases/tag/v15.0.0 (search result)\", \"https://newreleases.io/project/npm/commander/release/15.0.0-0\", \"multiple dependabot/renovate PRs bumping 14.0.3 -> 15.0.0 (PaloAltoNetworks/docusaurus-openapi-docs #1532, bitwarden/directory-connector #1134, zazuko/trifid #990)\"], \"id\": \"C3-001\", \"statement\": \"Upstream has since released commander v15.0.0 (with a v15.0.0-0 prerelease); this snapshot (v14.0.3, 2026-01-31) is the last of the 14.x line and sits at a major-version boundary\", \"tier\": \"C3\", \"verdict\": \"Known\"}, {\"confidence\": 0.75, \"evidence\": [\"https://osv.dev/vulnerability/MAL-2025-192687 (commander-stable typosquat)\", \"https://deps.dev/advisory/osv/MAL-2025-192687\", \"https://www.cloudsek.com/blog/bridgehead-npm-typosquatting-wsl-windows-crypto-wallet-stealer\"], \"id\": \"C3-002\", \"statement\": \"No CVE/malicious finding found for the real 'commander' package; the malicious-package ecosystem around it is typosquats (commander-stable, commmander, comander) — absence-of-evidence claim, not proof of absence\", \"tier\": \"C3\", \"verdict\": \"Likely\"}, {\"confidence\": 0.7, \"evidence\": [\"https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0 (commander in >10M weekly downloads tier)\", \"https://www.pkgpulse.com/blog/commander-vs-yargs-2026\"], \"id\": \"C3-003\", \"statement\": \"commander is in the top tier of npm packages (>10M weekly downloads; exact figure unverified in this session — web_fetch provider unavailable)\", \"tier\": \"C3\", \"verdict\": \"Likely\"}]}"
+    },
+    {
+      "name": "todo_write",
+      "arguments": "{\"todos\": [{\"content\": \"DISCOVER: cartography, claims from README/package.json/CHANGELOG\", \"status\": \"completed\"}, {\"content\": \"RECONSTRUCT: read lib/*.js core modules\", \"status\": \"completed\"}, {\"content\": \"RECONSTRUCT: read typings, esm.mjs, docs, CHANGELOG, tests layout\", \"status\": \"completed\"}, {\"content\": \"EVIDENCE MAP: grade claims C0-C4\", \"status\": \"completed\"}, {\"content\": \"DIAGNOSE + TRADEOFF: issue chains vs global model\", \"status\": \"completed\"}, {\"content\": \"EXTERNAL RESEARCH: ecosystem, competitors, dep health, CVEs\", \"status\": \"completed\"}, {\"content\": \"COMPARE + CHALLENGE: disconfirmation search\", \"status\": \"completed\"}, {\"content\": \"SHAPE + CLASSIFY: findings to BUILD/DON'T BUILD/INVESTIGATE\", \"status\": \"completed\"}, {\"content\": \"SELF-EVAL + HANDOFF: full report + research_handoff.json\", \"status\": \"completed\"}]}"
+    }
+  ]
+}

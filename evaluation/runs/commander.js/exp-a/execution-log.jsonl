@@ -1,0 +1,12 @@
+{"mode":"deep","started_at":"2026-08-21T19:30:10.2887794Z","finished_at":"2026-08-21T19:37:02.6284900Z","exit_code":0,"preset":"researcher-deep","run_id":"exp-a-deep-02","order":1,"doctor_post":0,"plan":false}
+{"mode":"quick","started_at":"2026-08-21T19:37:02.9246984Z","finished_at":"2026-08-21T19:39:36.8515690Z","exit_code":0,"preset":"researcher-quick","run_id":"exp-a-quick-03","order":2,"doctor_post":0,"plan":false}
+{"mode":"plan","started_at":"2026-08-21T19:39:37.1282944Z","finished_at":"2026-08-21T19:42:24.7974508Z","exit_code":0,"preset":"standard","run_id":"exp-a-plan-03","order":3,"doctor_post":0,"plan":true}
+{"mode":"standard","started_at":"2026-08-21T19:42:25.1268668Z","finished_at":"2026-08-21T19:44:18.9090347Z","exit_code":0,"preset":"standard","run_id":"exp-a-standard-03","order":4,"doctor_post":0,"plan":false}
+{"mode":"plan","started_at":"2026-08-21T19:44:19.2353914Z","finished_at":"2026-08-21T19:47:06.5033153Z","exit_code":0,"preset":"standard","run_id":"exp-a-plan-02","order":5,"doctor_post":0,"plan":true}
+{"mode":"deep","started_at":"2026-08-21T19:47:06.8041758Z","finished_at":"2026-08-21T19:55:19.3854523Z","exit_code":0,"preset":"researcher-deep","run_id":"exp-a-deep-01","order":6,"doctor_post":0,"plan":false}
+{"mode":"quick","started_at":"2026-08-21T19:55:19.6638951Z","finished_at":"2026-08-21T19:58:31.4130017Z","exit_code":0,"preset":"researcher-quick","run_id":"exp-a-quick-02","order":7,"doctor_post":0,"plan":false}
+{"mode":"standard","started_at":"2026-08-21T19:58:31.6652231Z","finished_at":"2026-08-21T20:00:18.3331938Z","exit_code":0,"preset":"standard","run_id":"exp-a-standard-01","order":8,"doctor_post":0,"plan":false}
+{"mode":"plan","started_at":"2026-08-21T20:00:18.6152959Z","finished_at":"2026-08-21T20:03:20.4575071Z","exit_code":0,"preset":"standard","run_id":"exp-a-plan-01","order":9,"doctor_post":0,"plan":true}
+{"mode":"deep","started_at":"2026-08-21T20:03:20.7342158Z","finished_at":"2026-08-21T20:10:53.8364373Z","exit_code":0,"preset":"researcher-deep","run_id":"exp-a-deep-03","order":10,"doctor_post":0,"plan":false}
+{"mode":"quick","started_at":"2026-08-21T20:10:54.1109283Z","finished_at":"2026-08-21T20:14:05.5524457Z","exit_code":0,"preset":"researcher-quick","run_id":"exp-a-quick-01","order":11,"doctor_post":0,"plan":false}
+{"mode":"standard","started_at":"2026-08-21T20:14:05.8167075Z","finished_at":"2026-08-21T20:15:54.5496658Z","exit_code":0,"preset":"standard","run_id":"exp-a-standard-02","order":12,"doctor_post":0,"plan":false}

@@ -1,0 +1,196 @@
+SELF-EVAL passed (details in report). All moves complete — writing the final report.
+
+---
+
+# PROJECT COGNITION REPORT — commander.js (snapshot v14.0.3)
+
+## Runtime Proof
+
+**Researcher Runtime Certificate — Run #2, Overall: SAFE** (preset=researcher-deep; sandbox=read-only PASS; approval=never PASS; write/edit stubs PASS; git_read-only code surface PASS; checkpoint available PASS; replay consistent PASS). Depth: **Deep** (all eleven moves, per evaluation override D002). Nothing in the repository was modified; this analysis is read-only.
+
+## Executive Summary
+
+This snapshot is **commander.js v14.0.3** (2026-02-02) — the de-facto standard, zero-dependency CLI-parsing framework for Node.js (>10M weekly downloads lower bound, verified via third-party audit; exact figure not retrievable this session). The project is **healthy and deliberately conservative**: strict-by-default parsing, aggressive backward compatibility, comprehensive tests (109 files), hand-maintained typings checked by `tsc`/`tsd`, and ~2 majors/year aligned to Node LTS end-of-life.
+
+Two findings dominate:
+
+1. **The snapshot is one major version behind upstream** — [v15.0.0 has been released](https://github.com/tj/commander.js/releases/tag/v15.0.0) (confirmed via release tag and multiple dependabot PRs bumping 14.0.3→15.0.0). Any change proposed against this snapshot must first be reconciled with the v15 delta, or it risks colliding with (or duplicating) upstream work.
+2. **One verified defect at this snapshot**: `typings/index.d.ts` declares `CommanderError.nestedError?: string`, but the runtime assigns an `Error` (lib/command.js:1339) and the project's own test suite reads `nestedError.code` (tests/command.executableSubcommand.mock.test.js:83). A genuine typing/implementation drift — the only concrete BUILD candidate found, and it may already be fixed upstream.
+
+No security advisories exist against the `commander` package itself; the only related advisories target **typosquats** (`commander-js`, `commander-stable`).
+
+---
+
+## 1. Project Identity
+
+| Attribute | Value | Evidence |
+|---|---|---|
+| Name | **commander** (commander.js) | package.json:2 |
+| Version at snapshot | **14.0.3** (2026-01-31) | package.json:3, CHANGELOG.md:11 |
+| Upstream latest | **15.0.0** (post-snapshot) | [release tag v15.0.0](https://github.com/tj/commander.js/releases/tag/v15.0.0) |
+| Positioning | "The complete solution for node.js command-line programs" | package.json:4, Readme.md:8 |
+| License / repo | MIT; github.com/tj/commander.js | package.json:16-20 |
+| Author lineage | TJ Holowaychuk (creator) → John Gee (shadowspawn, active maintainer), abetomo (co-maintainer/releases) | git log; .github/FUNDING.yml:1 |
+| Runtime | CommonJS core + ESM wrapper; Node **>=20** | package.json:43-61, 78-80 |
+| Dependencies | **Zero production dependencies** (stated + enforced) | package.json:62-76; CONTRIBUTING.md:40 |
+| Age/trajectory | Since 2011; v3.0.0 2019-08 → v14.0.0 2025-05, ~2 majors/yr | CHANGELOG.md |
+| Funding | GitHub sponsors (shadowspawn, abetomo, tj) + Tidelift | FUNDING.yml; package-support.json |
+| Value proposition | Declarative command/option/argument specs → strict argv parsing, validation, auto-help, exit codes; tiny install; works CJS/ESM/TS | Readme.md:67-74 |
+
+**Mission**: give Node.js CLI authors a single, dependency-free, strict-by-default framework that turns a declarative command description into parsing + validation + help + process behavior, without ever leaking its own opinions into the user's dependency tree.
+
+**Users**: every Node CLI author — from one-off scripts (the global `program` singleton) to large multi-command CLIs (local `new Command()`), including TypeScript users via hand-maintained typings and the separate `@commander-js/extra-typings` project.
+
+**Evidence of reach**: >10M weekly downloads ([dev.to audit of >10M/week packages](https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0)); dependabot traffic shows GitLab, Keycloak, bitwarden, Zendesk, Automattic/juice on commander (C36).
+
+## 2. Architecture Map
+
+**Runtime shape** (all sizes measured at snapshot):
+
+```
+index.js (24 ln)   CJS entry: exports program singleton, create* factories, 6 classes
+esm.mjs (16 ln)    ESM wrapper: named re-exports from CJS
+lib/command.js (2777 ln)   Command extends EventEmitter — orchestrator
+lib/option.js  (380 ln)    Option model + flags-string parser + DualOptions helper
+lib/argument.js (150 ln)   Argument model
+lib/help.js    (747 ln)    Help class — help-text rendering pipeline
+lib/error.js    (39 ln)    CommanderError, InvalidArgumentError
+lib/suggestSimilar.js (100 ln)  Damerau–Levenshtein "did you mean" suggestions
+typings/        index.d.ts (1113 ln, hand-maintained) + esm.d.mts re-export + tsd tests
+tests/          109 jest files, feature-organized (options.*, command.*, help.*, …)
+examples/       44 runnable examples incl. executable-subcommand CLIs
+docs/           terminology, deprecated, release-policy, help-in-depth, options-in-depth, parsing-and-hooks + zh-CN translations
+```
+
+**Parse pipeline** (documented in docs/parsing-and-hooks.md; implemented in command.js):
+
+1. `parse()`/`parseAsync()` → `_prepareForParse()` (save/restore state for repeat parses, C12) → `_prepareUserArgs()` (argv conventions: node/electron/eval/user auto-detection, C20)
+2. `_parseCommand()` → `parseOptions()` — the tokenizer: a hand-rolled state machine (`activeGroup` for combined shorts, `activeVariadicOption`, `--` literal handling, negative-number heuristics, positional/passThrough modes) that classifies each token as known option / operand / unknown
+3. Values dispatched via **EventEmitter** events (`option:name`, `optionEnv:name`) → `handleOptionValue` → `setOptionValueWithSource` (value + provenance: default/config/env/cli/implied)
+4. Env vars → implied values → subcommand dispatch (`_dispatchSubcommand`, `preSubcommand` hooks) → leaf: help check → mandatory/conflict/unknown checks → `_processArguments` → `preAction` hooks → action handler → `postAction` hooks (promise-chained so `parseAsync` works)
+5. Errors funnel through `this.error()` → `_outputConfiguration.outputError` → `_exit()` (process.exit unless `exitOverride`)
+
+**Help pipeline**: `helpInformation()` → `createHelp()` (new Help + configureHelp overrides) → `formatHelp()` — grouping (v14 help groups), wrapping (`boxWrap`, `formatItem`), style hooks (identity by default; color via `configureOutput`/`configureHelp`).
+
+**Executable subcommands** (C13): `.command(name, desc)` marks `_executableHandler`; at dispatch, `_executeSubCommand` searches the script directory (with legacy name fallback), spawns a child (node for source files, incl. `.ts`/`.mjs`), forwards signals, increments `--inspect` ports, and terminates the parent with the child's exit code.
+
+## 3. Critical Components
+
+| Component | Lines | Role | Why critical |
+|---|---|---|---|
+| `Command.parseOptions` | command.js:1748-1895 | Tokenizer/classifier | The heart of the library; every parsing special case (negative numbers, `--`, combined shorts, variadic greediness, positional/passThrough) lives here. Highest regression risk (C24). |
+| `Command._parseCommand` | command.js:1550-1641 | Dispatch/validation orchestrator | Orders help checks, mandatory/conflict checks, action invocation; subtle ordering choices (e.g., "We do not always call this check to avoid masking a 'better' error") |
+| `Command.addOption` + event handlers | command.js:670-733 | Value semantics | Defaults, negate defaults, presets, parseArg, value sources; the `option:` events are simultaneously the internal dispatch bus and a documented public API (C11) |
+| `Command._executeSubCommand` | command.js:1202-1346 | Child-process management | Process-spawning surface; signal forwarding; exit coupling to parent |
+| `Help` class | help.js:1-747 | Help rendering | Second-largest module; hand-rolled wrapping/grouping/colors |
+| `Option.splitOptionFlags` | option.js:328-377 | Flags-string grammar | v13 made this strict (throws on `-ws`); the flags DSL is the library's public grammar |
+| `typings/index.d.ts` | 1113 lines | TS surface | Hand-maintained; the only verified defect (C26) lives here |
+| Test suite | 109 files | Safety net | Mitigates the parser's complexity; the reason the conservative change process works |
+
+## 4. Design Decisions
+
+| # | Decision | Rationale / tradeoff | Evidence |
+|---|---|---|---|
+| D1 | **Zero production dependencies** | Supply-chain safety + tiny install; cost: parsing/help/color/suggestion logic all hand-rolled | CONTRIBUTING.md:40 |
+| D2 | **Strict by default** (unknown options, unknown commands, and since v13 excess args are errors) with opt-outs (`allowUnknownOption`, `allowExcessArguments`) | Catches user mistakes; opt-outs keep escape hatches | CHANGELOG.md:82; Readme.md:73 |
+| D3 | **EventEmitter as internal dispatch bus AND public legacy API** | `option:name` / `command:name` events predate modern APIs and remain documented; coupling is deliberate for backward compat | command.js:720, 1608; Readme.md:956-964 |
+| D4 | **Major version ~every 6 months, tied to Node LTS EOL; 12-month security window for old majors** | Predictable support story; forces periodic Node-floor bumps | docs/release-policy.md |
+| D5 | **Backward compatibility as a first-class constraint** — 9+ documented deprecated features still supported (RegExp parseArg since v3, `_args` since v11, string-form `addHelpCommand`, …) | Zero-drama upgrades for a >10M-download audience; cost: growing API surface constraining evolution | docs/deprecated.md |
+| D6 | **Option value provenance tracking** (`default/config/env/cli/implied`) | Enables `env()`, `implies()`, `conflicts()`, and correct precedence without magic | command.js:39, 953-992 |
+| D7 | **Hand-maintained typings + JSDoc + `tsc --checkJs` + tsd** instead of codegen | Single source of implementation truth; typings checked but hand-synced (drift mechanism proven by C26) | package.json:25-27; tsconfig.json |
+| D8 | **Lazy creation of help option/help command** | Cheap defaults; help only materialized when needed | command.js:463, 2592 |
+| D9 | **Output/exit configurability** (`configureOutput`, `exitOverride`) | Lets tests and embedding apps (Electron, daemons) own stdout/exit | Readme.md:1110-1152 |
+| D10 | **Save/restore state for repeat `parse()`** (v13) | Test-friendly, REPL-friendly; explicitly forbidden under `storeOptionsAsProperties` | command.js:1127-1174 |
+| D11 | **Executable subcommands as first-class citizens** | Unix-style `prog-sub` discovery, node-launched on Windows, inspector port bumping | command.js:1202-1346 |
+| D12 | **`program` singleton export + `new Command()` guidance** | Convenience for scripts; docs steer larger apps to instances | index.js:7; Readme.md:147-175 |
+
+## 5. Risk Map
+
+| ID | Risk | Severity | Evidence | Verdict |
+|---|---|---|---|---|
+| R1 | **Snapshot behind upstream**: v14.0.3 analyzed; v15.0.0 released since. Any patch against this snapshot may duplicate or conflict with upstream | **High (for change work)** | [v15.0.0 release](https://github.com/tj/commander.js/releases/tag/v15.0.0); dependabot PRs 14.0.3→15.0.0 (C32) | Known |
+| R2 | **Bus factor**: ~2 active humans (shadowspawn primary; abetomo releases/CI); recent history is ~85% dependabot churn | Medium | git log 120 entries (C16); FUNDING.yml | Known |
+| R3 | **Node 20 EOL 2026-04-30** → v14 enters 12-month security-only maintenance; consumers on Node 20 forced to move | Medium (external timing) | [endoflife.date/nodejs](https://endoflife.date/nodejs); release-policy.md (C34) | Known |
+| R4 | **Parser complexity**: hand-rolled state machine + heuristics (negative numbers, electron/eval detection, variadic greediness) | Medium | command.js:1748-1895; docs/options-in-depth.md ambiguity section (C24) | Known — mitigated by tests |
+| R5 | **Typings drift mechanism proven**: `nestedError` typed `string`, runtime `Error` (C26) | Low (one instance found) | typings/index.d.ts:20 vs command.js:1339 vs test:83 | Contradicted |
+| R6 | **Signal-listener accumulation**: 5 `process.on(signal)` listeners per executable-subcommand spawn, never removed; only matters in long-lived parents (exitOverride path) | Low | command.js:1290-1301 (C27) | Known |
+| R7 | **Coverage collected, not enforced**: no `coverageThreshold` — silent regression possible | Low | jest.config.js:3 (C28) | Known |
+| R8 | **Supply-chain impersonation**: typosquats `commander-js` (GHSA-2hqf-qqmq-pgpp) and `commander-stable` (MAL-2025-192687) exist; no advisories against `commander` itself | Low (ecosystem-level) | [GHSA-2hqf-qqmq-pgpp](https://github.com/advisories/GHSA-2hqf-qqmq-pgpp); [MAL-2025-192687](https://osv.dev/vulnerability/MAL-2025-192687) (C33) | Likely |
+| R9 | **Legacy surface constrains evolution**: deprecated.md items (some from v3/v7/v8) remain load-bearing | Low-Medium | docs/deprecated.md (C15) | Known |
+| R10 | **Executable-subcommand error handling acknowledged as lossy**: unexpected spawn errors are "silently fail" (documented in test comment) | Low | tests/command.executableSubcommand.mock.test.js:62-64 | Known |
+
+**Non-findings** (checked, no issue): no TODO/FIXME in lib/; README↔examples references resolve; CI matrix (node 20/22/24 × 3 OS) covers the engine floor; CHANGELOG discipline maintained; docs current.
+
+## 6. Change Impact Analysis
+
+| If you change… | You touch… | Blast radius |
+|---|---|---|
+| Tokenization/parsing semantics | `parseOptions`, `_parseCommand`, `negativeNumberArg` + tests/command.parseOptions, options.*, args.literal, negatives | **Huge** — every consumer's argv behavior; the project's own changelog shows such changes are major-version-only (v13 excess-args, v13 flag strictness) |
+| Option value semantics | `addOption`/`handleOptionValue`, `Option` defaults/negate/preset + options.default/dual-options/preset tests | High |
+| Typings | typings/index.d.ts + typings/index.test-d.ts + esm.d.mts | Medium (consumer compile-time only); C26 shows the check pipeline can miss usage-level drift |
+| Help output | lib/help.js + docs/help-in-depth.md + help.* tests | Medium (visible to every user's `--help`; snapshot tests are extensive) |
+| Node floor | package.json engines, CI matrix, README Support, release-policy.md table | Medium (policy-driven, major-only) |
+| Executable subcommand spawn | `_executeSubCommand`, signal handling, inspector port logic | Medium (process/security surface) |
+| Error/exit behavior | `error()`, `_exit()`, `CommanderError`, exitOverride tests | Medium — behavioral contract for embedding apps |
+
+**Net**: this codebase is structured so that risky changes are *possible but expensive* — the design's answer to "local optimality" pressure is a slow, test-gated, major-version-only evolution path. That is the architecture doing its job, not a defect.
+
+## 7. Decision Memo
+
+**Context**: this is a snapshot of an external, healthy, widely-adopted open-source library, not our own codebase. Nothing in the analysis suggests the project itself needs intervention; the findings below are about *working against this snapshot*.
+
+1. **Reconcile with v15 before any work (INVESTIGATE → gate).** Upstream has moved past this snapshot (R1, C32). First determine the v14→v15 delta (release notes, CHANGELOG, diff of lib/ and typings/). If the goal is a patch or vendor decision, rebase onto v15 unless there is a hard reason to stay on v14 (e.g., Node 20 support, which v15 may drop per policy).
+2. **`nestedError` typing fix (BUILD — small, conditional).** One line in typings/index.d.ts (`nestedError?: Error`) plus tsd coverage of the `commander.executeSubCommandAsync` wrapped-error shape. Evidence: runtime assigns `Error` (command.js:1339); the project's own test reads `.code` on it (test:83); declared type is `string` (typings:20). **Check first whether v15 already fixed it** — if so, nothing to do here. If contributing upstream: this is the only concrete, evidence-backed defect found at this snapshot.
+3. **Signal-listener accumulation (INVESTIGATE — no action without a user story).** Real but narrow (C27): only long-lived parents using executable subcommands + exitOverride accumulate 5 listeners per spawn. Not worth changing speculatively in a project whose bar for change is this high.
+4. **Coverage threshold (DON'T BUILD).** No demonstrated problem; a threshold would add friction against the suite's deliberate testing of `process.exit`-adjacent paths via `exitOverride`. The existing suite breadth is the actual control.
+5. **Monitoring posture (no action).** Node 20 EOL 2026-04-30 makes a v15 migration the dominant forward event for any consumer of this snapshot; watch the v15 release notes for the Node-floor bump and any breaking changes to `configureOutput`/help behavior (the v14-era changes most likely to surface in downstream friction).
+
+**Global verdict**: the snapshot is a well-engineered, deliberately stable library at the tail of a major release line. The only *verified* defect (C26) is trivial; the only *strategic* issue (R1) is that the snapshot is stale relative to upstream. No architectural intervention is warranted.
+
+---
+
+## Evidence Map (selected cards)
+
+| Claim | Tier/Verdict | Evidence |
+|---|---|---|
+| Strict-by-default error behavior | C1/Known | command.js:2114, 1403, 1675 |
+| Zero production deps | C1/Known | package.json:62-76; CONTRIBUTING.md:40 |
+| Node >=20 floor | C1/Known | package.json:78-80 |
+| Snapshot one major behind upstream | C3/Known | [v15.0.0 release tag](https://github.com/tj/commander.js/releases/tag/v15.0.0) |
+| `nestedError` typing mismatch | C3/Contradicted | typings:20 vs command.js:1339 vs test:83 |
+| "Complete solution" positioning | C0/Claimed | package.json:4 (marketing claim, not falsifiable) |
+| Exact weekly downloads | C3/Unknown | not retrievable (web_fetch unavailable this session); >10M lower bound only (C35) |
+| No CVE against `commander` | C3/Likely | search sweep; only typosquat advisories (C33) |
+
+**Research constraints disclosed**: `web_fetch` had no usable provider this session — all external facts rest on search-result snippets and are graded accordingly (C3 tier, never over-claimed). Tests were not executed (read-only sandbox); the suite's health is inferred from CI config, history, and code quality.
+
+**Hypothesis trail**: H1 (mature, steady-state library) → **invalidated** by the v15 discovery → **H2** (mature, healthy, deliberately conservative; the snapshot is stale relative to upstream and any change must first reconcile with v15).
+
+---
+
+## Handoff Brief
+
+**Human-readable.** The only BUILD item: **fix the `CommanderError.nestedError` typing** (`string` → `Error`) in `typings/index.d.ts` at this snapshot, with a tsd assertion covering `err.nestedError.code` for `commander.executeSubCommandAsync` wrapped errors — *after verifying v15 upstream did not already fix it*. Everything else is INVESTIGATE (v14→v15 delta; signal-listener accumulation) or DON'T BUILD (coverage threshold). If the intent is any larger change against this snapshot, the first step is reconciling with upstream v15, not building on v14.
+
+**Machine-readable:**
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": { "repo": "tj/commander.js", "version": "14.0.3", "commit": "bf35c5f", "analyzed_at": "2026-02-02" },
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "TypeScript consumers of CommanderError.nestedError get the wrong type: typings/index.d.ts:20 declares `nestedError?: string`, but the runtime assigns an Error object (lib/command.js:1339 wraps spawn errors) and the project's own test reads nestedError.code (tests/command.executableSubcommand.mock.test.js:83).",
+      "evidence": ["typings/index.d.ts:20", "lib/command.js:1339", "tests/command.executableSubcommand.mock.test.js:83"],
+      "confidence": 0.9,
+      "scope": "typings/index.d.ts (one-line type change) + typings/index.test-d.ts (tsd assertion for the executeSubCommandAsync wrapped-error shape); verify against upstream v15 typings first — if already fixed there, item is moot",
+      "do_not_touch": ["lib/command.js parsing core (parseOptions/_parseCommand)", "lib/help.js rendering", "lib/option.js splitOptionFlags grammar", "package.json engines/dependencies", "Any behavioral change to error()/_exit() semantics"]
+    }
+  ]
+}
+```
+
+---
+
+*Research trail: 4 checkpoints committed (DISCOVER → DIAGNOSE → TRADEOFF → CHALLENGE); 36 graded claims; H1 invalidated → H2 active; views `project-model`, `diagnosis` derived and clean. All repo facts carry file:line citations; external facts carry URLs and are capped at C3 tier.*

@@ -1,0 +1,20 @@
+{
+  "schema": "dsh-researcher/eval-run/v1",
+  "run_id": "exp-a-deep-02",
+  "preset": "researcher-deep",
+  "plan_mode": false,
+  "task": "Analyze this repository at the current snapshot. Produce a Project Cognition Report with exactly these sections: (1) Project Identity, (2) Architecture Map, (3) Critical Components, (4) Design Decisions, (5) Risk Map, (6) Change Impact Analysis, (7) Decision Memo.",
+  "session_id": "session-61b835f9-3950-44ec-8230-933ddfe25ba2",
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-flash"
+  },
+  "started_at": "2026-08-21T19:30:11.631Z",
+  "finished_at": "2026-08-21T19:37:02.487Z",
+  "duration_ms": 410840,
+  "tool_calls": 87,
+  "final_reason": {
+    "kind": "completed"
+  },
+  "exit": 0
+}

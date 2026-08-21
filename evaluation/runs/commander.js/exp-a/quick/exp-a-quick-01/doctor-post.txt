@@ -1,0 +1,7 @@
+Blindness Doctor — PASS
+  [PASS] Workspace repo — present
+  [PASS] History truncation — no reachable commit after T0
+  [PASS] Refs — no remote/tag refs
+  [PASS] Ground-truth isolation — no future content inside workspace
+  [PASS] GT lock — cognition sha256 19118a0d5d06 matches the lock
+  [PASS] Canary — token absent from run output

@@ -1,0 +1,205 @@
+Runtime Certificate: Run #2 — Overall **SAFE** (preset=researcher-quick, sandbox=read-only, approval=never, write/edit stubs, git_read only shell surface, checkpoint available).
+
+Per the frozen Phase A condition (deviation D002), this run is **Researcher-QUICK**: DISCOVER → EVIDENCE MAP → DIAGNOSE → CHALLENGE → DECISION. Beginning with DISCOVER — cartography of the snapshot.
+
+Snapshot identified: **commander.js @ 14.0.3** (HEAD bf35c5f, clean tree; release commit 8247364 "14.0.3" 2026-01-31, top commits are dependabot/CI only). Now mapping the full tree and key identity files.
+
+Tree mapped: 223 paths — 5 lib files, ~90 test files, 35 examples, docs, typings. Now reading identity files: README, CHANGELOG head, and the entry points.
+
+Entry points are thin wrappers — all logic lives in `lib/`. Reading the core modules now.
+
+Continuing the core read: rest of command.js plus the remaining lib modules.
+
+Core Command/Option/Argument/Error modules read. Now Help, suggestSimilar, and support files.
+
+All five lib modules read. Now git history depth, release policy doc, SECURITY, CI workflow, and typings head — in parallel.
+
+History confirms a mature project: ~500+ commits shown, major-release cadence ~6 months, Node LTS-driven. Now CI/test config, typings, and external evidence (npm registry) in parallel.
+
+Web fetch is unavailable in this runtime. Trying web_search for external evidence.
+
+Web evidence collection is blocked (no provider registered) — noted for the Evidence Map; external-tier verification is unavailable this run. Continuing with repo-internal evidence: deprecation docs and test samples.
+
+Evidence base is nearly complete. Final verification batch: the two post-release HEAD commits (scope check), lib dependency surface, and license.
+
+All verification complete: HEAD commits touch only `package-lock.json` (dev deps), lib/ requires only Node builtins + internal modules, MIT license (TJ Holowaychuk, 2011). Committing research state now.
+
+State committed (15 claims, 2 hypotheses, 3 views; no dirty views). All Quick-move phases complete. Producing the report.
+
+---
+
+# Project Cognition Report — commander.js @ 14.0.3 (snapshot HEAD `bf35c5f`)
+
+**Runtime Proof**: Researcher Runtime Certificate Run #2 — Overall **SAFE** (preset=researcher-quick PASS, sandbox=read-only PASS, approval=never PASS, write/edit stubs PASS, git_read-only shell surface PASS, checkpoint PASS, replay PASS). Depth: Quick (DISCOVER → EVIDENCE MAP → DIAGNOSE → CHALLENGE → DECISION), per frozen Phase A condition D002.
+
+**Evidence conventions**: claims cited as `file:line` / commit; tier C0–C4 per methodology. External web verification was **unavailable this session** (no web provider registered — `web_fetch` failed twice); ecosystem-scale statements are marked accordingly.
+
+---
+
+## 1. Project Identity
+
+**What it is.** Commander is the de-facto standard Node.js CLI framework — "the complete solution for node.js command-line programs" (Readme.md:8, package.json:4). A declarative API: the author describes options, arguments, and subcommands; commander parses `process.argv`, validates strictly, generates help, and dispatches to action handlers or external executable subcommands. Originally authored by TJ Holowaychuk (2011, LICENSE:3); currently maintained by John Gee and Abe Tomoaki (C12, package-support.json:13-15).
+
+| Attribute | Value | Evidence |
+|---|---|---|
+| Package/version | `commander` 14.0.3 | package.json:3; CHANGELOG.md:11 |
+| Snapshot | HEAD bf35c5f (2026-02-02), clean tree; release tag commit 8247364 "14.0.3" | C02 (git status/log/show) |
+| License | MIT | LICENSE:1 |
+| Runtime deps | **zero** — Node builtins only | C03 (package.json; grep of all `require()` in lib/) |
+| Engines | Node ≥20 | package.json:79 |
+| Format | CJS core + ESM wrapper (`esm.mjs`) | package.json:43-61; esm.mjs |
+| Runtime size | 5 lib files, ~4,000 lines total (command.js 2,777) | tree; file reads |
+| Test surface | ~91 test files, jest, CI matrix Node 20/22/24 × 3 OS | C10a, C04 |
+| History | Major releases ~every 6 months: 12.1 (2024-05), 13.0 (2024-12), 14.0 (2025-05) | C11, git log |
+
+**Mission** (reconstructed, not just claimed): be the default, dependable, zero-dependency way to build Node CLIs — strict parsing with helpful errors, automated help, and escape hatches for every opinionated default, so that a CLI written against commander keeps working for a decade. The 12-month maintenance window for the previous major (docs/release-policy.md:10) and the deprecation backlog held since v7 (C14) are direct evidence of this mission.
+
+**User.** Node CLI authors: from a single-file script (examples/split.js) to large multi-command tools (examples/pm*, string-util.js). Scale of adoption is *likely* very large (commander appears in a published audit of npm packages with >10M weekly downloads) — C13, unverifiable this session.
+
+**Value mechanism.** Author declares intent; commander delivers parse + validation + help + dispatch. Value comes from: (a) correctness of a genuinely hard problem (ambiguous CLI grammar — see §3), (b) strictness with actionable errors (`error: unknown option '--fits' (Did you mean --first?)`, Readme.md:95-96), (c) zero-install-cost integration (no deps to audit), (d) escape hatches (exitOverride, configureHelp/Output, allowUnknownOption, storeOptionsAsProperties) so nothing is a dead end.
+
+**Current state.** Maintenance plateau: 14.0.0 (2025-05) shipped the last feature batch (help groups, negative numbers, Node 20); 14.0.1–14.0.3 were fixes/docs/dev-dep bumps. HEAD's two commits are dependabot bumps touching only package-lock.json (C02, verified via `git show`). The project is healthy and at rest.
+
+---
+
+## 2. Architecture Map
+
+```
+index.js ──► lib/command.js (Command, ~2,777 lines — the core)
+  │            ├─ extends EventEmitter (node:events)
+  │            ├─ lib/option.js    (Option, DualOptions, flag parsing)
+  │            ├─ lib/argument.js  (Argument, humanReadableArgName)
+  │            ├─ lib/help.js      (Help — help generation, styling, wrapping)
+  │            ├─ lib/error.js     (CommanderError, InvalidArgumentError)
+  │            └─ lib/suggestSimilar.js (Damerau–Levenshtein suggestions)
+esm.mjs ──► named-export wrapper for ESM consumers
+typings/  (index.d.ts 1,113 lines, esm.d.mts) + tests (tsd, ts-imports, esm-imports)
+```
+
+**Parse pipeline** (C06). `parse()/parseAsync()` → `_prepareUserArgs()` (argv convention auto-detect: node/electron/eval/user, script-name inference) → `_parseCommand()` recursively:
+1. `parseOptions()` — single-pass state machine over args (command.js:1748-1895): known options → emit `option:<name>` events; short-flag combos (`-abc`); `--flag=value`; variadic collection; negative-number disambiguation; `--` literal; unknown → routed to `unknown` bucket; positional/pass-through modes truncate processing.
+2. `_parseOptionsEnv()` / `_parseOptionsImplied()` — env-var and implied-value filling with source priority.
+3. Dispatch: subcommand found → recurse (`_dispatchSubcommand`, incl. `preSubcommand` hooks); default command; help command; missing-command help; action handler with `preAction`/`postAction` hook chains; legacy `command:<name>` events.
+
+**Value/source model.** `_optionValues` map + `_optionValueSources` (`default|env|cli|implied|config`) — the mechanism that makes env-override-default, cli-override-env, conflicts, and dual-option (`--build`/`--no-build`, via `DualOptions`) precedence work without a rule engine.
+
+**Execution model.** Errors → `error()` → `_exit()` → `process.exit` (or `exitOverride` callback). Executable subcommands spawn child processes with extension probing, symlink resolution, inspector-port incrementing, and signal forwarding (C08). Async support: hooks/actions are promise-chained via `_chainOrCall`, not re-architected — one code path serves sync and async (command.js:1481-1541).
+
+**Testing architecture.** Jest + fixtures (incl. extension matrix `.cjs/.mjs/.ts` for executable subcommands); tests grouped by surface area (`options.*`, `args.*`, `help.*`, `command.*`); CI runs `npm test` + `npm run check` (eslint, prettier, tsc on JS via JSDoc, tsd, tsc on TS) across Node 20/22/24 × win/linux/mac (C04, C10a).
+
+---
+
+## 3. Critical Components
+
+1. **`Command` core / parse pipeline** (lib/command.js) — 65% of runtime code. Everything converges here: `parseOptions` grammar, dispatch precedence (subcommand > help > default > missing-command-help > action > legacy), error taxonomy (`commander.unknownOption`, `commander.excessArguments`, `commander.missingArgument`, etc.). Highest regression risk; most-tested surface.
+2. **`parseOptions()` state machine** — the ambiguous-grammar resolver: `-abc` combos, `--opt=val`, optional-arg take-next-unless-option, variadic slurping, negative-number vs `-1` option disambiguation (checks ancestor short options), `--` literal, positional/pass-through modes. Refactored to in-place processing in 14.0.1 (#2409) — recently touched, hence hot.
+3. **`Option`/`Argument` + `DualOptions`** (lib/option.js:3-306) — flag-string grammar validation (v13 throws on unsupported flags, incl. dual-long support from 13.1), camelCase attribute names, negate handling, preset/choices/implies/env wiring, and the dual-option value provenance heuristic.
+4. **`Help`** (lib/help.js, 747 lines) — complete help generation: usage, groups (14.0), wrapping (`boxWrap`, `formatItem`, `minWidthToWrap`), ANSI-strip width math, and a full `style*` hook surface; extension via `configureHelp()`/subclass (`createHelp`).
+5. **Executable subcommand machinery** (command.js:1202-1346) — spawn, extension probing, legacy name fallback, Windows-specific error surfacing, signal forwarding, `incrementNodeInspectorPort`. Platform-sensitive; covered by 6 test files + fixtures.
+6. **Typings + JSDoc dual maintenance** (typings/index.d.ts, JSDoc in lib/) — two sources of truth kept in sync by tsc-on-JS, tsd, and TS import tests (C09). A change to any public API touches 4+ artifacts.
+7. **Deprecation layer** — 10+ documented deprecated APIs (docs/deprecated.md) still live in code (`.option(RegExp)`, `noHelp`, `.on('--help')`, `.command('*')`, `_args`, `addHelpCommand(string)`, …). Any removal is a major-version event.
+
+---
+
+## 4. Design Decisions
+
+| # | Decision | Rationale (as evidenced) | Verdict |
+|---|---|---|---|
+| D1 | **EventEmitter-driven option handling** (`option:` events) | Legacy design (2011), but doubles as the public custom-event API ("Custom event listeners", Readme.md:43) | Constraint, not corrosion |
+| D2 | **Zero runtime dependencies** | Verified at code level (C03); color, suggestions, wrapping all hand-rolled to keep the supply-chain surface empty | Core invariant |
+| D3 | **Strict by default, escape hatches on request** | Unknown options error (Readme.md:73); v13 made excess arguments an error (CHANGELOG:82); `allowUnknownOption`/`allowExcessArguments` opt back out | Core invariant |
+| D4 | **Value-source tracking** | Enables env/implied/conflict semantics without configuration files (command.js:953-972) | Deliberate |
+| D5 | **Factory-method extensibility** | `createCommand/createOption/createArgument/createHelp` overrides instead of inheritance-only (command.js:192-204, 316-318) | Deliberate |
+| D6 | **JSDoc + hand-written d.ts** | Type-check JS via tsc, ship d.ts; avoids TS source build step | Tradeoff: drift risk (see §5 R1) |
+| D7 | **CJS core + ESM wrapper** (`esm.mjs`, exports map) | Single implementation, no dual-package hazard (package.json:45-61) | Deliberate; documented deprecation of direct `commander/esm.mjs` import |
+| D8 | **Singleton `program` + `createCommand()`** | Easy start, no global pollution (index.js:7-11) | Deliberate |
+| D9 | **Release policy** | Semver; majors ~6 months; Node floor raised at LTS EOL; previous major gets security-only 12 months (docs/release-policy.md) | Core invariant |
+| D10 | **Backward-compat debt held across majors** | Deprecations since v7 still live; removal only at majors (v12: default export; v13: multi-char short flags) | Deliberate; amortized at next major |
+
+**Tradeoff scan** (summary): performance is irrelevant for CLI parsing (one pass, O(n)); the real tradeoffs are complexity (parseOptions modes) vs. ergonomics, and compat (D10) vs. cleanup — both consciously resolved in favor of stability. Security/privacy surface is minimal (no deps; env handling reads only author-named vars; CodeQL configured; Tidelift reporting, SECURITY.md).
+
+---
+
+## 5. Risk Map
+
+| # | Risk | Evidence | Severity / Likelihood | Mitigation present |
+|---|---|---|---|---|
+| R1 | **Typings drift** between hand-written d.ts (1,113 lines) and JSDoc in lib/ | C09; multiple `@ts-ignore`s in command.js (e.g., :1296, :1320) | Med / Low | tsc checkJS, tsd, ts-imports tests; catches drift at CI |
+| R2 | **parseOptions complexity** — interacting modes (positional, pass-through, variadic, negative numbers, combos, dual options, `--`) | command.js:1748-1895; in-place refactor shipped in 14.0.1 (#2409) | Med / Med | Extensive targeted tests (`args.*`, `options.*`, `command.parseOptions.test.js`, `negatives.test.js`) |
+| R3 | **`process.exit` control flow** — library-level exit is process-fatal unless `exitOverride()`; embedding in long-running hosts requires the escape hatch | command.js:533-539; tests use `exitOverride`+`toThrow` idiom | Med / Low | `exitOverride`, `commander.*` error codes, extensive tests |
+| R4 | **Platform surface** of executable subcommands (spawn, symlinks, Windows, signals, inspector ports) | C08; command.js:1202-1346 | Low-Med / Low | CI ×3 OS; 6 test files; fixture extension matrix |
+| R5 | **Compat debt concentration** — 10+ deprecated APIs; next major must remove them, breaking long-tail users | C14; docs/deprecated.md | Med / Scheduled | Policy: 12-month maintenance window, migration notes in CHANGELOG (13.0.0 "Migration Tips") |
+| R6 | **Maintainer concentration** — 2 active maintainers for a top-of-ecosystem package; sponsorship-backed | C12; package-support.json | Low / Low | Sponsors, Tidelift, dependabot automation |
+| R7 | **External-state blindness** — cannot verify npm downloads, advisory status, or upstream cadence this session (web provider unavailable) | C13 | Info gap | — (evidence gap, not a change driver) |
+| R8 | **CI green-ness on HEAD** unverified in read-only sandbox | C10b (Claimed, 0.7) | Low / Low | CI workflow configured to run test + check |
+
+No open defects were found in the snapshot; risk is residual/structural, not active.
+
+---
+
+## 6. Change Impact Analysis
+
+**Map of change blast radii** (what a hypothetical change touches):
+
+| Change area | Ripple surface | Constraint |
+|---|---|---|
+| `parseOptions` / parse pipeline | ~40 test files (`args.*`, `options.*`, `command.parse*`, `positionalOptions`, `passThrough`, `negatives`), examples | D3 strictness; negative-number rule (checks ancestor short flags); `--` literal semantics |
+| New option/argument feature | `Option`/`Argument`, `DualOptions`, `addOption`/`addArgument` validation, `option.js` flag grammar, value-source logic | D4 source precedence; v13 flag-validation throws |
+| Public API surface | lib JSDoc **and** typings/index.d.ts **and** esm.d.mts **and** index.test-d.ts **and** ts-imports.test.ts **and** README/docs — 6+ artifacts | D6 dual maintenance; tsd will fail on drift |
+| Help output | `help.*` (~22 test files), `helpGroup`, examples, `docs/help-in-depth.md` | 14.0 group semantics; `minWidthToWrap`; stripColor width math |
+| Executable subcommands | 6 test files + fixtures-extensions (`.cjs/.mjs/.ts`), Windows paths | Signal forwarding; inspector-port increment |
+| Error messages/codes | Tests asserting `commander.*` codes and exact text; `docs/parsing-and-hooks.md` | Error codes are quasi-public API (exitOverride consumers) |
+| Dependency additions | — | **D2: zero runtime deps is the line not to cross** (current design hand-rolls color/wrapping/suggestions to preserve it) |
+
+**Do-not-touch list** (invariants): value-source precedence semantics (`_optionValueSources`); `_exit`/`exitOverride` contract; strict-by-default defaults; the `program` singleton export; deprecation removal timing (only at majors, with 12-month window).
+
+**Timing context**: 13.x maintenance ends 2026-05-18 (docs/release-policy.md:15) — the natural next event is a 14.x minor or a future major that clears D10 debt; nothing in this snapshot pressures that schedule.
+
+---
+
+## 7. Decision Memo
+
+**Question**: what is worth changing in this snapshot? **Answer: nothing.**
+
+- **Evidence for "at rest"**: clean tree; HEAD = dev-dep bumps only (C02); last three releases were fixes/docs (CHANGELOG:11-43); no open defects found in full reads of all five lib modules; test suite is extensive and CI-configured (C10a/b); release cadence and policy are healthy (C11).
+- **Hypothesis H1 (maintenance plateau) survived CHALLENGE**: disconfirmation attempts — impostor/modified core (no: history and authorship genuine), uncommitted changes (no: status clean), version mismatch (no: package.json = CHANGELOG = tag), test absence (no: ~91 files), overclaiming README (partial: "complete" excludes by-design gaps — no color by default, no completion, no prompts — all deliberate). Corrosion check on every deviation from conventions (ESM wrapper, EventEmitter design, `process.exit`, color-by-hooks) → all judged **evolution or constraint with documented rationale** (C15).
+- **Local-vs-global check**: any improvement that "wins locally" (e.g., adding a runtime dep for color, replacing the parser, dropping legacy modes) would push the project off its global goal — zero-dep trust, decade-stability, strict-by-default. The bottleneck for commander is *not* feature count; it is restraint.
+- **Genuine unknowns are evidence gaps, not change drivers**: (a) ecosystem state (downloads/advisories) — unverifiable this session (web provider unavailable); (b) CI green-ness on HEAD — not executable in a read-only sandbox. Neither warrants development; both warrant re-checking when web/execution is available.
+
+**Classification**: BUILD — none. DON'T BUILD — none proposed. INVESTIGATE — I-1 (external ecosystem status), I-2 (CI result on HEAD); both informational.
+
+### Handoff brief
+
+**BUILD items: none.** There is nothing to hand to Plan Mode from this snapshot. If a future change is requested (feature, major cleanup, or dependency policy), the handoff context is: preserve D2/D3/D9 invariants, plan for the 6-artifact typings ripple, and treat `parseOptions` and the executable-subcommand path as the highest-regression zones. If the intent behind this analysis was a *change* to commander, restate it and this report will be re-run against that intent (classification is intent-dependent).
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "commander.js@14.0.3 (HEAD bf35c5f, 2026-02-02)",
+  "build_items": [],
+  "investigate_items": [
+    {
+      "id": "I-1",
+      "question": "External ecosystem state: npm downloads, dependents, known security advisories for commander",
+      "why": "Web provider unavailable this session; C13 remains Likely/0.6",
+      "scope": "read-only external research, no code"
+    },
+    {
+      "id": "I-2",
+      "question": "CI status on HEAD (jest + check suite)",
+      "why": "C10b remains Claimed/0.7; sandbox cannot execute tests",
+      "scope": "read-only CI observation"
+    }
+  ],
+  "do_not_touch": [
+    "value-source precedence semantics (_optionValueSources)",
+    "_exit/exitOverride contract and commander.* error codes",
+    "strict-by-default parsing defaults",
+    "program singleton export and CJS/ESM wrapper shape",
+    "zero runtime dependencies invariant",
+    "deprecation removals outside majors with 12-month window"
+  ]
+}
+```
+
+**Evidence ledger** (15 claims, C01–C15) and hypotheses (H1 confirmed, H2 as forward constraint) are committed to the session checkpoint; the report above is the projection.

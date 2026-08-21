@@ -1,0 +1,28 @@
+{
+  "schema": "dsh-researcher/run-metrics/v1",
+  "run_id": "exp-a-standard-02",
+  "preset": "standard",
+  "plan_mode": false,
+  "duration_ms": 107424,
+  "tokens_total": 1301670,
+  "tokens_input": 116124,
+  "tokens_output": 19466,
+  "tokens_cache_read": 1166080,
+  "tokens_reasoning": 4964,
+  "tool_calls": 25,
+  "tool_breakdown": {
+    "pwsh": 5,
+    "glob": 1,
+    "read": 18,
+    "grep": 1
+  },
+  "claims": 0,
+  "doctor_calls": 0,
+  "write_attempts": 0,
+  "certificate_overall": null,
+  "final_text_chars": 20651,
+  "exit": 0,
+  "final_reason": {
+    "kind": "completed"
+  }
+}

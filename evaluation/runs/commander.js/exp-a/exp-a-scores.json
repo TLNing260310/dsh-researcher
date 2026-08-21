@@ -1,0 +1,2701 @@
+{
+  "schema": "dsh-researcher/phase-a-v11-scores/v1",
+  "gt_entries": 25,
+  "max_total_credit": 23,
+  "weights": {
+    "architecture_relation": 0.4,
+    "design_purpose": 0.25,
+    "key_constraints": 0.2,
+    "factual_accuracy": 0.15
+  },
+  "rows": [
+    {
+      "run_id": "exp-a-deep-01",
+      "mode": "deep",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.7071428571428572,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.75,
+            "credit": 10.5,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.7857142857142857,
+            "credit": 5.5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-deep-02",
+      "mode": "deep",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "NO",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.6642857142857144,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.6785714285714286,
+            "credit": 9.5,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.7142857142857143,
+            "credit": 5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-deep-03",
+      "mode": "deep",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.5160714285714286,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.5,
+            "credit": 7,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 0.75,
+            "credit": 1.5,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.6428571428571429,
+            "credit": 4.5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-plan-01",
+      "mode": "plan",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "NO",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.75,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.7857142857142857,
+            "credit": 11,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.9285714285714286,
+            "credit": 6.5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-plan-02",
+      "mode": "plan",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "NO",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.6785714285714286,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.6428571428571429,
+            "credit": 9,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.8571428571428571,
+            "credit": 6,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-plan-03",
+      "mode": "plan",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "NO",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.7214285714285715,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.7142857142857143,
+            "credit": 10,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.9285714285714286,
+            "credit": 6.5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-quick-01",
+      "mode": "quick",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.6928571428571428,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.6785714285714286,
+            "credit": 9.5,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.8571428571428571,
+            "credit": 6,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-quick-02",
+      "mode": "quick",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "NO",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.6785714285714286,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.6428571428571429,
+            "credit": 9,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.8571428571428571,
+            "credit": 6,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-quick-03",
+      "mode": "quick",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "NO",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.6357142857142857,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.6428571428571429,
+            "credit": 9,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.6428571428571429,
+            "credit": 4.5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-standard-01",
+      "mode": "standard",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.7071428571428573,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.7142857142857143,
+            "credit": 10,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.8571428571428571,
+            "credit": 6,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-standard-02",
+      "mode": "standard",
+      "gt": {
+        "GT-C01": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "NO",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "NO",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.7214285714285715,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.7142857142857143,
+            "credit": 10,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.9285714285714286,
+            "credit": 6.5,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "matched"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    },
+    {
+      "run_id": "exp-a-standard-03",
+      "mode": "standard",
+      "gt": {
+        "GT-C01": {
+          "candidate": "NO",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C02": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C04": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C05": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C06": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C07": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C08": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C09": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "cross-level argument passing",
+            "credit": 1
+          }
+        },
+        "GT-C10": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C11": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C12": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C13": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C15": {
+          "candidate": "CANDIDATE",
+          "verdict": "unmatched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C16": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C17": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C18": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C19": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C20": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C22": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C24": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C25": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C29": {
+          "candidate": "CANDIDATE",
+          "verdict": "matched",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C31": {
+          "candidate": "NO",
+          "verdict": "partial",
+          "cluster": {
+            "cluster": "dual-option shared-key semantics",
+            "credit": 1
+          }
+        },
+        "GT-C33": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        },
+        "GT-C35": {
+          "candidate": "CANDIDATE",
+          "verdict": "partial",
+          "cluster": {
+            "credit": 1
+          }
+        }
+      },
+      "gus": {
+        "gus": 0.6785714285714286,
+        "parts": {
+          "architecture_relation": {
+            "weight": 0.4,
+            "score": 0.6428571428571429,
+            "credit": 9,
+            "total": 14
+          },
+          "design_purpose": {
+            "weight": 0.25,
+            "score": 1,
+            "credit": 2,
+            "total": 2
+          },
+          "key_constraints": {
+            "weight": 0.2,
+            "score": 0.8571428571428571,
+            "credit": 6,
+            "total": 7
+          },
+          "factual_accuracy": {
+            "weight": 0.15,
+            "score": 0,
+            "credit": 0,
+            "total": 0
+          }
+        }
+      },
+      "risk": {
+        "entries": [
+          {
+            "id": "GT-C33",
+            "verdict": "partial"
+          }
+        ],
+        "covered": 1,
+        "total": 1
+      }
+    }
+  ]
+}

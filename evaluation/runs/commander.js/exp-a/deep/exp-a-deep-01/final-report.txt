@@ -1,0 +1,9 @@
+All three subagent deliverables are now fully folded in. Final state is consistent: **32 claims, H1 active (revision 6), H2 invalidated, all views coherent, filesystem untouched.**
+
+**Closing delta from this final report** — three micro-findings enrich the risk map without changing any classification:
+
+1. **Code duplication** (adds texture to R5): `_collectValue` is byte-identical in Option and Argument; `findBestOptionFromValue` (command.js:2073-2091) reimplements the DualOptions attribution heuristic a second time — two independent copies of the same tricky logic is where heuristic drift would first show. Still INVESTIGATE-level (no demonstrated breakage).
+2. **Export asymmetry**: `stripColor` and `DualOptions` are exported from their modules but absent from the public package surface (index.js/esm.mjs) — internal-only utilities, which is fine but worth knowing when reading help.js/option.js.
+3. **Typings drift confirmed as a small family, not a singleton** (C26): the `nestedError` string-vs-Error bug (F1, the one BUILD item) sits alongside `HelpContext` declaring only `error: boolean` vs four runtime fields, and non-optional getters that can return `undefined`. F1 remains the only item with a definite wrong-type contract; the others are incompleteness, which is why F1 is BUILD and the rest stay on the watch-list.
+
+**The Project Cognition Report stands as delivered** — seven requested sections, one BUILD handoff item (F1), four INVESTIGATE/watch items, DON'T BUILD for the remainder, and the contextual caution that this v14.0.3 snapshot has been superseded upstream by v15.0.0. Runtime certificate Run #2, Overall SAFE; read-only honored end to end; research state fully committed.
