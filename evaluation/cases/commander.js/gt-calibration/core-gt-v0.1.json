@@ -1,0 +1,479 @@
+{
+  "schema": "dsh-researcher/cognition-gt/v0.1",
+  "case": "commander.js",
+  "snapshot": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c (2026-02-01, v14.0.3)",
+  "status": "REFINED — scoring candidate; NOT locked (pre-freeze review pending)",
+  "weights": {
+    "architecture_relation": 0.4,
+    "design_purpose": 0.25,
+    "key_constraints": 0.2,
+    "factual_accuracy": 0.15
+  },
+  "entries": [
+    {
+      "id": "GT-C01",
+      "category": "identity",
+      "weight_bucket": "design_purpose",
+      "claim": "Commander's core value mechanism is declarative: the author describes the CLI (options, arguments, subcommands) and Commander derives parsing, strict usage errors, and auto-generated help from that description rather than hand-written argv handling.",
+      "evidence": [
+        "Readme.md:8,69-71",
+        "Readme.md:754-756"
+      ],
+      "relation": "declarations -> parser + validation + generated help",
+      "understanding_value": "Distinguishes seeing a spec-to-behavior compiler from seeing a grab-bag of argv utilities.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "essence: declarative spec->behavior mapping; any API/behavior change must honor it"
+      }
+    },
+    {
+      "id": "GT-C02",
+      "category": "identity",
+      "weight_bucket": "key_constraints",
+      "claim": "Zero production dependencies is an enforced project identity: contribution policy treats dependency-adding requests as near-blockers, and non-core utilities (edit-distance suggestions, ANSI stripping) are hand-rolled in-tree as a consequence.",
+      "evidence": [
+        "CONTRIBUTING.md:40-43",
+        "suggestSimilar.js:3-46",
+        "help.js:740-744",
+        "package.json (no dependencies key)"
+      ],
+      "relation": "zero-dep policy -> hand-rolled implementations -> supply-chain simplicity",
+      "understanding_value": "Explains why utility code exists in a parser library; the policy explains the presence, not the reverse.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "identity constraint; dependency-adding changes are near-blocked"
+      }
+    },
+    {
+      "id": "GT-C04",
+      "category": "identity",
+      "weight_bucket": "design_purpose",
+      "claim": "Strictness is a deliberate, recently ratcheted default stance: unrecognized options error; excess command-arguments error since v13; option-flag shape and name-clash throws since v12/v13 — with explicit opt-outs (allowUnknownOption, allowExcessArguments) and migration tips at each major. Strictness targets the CLI end-user while extensibility (factories, hooks, configure*) targets library authors.",
+      "evidence": [
+        "Readme.md:73",
+        "CHANGELOG.md:82-85,92-133,192-194",
+        "command.js:848-851,2114-2137,192-194,487-499"
+      ],
+      "relation": "major release -> new default-strict behavior -> migration docs + escape hatch",
+      "understanding_value": "Understanding the ratchet-and-escape-hatch pattern predicts how future majors behave; current strictness is version-dependent, not a design constant.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "strict-by-default + major ratchet governs all behavior changes"
+      }
+    },
+    {
+      "id": "GT-C05",
+      "category": "identity",
+      "weight_bucket": "key_constraints",
+      "claim": "Commander is a semver-disciplined, release-cadence-driven project: majors roughly every six months aligned to Node LTS end-of-life (v14 raised the floor to Node >= 20), with only the current line receiving feature work and older lines limited to 12 months of security fixes.",
+      "evidence": [
+        "docs/release-policy.md:3-15",
+        "package.json:78-80",
+        "CHANGELOG.md:60"
+      ],
+      "relation": "Node release cycle -> major timing -> supported-version matrix",
+      "understanding_value": "Explains version-support reasoning and why breaking changes are confined to majors.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "semver/major timing constrains when breaking changes are allowed"
+      }
+    },
+    {
+      "id": "GT-C06",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Parsing is recursive descent through the command tree: each command parses its own options, and if the first operand names a subcommand it runs preSubcommand hooks and either spawns the executable handler or recurses into the subcommand's _parseCommand with the remaining operands/unknown args.",
+      "evidence": [
+        "command.js:1090-1096,1550-1560,1352-1371",
+        "docs/parsing-and-hooks.md:3-14"
+      ],
+      "relation": "parent parse -> dispatch -> (spawn | child._parseCommand) -> leaf action; operands/unknown passed down",
+      "understanding_value": "The most load-bearing flow: explains where any argument ends up and why option names can repeat across levels.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "recursive descent is the core parse flow; every arg lands somewhere along it"
+      }
+    },
+    {
+      "id": "GT-C07",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Per-command value application is strictly ordered cli > env > implied (defaults last), and every write is source-tagged (_optionValueSources) so env applies only when the current value is undefined or its source is default/config/env — client-code values are never overwritten.",
+      "evidence": [
+        "command.js:38-39,953-961,1551-1553,1966-2025",
+        "tests/options.env.test.js:23-50"
+      ],
+      "relation": "source provenance <-> env application order <-> client-code values; downstream mandatory/conflict checks walk the registry",
+      "understanding_value": "The precedence rule is only safe because every write is source-tagged; order + provenance are one designed flow.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "cli>env>implied + source tagging; env/implied semantics changes ripple"
+      }
+    },
+    {
+      "id": "GT-C08",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "The built-in help option is deliberately NOT a registered option: it is lazily created, detected through the unknown-argument channel, and survives down to leaf commands; the version option by contrast IS registered and participates in conflict detection.",
+      "evidence": [
+        "command.js:77-78,2195-2208,2592-2598,2686-2694",
+        "tests/command.helpOption.test.js:111"
+      ],
+      "relation": "help detection flows off the normal option: event path; version joins it — opposite registration channels for 'magic' flags",
+      "understanding_value": "A non-obvious fact that explains help-flag edge cases (masking, disabling, suggestions).",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "medium",
+        "note": "non-obvious help/version channels; help-flag edge cases"
+      }
+    },
+    {
+      "id": "GT-C09",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "parseOptions is a single in-place scan whose state machine decides classification: the first unrecognized option flips the destination to the unknown bucket and everything after is classified unknown so subcommands can reprocess it; '--' terminates option processing literally; negative numbers are exempt unless a digit short option exists.",
+      "evidence": [
+        "command.js:1748-1895 (dest flip 1849-1860, '--' 1777-1781, negativeNumberArg 1757-1766)",
+        "Readme.md:201,336-338"
+      ],
+      "relation": "classification rule <-> unknown-arg downward propagation <-> '--' escape <-> negative-number carve-out",
+      "understanding_value": "The unknown funnel is the key to option placement across command levels; the negative carve-out is a v14 sharp edge.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "unknown funnel is the key to cross-level option placement"
+      }
+    },
+    {
+      "id": "GT-C10",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Dispatch and error-check precedence is an ordered decision tree: matching subcommand > implicit help command > default command > action handler, with help flags honored before mandatory/conflict checks and the unknown-option check skipped when a subcommand or legacy '*'/'command:*' listener will consume the operands ('don't mask a better error').",
+      "evidence": [
+        "command.js:1558-1583,1585-1640 (comment 1589)",
+        "command.js:1614-1640"
+      ],
+      "relation": "ordered short-circuit branches encode user-visible behavior; legacy event fallbacks after action",
+      "understanding_value": "Predicts which handler fires on collisions and why error selection is a designed flow.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "dispatch/error precedence encodes user-visible behavior"
+      }
+    },
+    {
+      "id": "GT-C11",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Hook ordering encodes the dispatch path: preSubcommand runs on the parent before the child parses; preAction runs root-to-leaf across ancestors; postAction runs leaf-to-root (hook list reversed); any async hook escalates the chain into a promise chain via _chainOrCall.",
+      "evidence": [
+        "command.js:1481-1520,1531-1541",
+        "tests/command.hook.test.js:39-100"
+      ],
+      "relation": "ancestor walk + reversal = ordered hook waterfall (root->leaf / leaf->root)",
+      "understanding_value": "The reversal is easy to miss and changes observable cleanup order.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "medium",
+        "note": "hook order + reversal; extension authors depend on it"
+      }
+    },
+    {
+      "id": "GT-C12",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "The action handler signature is a designed protocol: declared command-arguments first, then the parsed options object, then the command (options slot replaced by the command under legacy storeOptionsAsProperties), fed from processedArgs after defaults/parseArg/variadic processing.",
+      "evidence": [
+        "command.js:556-572,1428-1470,1596-1605",
+        "CHANGELOG.md:580"
+      ],
+      "relation": "declaration metadata + value pipeline -> callback invocation signature",
+      "understanding_value": "Explains why adding .argument() changes what the handler receives, including the legacy branch.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "public callback protocol; adding args changes handler signatures"
+      }
+    },
+    {
+      "id": "GT-C13",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Executable subcommands bypass the in-process action path: dispatch spawns a child process via a naming + filesystem + spawn strategy (default <parent>-<subcommand> relative to the realpath-resolved entry script, legacy basename fallback, extension probing, node-launch for source files, Windows always via node, inspector ports incremented) while the parent's mandatory/conflict checks still run before spawning.",
+      "evidence": [
+        "command.js:1202-1346,1363-1369,1224-1226,1265-1288,2705-2746",
+        "Readme.md:700-723"
+      ],
+      "relation": "CLI tree + filesystem conventions + platform -> spawn boundary; validation stays in the parent",
+      "understanding_value": "The externalization boundary and why some checks differ for executable subcommands.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "executable externalization: naming/filesystem/spawn conventions constrain new subcommands"
+      }
+    },
+    {
+      "id": "GT-C15",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Both optsWithGlobals and getOptionValueSourceWithGlobals walk leaf-to-root and in both the more global (root-ward) value wins: 'globals overwrite locals' holds for merged values and source lookup alike.",
+      "evidence": [
+        "command.js:983-992,1924-1930 (comment 'globals overwrite locals')",
+        "tests/options.optsWithGlobals.test.js"
+      ],
+      "relation": "ancestor walk order <-> merge direction shared by plain-value and source-tagged views",
+      "understanding_value": "A counter-intuitive direction (one would expect local to win) that only code reading reveals.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "counter-intuitive global-wins merge; change = breaking"
+      }
+    },
+    {
+      "id": "GT-C16",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Dual options (--foo / --no-foo) share a single camelCased value key, so the code must deduce which option produced the value: valueFromOption compares the value to the negative option's preset (defaulting to false), and both .implies() and conflict-error attribution reuse that heuristic — the code itself calls it an 'educated guess', making dual-option attribution inherently lossy.",
+      "evidence": [
+        "option.js:262-306 (comment 262-267)",
+        "command.js:1996-2025,2070-2104",
+        "command.js:217-222,316-320 (camelCase key decision)"
+      ],
+      "relation": "shared value key -> value-based deduction -> implies + conflict attribution",
+      "understanding_value": "Explains why presets interact with conflicts/implies in non-obvious ways; the deduction is design, not a bug.",
+      "confidence": "medium",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "dual-option value deduction drives implies/conflict semantics"
+      }
+    },
+    {
+      "id": "GT-C17",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "Help generation is a layered pipeline: createHelp() merges configureHelp() overrides into a new Help instance, helpInformation() prepares context (error flag, width, color) and calls formatHelp() which pulls data through visible*/stringify/style methods, with ANSI stripped afterwards only when the output target reports no color.",
+      "evidence": [
+        "command.js:203-205,2450-2461",
+        "help.js:29-31,443-527,740-744",
+        "docs/help-in-depth.md:55"
+      ],
+      "relation": "configureHelp -> Help instance -> prepareContext -> formatHelp -> (stripColor if no colors)",
+      "understanding_value": "Two customization seams and a deliberate style-then-strip design; reasoning about where any help change lands.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "medium",
+        "note": "help render pipeline with two customization seams"
+      }
+    },
+    {
+      "id": "GT-C18",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "claim": "ESM support is a wrapper, not a second build: the package stays CommonJS with esm.mjs re-exporting named exports, and the exports map routes import to esm.mjs/esm.d.mts and require to index.js/index.d.ts — one implementation, two module faces.",
+      "evidence": [
+        "package.json:43-61",
+        "esm.mjs:1-16",
+        "typings/esm.d.mts:1-3"
+      ],
+      "relation": "CJS core <- ESM wrapper; per-condition type entry points",
+      "understanding_value": "Explains why behavior is identical across module systems and why changes are made once in lib/.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "single CJS implementation + ESM wrapper; export additions need multi-file sync"
+      }
+    },
+    {
+      "id": "GT-C19",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "claim": "lib/command.js (~2777 lines) is the architectural hub and highest-risk component: the Command class owns parsing, dispatch, the value pipeline, error/exit handling, help orchestration, and subprocess spawning, and it is the sole importer of every other module — nearly any behavioral change touches this one file, and recent history shows the most churn.",
+      "evidence": [
+        "command.js:1-11 (imports), whole file 2777 lines",
+        "CHANGELOG.md:38-42",
+        "git log -- lib/command.js (201d932 #2409, ff1d2ce, c635fad...)"
+      ],
+      "relation": "hub-and-spoke dependency direction with all orchestration in the hub",
+      "understanding_value": "Identifies where change risk concentrates and why — architectural judgment, not a location fact.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "command.js hub: change-risk concentration"
+      }
+    },
+    {
+      "id": "GT-C20",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "claim": "parseOptions is the highest-semantic-density routine: one loop encodes combined short flags, -o3 absorption, --flag=value, variadic consumption, negative-number reclassification, '--', and positional/passThrough boundaries; it was rewritten in place in 14.0.1 and is the subject of the project's own ambiguity documentation ('Parsing ambiguity' with the cook -i example).",
+      "evidence": [
+        "command.js:1748-1895",
+        "CHANGELOG.md:41 (#2409)",
+        "docs/options-in-depth.md:30-75"
+      ],
+      "relation": "documented ambiguous behaviors <-> one scanner <-> every future parsing feature threads through it",
+      "understanding_value": "The risk is behavioral preservation of a large grammar surface, not just code churn.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "parseOptions semantic density; the sharpest edge"
+      }
+    },
+    {
+      "id": "GT-C22",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "claim": "The option-value pipeline is the coupling point of the library: every value-shaping feature — preset substitution, parseArg wrapping via _callParseArg, variadic collection, negate/boolean fill-in, source tagging — funnels through one handler closure wired to both cli and env events (responsibility split across Option metadata and Command's addOption listener).",
+      "evidence": [
+        "command.js:670-733,599-609",
+        "option.js:47-195",
+        "tests/options.env.test.js:23-81"
+      ],
+      "relation": "feature matrix -> single handler -> both event sources; ownership split across module boundary",
+      "understanding_value": "Any new option behavior or env-priority change touches this path; semantics regress together.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "value pipeline choke point; option semantics regress together"
+      }
+    },
+    {
+      "id": "GT-C24",
+      "category": "critical_component",
+      "weight_bucket": "key_constraints",
+      "claim": "Typings are a hand-maintained mirror of the JSDoc-annotated implementation: three artifacts must stay in sync (lib JSDoc checked with checkJs, typings/index.d.ts ~1100 lines, tsd test typings), and the shipped .d.ts is the contract most TS consumers see — a constant drift risk with a history of minor-release typing fixes.",
+      "evidence": [
+        "tsconfig.json:17-18",
+        "package.json:25-27",
+        "typings/index.d.ts (1113 lines)",
+        "CHANGELOG.md:51,237-248,305-307"
+      ],
+      "relation": "code JSDoc <-> .d.ts <-> tsd tests; any API change must land in all three",
+      "understanding_value": "The typing layer is effectively a second implementation; recognizing that is understanding maintenance load.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "typings mirror: API changes need three-way sync"
+      }
+    },
+    {
+      "id": "GT-C25",
+      "category": "design_decision",
+      "weight_bucket": "key_constraints",
+      "claim": "Backward compatibility is preserved by design through a documented deprecation catalog with per-feature timelines (RegExp .option() since v7, noHelp since v7, .on('command:*') since v8.3, _args since v11, addHelpCommand string since v12): deprecated features remain live inside current parsing/dispatch paths, constraining every refactor until a future major removes them.",
+      "evidence": [
+        "docs/deprecated.md:22-225",
+        "command.js:31,751-758,1606-1625,443-455"
+      ],
+      "relation": "deprecation policy -> long-lived legacy branches in hot paths -> removal timing by major",
+      "understanding_value": "The deprecated surface is a designed, cataloged contract — code the agent would otherwise judge as redundant.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "deprecated catalog constrains refactors and removal timing"
+      }
+    },
+    {
+      "id": "GT-C29",
+      "category": "critical_component",
+      "weight_bucket": "key_constraints",
+      "claim": "Error handling is a testable, code-bearing API: CommanderError carries (exitCode, code, message), every built-in failure passes a stable code (commander.unknownOption, commander.excessArguments, commander.helpDisplayed...), and the exitOverride test suite asserts the exact pairs as 'intended to be stable' — consumers match on code, not message.",
+      "evidence": [
+        "error.js:4-19",
+        "command.js:533-539,1940-1958",
+        "tests/command.exitOverride.test.js:5-13,51-435"
+      ],
+      "relation": "error sites -> shared funnel -> stable codes -> external consumers depend on them",
+      "understanding_value": "The codes are a de-facto stability contract constraining future changes; explains why exitOverride exists.",
+      "confidence": "high",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "error codes are a stability contract consumers match on"
+      }
+    },
+    {
+      "id": "GT-C31",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "claim": "The dual-option pairing model is re-derived in three separate code sites (addOption negate-default handling, _parseOptionsImplied's valueFromOption filter, _conflictingOption's findBestOptionFromValue) — one conceptual model, three unshared implementations, a divergence risk between them.",
+      "evidence": [
+        "option.js:268-306",
+        "command.js:677-689,1996-2025,2073-2091"
+      ],
+      "relation": "shared value key implemented by three unshared sites",
+      "understanding_value": "Identifies duplicated model logic as a hotspot rather than treating each site in isolation.",
+      "confidence": "high",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "dual-option pairing re-derived in 3 sites; change must touch all"
+      }
+    },
+    {
+      "id": "GT-C33",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "claim": "The ESM surface is a manual-enumeration drift area: named exports are hand-listed in esm.mjs and pinned in the exports map with two type entry points, so adding any public export requires coordinated edits across index.js, esm.mjs, both typings, and the import test — and the v12 default-export removal already broke consumers once.",
+      "evidence": [
+        "esm.mjs:4-16",
+        "package.json:45-61",
+        "tests/esm-imports-test.mjs",
+        "CHANGELOG.md:206"
+      ],
+      "relation": "public API additions -> manual mirror in wrapper + exports map + two typings + import tests",
+      "understanding_value": "Explains why module-interop is a frequent source of packaging bugs.",
+      "confidence": "high",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "ESM manual enumeration: adding exports touches 5 surfaces"
+      }
+    },
+    {
+      "id": "GT-C35",
+      "category": "design_decision",
+      "weight_bucket": "key_constraints",
+      "claim": "Option parsing is non-positional by default (GNU-like intermingling), and positional/pass-through modes are deliberate opt-ins with a hard invariant: passThroughOptions on a subcommand requires enablePositionalOptions on its parent, enforced with a throw at registration time.",
+      "evidence": [
+        "Readme.md:203,988-1016",
+        "command.js:861-895"
+      ],
+      "relation": "default intermingling <-> opt-in positional modes <-> parent-child invariant enforced at registration",
+      "understanding_value": "The cross-level invariant is a relational constraint visible only by following the flow.",
+      "confidence": "high",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "passThrough/positional parent-child invariant enforced at registration"
+      }
+    }
+  ]
+}

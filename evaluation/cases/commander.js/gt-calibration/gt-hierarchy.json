@@ -1,0 +1,433 @@
+{
+  "schema": "dsh-researcher/cognition-gt-hierarchy/v0.1",
+  "case": "commander.js",
+  "created": "2026-08-21",
+  "judge_rule": "Core = (A=high and B>=medium) or (B=high and A>=medium), C must be relational/constraint/design-intent; Extended = passes C but not core; Removed = knowledge fact or redundancy",
+  "core": [
+    {
+      "id": "GT-C01",
+      "category": "identity",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "essence: declarative spec->behavior mapping; any API/behavior change must honor it"
+      }
+    },
+    {
+      "id": "GT-C02",
+      "category": "identity",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "identity constraint; dependency-adding changes are near-blocked"
+      }
+    },
+    {
+      "id": "GT-C04",
+      "category": "identity",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "strict-by-default + major ratchet governs all behavior changes"
+      }
+    },
+    {
+      "id": "GT-C05",
+      "category": "identity",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "semver/major timing constrains when breaking changes are allowed"
+      }
+    },
+    {
+      "id": "GT-C06",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "recursive descent is the core parse flow; every arg lands somewhere along it"
+      }
+    },
+    {
+      "id": "GT-C07",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "cli>env>implied + source tagging; env/implied semantics changes ripple"
+      }
+    },
+    {
+      "id": "GT-C08",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "medium",
+        "note": "non-obvious help/version channels; help-flag edge cases"
+      }
+    },
+    {
+      "id": "GT-C09",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "unknown funnel is the key to cross-level option placement"
+      }
+    },
+    {
+      "id": "GT-C10",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "dispatch/error precedence encodes user-visible behavior"
+      }
+    },
+    {
+      "id": "GT-C11",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "medium",
+        "note": "hook order + reversal; extension authors depend on it"
+      }
+    },
+    {
+      "id": "GT-C12",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "public callback protocol; adding args changes handler signatures"
+      }
+    },
+    {
+      "id": "GT-C13",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "executable externalization: naming/filesystem/spawn conventions constrain new subcommands"
+      }
+    },
+    {
+      "id": "GT-C15",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "counter-intuitive global-wins merge; change = breaking"
+      }
+    },
+    {
+      "id": "GT-C16",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "dual-option value deduction drives implies/conflict semantics"
+      }
+    },
+    {
+      "id": "GT-C17",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "medium",
+        "note": "help render pipeline with two customization seams"
+      }
+    },
+    {
+      "id": "GT-C18",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "single CJS implementation + ESM wrapper; export additions need multi-file sync"
+      }
+    },
+    {
+      "id": "GT-C19",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "command.js hub: change-risk concentration"
+      }
+    },
+    {
+      "id": "GT-C20",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "parseOptions semantic density; the sharpest edge"
+      }
+    },
+    {
+      "id": "GT-C22",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "value pipeline choke point; option semantics regress together"
+      }
+    },
+    {
+      "id": "GT-C24",
+      "category": "critical_component",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "typings mirror: API changes need three-way sync"
+      }
+    },
+    {
+      "id": "GT-C25",
+      "category": "design_decision",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "deprecated catalog constrains refactors and removal timing"
+      }
+    },
+    {
+      "id": "GT-C29",
+      "category": "critical_component",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "high",
+        "B": "high",
+        "note": "error codes are a stability contract consumers match on"
+      }
+    },
+    {
+      "id": "GT-C31",
+      "category": "critical_component",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "dual-option pairing re-derived in 3 sites; change must touch all"
+      }
+    },
+    {
+      "id": "GT-C33",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "ESM manual enumeration: adding exports touches 5 surfaces"
+      }
+    },
+    {
+      "id": "GT-C35",
+      "category": "design_decision",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "passThrough/positional parent-child invariant enforced at registration"
+      }
+    }
+  ],
+  "extended": [
+    {
+      "id": "GT-C03",
+      "category": "identity",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "dual entry matters for tests/integration but is not essence"
+      }
+    },
+    {
+      "id": "GT-C14",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "ancestor validation is cross-level; valuable but not essence"
+      }
+    },
+    {
+      "id": "GT-C21",
+      "category": "critical_component",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "Help subclass compat breaks at majors"
+      }
+    },
+    {
+      "id": "GT-C23",
+      "category": "critical_component",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "high",
+        "note": "executable env coupling; overlaps C13 mechanism, adds risk attribution"
+      }
+    },
+    {
+      "id": "GT-C26",
+      "category": "design_decision",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "re-parse state model; partial re-entrancy"
+      }
+    },
+    {
+      "id": "GT-C27",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "color conventions drift; niche"
+      }
+    },
+    {
+      "id": "GT-C28",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "release-model concentration; derived from C05"
+      }
+    },
+    {
+      "id": "GT-C30",
+      "category": "identity",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "TS identity + extra-typings; related to C24"
+      }
+    },
+    {
+      "id": "GT-C32",
+      "category": "design_decision",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "preformatted help contract; user-facing but narrow"
+      }
+    },
+    {
+      "id": "GT-C34",
+      "category": "architecture_relation",
+      "weight_bucket": "architecture_relation",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "executable help fallback; flow constraint"
+      }
+    },
+    {
+      "id": "GT-C36",
+      "category": "design_decision",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "_optionValues storage decision + legacy escape hatch"
+      }
+    },
+    {
+      "id": "GT-C37",
+      "category": "design_decision",
+      "weight_bucket": "design_purpose",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "dash-dash escape hatch contract"
+      }
+    },
+    {
+      "id": "GT-C38",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "weakly-typed EventEmitter surface risk"
+      }
+    },
+    {
+      "id": "GT-C39",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "dispatch regression history; risk reasoning"
+      }
+    },
+    {
+      "id": "GT-C40",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "singleton statefulness hazard"
+      }
+    },
+    {
+      "id": "GT-C41",
+      "category": "risk_surface",
+      "weight_bucket": "key_constraints",
+      "judge": {
+        "A": "medium",
+        "B": "medium",
+        "note": "help output environment dependence"
+      }
+    }
+  ],
+  "removed": [],
+  "bucket_counts": {
+    "core": {
+      "design_purpose": 2,
+      "key_constraints": 7,
+      "architecture_relation": 16
+    },
+    "extended": {
+      "design_purpose": 7,
+      "architecture_relation": 2,
+      "key_constraints": 7
+    }
+  }
+}
