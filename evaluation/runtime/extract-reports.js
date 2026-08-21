@@ -31,7 +31,9 @@ for (const dir of runs.sort()) {
     continue
   }
   const events = JSON.parse(fs.readFileSync(eventsPath, 'utf8'))
-  let finalText = ''
+  // The deliverable is the whole assistant message chain of the run (agents
+  // may hand off the report in one message and summarize in the last one).
+  const texts = []
   const checkpointClaims = []
   const toolCalls = []
   for (const ev of events) {
@@ -40,7 +42,7 @@ for (const dir of runs.sort()) {
         .filter((b) => b.type === 'text')
         .map((b) => b.text)
         .join('')
-      if (text !== '') finalText = text
+      if (text !== '') texts.push(text)
     }
     if (ev.type === 'tool/call' && ev.data) {
       toolCalls.push({ name: ev.data.name, arguments: ev.data.arguments })
@@ -53,6 +55,7 @@ for (const dir of runs.sort()) {
       }
     }
   }
+  const finalText = texts.join('\n\n')
   fs.writeFileSync(path.join(dir, 'report.txt'), finalText)
   fs.writeFileSync(path.join(dir, 'claims.json'), JSON.stringify({
     checkpoint_claims: checkpointClaims,

@@ -57,7 +57,17 @@ for (const ev of events) {
 }
 
 const stdout = fs.existsSync(path.join(dir, 'stdout.log')) ? fs.readFileSync(path.join(dir, 'stdout.log'), 'utf8') : ''
-const cert = (stdout.match(/Overall:\s*(\w+)/) || [])[1] || null
+let cert = (stdout.match(/Overall:\s*(\w+)/) || [])[1] || null
+if (cert === null) {
+  // Fall back to the doctor tool/result event content (authoritative).
+  for (const ev of events) {
+    if (ev.type === 'tool/result' && ev.data && ev.data.message && Array.isArray(ev.data.message.content)) {
+      const text = JSON.stringify(ev.data.message.content)
+      const m = text.match(/Overall:\s*(\w+)/)
+      if (m) { cert = m[1]; break }
+    }
+  }
+}
 
 const metrics = {
   schema: 'dsh-researcher/run-metrics/v1',
