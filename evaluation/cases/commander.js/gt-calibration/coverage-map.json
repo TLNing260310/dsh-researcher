@@ -1,0 +1,29 @@
+{
+  "schema": "dsh-researcher/cognition-gt-coverage/v0.1",
+  "case": "commander.js",
+  "created": "2026-08-21",
+  "rule": "GUS credit accounting: one credit per cluster — multiple hits within a cluster count once; each independent (single-entry) cluster credits 1.0 on hit. max_credit caps a cluster's contribution so the same cognition unit is never double-counted. The GUS denominator is max_total_credit, not the raw entry count.",
+  "clusters": [
+    {
+      "concept_cluster": "cross-level argument passing",
+      "core_ids": ["GT-C06", "GT-C09"],
+      "max_credit": 1.0,
+      "reason": "Recursive-descent flow (C06) and the unknown-bucket carry-forward (C09) describe the same cognition unit — where any argument ends up across command levels. A run that coherently describes one ('each level strips its options and passes the rest down') necessarily implies the other; counting both would double-credit one understanding."
+    },
+    {
+      "concept_cluster": "dual-option shared-key semantics",
+      "core_ids": ["GT-C16", "GT-C31"],
+      "max_credit": 1.0,
+      "reason": "The value-deduction heuristic (C16) and its three implementation sites (C31) are one cognition unit — how --foo/--no-foo share a single value key. C31 adds where-to-change guidance, not a separate understanding; a single coherent explanation covers both."
+    }
+  ],
+  "independent_ids": [
+    "GT-C01", "GT-C02", "GT-C04", "GT-C05", "GT-C07", "GT-C08", "GT-C10",
+    "GT-C11", "GT-C12", "GT-C13", "GT-C15", "GT-C17", "GT-C18", "GT-C19",
+    "GT-C20", "GT-C22", "GT-C24", "GT-C25", "GT-C29", "GT-C33", "GT-C35"
+  ],
+  "independent_count": 21,
+  "cluster_count": 2,
+  "max_total_credit": 23,
+  "note": "Conservative merging: only genuinely same-unit pairs are clustered (C06/C09, C16/C31). Near-related pairs (C18/C33 module-interop, C08/C17 help system, C19/C22 risk concentration, C25/C29 compat contracts) are kept independent because they describe distinct cognition units (architecture vs change-surface, detection vs rendering)."
+}

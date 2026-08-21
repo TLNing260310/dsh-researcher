@@ -18,7 +18,21 @@
     "message": "Bump typescript-eslint from 8.48.0 to 8.54.0 (#2479)"
   },
   "snapshot_dir": "D:/AI_work_project/phase-a-snapshots/commander.js",
-  "status": "v0.7.1 Benchmark Validation Review: PCR pilot COMPLETE (researcher-quick, exit 0, certificate SAFE, canary PASS); pilot-review.md issued — PCR output evaluable (7/7 sections PASS), 8 protocol loopholes found, GT freeze deferred pending protocol v1.1 modifications (applied); next: dual-evaluator cognition GT compilation per revised rules",
+  "status": "v0.7.1 GT Freeze Audit COMPLETE (counterfactual deletion test 25/25, coverage-map.json, independence statements); Core Cognition GT v0.1 = 25 entries REFINED + audited, NOT locked; next: sha256 freeze + v1.1 lock + Experiment A",
   "notes": "pilot purpose: verify PCR output is evaluable against protocol v1.1 before freezing GT (docs/evaluation-protocol-v1.1.md, Step 1-3). Pilot report: evaluation/cases/commander.js/pilot-review.md.",
-  "created_at": "2026-08-21"
+  "created_at": "2026-08-21",
+  "gt": {
+    "file": "evaluation/cases/commander.js/gt-calibration/core-gt-v0.1.json",
+    "candidates": 41,
+    "core": 25,
+    "extended": 16,
+    "removed": 0,
+    "coverage_map": "evaluation/cases/commander.js/gt-calibration/coverage-map.json",
+    "created_at": "2026-08-21",
+    "created_before_any_scored_run": true,
+    "evaluator_independence": "Two evaluator agents compiled the candidate GT fully independently (no shared context): each was instructed to read ONLY the T0 snapshot (code/docs/tests/git history up to T0), to use no network tools, and to consult no one. No model output was provided to either evaluator.",
+    "researcher_output_used": false,
+    "timeline_note": "A NON-SCORED PCR pilot (commander-pcr-pilot-01, output-shape validation only) ran BEFORE GT compilation. The evaluator prompts explicitly forbade reading it or any other model output; calibration clustering and refinement used only the two evaluator files and the pre-registered A/B/C judgment rules. Every GT entry's evidence is a snapshot file:line anchor, independently verifiable. This timeline is disclosed so third parties can audit the blindness chain.",
+    "audit": "evaluation/cases/commander.js/gt-calibration/gt-freeze-audit.md"
+  }
 }
