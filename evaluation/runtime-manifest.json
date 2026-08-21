@@ -1,0 +1,77 @@
+{
+  "schema": "dsh-researcher/runtime-manifest/v1",
+  "frozen_at": "2026-08-21T12:54:42Z",
+  "note": "Frozen before any agent run. Defines the four experimental conditions of Phase A and the machine/lock inputs. Any change after lock breaks eval-lock --check (protocol bump + rerun required).",
+  "phases": {
+    "phase_a_repos": ["pallets/flask", "tj/commander.js", "cheeriojs/cheerio"],
+    "current_case": "pallets/flask"
+  },
+  "modes": {
+    "standard": {
+      "preset": "standard",
+      "preset_source": "shipped @deepseek-ai/dsh config/agent-presets/standard",
+      "plan_mode": false,
+      "depth": null,
+      "sandbox": "read-only",
+      "approval": "never",
+      "notes": "Baseline full coding agent; no researcher rows. Runs the uniform prompt in a fresh session; read-only enforced identically to researcher modes so only understanding is measured."
+    },
+    "plan": {
+      "preset": "standard",
+      "preset_source": "shipped @deepseek-ai/dsh config/agent-presets/standard",
+      "plan_mode": true,
+      "plan_mode_plugin": "@deepseek-ai/dsh-plan-mode (isolate realm planMode: true, per-session)",
+      "depth": null,
+      "sandbox": "read-only",
+      "approval": "never",
+      "notes": "Same preset as standard with the plan-mode realm active from session start (no exit_plan_mode target; the run ends when the report is produced)."
+    },
+    "researcher_quick": {
+      "preset": "researcher-quick",
+      "preset_source": "this repo evaluation/presets/researcher-quick (installed to DSH_HOME/.agent-presets/researcher-quick)",
+      "plan_mode": false,
+      "depth": "quick",
+      "sandbox": "read-only",
+      "approval": "never",
+      "notes": "Researcher preset copy + frozen persona override forcing Quick depth (DISCOVER → EVIDENCE MAP → DIAGNOSE → CHALLENGE → DECISION). Deviation D002."
+    },
+    "researcher_deep": {
+      "preset": "researcher-deep",
+      "preset_source": "this repo evaluation/presets/researcher-deep (installed to DSH_HOME/.agent-presets/researcher-deep)",
+      "plan_mode": false,
+      "depth": "deep",
+      "sandbox": "read-only",
+      "approval": "never",
+      "notes": "Researcher preset copy + frozen persona override forcing Deep depth (all eleven moves). Deviation D002."
+    }
+  },
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-pro",
+    "reasoning": "max"
+  },
+  "token_budget": "500000",
+  "token_budget_note": "Uniform per-run cap for all four modes (a cap, not a target). Actual usage is recorded per run; cost-adjusted value is computed from actual usage. Changing the cap after lock requires a protocol bump.",
+  "run_conditions": {
+    "session_isolation": "fresh session per run; clean DSH profile (no history); no cross-mode context",
+    "cwd": "<snapshot>/workspace/",
+    "randomization": "run order randomized to avoid time-trend pollution",
+    "recorded_per_run": ["full output", "tool trace", "metrics", "token usage", "duration", "claims"]
+  },
+  "paths": {
+    "snapshots_root": "D:/AI_work_project/phase-a-snapshots",
+    "case_dirs": {
+      "flask": "D:/AI_work_project/phase-a-snapshots/flask",
+      "commander.js": "D:/AI_work_project/phase-a-snapshots/commander.js",
+      "cheerio": "D:/AI_work_project/phase-a-snapshots/cheerio"
+    },
+    "shipped_standard_preset_dir": "C:/Users/jxgm/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/config/agent-presets/standard",
+    "lock_dir": "D:/AI_work_project/dsh-researcher/evaluation/locks",
+    "case_artifacts_dir": "D:/AI_work_project/dsh-researcher/evaluation/cases"
+  },
+  "frozen_inputs": {
+    "prompt_file": "evaluation/prompts/phase-a-default.txt",
+    "deviation_file": "evaluation/deviations.md",
+    "preset_variants": ["evaluation/presets/researcher-quick", "evaluation/presets/researcher-deep"]
+  }
+}

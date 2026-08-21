@@ -45,6 +45,12 @@ const compute = () => ({
     adjudication_schema: sha256(path.join(root, 'evaluation', 'adjudication-schema.json')),
     scoring_schema: fs.existsSync(path.join(root, 'evaluation', 'scoring-schema.json')) ? sha256(path.join(root, 'evaluation', 'scoring-schema.json')) : null,
     selection_result: sha256(path.join(root, 'evaluation', 'selection_result.json')),
+    // Governance layer (added pre-lock, 2026-08-21): deviations, runtime
+    // manifest, frozen prompt dir and evaluation-owned preset variants.
+    deviations: fs.existsSync(path.join(root, 'evaluation', 'deviations.md')) ? sha256(path.join(root, 'evaluation', 'deviations.md')) : null,
+    runtime_manifest: fs.existsSync(path.join(root, 'evaluation', 'runtime-manifest.json')) ? sha256(path.join(root, 'evaluation', 'runtime-manifest.json')) : null,
+    prompts: fs.existsSync(path.join(root, 'evaluation', 'prompts')) ? sha256Dir(path.join(root, 'evaluation', 'prompts')) : null,
+    eval_presets: fs.existsSync(path.join(root, 'evaluation', 'presets')) ? sha256Dir(path.join(root, 'evaluation', 'presets')) : null,
     ground_truth: sha256(path.join(snapshotDir, 'ground-truth', 'future.json')),
     snapshot: sha256(path.join(snapshotDir, 'snapshot.json')),
     prompt: flag('prompt') ? sha256(flag('prompt')) : null,

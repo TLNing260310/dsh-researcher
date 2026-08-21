@@ -1,0 +1,1 @@
+Analyze this repository at the current snapshot. Identify the most important problems, risks, architectural concerns, and recommended next actions.
