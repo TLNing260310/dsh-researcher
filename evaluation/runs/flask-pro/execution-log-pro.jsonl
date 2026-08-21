@@ -1,0 +1,2 @@
+{"mode":"standard","started_at":"2026-08-21T05:30:51.1316427Z","doctor_post":0,"order":11,"preset":"standard","finished_at":"2026-08-21T05:43:47.7776332Z","plan":false,"run_id":"flask-standard-01","exit_code":0}
+{"mode":"quick","started_at":"2026-08-21T05:43:58.2521521Z","doctor_post":0,"order":1,"preset":"researcher-quick","finished_at":"2026-08-21T05:55:15.9084102Z","plan":false,"run_id":"flask-quick-03","exit_code":0}

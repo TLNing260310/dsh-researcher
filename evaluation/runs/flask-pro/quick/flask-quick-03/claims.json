@@ -1,0 +1,585 @@
+{
+  "checkpoint_claims": [
+    {
+      "phase": "DISCOVER",
+      "revise": [
+        {
+          "id": "C0-1",
+          "statement": "Repository is the Flask web framework source (Pallets), dev version 3.2.0.dev at commit 2579ce9f (2025-11-17), ~234 tracked files, src layout, Python >=3.10",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "README.md:5-9",
+            "pyproject.toml:1-3,22",
+            "git log HEAD=2579ce9f"
+          ],
+          "confidence": 0.99
+        },
+        {
+          "id": "C0-2",
+          "statement": "Working tree has EVERY tracked file modified vs HEAD with line-ending-only diffs (LF->CRLF); .editorconfig mandates LF; no .gitattributes exists",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "git status: 234 files ' M'",
+            "git diff ctx.py: only +CRLF lines, content identical",
+            "git diff LICENSE.txt: only +CRLF",
+            ".editorconfig:8 end_of_line = lf"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C0-3",
+          "statement": "In-flight 3.2 architecture: RequestContext merged into AppContext (single ContextVar _cv_app), deprecated aliases via module __getattr__, dispatch methods now take explicit ctx",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "CHANGES.rst:8-18",
+            "src/flask/ctx.py:259-297,504-516",
+            "src/flask/globals.py:40-77",
+            "src/flask/app.py:965,991,1009,1354,1382"
+          ],
+          "confidence": 0.98
+        },
+        {
+          "id": "C0-4",
+          "statement": "3.2 behavior changes: fresh combined context pushed per request/CLI command (no reuse of outer app ctx), fresh g per request, session loaded lazily on first access",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "src/flask/ctx.py:289-296",
+            "src/flask/app.py:1562-1582",
+            "CHANGES.rst:10-11"
+          ],
+          "confidence": 0.97
+        },
+        {
+          "id": "C0-5",
+          "statement": "Legacy dispatch-signature shim: Flask.__init_subclass__ detects old signatures, wraps subclass overrides with remove_ctx and MUTATES the base Flask class with add_ctx (global, process-wide, can stack-wrap; add_ctx re-reads ctx from the contextvar)",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "src/flask/app.py:253-307",
+            "src/flask/app.py:84-105"
+          ],
+          "confidence": 0.97
+        },
+        {
+          "id": "C0-6",
+          "statement": "The add_ctx/remove_ctx legacy shim has NO dedicated tests",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "grep tests for add_ctx|remove_ctx|old signature: 0 matches",
+            "tests/test_subclassing.py: only new-signature test"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C0-7",
+          "statement": "CVE-2026-27205 (missing Vary: Cookie when session accessed without 'accessed' tracking, e.g. membership test) affects this snapshot; fixed upstream in Flask 3.1.3, released after this snapshot",
+          "tier": "C3",
+          "verdict": "Likely",
+          "evidence": [
+            "src/flask/sessions.py:362-364 (Vary only if session.accessed)",
+            "tests/test_basic.py:571-578 (covers get/getitem/setdefault/clear but not 'in')",
+            "IBM bulletin: 'Fixed in 3.1.3' (ibm.com support page)",
+            "CHANGES.rst has no 3.1.3 => released post-snapshot"
+          ],
+          "confidence": 0.8
+        },
+        {
+          "id": "C0-8",
+          "statement": "Docs teach obsolete/broken API post-refactor: shell.rst and testing.rst show RequestContext usage and ctx-less preprocess_request()/process_response() calls that raise TypeError in 3.2; api.rst properly marks deprecations",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "docs/shell.rst:23-29,52,61",
+            "docs/testing.rst:317",
+            "docs/api.rst:309-317 (correct deprecation notes)",
+            "src/flask/app.py:1354 (preprocess_request requires ctx)"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C0-9",
+          "statement": "sansio base layer keeps old no-ctx dispatch signatures while concrete Flask overrides add ctx -> interface divergence (relevant for Quart and subclass typing)",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "grep sansio/app.py for ctx-taking dispatch methods: none",
+            "src/flask/app.py:965+ overrides"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C0-10",
+          "statement": "CI covers py3.10-3.14 including free-threaded 3.13t/3.14t, PyPy, Windows, macOS, min and dev dependency versions",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            ".github/workflows/tests.yaml:12-27",
+            "pyproject.toml:171-213"
+          ],
+          "confidence": 0.99
+        },
+        {
+          "id": "C0-11",
+          "statement": "SECRET_KEY_FALLBACKS key-ordering fix (CVE-2025-47278 / GHSA-4grg-w6v8-c28g) is present",
+          "tier": "C2",
+          "verdict": "Known",
+          "evidence": [
+            "src/flask/sessions.py:321-326 + comment",
+            "CHANGES.rst:37-38"
+          ],
+          "confidence": 0.97
+        },
+        {
+          "id": "C0-12",
+          "statement": "Deprecated aliases RequestContext/request_ctx are runtime-only (module __getattr__) and invisible to mypy/pyright -> typed extensions fail static checks while runtime works",
+          "tier": "C1",
+          "verdict": "Likely",
+          "evidence": [
+            "src/flask/ctx.py:504-516",
+            "src/flask/globals.py:65-77",
+            "pyproject.toml:127-146 (mypy strict on src)"
+          ],
+          "confidence": 0.8
+        }
+      ],
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "This is the upstream Flask 3.2.0.dev source at a mid-flight snapshot; the dominant project risk is the app/request-context merge compatibility surface (execution gaps: untested legacy shim, global class mutation, docs drift), plus a known CVE (Vary: Cookie) present in the code; the CRLF working tree is a snapshot-level operational problem, not a repo defect.",
+          "status": "active",
+          "dependsOn": [
+            "C0-1",
+            "C0-3",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8"
+          ]
+        }
+      ],
+      "views": [
+        {
+          "name": "project_model",
+          "dependsOn": [
+            "C0-1",
+            "C0-3",
+            "C0-4",
+            "C0-10"
+          ]
+        },
+        {
+          "name": "diagnosis",
+          "dependsOn": [
+            "C0-2",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8",
+            "C0-9",
+            "C0-12"
+          ]
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "git status: 234 files ' M'",
+            "git diff ctx.py/LICENSE.txt/.env/make.bat: EOL-only (CRLF) across all sampled file types",
+            ".editorconfig:8"
+          ],
+          "id": "C0-2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.8,
+          "evidence": [
+            "src/flask/sessions.py:362-364 (Vary only if session.accessed)",
+            "tests/test_basic.py:571-578 (no membership-test path coverage)",
+            "IBM support bulletin: CVE-2026-27205 fixed in 3.1.3",
+            "CHANGES.rst: no 3.1.3 entry at snapshot => fix landed post-snapshot",
+            "sessions.py git log: last substantive change 2025-03-10 (fb541598)"
+          ],
+          "id": "C0-7",
+          "verdict": "Known"
+        }
+      ],
+      "views": [
+        {
+          "dependsOn": [
+            "C0-2",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8",
+            "C0-9",
+            "C0-12"
+          ],
+          "name": "diagnosis"
+        }
+      ]
+    },
+    {
+      "hypotheses": [
+        {
+          "dependsOn": [
+            "C0-1",
+            "C0-3",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8"
+          ],
+          "id": "H1",
+          "status": "active",
+          "statement": "Upstream Flask 3.2.0.dev mid-flight snapshot. Dominant risks: (a) context-merge compatibility surface with execution gaps — untested legacy dispatch shim that mutates the Flask class and re-reads ctx from contextvars, sansio/Quart interface drift, docs teaching broken calls; (b) CVE-2026-27205 (Vary: Cookie) present, fix released post-snapshot as 3.1.3; (c) CRLF-only dirty working tree is a snapshot-level operational problem. The merge itself is deliberate evolution, not corrosion — risks are execution gaps, not wrong direction."
+        }
+      ],
+      "phase": "DIAGNOSE",
+      "views": [
+        {
+          "dependsOn": [
+            "C0-2",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8",
+            "C0-9",
+            "C0-12"
+          ],
+          "name": "diagnosis"
+        }
+      ]
+    },
+    {
+      "hypotheses": [
+        {
+          "dependsOn": [
+            "C0-1",
+            "C0-3",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8",
+            "C0-9"
+          ],
+          "id": "H1",
+          "status": "active",
+          "statement": "REVISED (post-challenge): Upstream Flask 3.2.0.dev mid-flight snapshot. The context merge is deliberate evolution (not corrosion): the old two-context model had real ordering/reuse bugs (#5797) and the merge has a planned deprecation path. Findings are therefore execution gaps, not direction errors: (a) legacy dispatch shim untested, mutates Flask class process-wide, re-reads ctx from contextvar — blast radius is every process importing a legacy Flask subclass; (b) CVE-2026-27205 (Vary: Cookie) present — fix landed post-snapshot in 3.1.3; (c) docs teach ctx-less calls that now TypeError (shell.rst/testing.rst); (d) long-tail risks: fresh-g-per-request semantic change and sansio/Quart signature drift; (e) CRLF-only dirty tree is a snapshot-provisioning artifact with operational consequences."
+        }
+      ],
+      "phase": "CHALLENGE"
+    },
+    {
+      "phase": "DECISION",
+      "views": [
+        {
+          "dependsOn": [
+            "C0-2",
+            "C0-5",
+            "C0-6",
+            "C0-7",
+            "C0-8",
+            "C0-9",
+            "C0-12"
+          ],
+          "name": "classification"
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "research_doctor",
+      "arguments": "{}"
+    },
+    {
+      "name": "todo_write",
+      "arguments": "{\"todos\": [{\"content\": \"DISCOVER: cartography, structure, claims (C0), research questions, initial hypothesis\", \"status\": \"in_progress\"}, {\"content\": \"RECONSTRUCT: project model from code + git history\", \"status\": \"pending\"}, {\"content\": \"EVIDENCE MAP: grade claims C0–C4, verdicts\", \"status\": \"pending\"}, {\"content\": \"DIAGNOSE: problem chains, candidate directions vs global model\", \"status\": \"pending\"}, {\"content\": \"CHALLENGE: disconfirmation search, corrosion vs evolution, revised hypothesis\", \"status\": \"pending\"}, {\"content\": \"SHAPE + CLASSIFY + SELF-EVAL + report with handoff\", \"status\": \"pending\"}]}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 50}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"status\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"README.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"pyproject.toml\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"LICENSE.txt\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".editorconfig\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"CHANGES.rst\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/globals.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"RequestContext|request_ctx\", \"path\": \"src\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \".gitattributes\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/app.py\", \"pattern\": \"def (dispatch|full_dispatch|preprocess|handle_|make_response|finalize|wsgi_app|process_response)\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/__init__.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"ref\": \"85793d6c:src/flask/__init__.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\", \"offset\": 960, \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\", \"limit\": 160, \"offset\": 1350}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/app.py\", \"pattern\": \"old signature|_make_toplevel|DeprecationWarning|inspect|signature\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\", \"limit\": 110, \"offset\": 240}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\", \"offset\": 1510}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src\", \"pattern\": \"def (add_ctx|remove_ctx)\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/sansio\", \"pattern\": \"def (dispatch|full_dispatch|handle_|preprocess|process_response|finalize|do_teardown|log_exception|make_default)\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"RequestContext|request_ctx|old signature|merged\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\", \"limit\": 60, \"offset\": 60}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/sansio/app.py\", \"pattern\": \"    def \\\\w+\\\\(self\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_subclassing.py\", \"limit\": 80}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"docs\", \"pattern\": \"merged|RequestContext|request_ctx\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"add_ctx|remove_ctx|now takes|old signature|DeprecationWarning\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/appcontext.rst\", \"limit\": 60}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/reqcontext.rst\", \"limit\": 40}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_cli.py\", \"limit\": 55, \"offset\": 390}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"has_request_context|app_context\\\\(\\\\).*test_client|preserve_context\", \"include\": \"test_reqctx.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_reqctx.py\", \"limit\": 75, \"offset\": 100}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/debughelpers.py\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"Flask 3.2 RequestContext AppContext merge regression extension compatibility issue\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"Flask security advisory 2025 GHSA pallets\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://github.com/pypa/advisory-database/blob/main/vulns/flask/PYSEC-2026-1377.yaml\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://github.com/pallets/flask/issues/5639\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://raw.githubusercontent.com/pypa/advisory-database/main/vulns/flask/PYSEC-2026-1377.yaml\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"Flask PYSEC-2026-1377 vulnerability\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"flask\\\" 3.2 release free-threading support context merged 2025\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"flask CVE 2026 pallets advisory new vulnerability January 2026\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"Flask\\\" \\\"3.2.0\\\" released changelog announcement\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"CVE-2026-27205 flask Vary Cookie affected versions fixed 3.1.3\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/sessions.py\", \"pattern\": \"vary|save_session|open_session|is_null_session\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/sessions.py\", \"limit\": 150, \"offset\": 255}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"GHSA flask 3.1.3 Vary Cookie session accessed __contains__ fix commit\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"path\": \"src/flask/sessions.py\", \"maxCount\": 10}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".github/workflows/tests.yaml\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"uv.lock\", \"pattern\": \"name = \\\"werkzeug\\\"|name = \\\"jinja2\\\"|name = \\\"click\\\"\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/cli.py\", \"pattern\": \"app_context|AppContext|with_appcontext\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"Vary\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/sansio/README.md\", \"pattern\": \"ctx|context\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_basic.py\", \"limit\": 65, \"offset\": 540}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/api.rst\", \"limit\": 40, \"offset\": 285}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/shell.rst\", \"limit\": 50}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/shell.rst\", \"offset\": 48}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"docs\", \"pattern\": \"\\\\.(preprocess_request|process_response|dispatch_request|full_dispatch_request|handle_exception|do_teardown_request|do_teardown_appcontext)\\\\(\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"DISCOVER\", \"revise\": [{\"id\": \"C0-1\", \"statement\": \"Repository is the Flask web framework source (Pallets), dev version 3.2.0.dev at commit 2579ce9f (2025-11-17), ~234 tracked files, src layout, Python >=3.10\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"README.md:5-9\", \"pyproject.toml:1-3,22\", \"git log HEAD=2579ce9f\"], \"confidence\": 0.99}, {\"id\": \"C0-2\", \"statement\": \"Working tree has EVERY tracked file modified vs HEAD with line-ending-only diffs (LF->CRLF); .editorconfig mandates LF; no .gitattributes exists\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"git status: 234 files ' M'\", \"git diff ctx.py: only +CRLF lines, content identical\", \"git diff LICENSE.txt: only +CRLF\", \".editorconfig:8 end_of_line = lf\"], \"confidence\": 0.95}, {\"id\": \"C0-3\", \"statement\": \"In-flight 3.2 architecture: RequestContext merged into AppContext (single ContextVar _cv_app), deprecated aliases via module __getattr__, dispatch methods now take explicit ctx\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"CHANGES.rst:8-18\", \"src/flask/ctx.py:259-297,504-516\", \"src/flask/globals.py:40-77\", \"src/flask/app.py:965,991,1009,1354,1382\"], \"confidence\": 0.98}, {\"id\": \"C0-4\", \"statement\": \"3.2 behavior changes: fresh combined context pushed per request/CLI command (no reuse of outer app ctx), fresh g per request, session loaded lazily on first access\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"src/flask/ctx.py:289-296\", \"src/flask/app.py:1562-1582\", \"CHANGES.rst:10-11\"], \"confidence\": 0.97}, {\"id\": \"C0-5\", \"statement\": \"Legacy dispatch-signature shim: Flask.__init_subclass__ detects old signatures, wraps subclass overrides with remove_ctx and MUTATES the base Flask class with add_ctx (global, process-wide, can stack-wrap; add_ctx re-reads ctx from the contextvar)\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"src/flask/app.py:253-307\", \"src/flask/app.py:84-105\"], \"confidence\": 0.97}, {\"id\": \"C0-6\", \"statement\": \"The add_ctx/remove_ctx legacy shim has NO dedicated tests\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"grep tests for add_ctx|remove_ctx|old signature: 0 matches\", \"tests/test_subclassing.py: only new-signature test\"], \"confidence\": 0.9}, {\"id\": \"C0-7\", \"statement\": \"CVE-2026-27205 (missing Vary: Cookie when session accessed without 'accessed' tracking, e.g. membership test) affects this snapshot; fixed upstream in Flask 3.1.3, released after this snapshot\", \"tier\": \"C3\", \"verdict\": \"Likely\", \"evidence\": [\"src/flask/sessions.py:362-364 (Vary only if session.accessed)\", \"tests/test_basic.py:571-578 (covers get/getitem/setdefault/clear but not 'in')\", \"IBM bulletin: 'Fixed in 3.1.3' (ibm.com support page)\", \"CHANGES.rst has no 3.1.3 => released post-snapshot\"], \"confidence\": 0.8}, {\"id\": \"C0-8\", \"statement\": \"Docs teach obsolete/broken API post-refactor: shell.rst and testing.rst show RequestContext usage and ctx-less preprocess_request()/process_response() calls that raise TypeError in 3.2; api.rst properly marks deprecations\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"docs/shell.rst:23-29,52,61\", \"docs/testing.rst:317\", \"docs/api.rst:309-317 (correct deprecation notes)\", \"src/flask/app.py:1354 (preprocess_request requires ctx)\"], \"confidence\": 0.95}, {\"id\": \"C0-9\", \"statement\": \"sansio base layer keeps old no-ctx dispatch signatures while concrete Flask overrides add ctx -> interface divergence (relevant for Quart and subclass typing)\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"grep sansio/app.py for ctx-taking dispatch methods: none\", \"src/flask/app.py:965+ overrides\"], \"confidence\": 0.9}, {\"id\": \"C0-10\", \"statement\": \"CI covers py3.10-3.14 including free-threaded 3.13t/3.14t, PyPy, Windows, macOS, min and dev dependency versions\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\".github/workflows/tests.yaml:12-27\", \"pyproject.toml:171-213\"], \"confidence\": 0.99}, {\"id\": \"C0-11\", \"statement\": \"SECRET_KEY_FALLBACKS key-ordering fix (CVE-2025-47278 / GHSA-4grg-w6v8-c28g) is present\", \"tier\": \"C2\", \"verdict\": \"Known\", \"evidence\": [\"src/flask/sessions.py:321-326 + comment\", \"CHANGES.rst:37-38\"], \"confidence\": 0.97}, {\"id\": \"C0-12\", \"statement\": \"Deprecated aliases RequestContext/request_ctx are runtime-only (module __getattr__) and invisible to mypy/pyright -> typed extensions fail static checks while runtime works\", \"tier\": \"C1\", \"verdict\": \"Likely\", \"evidence\": [\"src/flask/ctx.py:504-516\", \"src/flask/globals.py:65-77\", \"pyproject.toml:127-146 (mypy strict on src)\"], \"confidence\": 0.8}], \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"This is the upstream Flask 3.2.0.dev source at a mid-flight snapshot; the dominant project risk is the app/request-context merge compatibility surface (execution gaps: untested legacy shim, global class mutation, docs drift), plus a known CVE (Vary: Cookie) present in the code; the CRLF working tree is a snapshot-level operational problem, not a repo defect.\", \"status\": \"active\", \"dependsOn\": [\"C0-1\", \"C0-3\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\"]}], \"views\": [{\"name\": \"project_model\", \"dependsOn\": [\"C0-1\", \"C0-3\", \"C0-4\", \"C0-10\"]}, {\"name\": \"diagnosis\", \"dependsOn\": [\"C0-2\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\", \"C0-9\", \"C0-12\"]}]}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"tests/test_apps/.env\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"docs/make.bat\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.95, \"evidence\": [\"git status: 234 files ' M'\", \"git diff ctx.py/LICENSE.txt/.env/make.bat: EOL-only (CRLF) across all sampled file types\", \".editorconfig:8\"], \"id\": \"C0-2\", \"verdict\": \"Known\"}, {\"confidence\": 0.8, \"evidence\": [\"src/flask/sessions.py:362-364 (Vary only if session.accessed)\", \"tests/test_basic.py:571-578 (no membership-test path coverage)\", \"IBM support bulletin: CVE-2026-27205 fixed in 3.1.3\", \"CHANGES.rst: no 3.1.3 entry at snapshot => fix landed post-snapshot\", \"sessions.py git log: last substantive change 2025-03-10 (fb541598)\"], \"id\": \"C0-7\", \"verdict\": \"Known\"}], \"views\": [{\"dependsOn\": [\"C0-2\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\", \"C0-9\", \"C0-12\"], \"name\": \"diagnosis\"}]}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"hypotheses\": [{\"dependsOn\": [\"C0-1\", \"C0-3\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\"], \"id\": \"H1\", \"status\": \"active\", \"statement\": \"Upstream Flask 3.2.0.dev mid-flight snapshot. Dominant risks: (a) context-merge compatibility surface with execution gaps — untested legacy dispatch shim that mutates the Flask class and re-reads ctx from contextvars, sansio/Quart interface drift, docs teaching broken calls; (b) CVE-2026-27205 (Vary: Cookie) present, fix released post-snapshot as 3.1.3; (c) CRLF-only dirty working tree is a snapshot-level operational problem. The merge itself is deliberate evolution, not corrosion — risks are execution gaps, not wrong direction.\"}], \"phase\": \"DIAGNOSE\", \"views\": [{\"dependsOn\": [\"C0-2\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\", \"C0-9\", \"C0-12\"], \"name\": \"diagnosis\"}]}"
+    },
+    {
+      "name": "skill",
+      "arguments": "{\"name\": \"methodology\"}"
+    },
+    {
+      "name": "skill",
+      "arguments": "{\"name\": \"research-report-template\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"hypotheses\": [{\"dependsOn\": [\"C0-1\", \"C0-3\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\", \"C0-9\"], \"id\": \"H1\", \"status\": \"active\", \"statement\": \"REVISED (post-challenge): Upstream Flask 3.2.0.dev mid-flight snapshot. The context merge is deliberate evolution (not corrosion): the old two-context model had real ordering/reuse bugs (#5797) and the merge has a planned deprecation path. Findings are therefore execution gaps, not direction errors: (a) legacy dispatch shim untested, mutates Flask class process-wide, re-reads ctx from contextvar — blast radius is every process importing a legacy Flask subclass; (b) CVE-2026-27205 (Vary: Cookie) present — fix landed post-snapshot in 3.1.3; (c) docs teach ctx-less calls that now TypeError (shell.rst/testing.rst); (d) long-tail risks: fresh-g-per-request semantic change and sansio/Quart signature drift; (e) CRLF-only dirty tree is a snapshot-provisioning artifact with operational consequences.\"}], \"phase\": \"CHALLENGE\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"DECISION\", \"views\": [{\"dependsOn\": [\"C0-2\", \"C0-5\", \"C0-6\", \"C0-7\", \"C0-8\", \"C0-9\", \"C0-12\"], \"name\": \"classification\"}]}"
+    },
+    {
+      "name": "todo_write",
+      "arguments": "{\"todos\": [{\"content\": \"DISCOVER: cartography, structure, claims (C0), research questions, initial hypothesis\", \"status\": \"completed\"}, {\"content\": \"EVIDENCE MAP: grade claims C0–C4, verdicts\", \"status\": \"completed\"}, {\"content\": \"DIAGNOSE: problem chains, candidate directions vs global model\", \"status\": \"completed\"}, {\"content\": \"CHALLENGE: disconfirmation search, corrosion vs evolution, revised hypothesis\", \"status\": \"completed\"}, {\"content\": \"SHAPE + CLASSIFY + SELF-EVAL + report with handoff\", \"status\": \"in_progress\"}, {\"content\": \"Claim ledger mirror: C0-1 Flask 3.2.0.dev @2579ce9f (Known) / C0-2 CRLF-only dirty tree (Known) / C0-3 ctx merge (Known) / C0-4 fresh-g+lazy-session (Known) / C0-5 __init_subclass__ shim (Known) / C0-6 shim untested (Known) / C0-7 CVE-2026-27205 present (Known, 0.8) / C0-8 docs drift (Known) / C0-9 sansio divergence (Known) / C0-10 CI incl. free-thread (Known) / C0-11 CVE-2025-47278 fixed (Known) / C0-12 typing blind spot (Likely)\", \"status\": \"completed\"}]}"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ param(
   [int]$From = 0,
   [int]$To = 0
 )
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 $repo = 'D:\AI_work_project\dsh-researcher'
 $profileDir = 'C:\Users\jxgm\.dsh\profiles\headless'
 $manifest = Get-Content "$repo\evaluation\runs\flask\runs-manifest.json" -Raw | ConvertFrom-Json

@@ -63,3 +63,20 @@
 - First smoke runs therefore ran TWO runners (shipped headless-runner +
   eval runner) and leaked the host-level `pwsh` tool into researcher agents;
   both fixed via the corrected patch forms and verified by re-smoke.
+
+## N-04 — Model switch to deepseek-v4-flash + matrix abort (2026-08-21)
+
+- The first matrix batch ran under the frozen model deepseek-v4-pro:
+  - flask-standard-01 (pilot, completed) and flask-quick-03 (completed) —
+    preserved under `evaluation/runs/flask-pro/` as exploratory artifacts;
+  - flask-deep-03 — aborted mid-run by `QUOTA: Insufficient Balance` (402)
+    after 95 tool calls / 16 minutes; artifacts preserved under
+    `evaluation/runs/flask-pro/deep/flask-deep-03/` (run.json records the
+    QUOTA error); the run is INVALID for scoring and was re-executed.
+- Operator decision (D003): the whole matrix reruns on
+  deepseek-v4-flash (reasoning max, same budget). All scored runs share one
+  model; the lock was re-frozen with the new model before any flash run.
+- Harness bug found: `run-matrix.ps1` used `$ErrorActionPreference='Stop'`,
+  so the dsh process's stderr (NativeCommandError) aborted the iteration
+  before the execution-log line was written. Fixed to 'Continue' + explicit
+  `$LASTEXITCODE` checks.

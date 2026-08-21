@@ -47,8 +47,9 @@
   },
   "model": {
     "provider": "deepseek-official",
-    "model": "deepseek-v4-pro",
-    "reasoning": "max"
+    "model": "deepseek-v4-flash",
+    "reasoning": "max",
+    "note": "Deviation D003 (2026-08-21): switched from deepseek-v4-pro after quota exhaustion; all scored runs use this model; pro exploratory runs preserved under evaluation/runs/flask-pro/ and excluded from scoring."
   },
   "token_budget": "500000",
   "token_budget_note": "Uniform per-run cap for all four modes (a cap, not a target). Actual usage is recorded per run; cost-adjusted value is computed from actual usage. Changing the cap after lock requires a protocol bump.",

@@ -22,3 +22,19 @@
 - **Risk**: The variant persona text is a copy that can drift from the shipped persona; the lock hash covers the current copy at freeze time, and any drift after freeze breaks the lock.
 - **Mitigation**: Variants are generated mechanically from the shipped preset at freeze time (recorded in the case log); the lock covers them.
 - **Status**: Accepted for Phase A.
+
+## D003 — Model switched to deepseek-v4-flash before the Phase A matrix (quota)
+
+- **Deviation**: The frozen model was `deepseek-official/deepseek-v4-pro` (reasoning max). After 2 completed exploratory runs (standard-01, quick-03) and 1 failed run (deep-03, `QUOTA: Insufficient Balance` at the LLM API), the operator switched the eval model to `deepseek-official/deepseek-v4-flash` (reasoning max) — same reasoning configuration, same token budget.
+- **Reason**: The pro-model API balance was exhausted mid-matrix; the operator decided the cheaper model for the whole experiment ("pro is too expensive; effect is similar").
+- **Risk**: The model change is a confound if mixed with pro runs — per the protocol's same-model rule, **all scored runs must share one model**.
+- **Mitigation**:
+  1. The eval settings document, runtime manifest, and eval lock were updated and re-frozen BEFORE any flash run; `eval-lock --check` verifies the new model string.
+  2. **All 12 matrix runs are re-executed under flash**; no pro run enters scoring.
+  3. The three pro runs (standard-01, quick-03, deep-03-quota-failed) are preserved under `evaluation/runs/flask-pro/` as exploratory artifacts, including the quota failure — nothing is deleted.
+- **Status**: Accepted for Phase A (operator decision, recorded pre-rerun).
+
+## D004 — Researcher runtime bug fixes during harness validation (infra)
+
+- **Deviation**: None in protocol inputs — recorded for transparency. Two shipped `research_doctor` regressions (v0.5.2: block-scoped `session` referenced outside its try block → `ReferenceError` on every call; replay check destructured reducer helpers from the plugin's top-level exports → `makeState is not a function`) were fixed before any scored run, and the doctor's Preset check accepts the D002 variant ids. Classification: protocol §6a infra-audit fixes (plugin crash), not design or scoring changes; unit tests stay green; the lock was re-frozen pre-run (preset hash changed). Details: `evaluation/cases/flask/notes.md` N-01.
+- **Status**: Accepted for Phase A.

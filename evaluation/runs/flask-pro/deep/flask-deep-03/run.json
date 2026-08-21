@@ -1,0 +1,25 @@
+{
+  "schema": "dsh-researcher/eval-run/v1",
+  "run_id": "flask-deep-03",
+  "preset": "researcher-deep",
+  "plan_mode": false,
+  "task": "Analyze this repository at the current snapshot. Identify the most important problems, risks, architectural concerns, and recommended next actions.",
+  "session_id": "session-9f25d825-8559-4474-b43b-1307f01198e9",
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-pro"
+  },
+  "started_at": "2026-08-21T05:55:17.662Z",
+  "finished_at": "2026-08-21T06:11:30.635Z",
+  "duration_ms": 972966,
+  "tool_calls": 95,
+  "final_reason": {
+    "kind": "error",
+    "error": {
+      "message": "Insufficient Balance",
+      "code": "QUOTA",
+      "status": 402
+    }
+  },
+  "exit": 1
+}

@@ -1,0 +1,177 @@
+This is the Flask framework repository itself (Pallets), at a snapshot around 2025-11-17, mid-development toward 3.2 with a major context-merge refactor in progress. Let me map it further.
+
+The snapshot's working tree is CRLF-converted (EOL-only diffs against HEAD — `.editorconfig` still mandates `end_of_line = lf`). Now let me examine the actual code state: the context merge, dispatch refactor, and what remains of the old API.
+
+The `__init_subclass__` legacy-signature shim mutates the base `Flask` class — a notable design choice. Let me find `add_ctx`/`remove_ctx`, check the sansio layer and tests around this.
+
+Internal state is mapped. Now external research: post-snapshot evidence on the context-merge fallout, security advisories, and the free-threading bet.
+
+web_fetch is unavailable in this session (no usable web provider) — I'll rely on web_search summaries and note the limitation.
+
+A new CVE on `Vary: Cookie` — this snapshot's lazy session loading could be implicated. Let me get details and check the snapshot's session code.
+
+CVE-2026-27205 was fixed in Flask 3.1.3 (after this snapshot). Let me pin down the exact vulnerable path and whether the snapshot's code has the fix.
+
+I have the full picture. Committing research state per pipeline move — starting with DISCOVER.
+
+One more verification of the working-tree diff uniformity before EVIDENCE MAP:
+
+CHALLENGE phase — disconfirmation search, then committing the revised hypothesis.
+
+Skills catalog lacks both referenced skills in this session — I'll run the self-check manually against the methodology rules from my instructions and disclose that.
+
+# Repository Analysis Report — Flask @ snapshot `2579ce9f` (2025-11-17)
+
+## Runtime Proof
+
+Researcher Runtime Certificate — **Run #2**, History: #1 unknown. Preset: PASS (`researcher-quick`), Sandbox: PASS (read-only), Approval: PASS (never), Write/Edit stubs: PASS, Shell surface: PASS (git_read only), Checkpoint: PASS, Replay: PASS. **Overall: SAFE.** Depth: Quick (frozen override D002 — DISCOVER → EVIDENCE MAP → DIAGNOSE → CHALLENGE → DECISION).
+
+---
+
+## TL;DR
+
+This snapshot is the **upstream Flask source itself** (Pallets), development version **3.2.0.dev**, captured mid-release-prep for the largest architectural change Flask has shipped in years: the **merge of `RequestContext` into `AppContext`** (#5639) plus a **dispatch refactor that passes the context explicitly** (#5815). The snapshot is fundamentally healthy — comprehensive CI (including free-threaded Python 3.13t/3.14t), strict typing, deprecation paths in place — but it is **mid-flight**: the migration machinery is untested, docs teach calls that now raise `TypeError`, and a **known CVE (CVE-2026-27205, missing `Vary: Cookie`)** is present in the code, fixed upstream only *after* this snapshot (3.1.3). Separately, the working tree is **100% dirty with line-ending-only (CRLF) diffs** — a snapshot-provisioning artifact, not a repo defect, but the #1 operational blocker for anyone working in this copy.
+
+**The most important single risk:** `Flask.__init_subclass__`'s legacy-signature shim (`src/flask/app.py:253-307`) — it mutates the `Flask` base class process-wide and re-reads the context from a contextvar, partially undoing the very refactor it's bridging, with **zero dedicated tests**.
+
+---
+
+## 1. Project model (condensed)
+
+| Dimension | State |
+|---|---|
+| **Mission** | Lightweight WSGI framework; "suggestions, not enforcement" (`README.md:5-14`) |
+| **Users** | Millions of Python web devs; the entire Flask extension ecosystem (Flask-SQLAlchemy, Flask-Login, …) consumes its internals |
+| **Current state** | `3.2.0.dev` (`pyproject.toml:3`), HEAD `2579ce9f`, last stable 3.1.2 (2025-08-19). Python ≥3.10 (3.9 dropped). Dependencies: werkzeug≥3.1.0, jinja2≥3.1.2, click≥8.1.3, blinker≥1.9.0, itsdangerous≥2.2.0 |
+| **In-flight work** | (a) Context merge: single `ContextVar("flask.app_ctx")`, deprecated `RequestContext`/`request_ctx` aliases, fresh combined context per request/CLI command, lazy session loading (`CHANGES.rst:8-16`); (b) Dispatch refactor: 11 `Flask` methods now take `ctx: AppContext` as first param with legacy-signature detection (`src/flask/app.py:253-307`); (c) Free-threaded Python in CI (`tests.yaml:17,21`) |
+| **Evidence it works** | Tox matrix 3.10–3.14 + 3.13t/3.14t + PyPy + Windows/macOS + min/dev dep pins (`pyproject.toml:171-232`); mypy strict + pyright; pytest with `filterwarnings = error` |
+
+## 2. Evidence map — claim ledger (12 claims)
+
+| ID | Claim | Tier/Verdict | Conf. |
+|---|---|---|---|
+| C0-1 | Flask 3.2.0.dev @ `2579ce9f`, src-layout, 234 tracked files | C2 Known | .99 |
+| C0-2 | Every tracked file modified vs HEAD, **EOL-only (LF→CRLF)**; `.editorconfig:8` mandates LF; no `.gitattributes` | C2 Known | .95 |
+| C0-3 | Context merge + ctx-passing dispatch implemented with deprecation aliases | C2 Known | .98 |
+| C0-4 | Fresh `g` per request; lazy session load (3.2 behavior changes) | C2 Known | .97 |
+| C0-5 | `__init_subclass__` shim: `remove_ctx` wraps subclass overrides; `add_ctx` **mutates `Flask` class** process-wide and re-reads ctx from contextvar | C2 Known | .97 |
+| C0-6 | The shim has **no dedicated tests** | C1 Known | .90 |
+| C0-7 | **CVE-2026-27205** (no `Vary: Cookie` when session accessed via non-tracking paths) present; fixed upstream in 3.1.3, post-snapshot | C3 Known | .80 |
+| C0-8 | Docs drift: `shell.rst`/`testing.rst` teach ctx-less calls that now `TypeError`; `api.rst` correctly marks deprecations | C2 Known | .95 |
+| C0-9 | sansio base keeps old signatures while `Flask` overrides add `ctx` → interface divergence (Quart) | C2 Known | .90 |
+| C0-10 | CI covers 3.10–3.14 incl. free-threaded, PyPy, Win/mac, min/dev deps | C2 Known | .99 |
+| C0-11 | CVE-2025-47278 (SECRET_KEY_FALLBACKS ordering) fixed | C2 Known | .97 |
+| C0-12 | Deprecated aliases invisible to mypy/pyright (runtime-only `__getattr__`) | C1 Likely | .80 |
+
+## 3. Findings — problems, risks, architectural concerns
+
+### F1 — CRLF-only dirty working tree (snapshot hygiene, HIGH operational impact)
+**Evidence:** `git status` shows all 234 tracked files ` M`; sampled diffs across `src/flask/ctx.py`, `LICENSE.txt`, `tests/test_apps/.env`, `docs/make.bat` show *only* `\r` additions — content identical to HEAD. `.editorconfig:8` mandates `end_of_line = lf`; no `.gitattributes` exists.
+**Problem chain:** every file diverges from HEAD → `git diff`/`git status` are unusable noise → pre-commit hooks (ruff etc. with `end_of_line=lf`) would rewrite every file → high risk of an accidental mass commit; any real change is indistinguishable from the EOL noise.
+**Diagnosis:** this is a snapshot-provisioning artifact (e.g., checkout with `core.autocrlf=true`), not an upstream defect — but it makes the working copy untrustworthy as a workspace. Any analysis tooling that diffs against HEAD will flag the entire tree.
+**Direction:** renormalize EOL (re-checkout with `core.autocrlf=input`, or `git add --renormalize`), and add a `.gitattributes` (`* text=auto eol=lf`) so it can't recur. **This is a precondition to doing anything else in this tree.**
+
+### F2 — CVE-2026-27205: missing `Vary: Cookie` (security, externally verified)
+**Evidence:** `src/flask/sessions.py:362-364` adds `Vary: Cookie` only when `session.accessed` is True. Werkzeug's `SecureCookieSession` marks `accessed` on `__getitem__`/`get`/`setdefault`/updates — but **not on membership tests or iteration**. A view that branches on `"user_id" in session` produces session-dependent content with **no `Vary: Cookie` header**; a shared cache (CDN/proxy) may then serve one user's personalized response to another (CWE-524). The snapshot's tests (`tests/test_basic.py:571-578`) cover `/get`, `/getitem`, `/setdefault`, `/clear` — exactly the paths that *do* track `accessed` — and **not** the membership path. `CHANGES.rst` contains no 3.1.3 entry, and the last substantive `sessions.py` change predates the snapshot (2025-03-10, `fb541598`), so the fix is absent. External: [IBM bulletin — "Fixed in 3.1.3"](https://www.ibm.com/support/pages/security-bulletinflask-vary-cookie-header-vulnerability-use-cache-containing-sensitive-information-fixed-313#1), [CVE-2026-27205 (opencve)](https://app.opencive.io/cve/CVE-2026-27205). *Caveat: `web_fetch` is unavailable this session, so the exact upstream patch could not be read; confidence .80.*
+
+### F3 — The legacy dispatch shim is the riskiest code in the release (architecture, HIGH)
+`Flask.__init_subclass__` (`src/flask/app.py:253-307`) introspects all 11 refactored methods on **every Flask subclass ever defined**, and on detecting an old signature:
+1. **Mutates the `Flask` base class itself** — `setattr(Flask, name, add_ctx(base_method))`. This is global, process-wide, and irreversible: one legacy extension subclass redefines how *every* Flask app instance in the process dispatches, including unrelated apps and frameworks built on it.
+2. **Stacks on repeat** — a second legacy subclass wraps the already-wrapped base method (functionally OK, structurally accretive).
+3. **Reintroduces exactly the coupling the refactor removed** — `add_ctx` fetches ctx via `app_ctx._get_current_object()` (`app.py:99,101`), a contextvar read at call time; the whole point of #5815 was to stop relying on the ambient context during dispatch. Processes containing any legacy subclass silently lose part of the architectural benefit, and `super()`-style calls outside an active context that previously worked now raise `RuntimeError("Working outside of application context")`.
+4. **Untested** (C0-6): no tests exercise warning emission, `remove_ctx`/`add_ctx` behavior, double-wrapping, or the no-warning new-signature path.
+
+**Corrosion check:** the merge itself is legitimate evolution (the old two-context model had real ordering/reuse bugs — cf. #5797 "push preserved contexts in correct order"). The shim's *global base-class mutation* is the corrosion-prone part: it's a local-compatibility fix whose side effects leak process-wide. → **INVESTIGATE** (design question), **BUILD** (tests) — see §5.
+
+### F4 — Long-tail semantic changes without deprecation coverage (architecture, MEDIUM)
+- **Fresh `g` per request** (`ctx.py:289-292`, `CHANGES.rst:10-11`): an outer manually-pushed `app.app_context()` no longer shares `g` with requests dispatched inside it. Correct direction, but a *silent* behavior change (no warning possible) for the documented testing/scripting pattern.
+- **Lazy session loading** (`ctx.py:294-296`): `open_session` moves from push-time to first-access — interacts with F2 and with extensions that expected the session to exist during `before_request` (it still does, via `ctx.session`… but only if accessed).
+- **sansio/Quart drift** (C0-9): the sansio base class keeps old no-ctx signatures while concrete `Flask` adds `ctx` — the shared interface no longer matches, and Quart must absorb the same refactor separately.
+
+### F5 — Documentation teaches broken code (docs, MEDIUM-LOW)
+`docs/shell.rst:23-29` still teaches `RequestContext` (deprecated alias — works, but obsolete), and **`docs/shell.rst:52` (`app.preprocess_request()`) and `:61` (`app.process_response(app.response_class())`) plus `docs/testing.rst:317` are now `TypeError`s** in 3.2 — those methods require `ctx`. `docs/api.rst:309-317` is correctly updated, so the drift is partial — a user following the shell/testing docs gets a runtime crash on the exact API the release changed. Sphinx's `-W` build won't catch it (examples aren't doctested).
+
+### F6 — Typing blind spot for deprecated aliases (MEDIUM-LOW)
+`flask.ctx.RequestContext` and `flask.globals.request_ctx` exist only via module `__getattr__` (`ctx.py:504-516`, `globals.py:65-77`), invisible to mypy/pyright under this repo's own strict config (`pyproject.toml:127-146`). Typed extension code using the aliases keeps working at runtime but breaks statically — a poor deprecation experience for the ecosystem the deprecation is meant to protect.
+
+### Non-findings (checked, cleared)
+- CVE-2025-47278 (fallback-key ordering): **fixed** in-tree (`sessions.py:321-326`).
+- CI robustness, dependency pins, typing strictness, test hygiene (`filterwarnings = error`): strong.
+- Free-threaded testing (3.13t/3.14t): a positive bet, no GIL-dependent code path identified in the reviewed dispatch/context code.
+
+## 4. Hypothesis evolution
+- **H1 v1:** Flask 3.2.0.dev mid-flight; dominant risk = context-merge compat surface; CRLF tree a snapshot problem. → auto-invalidated on C0-7 evidence revision (EVIDENCE MAP).
+- **H1 v2 → v3 → v4 (current):** same core, refined post-challenge: merge = **evolution, not corrosion**; findings are **execution gaps** (untested global-mutating shim, present CVE, docs teaching broken calls) plus two long-tail risks (fresh-`g` semantics, sansio drift). Disconfirmation attempts (CVE already fixed? — no, fix is post-snapshot; shim risk overrated? — no, blast radius is every user process; CRLF intentional? — plausible as provisioning artifact, but operational impact stands).
+
+## 5. Classification
+
+**BUILD** (evidence sufficient → hand to Plan):
+1. Backport the CVE-2026-27205 fix (ensure `Vary: Cookie` on session-dependent responses regardless of access-tracking path) + regression tests incl. membership-test path.
+2. Add dedicated tests for the legacy-signature shim: warning emission, `remove_ctx`/`add_ctx` arg handling, repeated legacy subclasses (stacking), new-signature no-warning, and no-global-regression when a legacy subclass coexists with plain apps.
+3. Fix `docs/shell.rst` + `docs/testing.rst` examples to the ctx-passing API (and drop obsolete `RequestContext` teaching).
+4. Declare the deprecated aliases for type checkers (TYPE_CHECKING re-exports/stubs) so typed extensions degrade gracefully.
+5. Normalize the CRLF working tree + add `.gitattributes` to prevent recurrence (workspace precondition).
+
+**INVESTIGATE** (not for development yet):
+- Whether process-wide `setattr(Flask, …)` in `__init_subclass__` is acceptable vs. a strategy that avoids mutating the shared base class and doesn't re-read the contextvar (design discussion with maintainers/upstream).
+- sansio/Quart alignment plan for the new dispatch signatures.
+
+**DON'T BUILD:** reverting or re-scoping the context merge; additional deprecation machinery; any feature work beyond release-readiness — feature count is not the bottleneck; migration completion and the security fix are.
+
+## 6. Self-eval & limitations
+- Claims carry tiers/verdicts/evidence/confidence; contradictions (api.rst updated vs shell.rst broken) reported as first-class; absence-of-tests reported (C0-6); author intent (CHANGES deprecation promises) verified against implementation, not taken at face value; hypothesis trail recorded; corrosion question run (F3).
+- **Disclosed limitations:** `web_fetch` unavailable this session ("no usable web provider") → external verification relies on `web_search` snippets; the exact 3.1.3 patch diff and post-snapshot ecosystem outcomes were not directly readable (C0-7 confidence capped at .80). CRLF uniformity verified on a 4-file sample across file types (.py/.txt/.env/.bat), not all 234 files. Skills `methodology`/`research-report-template` not loadable this session — self-check applied manually from researcher instructions.
+
+## 7. Handoff brief
+
+Only BUILD items, for Plan Mode.
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "CVE-2026-27205: responses depending on session data via non-access-tracking paths (e.g. 'key in session') get no Vary: Cookie header, enabling shared-cache leakage of personalized content (CWE-524). Fix upstream in 3.1.3, absent in this snapshot.",
+      "evidence": ["src/flask/sessions.py:362-364", "tests/test_basic.py:571-578 (path not covered)", "CVE-2026-27205 / IBM bulletin: fixed in 3.1.3", "sessions.py last substantive change 2025-03-10"],
+      "confidence": 0.8,
+      "scope": "session save path + regression tests; also verify interaction with 3.2 lazy session loading",
+      "do_not_touch": ["session cookie signing/key-rotation logic (fixed per CVE-2025-47278)"]
+    },
+    {
+      "id": "B2",
+      "problem": "Legacy dispatch-signature shim (Flask.__init_subclass__ + add_ctx/remove_ctx) has zero dedicated tests despite mutating the Flask base class process-wide and re-reading ctx from a contextvar.",
+      "evidence": ["src/flask/app.py:253-307, 84-105", "tests/test_subclassing.py (new-signature only)", "grep tests: no add_ctx/remove_ctx coverage"],
+      "confidence": 0.9,
+      "scope": "tests only for B2 (warning emission, arg stripping/adding, double legacy subclass stacking, coexistence with new-signature subclasses and plain apps)",
+      "do_not_touch": ["the shim's implementation itself (design question -> INVESTIGATE I1)"]
+    },
+    {
+      "id": "B3",
+      "problem": "docs/shell.rst:52,61 and docs/testing.rst:317 teach ctx-less preprocess_request()/process_response() calls that raise TypeError in 3.2; shell.rst still teaches deprecated RequestContext.",
+      "evidence": ["src/flask/app.py:1354,1382 (ctx required)", "docs/shell.rst:23-29,52,61", "docs/testing.rst:317"],
+      "confidence": 0.95,
+      "scope": "docs only: update examples to pass ctx; drop obsolete RequestContext teaching",
+      "do_not_touch": ["docs/api.rst (already correct)"]
+    },
+    {
+      "id": "B4",
+      "problem": "Deprecated aliases flask.ctx.RequestContext / flask.globals.request_ctx are runtime-only (module __getattr__), invisible to mypy/pyright under the repo's strict typing, degrading the ecosystem deprecation experience.",
+      "evidence": ["src/flask/ctx.py:504-516", "src/flask/globals.py:65-77", "pyproject.toml:127-146"],
+      "confidence": 0.8,
+      "scope": "TYPE_CHECKING-only declarations/stub visibility for the aliases",
+      "do_not_touch": ["runtime __getattr__ warning behavior"]
+    },
+    {
+      "id": "B5",
+      "problem": "Working tree has EOL-only (CRLF) modifications on all 234 tracked files vs HEAD while .editorconfig mandates LF; no .gitattributes; makes diffs/commits in this snapshot untrustworthy and pre-commit would rewrite every file.",
+      "evidence": ["git status (234 ' M')", "git diff samples: ctx.py, LICENSE.txt, .env, make.bat — \\r only", ".editorconfig:8"],
+      "confidence": 0.95,
+      "scope": "workspace normalization: renormalize EOL (git add --renormalize or re-checkout with core.autocrlf=input) and add .gitattributes (* text=auto eol=lf). Precondition for any other work in this tree.",
+      "do_not_touch": ["file contents (verified content-identical to HEAD)"]
+    }
+  ]
+}
+```
+
+**Human-readable summary of BUILD order:** B5 (workspace hygiene, unblocks everything) → B1 (security) → B2 (tests for the riskiest machinery) → B3 (docs) → B4 (typing). INVESTIGATE items (shim design, Quart alignment) belong upstream and should not enter implementation without that discussion.

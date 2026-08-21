@@ -8,8 +8,10 @@
 #   - agent-presets.default: standard (fallback; the eval runner always passes
 #     an explicit preset id);
 #   - agent-default-model: the frozen Phase A model configuration
-#     (deepseek-official / deepseek-v4-pro / reasoning max) — hash-covered by
-#     the eval lock via evaluation/runtime/.
+#     (deepseek-official / deepseek-v4-flash / reasoning max) — hash-covered by
+#     the eval lock via evaluation/runtime/. Deviation D003: switched from
+#     deepseek-v4-pro (quota exhaustion) before the matrix rerun; all scoring
+#     runs use this model; the pro exploratory runs are excluded from scoring.
 
 permission:
   defaultPreset: eval-read-only
@@ -19,5 +21,5 @@ agent-presets:
 
 agent-default-model:
   provider: deepseek-official
-  model: deepseek-v4-pro
+  model: deepseek-v4-flash
   reasoningEffort: max
