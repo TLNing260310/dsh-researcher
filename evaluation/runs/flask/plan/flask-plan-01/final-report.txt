@@ -1,0 +1,60 @@
+The plan-approval channel is unavailable in this session (both attempts to submit the plan failed with "no user-questions provider is registered"), so I'll stay in plan mode and deliver the analysis directly. Here is the complete report.
+
+---
+
+# Repository Analysis: Flask 3.2.0.dev (post app/request-context merge)
+
+## 1. What this snapshot is
+
+Flask main branch at `2579ce9f` (detached HEAD, clean tree), version **3.2.0.dev**, immediately after two landmark refactors:
+
+- **#5812 "merge app and request context"** — `RequestContext` is gone; `AppContext` now carries optional request/session data; a single `ContextVar` (`_cv_app`) drives `current_app`, `g`, `request`, `session`.
+- **#5818 "pass context through dispatch methods"** — 12 `Flask` dispatch/teardown methods now take `ctx: AppContext` as their first parameter instead of reading proxies; a `__init_subclass__` shim detects old-signature overrides, warns, and wraps them.
+
+The refactor is a genuine simplification (one ContextVar, push-count-based nesting, lazy session loading, no "reuse existing app context" detection), but it is a **major in-flight change with concrete defects, high-risk compat machinery, and zero test coverage for the deprecation paths**. No local test environment exists here (no `uv`/`.venv`/pytest), so findings are from static analysis and git history.
+
+## 2. Most important problems & risks
+
+### A. The `__init_subclass__` compat shim (`src/flask/app.py:253-307`) — highest risk
+- **Global base-class mutation**: when *any* subclass overrides one of the 12 listed methods with an old signature, the shim runs `setattr(Flask, method.__name__, add_ctx(base_method))` — permanently replacing the base `Flask` method **process-wide**, order-dependently, affecting all apps and subclasses (including already-updated ones).
+- **Double-wrapping accumulation**: a second old-signature subclass wraps the already-wrapped base again (`add_ctx(add_ctx(...))`) and its own already-wrapped inherited method again with `remove_ctx`; 3+-level hierarchies re-warn on each intermediate class.
+- **Fragile detection**: only the *second parameter's name/annotation* is inspected (name `ctx`, string annotation ending `.AppContext`, or class subclassing `AppContext`) — false positives/negatives are possible.
+- **`add_ctx` requires an active context**: `app_ctx._get_current_object()` raises `RuntimeError` for direct calls (e.g., `app.process_response(resp)` outside a request) once any extension has triggered the patch — a behavior change.
+- **Kwargs bypass the shim** (positional-only stripping/prepending).
+- **Gap in the method list**: `update_template_context` also changed to ctx-first but is *not* in the shim — old-style overrides now die with `TypeError` at render time.
+- **Zero test coverage** for `remove_ctx`/`add_ctx`, old-signature overrides, or the `RequestContext`/`request_ctx` deprecation aliases; with `filterwarnings = error` these paths are untested and easy to break silently.
+
+### B. Intentional but ecosystem-breaking behavior changes (must be validated before 3.2)
+- **Pre-pushed app contexts are no longer reused per request** (documented in CHANGES). Each request pushes a *fresh* `AppContext` with a *fresh* `g`: `g` values set in `with app.app_context():` are no longer visible in views; `teardown_appcontext` now runs after every request even with a pre-pushed context; `appcontext_pushed/popped` fire per request. Apps/extensions relying on shared `g` or suppressed teardown (SQLAlchemy-scoping patterns) will change behavior — the biggest ecosystem risk of this release.
+- **Session loads lazily** (first access) instead of at push — changes *when* `open_session` runs.
+- **`AppContext.pop()` lost `_sentinel` exception auto-detection**: manual `ctx.pop()` inside an `except` block no longer passes the active exception to teardown.
+- **Changed error paths**: with only an app context active, `request`/`session` now raise `RuntimeError("There is no request in this context.")` instead of the "Working outside of request context." message; `send_file`/`redirect`/`abort` outside a context fail via `app_ctx._get_current_object()`.
+- **`AppContext.copy()` now shares the same `Request` object** (3.1 re-created a Request from the environ).
+
+### C. Stale/broken docs after the refactor
+- `docs/shell.rst` (in the toctree, built with `sphinx-build -W`): still references deprecated `flask.ctx.RequestContext`; `app.preprocess_request()` (line 52) and `app.process_response(app.response_class())` (line 61) now raise `TypeError` with ctx-first signatures.
+- `docs/testing.rst:317`: `app.preprocess_request()` — same break.
+- Minor docstring typos in `ctx.py` ("will available" in `has_request_context`).
+
+### D. CI observations
+CI (tox/uv) covers py3.10–3.14 incl. free-threaded `3.14t`, `tests-min`, `tests-dev`, mypy-strict/pyright/ruff, and a `-W` docs build. `leak_detector` and the updated `test_appctx` cases confirm the per-request teardown change is deliberate; the gaps are the untested compat paths (A) and unverified ecosystem semantics (B).
+
+## 3. Recommended next actions (priority order)
+
+1. **Add tests for the compat shim and deprecation aliases**: parametrized old-signature subclasses for all 12 shim-listed methods (incl. no-arg `dispatch_request`), a two-subclass scenario to expose double-wrapping, `pytest.warns(DeprecationWarning)` for `flask.ctx.RequestContext` import and `flask.globals.request_ctx`, and a `super()`-call test from an old-signature subclass.
+2. **Fix the shim's global-mutation design**: guard against double-wrapping (mark already-processed methods); prefer wrapping only the subclass with explicit `super()` bridging instead of permanently mutating `Flask`; decide `update_template_context` (add to shim or document as internal-only).
+3. **Fix broken docs**: update `docs/shell.rst` and `docs/testing.rst` to the ctx-first signatures and `AppContext` references; confirm `-E -W` docs build is clean.
+4. **Document/validate the ecosystem-breaking semantics** in CHANGES and `docs/appcontext.rst` (fresh `g` per request, per-request teardown_appcontext, lazy sessions, `pop()` exception handling); consider a temporary compat switch if extension fallout is severe.
+5. **Sanity-check `AppContext.copy()`/`stream_with_context` push semantics** (shared Request; abandoned generators deferring teardown via push-count).
+6. **Pre-release validation**: full CI matrix plus spot checks against Flask-SQLAlchemy, Flask-Login, Flask-WTF for the `g`/teardown change.
+
+## 4. Success criteria
+
+- Old-signature subclasses dispatch correctly with a single deprecation warning each; no base-class double-wrapping; covered by tests.
+- Docs examples run against new signatures; docs build clean with `-W`.
+- CHANGES documents every 2B behavior change with migration guidance.
+- Full CI matrix green on the snapshot.
+
+---
+
+**Note:** I could not submit this plan through the approval channel (it returned "no user-questions provider is registered" twice), so I remain in plan mode and have made no changes. If you want me to implement any of the recommended actions, please switch the session out of plan mode manually, and I'll proceed.

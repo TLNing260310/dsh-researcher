@@ -1,0 +1,12 @@
+{"mode":"quick","started_at":"2026-08-21T12:06:04.0196126Z","doctor_post":0,"order":1,"preset":"researcher-quick","finished_at":"2026-08-21T12:11:58.7972396Z","plan":false,"run_id":"flask-quick-03","exit_code":0}
+{"mode":"deep","started_at":"2026-08-21T12:11:59.1576380Z","doctor_post":0,"order":2,"preset":"researcher-deep","finished_at":"2026-08-21T12:20:47.1348030Z","plan":false,"run_id":"flask-deep-03","exit_code":0}
+{"mode":"standard","started_at":"2026-08-21T12:20:47.4462538Z","doctor_post":0,"order":3,"preset":"standard","finished_at":"2026-08-21T12:30:23.6177447Z","plan":false,"run_id":"flask-standard-02","exit_code":0}
+{"mode":"standard","started_at":"2026-08-21T12:30:23.9339487Z","doctor_post":0,"order":4,"preset":"standard","finished_at":"2026-08-21T12:35:35.3734031Z","plan":false,"run_id":"flask-standard-03","exit_code":0}
+{"mode":"plan","started_at":"2026-08-21T12:35:35.6793321Z","doctor_post":0,"order":5,"preset":"standard","finished_at":"2026-08-21T12:42:59.7031627Z","plan":true,"run_id":"flask-plan-03","exit_code":0}
+{"mode":"deep","started_at":"2026-08-21T12:43:00.0097812Z","doctor_post":0,"order":6,"preset":"researcher-deep","finished_at":"2026-08-21T12:56:11.7985887Z","plan":false,"run_id":"flask-deep-01","exit_code":0}
+{"mode":"quick","started_at":"2026-08-21T12:56:12.1417193Z","doctor_post":0,"order":7,"preset":"researcher-quick","finished_at":"2026-08-21T13:02:28.8140015Z","plan":false,"run_id":"flask-quick-01","exit_code":0}
+{"mode":"plan","started_at":"2026-08-21T13:02:29.1091181Z","doctor_post":0,"order":8,"preset":"standard","finished_at":"2026-08-21T13:07:01.6023397Z","plan":true,"run_id":"flask-plan-02","exit_code":0}
+{"mode":"quick","started_at":"2026-08-21T13:07:01.8979008Z","doctor_post":0,"order":9,"preset":"researcher-quick","finished_at":"2026-08-21T13:12:34.1691213Z","plan":false,"run_id":"flask-quick-02","exit_code":0}
+{"mode":"plan","started_at":"2026-08-21T13:12:34.5291483Z","doctor_post":0,"order":10,"preset":"standard","finished_at":"2026-08-21T13:17:40.3437636Z","plan":true,"run_id":"flask-plan-01","exit_code":0}
+{"mode":"standard","started_at":"2026-08-21T13:17:40.6547561Z","doctor_post":0,"order":11,"preset":"standard","finished_at":"2026-08-21T13:21:18.6903120Z","plan":false,"run_id":"flask-standard-01","exit_code":0}
+{"mode":"deep","started_at":"2026-08-21T13:21:18.9881240Z","doctor_post":0,"order":12,"preset":"researcher-deep","finished_at":"2026-08-21T13:34:28.1617251Z","plan":false,"run_id":"flask-deep-02","exit_code":0}

@@ -1,0 +1,65 @@
+The plan-review channel is unavailable in this session (`no user-questions provider is registered`), so I cannot submit the plan for approval through `exit_plan_mode`. Per plan-mode rules I'll stay in plan mode and deliver the requested analysis directly — no files were modified.
+
+# Flask Repository Analysis — Snapshot 2579ce9f (main, 3.2.0.dev)
+
+## Repository state
+
+Flask `main` at **3.2.0.dev**, shortly after the 3.1.2 release (2025-08-19). The snapshot contains two large unreleased refactors plus CI modernization:
+
+- **#5812 "merge app and request context"** (`adf36367`) — `RequestContext` is gone; a single `AppContext` (optionally holding request data) is pushed per request/CLI command. `_cv_request` was removed; `request_ctx`/`RequestContext` remain only as module-`__getattr__` deprecated aliases (ctx.py:504, globals.py:65).
+- **#5818 "pass context through dispatch methods"** (`6a649690`) — 12 `Flask` dispatch methods now take `ctx: AppContext` as first parameter, with an `__init_subclass__` shim (app.py:253-307) to keep old-signature subclasses working.
+- **CI**: Python 3.14 + free-threading (3.13t/3.14t) tox envs and workflow matrix; `uv.lock` committed; pre-commit pins frozen; `filterwarnings = error` in pytest config.
+- Smaller items: template decorators without parens (#5736), `stream_with_context` async refactor (#5799), TRUSTED_HOSTS security docs (#5798), deprecation of `__version__`.
+
+**Environment note**: no venv/uv and no installed deps in this snapshot, so the suite could not be executed here; findings below are from static review of the full source, tests, docs, and git history.
+
+## Most important problems and risks
+
+### 1. The context merge changes observable behavior in ways users will feel (highest-impact risk)
+
+- **Per-request app context.** Every request now pushes a fresh combined context even inside `with app.app_context():`. Consequences: `g` no longer persists across requests in that block, `teardown_appcontext` runs per request, and `appcontext_pushed`/`appcontext_popped` fire per request (previously only when the outer app context was pushed/popped). `tests/test_appctx.py::test_app_tearing_down_with_handled_exception_by_app_handler` now asserts `[None, None]`. This is intentional (documented in CHANGES.rst and the AppContext docstring), but it is a real break for extensions keyed on appcontext signals and for test code that seeds data via `g` inside an app-context block.
+- **`preserve_context` now preserves the app context too.** In `wsgi_app` (app.py:1576), `werkzeug.debug.preserve_context(ctx)` captures the merged context; with the test client (`with client:`) and the Werkzeug debugger, `teardown_appcontext` is now deferred until the preserved context is finally popped (end of the `with client:` block), whereas in 3.1 the app context popped at request end. This timing shift (DB-session cleanup in tests/debugger) is **untested and undocumented**.
+- **`copy_current_request_context` silently widened** (ctx.py:191): it now only requires an app context, so it succeeds under a bare `app.app_context()` although its docstring still says a request context is required.
+- **`session_transaction`** (testing.py:164-177) pops mid-transaction now also run `teardown_appcontext`, which is new.
+- The deprecated aliases `RequestContext`/`request_ctx` have **zero test coverage**.
+
+### 2. The `__init_subclass__` signature-shim machinery (#5818) is the most fragile new code
+
+`Flask.__init_subclass__` (app.py:253-307) inspects overridden dispatch methods and, on detecting an old signature:
+
+- warns, wraps the subclass method with `remove_ctx`, and **mutates the base `Flask` class** via `setattr(Flask, name, add_ctx(base_method))` — a global, order-dependent side effect. Two old-style subclasses → the base method gets wrapped twice (still functional, but accumulating); after the first patch, `inspect.signature(Flask.process_response)` etc. degrade to `(*args, **kwargs)`, harming introspection and Sphinx docs for everyone.
+- Detection is heuristic (second param named `ctx`, or annotation ending in `AppContext`). Overrides using `*args`/`**kwargs`, `functools.partial`, or other decorators can be misclassified.
+- The deprecation only triggers when a subclass overrides; **external code calling these semi-public methods directly with old arguments** (e.g., `app.handle_exception(e)` from middleware/tools like Sentry) breaks with `TypeError` unless some unrelated subclass happened to trigger the patch.
+- **Async frameworks (Quart) override these methods**; the sync wrappers cannot correctly handle coroutine-returning overrides. Ecosystem coordination is needed before release.
+- **Test coverage is minimal**: `tests/test_subclassing.py` only covers a new-signature override. No tests exist for the warning path, double-subclass, subclass-of-subclass, `*args` overrides, or the deprecation aliases — the riskiest new code is the least tested.
+
+### 3. Docs regressions from the signature change (docs build won't catch these — examples aren't executed)
+
+- `docs/shell.rst:52` and `:61` — `app.preprocess_request()` and `app.process_response(app.response_class())` are now `TypeError` (missing `ctx`).
+- `docs/testing.rst:317` — `app.preprocess_request()`, same problem.
+- `docs/shell.rst:23-29` — examples still use the deprecated `RequestContext` name.
+- `docs/appcontext.rst:122` — typo "pushes a requet context".
+
+### 4. Release-readiness gaps
+
+- CHANGES.rst covers the merge and the signature change, but not the subtler deltas: per-request appcontext signals/teardown, `preserve_context` teardown timing, `copy_current_request_context` widening, `session_transaction` teardown.
+- With `filterwarnings = error`, the future deprecation tests must use `warnings.catch_warnings` (as `test_reqctx.py` already does).
+- The snapshot's test suite cannot be validated in this environment (no deps, read-only) — needs a `uv sync` + tox run elsewhere.
+
+### 5. What is healthy
+
+The merge genuinely simplifies internals (net −1000+ lines across the two refactors); the docs were substantially rewritten for the new model (appcontext.rst, api.rst, lifecycle.rst, quickstart.rst); tests encode the new semantics; `stream_with_context` has good async/close coverage (test_helpers.py:236-324); security work (TRUSTED_HOSTS, form limits) is documented; dependency floors are enforced via `tests-min`, git-main deps via `tests-dev`; `create_url_adapter`'s trusted-host check plus Werkzeug's own check is acceptable defense in depth. No new security issues spotted.
+
+## Recommended next actions (priority order)
+
+1. **Fix the docs regressions** (shell.rst, testing.rst old-signature calls; shell.rst `RequestContext` usage; appcontext.rst typo); consider a CI grep for no-arg `preprocess_request()`/`process_response(` examples.
+2. **Add tests for the shim and deprecations**: old-signature override warns and still works; two old-style subclasses; subclass-of-subclass; `*args`-style override; `RequestContext`/`request_ctx` deprecation paths; preserve-context teardown timing; `copy_current_request_context` under a bare app context (decide semantics first).
+3. **Harden `__init_subclass__`**: make base-class patching idempotent (module-level flag/registry), and evaluate replacing the global `setattr(Flask, ...)` mutation with per-call-site adaptation; coordinate with Quart before 3.2 ships.
+4. **Decide and document the `preserve_context` teardown_appcontext timing change**; add an explicit test in `tests/test_testing.py`.
+5. **Ecosystem check**: run the extension matrix (Flask-SQLAlchemy, Flask-Session, flask-debugtoolbar, Sentry SDK, Quart, Flask-Admin) against this branch; file issues for anything relying on shared `g` across requests or on appcontext signal frequency.
+6. **Validate the snapshot**: in a networked environment run `uv sync` then the tox matrix (py3.10–3.14, 3.13t/3.14t, pypy3.11, tests-min, tests-dev, typing, docs, style).
+7. **Complete CHANGES.rst** with the behavioral deltas listed under risk 1 so release notes and migration guidance are accurate.
+
+**Success criteria**: docs examples callable again; shim/deprecation paths covered by tests; `__init_subclass__` patching idempotent; preserve-context semantics decided, tested, and documented; CHANGES.rst complete; full CI green on a networked run.
+
+I remain in plan mode (the review channel errored out) — if you'd like me to proceed with any of the implementation steps above (e.g., the docs fixes and the new tests), switch the session out of plan mode and I'll start with items 1–2.

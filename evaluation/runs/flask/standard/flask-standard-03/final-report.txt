@@ -1,0 +1,66 @@
+I now have a complete picture of the snapshot. Here is my analysis.
+
+---
+
+# Repository Analysis: Flask `3.2.0.dev` (main branch, ~Nov 2025)
+
+## Snapshot context
+
+This is Flask's main branch between the 3.1.2 release (Aug 2025) and the future 3.2.0. It contains two large, in-flight architectural refactors plus a feature:
+
+- **#5812 "merge app and request context"** — `RequestContext` is gone; `AppContext` now carries the request; `_cv_request` removed; one combined context per request/CLI command.
+- **#5818 "pass context through dispatch methods"** — ~12 `Flask` methods (`dispatch_request`, `handle_exception`, `preprocess_request`, `process_response`, `do_teardown_*`, etc.) now take `ctx: AppContext` as first parameter; subclass compatibility is handled by a signature-sniffing shim in `Flask.__init_subclass__`.
+- **#5729** — `template_filter`/`template_test`/`template_global` usable without parentheses.
+- Removals: `flask.__version__`, `RequestContext`/`request_ctx` (deprecated aliases), Python 3.9.
+
+I could not execute the test suite (the sandbox blocks dependency installs and temp-dir writes), so findings below are from close static reading against the 3.1.2 tree (`git show 2c1b30d0`).
+
+---
+
+## 1. Highest risk: the `__init_subclass__` deprecation shim is fragile, order-dependent, and untested
+
+`src/flask/app.py:253-307` + `remove_ctx`/`add_ctx` (lines 84–105). This is the most dangerous code in the snapshot:
+
+- **Signature sniffing misdetects valid new-style overrides.** The check requires the second parameter to be *named* `ctx` or *annotated* `AppContext`. A subclass that writes `def handle_exception(self, app_ctx, e)` (no annotation) or `def handle_exception(self, ctx: "AppContext | None", e)` (string union — note `from __future__ import annotations` makes every annotation a string, and `rpartition(".")[2] == "AppContext"` fails on `"AppContext | None"`) is classified as *old-style*. It then gets `remove_ctx`-wrapped, Flask's internal `self.handle_exception(ctx, e)` strips the context, and the subclass method is called with the wrong arguments → `TypeError` at runtime, with only a confusing deprecation warning to explain it. A legitimate, already-migrated subclass breaks silently.
+- **Process-wide global side effect.** When *any* old-style subclass is defined, `setattr(Flask, method.__name__, add_ctx(base_method))` replaces the methods on the **base `Flask` class itself**, for every app in the process. Direct old-signature calls then behave nondeterministically: `app.preprocess_request()` (the exact API shown in `docs/shell.rst`) raises `TypeError` in a clean process, but works silently in any process where an unrelated third-party library happened to define an old-style subclass. No warning is emitted in the latter case — the "deprecation period" is either a crash or a silent global mutation depending on import order. Subclass chains (an old-style base app class → concrete app class without re-overriding) also re-trigger detection on the already-wrapped method, producing spurious warnings and nested `add_ctx`/`remove_ctx` wrappers.
+- **Zero test coverage.** Nothing in `tests/` exercises `remove_ctx`, `add_ctx`, or the old-signature path (grep confirms); `tests/test_subclassing.py` only tests a *new*-style override. A complex, invasive mechanism that will be hit by every extension subclassing `Flask` has no direct tests.
+
+## 2. Context merge: intentional but ecosystem-impacting behavior changes
+
+The merge is documented in `CHANGES.rst` ("If an app context is already pushed, it is not reused"), and `tests/test_appctx.py:90-133` pins the new per-request teardown. Still, three consequences deserve an explicit compat pass before 3.2 ships:
+
+- **`appcontext_pushed`/`appcontext_popped`/`appcontext_tearing_down`/`teardown_appcontext` now fire for every request even inside an outer `with app.app_context():` block** (`src/flask/ctx.py:427,474-480`). Extensions that use these signals to manage per-context resources (e.g., scoped-session style patterns, the common `with app.app_context(): client.get(...)` test idiom, Celery tasks dispatching requests) will now initialize and tear down resources once per request instead of once per context. Self-consistent (teardown pairs with push), but it will change behavior for real apps/tests.
+- **`g` is now per-request, not per-app-context** (`ctx.py:311` — `g` is created in the combined context). Data stashed on `g` in an outer app context is no longer visible to a request dispatched inside it, and vice versa. This is implied by the CHANGES entry but not stated for `g` specifically; it deserves an explicit changelog warning.
+- **Session loading moved from push-time to first access** (`ctx.py:389-396`; CHANGES documents it). Custom `open_session` implementations and URL converters that read `flask.session` during routing now have `open_session` invoked lazily *during* matching rather than before it — subtle ordering change for exotic session interfaces.
+
+## 3. `docs/shell.rst` is now broken by the refactor
+
+`docs/shell.rst:52` (`app.preprocess_request()`) and `:61` (`app.process_response(app.response_class())`) call the new-signature methods with the old API — both raise `TypeError` on 3.2. Lines 23–29 also still reference the removed `RequestContext`. The merge commit updated `appcontext.rst`/`lifecycle.rst`/`reqcontext.rst` but missed this file. Since shell workflows are a documented, copy-pasted pattern, this will be a real support burden.
+
+## 4. Request cycle cleanup may have regressed
+
+3.1.2's `pop()` explicitly set `ctx.request.environ["werkzeug.request"] = None` with the comment *"get rid of circular dependencies at the end of the request so that we don't require the GC to be active."* The new `pop()` (`ctx.py:472-475`) calls `self._request.close()` instead, which closes files/caches but does **not** clear `environ["werkzeug.request"]` in Werkzeug 3.x. The request↔environ cycle therefore persists until the GC runs — the exact thing the 3.1.2 code deliberately avoided. Needs verification against the pinned Werkzeug and likely a fix (or the preserved test in `test_appctx.py:169` extended to assert post-pop cleanup).
+
+## 5. Removal of `flask.__version__`
+
+Documented and deprecated since 2.3 (`CHANGES.rst:7`, PR 5648), so removal is expected — but this is the single most likely point of ecosystem breakage in 3.2 (version checks in tooling/extension code). The changelog should explicitly point at `importlib.metadata.version("flask")` as the replacement (as `testing.py:100-106` already does internally).
+
+## 6. Minor issues found
+
+- **Dead code / minor correctness**: `ctx.py:456` re-checks `self._cv_token is None` immediately after the check at line 451; `pop()` of a non-active context now raises `RuntimeError` where 3.1.2 raised `AssertionError` (edge-case API change). `app.py:589` `update_template_context` docstring documents `context` but not the new `ctx` param.
+- **Refactor inconsistency**: `app.make_response` (`app.py:1296`) still reads `request.endpoint` via the proxy instead of the now-available `ctx` — works, but shows the ctx-passing refactor stopped short of full consistency.
+- **Docs staleness**: `docs/api.rst:309-317` correctly marks the deprecated aliases, but the aliases only exist via module `__getattr__` (`ctx.py:504`, `globals.py:65`); Sphinx/`help()` introspection of `flask.ctx.RequestContext` will emit `DeprecationWarning`s. `CHANGES.rst` says the template decorators can be used without parentheses — the `@t.overload`/`@setupmethod` pattern in `sansio/app.py:660-693` and `sansio/blueprints.py` is correct.
+- **CI**: tests/typing/pre-commit are all wired up with good matrix coverage (including free-threaded 3.13t/3.14t, min/dev dependency envs); docs build via RTD. No gaps worth acting on. The `publish.yaml` trusted-publishing flow looks fine.
+
+---
+
+## Recommended next actions (priority order)
+
+1. **Replace or harden the `__init_subclass__` shim before 3.2 ships.** Prefer an explicit, unambiguous migration marker (e.g., detect a `__dispatch_without_ctx__`/`__old_dispatch_api__` class attribute, or check the signature of `dispatch_request` only — the method most likely to be overridden) over annotation/name heuristics; stop mutating the global `Flask` class (wrap per-instance or per-class instead); emit the warning for direct old-signature *calls* too, so `app.preprocess_request()` degrades gracefully during the deprecation window instead of TypeErrоring.
+2. **Add tests for the compatibility path**: old-style subclass (each of the 11 methods), new-style subclass with renamed/un-annotated params, subclass-of-subclass chains, `super()` calls in both directions, and direct old-signature calls. This is the least-tested, highest-blast-radius new code in the snapshot.
+3. **Fix `docs/shell.rst`** to the new signatures (`app.preprocess_request(ctx)`, `app.process_response(ctx, resp)`) and drop the `RequestContext` references.
+4. **Verify and restore the request-cycle cleanup** (`environ["werkzeug.request"] = None` or equivalent) against the pinned Werkzeug; add a refcount/cycle regression test.
+5. **Run an ecosystem compatibility pass** for the context merge: test Flask-SQLAlchemy / Flask-Login / Flask-DebugToolbar against this snapshot, specifically the `with app.app_context(): client.get(...)` and `g`-isolation scenarios; add explicit CHANGES bullets for the `g` change and the signal/teardown-per-request change (currently only the "not reused" sentence covers it).
+6. **Finish the 3.2 changelog/removal docs**: point `__version__` users to `importlib.metadata`, and confirm the `RequestContext` deprecation period messaging is visible at import time for `from flask.ctx import RequestContext` (it is, via `__getattr__` — good).
+
+**Net assessment:** the context merge is a genuine simplification with a coherent internal model and decent test pinning of the new semantics, but the snapshot's biggest exposure is the `__init_subclass__` compatibility shim — an untested, heuristic, globally-mutating mechanism whose failure mode is a runtime `TypeError` in user/extension code — plus a stale `docs/shell.rst` that documents a now-crashing API. Both should be resolved before 3.2.0 is cut; the ecosystem-facing behavior changes (per-request teardown signals, `g` isolation, `__version__` removal) should get explicit changelog treatment and a quick extension-compat test pass.

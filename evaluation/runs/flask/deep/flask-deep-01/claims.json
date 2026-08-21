@@ -1,0 +1,1052 @@
+{
+  "checkpoint_claims": [
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "id": "C1",
+          "statement": "Snapshot is pallets/flask main branch at HEAD 2579ce9f (2025-11-17), version 3.2.0.dev (post 3.1.2 release)",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "pyproject.toml:3",
+            "git log 2579ce9f",
+            "git status"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C2",
+          "statement": "Entire working tree differs from HEAD only by LF->CRLF line endings; content identical to HEAD",
+          "tier": "C3",
+          "verdict": "Known",
+          "evidence": [
+            "git diff LICENSE.txt/.editorconfig/src/flask/signals.py shows all-line rewrites only",
+            "git status: every file M"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C3",
+          "statement": "3.2.0 dev cycle contains two major refactors: AppContext/RequestContext merge (#5812) and dispatch methods taking AppContext first param (#5818)",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "CHANGES.rst:8-16",
+            "ctx.py:259-516",
+            "app.py:253-307",
+            "git log 85793d6c..HEAD"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C4",
+          "statement": "New context semantics: one combined AppContext per request; outer app context NOT reused; g fresh per request; appcontext_pushed/popped fire per request even with outer app ctx; single ContextVar _cv_app backs all proxies",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "ctx.py:409-480",
+            "globals.py:40-62",
+            "CHANGES.rst:8-11",
+            "git diff 85793d6c..HEAD ctx.py (old push reused app ctx)"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C5",
+          "statement": "Session load timing changed: opened at push time in <=3.1, now lazy on first access; custom open_session may now observe request.url_rule set; URL converters can trigger session load",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "ctx.py:380-396 (lazy)",
+            "git diff 85793d6c..HEAD ctx.py (old push opened session before match_request)",
+            "tests/test_converters.py:29-42 (converter asserts session not None)"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C6",
+          "statement": "Dispatch-method compat shim in Flask.__init_subclass__ detects old signatures, warns, wraps subclass method (remove_ctx) and mutates base Flask method (add_ctx); risks: double-wrap accumulation with >=2 old-style subclasses, staticmethod/classmethod overrides broken, post-class monkeypatch not covered, name/annotation heuristic can misfire",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "app.py:84-106",
+            "app.py:253-307"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C7",
+          "statement": "Malformed RST role ':data:`g:,' in app.py docstrings lines 1475 and 1490 breaks sphinx-build -W used by ReadTheDocs and tox docs env",
+          "tier": "C1",
+          "verdict": "Likely",
+          "evidence": [
+            "app.py:1475",
+            "app.py:1490",
+            ".readthedocs.yaml:9 (-W)",
+            "pyproject.toml:251 (docs env -W)",
+            "no RST lint hook in .pre-commit-config.yaml"
+          ],
+          "confidence": 0.8
+        },
+        {
+          "id": "C8",
+          "statement": "CI (tests.yaml) has no docs build job; docs gating happens only on ReadTheDocs",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            ".github/workflows/tests.yaml:8-54"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C9",
+          "statement": "Docs drift: shell.rst:23-29 still instructs using deprecated RequestContext; api.rst:304 says app_ctx only available during request context; api.rst:309-317 correctly documents deprecations",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "docs/shell.rst:23-29",
+            "docs/api.rst:296-317"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C10",
+          "statement": "Ecosystem-visible breaking behavior change: app_context + request no longer share g/teardown/signals; documented as intentional in CHANGES.rst (#5639) but will break extension patterns relying on outer app context state",
+          "tier": "C1",
+          "verdict": "Known",
+          "evidence": [
+            "CHANGES.rst:8-11",
+            "ctx.py:409-430",
+            "git diff 85793d6c..HEAD ctx.py"
+          ],
+          "confidence": 0.85
+        }
+      ],
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features",
+          "status": "active",
+          "dependsOn": [
+            "C1",
+            "C3"
+          ]
+        },
+        {
+          "id": "H2",
+          "statement": "The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented",
+          "status": "active",
+          "dependsOn": [
+            "C4",
+            "C5",
+            "C6",
+            "C10"
+          ]
+        },
+        {
+          "id": "H3",
+          "statement": "The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow",
+          "status": "active",
+          "dependsOn": [
+            "C2"
+          ]
+        }
+      ],
+      "views": [
+        {
+          "name": "PROJECT_MODEL",
+          "dependsOn": [
+            "C1",
+            "C3",
+            "C4",
+            "C5",
+            "C6",
+            "C7",
+            "C8",
+            "C9",
+            "C10"
+          ]
+        },
+        {
+          "name": "DIAGNOSIS",
+          "dependsOn": [
+            "C4",
+            "C5",
+            "C6",
+            "C7",
+            "C9",
+            "C10"
+          ]
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "test_subagent report: app.py:253-307 never exercised; tests/test_subclassing.py:6-21 uses new signature",
+            "tests/test_subclassing.py:8"
+          ],
+          "id": "C11",
+          "statement": "Dispatch old-signature compat shim has ZERO test coverage: no warning test, no remove_ctx/add_ctx path test, no heuristic edge tests; suite contains no old-signature Flask subclass",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "test_subagent G2: no test sets g in outer app context and asserts request sees fresh g",
+            "tests/test_appctx.py:90-133 only teardown counts"
+          ],
+          "id": "C12",
+          "statement": "g isolation between outer app context and inner request is untested (the headline user-visible semantic of the merge); only teardown-count tests indirectly prove two contexts",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "test_subagent G3: tests/test_session_interface.py:6-28 passes under eager loading too",
+            "tests/test_reqctx.py:205-226 timing-agnostic"
+          ],
+          "id": "C13",
+          "statement": "Lazy session loading has no discriminating test; existing session-timing tests pass under eager loading; the session-error timing path silently shifted from push-time to finalize-time",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "test_subagent G4: no test for ctx.py:504-514 or globals.py:65-75 aliases",
+            "pyproject.toml:109-111 filterwarnings=error"
+          ],
+          "id": "C14",
+          "statement": "Deprecation aliases RequestContext/request_ctx untested; filterwarnings=[error] prevents casual exercise of deprecated paths",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "test_subagent G5: ctx.py:426-427 fires per fresh context; test_signals.py:115-136 bare-request only"
+          ],
+          "id": "C15",
+          "statement": "appcontext_pushed/popped now fire per request even over an outer app context - behavior change untested",
+          "tier": "C2",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "test_subagent section 5: ~384 test functions across 23 files, no xfail, greenlet-conditional skip at test_reqctx.py:148",
+            "test_subagent section 4"
+          ],
+          "id": "C16",
+          "statement": "Suite health: ~384 tests/23 files, strict filterwarnings=error, no xfail; context-copy tests skipped without greenlet; several white-box couplings (_cv_app import, werkzeug.request environ marker)",
+          "tier": "C2",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "docs/testing.rst:316-317 calls app.preprocess_request() with no args",
+            "app.py:1354 preprocess_request(self, ctx) has no default",
+            "docs subagent verification"
+          ],
+          "id": "C17",
+          "statement": "docs/testing.rst:316-317 canonical manual-dispatch example calls app.preprocess_request() with no args - now TypeError under new (self, ctx) signature; compat shim covers only subclass overrides, not call sites",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "docs/shell.rst:52 app.preprocess_request(), 61 app.process_response(app.response_class())",
+            "app.py:1354,1382 signatures"
+          ],
+          "id": "C18",
+          "statement": "docs/shell.rst:48-63 shell-dispatch example uses pre-3.2 signatures (preprocess_request, process_response) - broken with TypeError; prose describes old conventions",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "ctx.py:375-376,386-387 raise 'There is no request in this context.'",
+            "docs/appcontext.rst:81-93 documents only 'Working outside of request context.'",
+            "docs subagent finding 4"
+          ],
+          "id": "C19",
+          "statement": "Error string when accessing request/session inside a plain app context changed to 'There is no request in this context.'; undocumented in docs (appcontext.rst:81-93 still claims the old message)",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "docs/api.rst:304-305 app_ctx 'only available when a request context is active'",
+            "globals.py:41-43 app_ctx bound to any app context",
+            "docs subagent finding 5"
+          ],
+          "id": "C20",
+          "statement": "docs/api.rst:304-305 wrongly limits app_ctx availability to request contexts - wrong under merged model and newly introduced by refactor commit",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "docs subagent findings 6-11: no-reuse consequences undocumented, appcontext.rst:122 typo, templating.rst:64-66 g 'request-bound', lazy session undocumented, no upgrade guide"
+          ],
+          "id": "C21",
+          "statement": "Additional doc gaps: per-request teardown/fresh-g/signals consequences undocumented in appcontext/testing/lifecycle; appcontext.rst:122-124 'requet' typo; templating.rst:64-66 g misdescribed as request-bound; lazy session loading undocumented in prose",
+          "tier": "C1",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "CLASSIFY",
+      "revise": [
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "app.py:589-591 signature (self, ctx, context)",
+            "templating.py:124,166 call app.update_template_context(ctx, context)",
+            "shim list app.py:259-272 excludes update_template_context",
+            "app.py subagent HIGH-1"
+          ],
+          "id": "C22",
+          "statement": "update_template_context changed to (self, ctx, context) but is NOT in the __init_subclass__ shim list - an old-signature subclass override receives ctx as 'context' and fails with AttributeError (AppContext has no .update), with no deprecation warning",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "app.py:72-76 def _make_timedelta; only usage sansio/app.py:224 binds sansio/app.py:52's copy",
+            "grep src/flask"
+          ],
+          "id": "C23",
+          "statement": "app.py:72 _make_timedelta is dead duplicate code (live copy in sansio/app.py:52); plus minor items: redundant None-check in ctx.py:456, pop() exc default changed from sys.exc_info capture to None, wrong-context pop error type AssertionError->RuntimeError, _got_first_request lock removal (safe: before_first_request removed in 2.3)",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.85,
+          "evidence": [
+            "C7, C8, C17-C21, C22, C11-C15, C2"
+          ],
+          "id": "C24",
+          "statement": "Classification: BUILD = fix RST roles (app.py:1475,1490), fix broken docs examples + drift (testing.rst/shell.rst/api.rst/appcontext.rst), add update_template_context to shim + add regression tests for shim/new semantics, normalize CRLF working tree (harness); INVESTIGATE = extension-ecosystem impact of context merge, docs-build CI job",
+          "tier": "C2",
+          "verdict": "Likely"
+        }
+      ],
+      "hypotheses": [
+        {
+          "dependsOn": [
+            "C1",
+            "C3"
+          ],
+          "id": "H1",
+          "statement": "Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features",
+          "status": "active"
+        },
+        {
+          "dependsOn": [
+            "C4",
+            "C5",
+            "C6",
+            "C10",
+            "C11",
+            "C22"
+          ],
+          "id": "H2",
+          "statement": "The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented",
+          "status": "active"
+        },
+        {
+          "dependsOn": [
+            "C2"
+          ],
+          "id": "H3",
+          "statement": "The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "test subagent G6 + section 4: has_app_context() no direct test; after_this_request RuntimeError path (ctx.py:140-144) and copy_current_request_context RuntimeError path (ctx.py:193-197) untested; no asyncio copy test; greenlet skips at test_reqctx.py:148; skips: test_basic.py:24, test_cli.py:530, test_config.py:39, test_async.py:11; conftest.py:92-95 leak detector via app_ctx proxy"
+          ],
+          "id": "C25",
+          "statement": "Minor test gaps: has_app_context() untested directly; after_this_request / copy_current_request_context error paths untested; no asyncio test of copy_current_request_context; greenlet-conditional skips; conftest leak detector is white-box via app_ctx proxy. Fold into B3 scope.",
+          "tier": "C2",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.97,
+          "evidence": [
+            "ctx.py:380-396 (lazy)",
+            "git diff 85793d6c..HEAD ctx.py (3.1.2 push opened session BEFORE match_request)",
+            "c6586391 (2019): session-first; 01621485 #3776 (2020): match-first; a7b02b3a (2021): session-first again 'converters have access to session'",
+            "tests/test_converters.py:29-42 (converter asserts session not None; lazy load mid-match)"
+          ],
+          "id": "C5",
+          "statement": "Session load timing changed: opened at push time in <=3.1 (order history: session-before-match since a7b02b3a 2021, itself reverting #3776 2020), now lazy on first access (ctx.py:389-396). In 3.2 matching runs at push before any session access; open_session runs on first access - during matching if a converter touches session (url_rule unset), otherwise later (url_rule set). Lazy loading thus reconciles the historic converters-vs-open_session ordering conflict. Test subagent's '3.1 matched before loading' attribution to 01621485 is superseded by a7b02b3a; its non-discrimination conclusion stands.",
+          "tier": "C1",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "hypotheses": [
+        {
+          "dependsOn": [
+            "C1",
+            "C3"
+          ],
+          "id": "H1",
+          "statement": "Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features",
+          "status": "active"
+        },
+        {
+          "dependsOn": [
+            "C4",
+            "C5",
+            "C6",
+            "C10",
+            "C11",
+            "C22"
+          ],
+          "id": "H2",
+          "statement": "The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented; C5 refinement (session open vs URL-match ordering history: three reversals 2019-2021, now lazy) strengthens rather than weakens this",
+          "status": "active"
+        },
+        {
+          "dependsOn": [
+            "C2"
+          ],
+          "id": "H3",
+          "statement": "The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow",
+          "status": "active"
+        }
+      ],
+      "recompute": [
+        "H2"
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.92,
+          "evidence": [
+            "docs subagent findings 6-11: no-reuse consequences undocumented, appcontext.rst:122 typo, templating.rst:64-66 g 'request-bound', lazy session undocumented, no upgrade guide",
+            "docs/testing.rst:205-208 preserved-context claim vs testing.py:242-246 (context popped->teardown->re-pushed by client; teardown fires again at block exit)",
+            "docs/appcontext.rst: no mention of RequestContext merge/alias anywhere in concept docs; deprecation only in api.rst:309-317"
+          ],
+          "id": "C21",
+          "statement": "Additional doc gaps: (a) no-reuse consequences (per-request teardown_appcontext, fresh g, per-request signals) undocumented in appcontext/testing/lifecycle; (b) preserved-client-context teardown timing changed silently - testing.rst:205-208 stays literally true but mechanism is pop->teardown->re-push (testing.py:242-246) and docs never explain the double teardown; (c) appcontext.rst:122-124 'requet' typo + phrasing implying two context kinds; (d) templating.rst:64-66 g misdescribed as request-bound; (e) lazy session loading undocumented in prose; (f) no upgrade guide; (g) appcontext.rst never mentions the RequestContext merge/alias (deprecation only in api.rst:309-317)",
+          "tier": "C1",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "revise": [
+        {
+          "confidence": 0.97,
+          "evidence": [
+            "app.py:589-591 signature (self, ctx, context)",
+            "templating.py:124,166 call app.update_template_context(ctx, context)",
+            "shim list app.py:259-272 excludes update_template_context",
+            "git show 6a649690: shim list AND update_template_context change are in the SAME commit - original oversight, not later drift"
+          ],
+          "id": "C22",
+          "statement": "update_template_context changed to (self, ctx, context) in commit 6a649690, the same commit that wrote the __init_subclass__ shim list (app.py:259-272) - an original in-commit oversight: old-signature subclass overrides receive ctx as 'context' and fail with AttributeError at render, no deprecation warning",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.95,
+          "evidence": [
+            "git show c2705ffd: no hunk in full_dispatch_request or __init__ (no try_trigger removal, no lock removal in 3.2 cycle)",
+            "git show 6a649690: pre-existing code already had inline self._got_first_request = True, no try_trigger call, no lock",
+            "current grep: no try_trigger_before_first_request_functions, no _before_request_lock anywhere",
+            "app.py:998"
+          ],
+          "id": "C23",
+          "statement": "Minor items: (a) try_trigger_before_first_request_functions and _before_request_lock were ALREADY absent at 3.1.2 (2.3-era cleanup) - the code subagent's 'removed without shim' attribution is incorrect, downgraded to informational; (b) dead duplicate _make_timedelta app.py:72-76 (live copy sansio/app.py:52); (c) ctx.py:456 redundant None-check; (d) do_teardown_* exc default changed sentinel->None (direct calls no longer auto-capture sys.exc_info); (e) wrong-context pop error type AssertionError->RuntimeError",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.9,
+          "evidence": [
+            "code subagent findings 2-4,8,10: shim detection edge cases (renamed unannotated 2nd param misclassified as old-style -> spurious warning + broken binding; *args/**kwargs overrides get silent ctx stripping; ctx: AppContext|None union annotation not matched; keyword-only ctx undetected; non-introspectable override crashes class creation; stacklevel=2 mislocates)",
+            "base mutation setattr(Flask,...) is state-dependent: direct old-convention calls like app.full_dispatch_request() only work after some old-style subclass exists",
+            "multi-level subclassing re-wraps via __wrapped__ -> duplicate DeprecationWarnings + wrapper stacking",
+            "make_response still uses request proxy app.py:1296,1321; _default_template_ctx_processor reads active ctx not passed ctx templating.py:21-33; get_send_file_max_age duplicated with diverging impls (app.py:381 vs blueprints.py:72); handled exceptions still delivered to teardown (pre-existing, contradicts scaffold.py:522-525 docstring)"
+          ],
+          "id": "C26",
+          "statement": "Shim detection heuristics have additional failure modes (renamed-param false positives, union annotations unhandled, keyword-only ctx undetected, non-introspectable overrides crash class creation); base-class mutation makes direct old-convention calls state-dependent (work only after an old-style subclass exists); multi-level subclassing yields duplicate warnings and wrapper stacking; informational code notes: make_response proxy usage, _default_template_ctx_processor active-vs-passed ctx, get_send_file_max_age divergence, teardown-delivery docstring contradiction. All fold into B3's shim-hardening scope.",
+          "tier": "C1",
+          "verdict": "Known"
+        },
+        {
+          "confidence": 0.88,
+          "evidence": [
+            "C6 refinement: misfire modes now concrete (C26); C22 original oversight; C23 corrected attribution; shim zero-coverage (C11)"
+          ],
+          "id": "C6",
+          "statement": "Dispatch-method compat shim (app.py:253-307): detects old signatures at subclass creation via 2nd-param name/annotation heuristic, wraps subclass method (remove_ctx) and mutates base Flask method (add_ctx). Failure modes: update_template_context omitted (C22); renamed-param/union-annotation/keyword-only misfires and *args silent stripping (C26); base mutation is process-global and state-dependent (direct old-convention calls work only after an old-style subclass exists); wrapper accumulation + duplicate warnings on multi-level subclassing; staticmethod/classmethod overrides broken; post-class monkeypatch uncovered. Zero test coverage (C11).",
+          "tier": "C1",
+          "verdict": "Known"
+        }
+      ]
+    },
+    {
+      "phase": "EVIDENCE_MAP",
+      "hypotheses": [
+        {
+          "dependsOn": [
+            "C1",
+            "C3"
+          ],
+          "id": "H1",
+          "statement": "Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features",
+          "status": "active"
+        },
+        {
+          "dependsOn": [
+            "C4",
+            "C5",
+            "C6",
+            "C10",
+            "C11",
+            "C22"
+          ],
+          "id": "H2",
+          "statement": "The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented; C6 refinement (concrete shim misfire modes, update_template_context original oversight) and C5 refinement (session-order history) strengthen rather than weaken this",
+          "status": "active"
+        },
+        {
+          "dependsOn": [
+            "C2"
+          ],
+          "id": "H3",
+          "statement": "The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow",
+          "status": "active"
+        }
+      ],
+      "recompute": [
+        "H2",
+        "PROJECT_MODEL",
+        "DIAGNOSIS"
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "research_doctor",
+      "arguments": "{}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"status\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 50}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"LICENSE.txt\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"rev-parse\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \".editorconfig\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"src/flask/signals.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\README.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\pyproject.toml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\CHANGES.rst\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\__init__.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"ref\": \"85793d6c\", \"path\": \"--stat\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"ref\": \"85793d6c..2579ce9f\", \"maxCount\": 100}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\ctx.py\"}"
+    },
+    {
+      "name": "subagent",
+      "arguments": "{\"description\": \"Deep review flask/app.py dispatch\", \"prompt\": \"You are a code-review subagent working in a READ-ONLY environment (use the read tool only; never write). Analyze the Flask framework source at D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace (working tree line endings are CRLF noise; ignore that, content equals git HEAD 2579ce9f).\\n\\nRead COMPLETELY these two files:\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\\\\app.py\\n\\nAlso skim D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\\\\scaffold.py and D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\blueprints.py for context-related code.\\n\\nContext: this is Flask 3.2.0.dev. Two major in-flight refactors just landed: (1) RequestContext merged into AppContext (single context, see src/flask/ctx.py); (2) many Flask methods involved in request dispatch now take the current AppContext as first parameter instead of using proxy objects (CHANGES.rst: \\\"If subclasses were overriding these methods, the old signature is detected, shows a deprecation warning, and will continue to work during the deprecation period\\\").\\n\\nReport precisely, with file:line citations for every claim:\\n1. The full request-dispatch pipeline (wsgi_app / full_dispatch_request / dispatch_request / finalize_request / handle_user_exception / handle_exception / try_trigger_before_first_request_functions etc.) — current signatures and control flow, including how the AppContext flows through.\\n2. How the old-signature deprecation compat shim works (where signatures are inspected, what warning is emitted). Identify edge cases or bugs: e.g., can the detection misfire (functions with *args/**kwargs, bound vs unbound, partials)? Is there any path that bypasses the shim?\\n3. Any leftover inconsistencies from the context merge: references to \\\"_request_ctx_stack\\\", \\\"RequestContext\\\", \\\"request_ctx\\\", \\\"ctx.request\\\" vs \\\"ctx.app\\\" misuse, or places still using proxy objects (flask.request / flask.g / current_app) where the passed ctx should be used.\\n4. TODO/FIXME/XXX/HACK comments anywhere in these files.\\n5. Any genuinely suspicious code: dead branches, unreachable code, incorrect exception handling, thread-safety or contextvars issues, duplicated logic between app.py and sansio/app.py, type errors (mypy strict is enabled for this repo).\\n6. List of public methods whose signature changed in the refactor (the deprecation shim list).\\n\\nBe adversarial but evidence-based: every finding must cite file:line. Distinguish real bugs from intentional design. End with a numbered list of findings ranked by severity (critical/high/medium/low/informational). Do NOT propose code changes — describe problems only.\", \"run_in_background\": true}"
+    },
+    {
+      "name": "subagent",
+      "arguments": "{\"description\": \"Docs vs implementation drift check\", \"prompt\": \"You are a documentation-review subagent working in a READ-ONLY environment (use the read tool only; never write). The repository is Flask 3.2.0.dev at D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace (working tree line endings are CRLF noise; ignore that, content equals git HEAD).\\n\\nTwo major refactors just landed in the 3.2.0 dev cycle:\\n(A) RequestContext merged into AppContext (see src/flask/ctx.py — AppContext now optionally carries a request; RequestContext is a deprecated alias; a fresh combined context is pushed for every request, never reusing an outer app context; session is loaded lazily on first access).\\n(B) Many Flask methods involved in request dispatch now take the current AppContext as the first parameter instead of using proxy objects (old signatures still work with a deprecation warning).\\n\\nRead these files COMPLETELY:\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\reqcontext.rst\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\appcontext.rst\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\lifecycle.rst\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\async-await.rst\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\api.rst (only parts describing Flask methods, context objects, and the flask.ctx module)\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\testing.rst (only parts about test_request_context / app_context usage)\\n\\nAlso skim for other references to \\\"RequestContext\\\", \\\"request context\\\", \\\"app context\\\", \\\"_app_ctx_stack\\\", \\\"_request_ctx_stack\\\", \\\"app_ctx\\\", \\\"request_ctx\\\" in docs/*.rst via grep.\\n\\nReport precisely, with file:line citations:\\n1. Every statement in the docs that CONTRADICTS the new single-context model or the new dispatch-method signatures (e.g., docs describing two separate context objects, docs describing app-context reuse during requests, docs describing dispatch method signatures that no longer match).\\n2. Every statement in the docs that is now subtly WRONG under the new behavior (e.g., claims about when session is loaded, when g is created, signal ordering, nested context behavior).\\n3. Places where docs are merely incomplete or vague about the new model (mentioning is fine, flagging missing updates).\\n4. Note whether CHANGES.rst (top section, version 3.2.0) documents these behavior changes — quote the entries.\\n\\nBe adversarial but evidence-based: every finding must cite file:line. Rank findings by severity (docs that actively mislead users = high; omissions = medium/low). End with a numbered list. Do NOT propose fixes — describe problems only.\", \"run_in_background\": true}"
+    },
+    {
+      "name": "subagent",
+      "arguments": "{\"description\": \"Test coverage review of context merge\", \"prompt\": \"You are a test-review subagent working in a READ-ONLY environment (use the read tool only; never write). The repository is Flask 3.2.0.dev at D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace (working tree line endings are CRLF noise; ignore that, content equals git HEAD).\\n\\nBackground: two major refactors just landed in the 3.2.0 dev cycle:\\n(A) RequestContext merged into AppContext (src/flask/ctx.py — single context carrying optional request; RequestContext is a deprecated alias; a fresh combined context is pushed per request even if an app context is already pushed — the outer app context is NOT reused; session loads lazily).\\n(B) Many Flask dispatch methods now take the AppContext as first parameter; old subclass signatures are detected at runtime and still work with a DeprecationWarning (see src/flask/app.py).\\n\\nRead these test files COMPLETELY (use grep to find context-related tests if needed):\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_appctx.py\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_reqctx.py\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_testing.py\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_async.py\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\conftest.py\\n- D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_basic.py (only context-related tests — grep for \\\"context\\\", \\\"app_ctx\\\", \\\"request_ctx\\\", \\\"g.\\\" first)\\n\\nReport precisely, with file:line citations:\\n1. Which tests cover the NEW merged-context semantics: fresh context per request even with outer app context pushed; g isolation between outer app context and inner request; lazy session loading; the deprecated RequestContext alias warning; the dispatch-method old-signature deprecation shim (both the warning and continued function).\\n2. Any tests that still assert OLD behavior and would now be wrong or misleading (e.g., asserting an outer app context is reused, asserting session is loaded at push time, asserting RequestContext is a real class not an alias).\\n3. Any test gaps: important new behavior with NO test coverage (rank by risk).\\n4. Any skipped/xfail tests and why (grep \\\"skip\\\", \\\"xfail\\\").\\n5. Test-health signals: how thorough is the suite overall (approx counts), any brittle patterns (e.g., relying on private attributes like _cv_app, _push_count, _request).\\n\\nBe adversarial but evidence-based: cite file:line for every claim. End with a numbered list ranked by severity. Do NOT propose fixes — describe problems only.\", \"run_in_background\": true}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\globals.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.github\\\\workflows\\\\tests.yaml\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"_request_ctx_stack|_app_ctx_stack|RequestContext|request_ctx\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"RequestContext|request_ctx|two context|separate context|app context.*request context|request context.*app context\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\testing.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\helpers.py\", \"limit\": 150}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"src/flask/ctx.py\", \"ref\": \"85793d6c..2579ce9f\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.devcontainer\\\\devcontainer.json\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\conf.py\", \"limit\": 60}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"deprecat|_cv_app|has_request|ctx\\\\.|signature|warn\", \"include\": \"app.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 120, \"offset\": 240}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 120, \"offset\": 590}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"def add_ctx|def remove_ctx\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 160, \"offset\": 60}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\cli.py\", \"pattern\": \"app_context|AppContext|with_appcontext|request_context|with_request\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\", \"pattern\": \"app_context\\\\(\\\\)|test_request_context|request_context\\\\(\", \"include\": \"*.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 140, \"offset\": 1452}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_converters.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.readthedocs.yaml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.github\\\\workflows\\\\publish.yaml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.github\\\\workflows\\\\pre-commit.yaml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sessions.py\", \"limit\": 80}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.pre-commit-config.yaml\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \":data:`g:|:data:`[a-z]+:`\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\wrappers.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\json\\\\__init__.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\api.rst\", \"limit\": 40, \"offset\": 295}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\shell.rst\", \"limit\": 45}"
+    },
+    {
+      "name": "job_output",
+      "arguments": "{\"job_id\": \"4599a9a1-0507-467c-91e7-96babc43ea81\", \"wait\": true, \"timeout_ms\": 240000}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"AppContext|_cv_app\", \"include\": \"blueprints.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\", \"pattern\": \"AppContext|_cv_app|request_context|app_context\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\uv.lock\", \"pattern\": \"name = \\\"werkzeug\\\"|name = \\\"jinja2\\\"|name = \\\"click\\\"|name = \\\"blinker\\\"|name = \\\"itsdangerous\\\"|name = \\\"markupsafe\\\"\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\cli.py\", \"limit\": 80, \"offset\": 370}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\", \"pattern\": \"_cv_app|_cv_request|app_ctx\\\\.|request_ctx\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\\\\scaffold.py\", \"limit\": 50, \"offset\": 490}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\cli.py\", \"limit\": 110, \"offset\": 990}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\appcontext.rst\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_appctx.py\", \"limit\": 100}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"id\": \"C1\", \"statement\": \"Snapshot is pallets/flask main branch at HEAD 2579ce9f (2025-11-17), version 3.2.0.dev (post 3.1.2 release)\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"pyproject.toml:3\", \"git log 2579ce9f\", \"git status\"], \"confidence\": 1.0}, {\"id\": \"C2\", \"statement\": \"Entire working tree differs from HEAD only by LF->CRLF line endings; content identical to HEAD\", \"tier\": \"C3\", \"verdict\": \"Known\", \"evidence\": [\"git diff LICENSE.txt/.editorconfig/src/flask/signals.py shows all-line rewrites only\", \"git status: every file M\"], \"confidence\": 1.0}, {\"id\": \"C3\", \"statement\": \"3.2.0 dev cycle contains two major refactors: AppContext/RequestContext merge (#5812) and dispatch methods taking AppContext first param (#5818)\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"CHANGES.rst:8-16\", \"ctx.py:259-516\", \"app.py:253-307\", \"git log 85793d6c..HEAD\"], \"confidence\": 1.0}, {\"id\": \"C4\", \"statement\": \"New context semantics: one combined AppContext per request; outer app context NOT reused; g fresh per request; appcontext_pushed/popped fire per request even with outer app ctx; single ContextVar _cv_app backs all proxies\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"ctx.py:409-480\", \"globals.py:40-62\", \"CHANGES.rst:8-11\", \"git diff 85793d6c..HEAD ctx.py (old push reused app ctx)\"], \"confidence\": 0.95}, {\"id\": \"C5\", \"statement\": \"Session load timing changed: opened at push time in <=3.1, now lazy on first access; custom open_session may now observe request.url_rule set; URL converters can trigger session load\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"ctx.py:380-396 (lazy)\", \"git diff 85793d6c..HEAD ctx.py (old push opened session before match_request)\", \"tests/test_converters.py:29-42 (converter asserts session not None)\"], \"confidence\": 0.9}, {\"id\": \"C6\", \"statement\": \"Dispatch-method compat shim in Flask.__init_subclass__ detects old signatures, warns, wraps subclass method (remove_ctx) and mutates base Flask method (add_ctx); risks: double-wrap accumulation with >=2 old-style subclasses, staticmethod/classmethod overrides broken, post-class monkeypatch not covered, name/annotation heuristic can misfire\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"app.py:84-106\", \"app.py:253-307\"], \"confidence\": 0.9}, {\"id\": \"C7\", \"statement\": \"Malformed RST role ':data:`g:,' in app.py docstrings lines 1475 and 1490 breaks sphinx-build -W used by ReadTheDocs and tox docs env\", \"tier\": \"C1\", \"verdict\": \"Likely\", \"evidence\": [\"app.py:1475\", \"app.py:1490\", \".readthedocs.yaml:9 (-W)\", \"pyproject.toml:251 (docs env -W)\", \"no RST lint hook in .pre-commit-config.yaml\"], \"confidence\": 0.8}, {\"id\": \"C8\", \"statement\": \"CI (tests.yaml) has no docs build job; docs gating happens only on ReadTheDocs\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\".github/workflows/tests.yaml:8-54\"], \"confidence\": 1.0}, {\"id\": \"C9\", \"statement\": \"Docs drift: shell.rst:23-29 still instructs using deprecated RequestContext; api.rst:304 says app_ctx only available during request context; api.rst:309-317 correctly documents deprecations\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"docs/shell.rst:23-29\", \"docs/api.rst:296-317\"], \"confidence\": 0.95}, {\"id\": \"C10\", \"statement\": \"Ecosystem-visible breaking behavior change: app_context + request no longer share g/teardown/signals; documented as intentional in CHANGES.rst (#5639) but will break extension patterns relying on outer app context state\", \"tier\": \"C1\", \"verdict\": \"Known\", \"evidence\": [\"CHANGES.rst:8-11\", \"ctx.py:409-430\", \"git diff 85793d6c..HEAD ctx.py\"], \"confidence\": 0.85}], \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features\", \"status\": \"active\", \"dependsOn\": [\"C1\", \"C3\"]}, {\"id\": \"H2\", \"statement\": \"The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented\", \"status\": \"active\", \"dependsOn\": [\"C4\", \"C5\", \"C6\", \"C10\"]}, {\"id\": \"H3\", \"statement\": \"The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow\", \"status\": \"active\", \"dependsOn\": [\"C2\"]}], \"views\": [{\"name\": \"PROJECT_MODEL\", \"dependsOn\": [\"C1\", \"C3\", \"C4\", \"C5\", \"C6\", \"C7\", \"C8\", \"C9\", \"C10\"]}, {\"name\": \"DIAGNOSIS\", \"dependsOn\": [\"C4\", \"C5\", \"C6\", \"C7\", \"C9\", \"C10\"]}]}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"Flask 3.2 release AppContext RequestContext merge breaking changes\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"pallets/flask issue 5812 merge app and request context extension compatibility\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://raw.githubusercontent.com/pallets/flask/main/CHANGES.rst\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"Flask 3.2.0\\\" released changelog\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://mirror.osredm.com/root/flask/src/branch/main/CHANGES.rst\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"Flask 3.2.0 release date \\\"Released 2025\\\" OR \\\"Released 2026\\\" version 3.2.0 changelog \\\"RequestContext\\\"\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"pallets flask 3.2 extension breakage \\\"app context\\\" \\\"request context\\\" merged g object behavior change\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"Flask 3.2.0 released December 2025 OR January 2026 PyPI latest version\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\\\\README.md\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.github\\\\workflows\\\\lock.yaml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\typing.py\", \"limit\": 60}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 80, \"offset\": 820}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"app_context\\\\(\\\\).*client|with app\\\\.app_context|client\\\\.get|client\\\\.post\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_appctx.py\", \"limit\": 115, \"offset\": 100}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\extensiondev.rst\", \"pattern\": \"context|g\\\\.|app_context|request_context\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\extensiondev.rst\", \"limit\": 45, \"offset\": 155}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\reqcontext.rst\", \"limit\": 80}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\", \"pattern\": \"__version__|version_info\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_reqctx.py\", \"limit\": 150}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.95, \"evidence\": [\"test_subagent report: app.py:253-307 never exercised; tests/test_subclassing.py:6-21 uses new signature\", \"tests/test_subclassing.py:8\"], \"id\": \"C11\", \"statement\": \"Dispatch old-signature compat shim has ZERO test coverage: no warning test, no remove_ctx/add_ctx path test, no heuristic edge tests; suite contains no old-signature Flask subclass\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"test_subagent G2: no test sets g in outer app context and asserts request sees fresh g\", \"tests/test_appctx.py:90-133 only teardown counts\"], \"id\": \"C12\", \"statement\": \"g isolation between outer app context and inner request is untested (the headline user-visible semantic of the merge); only teardown-count tests indirectly prove two contexts\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"test_subagent G3: tests/test_session_interface.py:6-28 passes under eager loading too\", \"tests/test_reqctx.py:205-226 timing-agnostic\"], \"id\": \"C13\", \"statement\": \"Lazy session loading has no discriminating test; existing session-timing tests pass under eager loading; the session-error timing path silently shifted from push-time to finalize-time\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"test_subagent G4: no test for ctx.py:504-514 or globals.py:65-75 aliases\", \"pyproject.toml:109-111 filterwarnings=error\"], \"id\": \"C14\", \"statement\": \"Deprecation aliases RequestContext/request_ctx untested; filterwarnings=[error] prevents casual exercise of deprecated paths\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"test_subagent G5: ctx.py:426-427 fires per fresh context; test_signals.py:115-136 bare-request only\"], \"id\": \"C15\", \"statement\": \"appcontext_pushed/popped now fire per request even over an outer app context - behavior change untested\", \"tier\": \"C2\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"test_subagent section 5: ~384 test functions across 23 files, no xfail, greenlet-conditional skip at test_reqctx.py:148\", \"test_subagent section 4\"], \"id\": \"C16\", \"statement\": \"Suite health: ~384 tests/23 files, strict filterwarnings=error, no xfail; context-copy tests skipped without greenlet; several white-box couplings (_cv_app import, werkzeug.request environ marker)\", \"tier\": \"C2\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"docs/_static/debugger.png\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"docs/_static/flask-icon.svg\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"hash-object\", \"path\": \"docs/_static/debugger.png\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"rev-parse\", \"ref\": \"HEAD:docs/_static/debugger.png\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"ls-files\", \"path\": \"-s\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"ls-files\", \"path\": \"docs/_static/debugger.png\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"docs/_static\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\\\\app.py\", \"pattern\": \"def (dispatch_request|full_dispatch_request|finalize_request|preprocess_request|process_response|do_teardown_request|do_teardown_appcontext|handle_user_exception|handle_exception|handle_http_exception|log_exception|make_default_options_response|try_trigger_before_first_request_functions|wsgi_app|create_url_adapter|inject_url_defaults|make_response)\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.95, \"evidence\": [\"docs/testing.rst:316-317 calls app.preprocess_request() with no args\", \"app.py:1354 preprocess_request(self, ctx) has no default\", \"docs subagent verification\"], \"id\": \"C17\", \"statement\": \"docs/testing.rst:316-317 canonical manual-dispatch example calls app.preprocess_request() with no args - now TypeError under new (self, ctx) signature; compat shim covers only subclass overrides, not call sites\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"docs/shell.rst:52 app.preprocess_request(), 61 app.process_response(app.response_class())\", \"app.py:1354,1382 signatures\"], \"id\": \"C18\", \"statement\": \"docs/shell.rst:48-63 shell-dispatch example uses pre-3.2 signatures (preprocess_request, process_response) - broken with TypeError; prose describes old conventions\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"ctx.py:375-376,386-387 raise 'There is no request in this context.'\", \"docs/appcontext.rst:81-93 documents only 'Working outside of request context.'\", \"docs subagent finding 4\"], \"id\": \"C19\", \"statement\": \"Error string when accessing request/session inside a plain app context changed to 'There is no request in this context.'; undocumented in docs (appcontext.rst:81-93 still claims the old message)\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"docs/api.rst:304-305 app_ctx 'only available when a request context is active'\", \"globals.py:41-43 app_ctx bound to any app context\", \"docs subagent finding 5\"], \"id\": \"C20\", \"statement\": \"docs/api.rst:304-305 wrongly limits app_ctx availability to request contexts - wrong under merged model and newly introduced by refactor commit\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"docs subagent findings 6-11: no-reuse consequences undocumented, appcontext.rst:122 typo, templating.rst:64-66 g 'request-bound', lazy session undocumented, no upgrade guide\"], \"id\": \"C21\", \"statement\": \"Additional doc gaps: per-request teardown/fresh-g/signals consequences undocumented in appcontext/testing/lifecycle; appcontext.rst:122-124 'requet' typo; templating.rst:64-66 g misdescribed as request-bound; lazy session loading undocumented in prose\", \"tier\": \"C1\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 180, \"offset\": 960}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 115, \"offset\": 1345}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\testing.rst\", \"limit\": 30, \"offset\": 300}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\shell.rst\", \"limit\": 30, \"offset\": 46}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "skill",
+      "arguments": "{\"name\": \"research-report-template\"}"
+    },
+    {
+      "name": "skill",
+      "arguments": "{\"name\": \"methodology\"}"
+    },
+    {
+      "name": "list_agents",
+      "arguments": "{}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"update_template_context|_make_timedelta\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 40, \"offset\": 570}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"CLASSIFY\", \"revise\": [{\"confidence\": 0.95, \"evidence\": [\"app.py:589-591 signature (self, ctx, context)\", \"templating.py:124,166 call app.update_template_context(ctx, context)\", \"shim list app.py:259-272 excludes update_template_context\", \"app.py subagent HIGH-1\"], \"id\": \"C22\", \"statement\": \"update_template_context changed to (self, ctx, context) but is NOT in the __init_subclass__ shim list - an old-signature subclass override receives ctx as 'context' and fails with AttributeError (AppContext has no .update), with no deprecation warning\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"app.py:72-76 def _make_timedelta; only usage sansio/app.py:224 binds sansio/app.py:52's copy\", \"grep src/flask\"], \"id\": \"C23\", \"statement\": \"app.py:72 _make_timedelta is dead duplicate code (live copy in sansio/app.py:52); plus minor items: redundant None-check in ctx.py:456, pop() exc default changed from sys.exc_info capture to None, wrong-context pop error type AssertionError->RuntimeError, _got_first_request lock removal (safe: before_first_request removed in 2.3)\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.85, \"evidence\": [\"C7, C8, C17-C21, C22, C11-C15, C2\"], \"id\": \"C24\", \"statement\": \"Classification: BUILD = fix RST roles (app.py:1475,1490), fix broken docs examples + drift (testing.rst/shell.rst/api.rst/appcontext.rst), add update_template_context to shim + add regression tests for shim/new semantics, normalize CRLF working tree (harness); INVESTIGATE = extension-ecosystem impact of context merge, docs-build CI job\", \"tier\": \"C2\", \"verdict\": \"Likely\"}], \"hypotheses\": [{\"dependsOn\": [\"C1\", \"C3\"], \"id\": \"H1\", \"statement\": \"Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features\", \"status\": \"active\"}, {\"dependsOn\": [\"C4\", \"C5\", \"C6\", \"C10\", \"C11\", \"C22\"], \"id\": \"H2\", \"statement\": \"The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented\", \"status\": \"active\"}, {\"dependsOn\": [\"C2\"], \"id\": \"H3\", \"statement\": \"The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow\", \"status\": \"active\"}]}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.9, \"evidence\": [\"test subagent G6 + section 4: has_app_context() no direct test; after_this_request RuntimeError path (ctx.py:140-144) and copy_current_request_context RuntimeError path (ctx.py:193-197) untested; no asyncio copy test; greenlet skips at test_reqctx.py:148; skips: test_basic.py:24, test_cli.py:530, test_config.py:39, test_async.py:11; conftest.py:92-95 leak detector via app_ctx proxy\"], \"id\": \"C25\", \"statement\": \"Minor test gaps: has_app_context() untested directly; after_this_request / copy_current_request_context error paths untested; no asyncio test of copy_current_request_context; greenlet-conditional skips; conftest leak detector is white-box via app_ctx proxy. Fold into B3 scope.\", \"tier\": \"C2\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"ref\": \"01621485\", \"path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 60, \"path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"path\": \"src/flask/ctx.py\", \"ref\": \"a7b02b3a\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.97, \"evidence\": [\"ctx.py:380-396 (lazy)\", \"git diff 85793d6c..HEAD ctx.py (3.1.2 push opened session BEFORE match_request)\", \"c6586391 (2019): session-first; 01621485 #3776 (2020): match-first; a7b02b3a (2021): session-first again 'converters have access to session'\", \"tests/test_converters.py:29-42 (converter asserts session not None; lazy load mid-match)\"], \"id\": \"C5\", \"statement\": \"Session load timing changed: opened at push time in <=3.1 (order history: session-before-match since a7b02b3a 2021, itself reverting #3776 2020), now lazy on first access (ctx.py:389-396). In 3.2 matching runs at push before any session access; open_session runs on first access - during matching if a converter touches session (url_rule unset), otherwise later (url_rule set). Lazy loading thus reconciles the historic converters-vs-open_session ordering conflict. Test subagent's '3.1 matched before loading' attribution to 01621485 is superseded by a7b02b3a; its non-discrimination conclusion stands.\", \"tier\": \"C1\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"hypotheses\": [{\"dependsOn\": [\"C1\", \"C3\"], \"id\": \"H1\", \"statement\": \"Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features\", \"status\": \"active\"}, {\"dependsOn\": [\"C4\", \"C5\", \"C6\", \"C10\", \"C11\", \"C22\"], \"id\": \"H2\", \"statement\": \"The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented; C5 refinement (session open vs URL-match ordering history: three reversals 2019-2021, now lazy) strengthens rather than weakens this\", \"status\": \"active\"}, {\"dependsOn\": [\"C2\"], \"id\": \"H3\", \"statement\": \"The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow\", \"status\": \"active\"}], \"recompute\": [\"H2\"]}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.92, \"evidence\": [\"docs subagent findings 6-11: no-reuse consequences undocumented, appcontext.rst:122 typo, templating.rst:64-66 g 'request-bound', lazy session undocumented, no upgrade guide\", \"docs/testing.rst:205-208 preserved-context claim vs testing.py:242-246 (context popped->teardown->re-pushed by client; teardown fires again at block exit)\", \"docs/appcontext.rst: no mention of RequestContext merge/alias anywhere in concept docs; deprecation only in api.rst:309-317\"], \"id\": \"C21\", \"statement\": \"Additional doc gaps: (a) no-reuse consequences (per-request teardown_appcontext, fresh g, per-request signals) undocumented in appcontext/testing/lifecycle; (b) preserved-client-context teardown timing changed silently - testing.rst:205-208 stays literally true but mechanism is pop->teardown->re-push (testing.py:242-246) and docs never explain the double teardown; (c) appcontext.rst:122-124 'requet' typo + phrasing implying two context kinds; (d) templating.rst:64-66 g misdescribed as request-bound; (e) lazy session loading undocumented in prose; (f) no upgrade guide; (g) appcontext.rst never mentions the RequestContext merge/alias (deprecation only in api.rst:309-317)\", \"tier\": \"C1\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\", \"pattern\": \"try_trigger_before_first_request|_got_first_request|_before_request_lock\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\sansio\\\\app.py\", \"limit\": 25, \"offset\": 400}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"path\": \"src/flask/app.py\", \"ref\": \"85793d6c\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"ref\": \"85793d6c:src/flask/app.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"path\": \"src/flask/app.py\", \"ref\": \"c2705ffd\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"path\": \"src/flask/app.py\", \"ref\": \"6a649690\"}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"revise\": [{\"confidence\": 0.97, \"evidence\": [\"app.py:589-591 signature (self, ctx, context)\", \"templating.py:124,166 call app.update_template_context(ctx, context)\", \"shim list app.py:259-272 excludes update_template_context\", \"git show 6a649690: shim list AND update_template_context change are in the SAME commit - original oversight, not later drift\"], \"id\": \"C22\", \"statement\": \"update_template_context changed to (self, ctx, context) in commit 6a649690, the same commit that wrote the __init_subclass__ shim list (app.py:259-272) - an original in-commit oversight: old-signature subclass overrides receive ctx as 'context' and fail with AttributeError at render, no deprecation warning\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.95, \"evidence\": [\"git show c2705ffd: no hunk in full_dispatch_request or __init__ (no try_trigger removal, no lock removal in 3.2 cycle)\", \"git show 6a649690: pre-existing code already had inline self._got_first_request = True, no try_trigger call, no lock\", \"current grep: no try_trigger_before_first_request_functions, no _before_request_lock anywhere\", \"app.py:998\"], \"id\": \"C23\", \"statement\": \"Minor items: (a) try_trigger_before_first_request_functions and _before_request_lock were ALREADY absent at 3.1.2 (2.3-era cleanup) - the code subagent's 'removed without shim' attribution is incorrect, downgraded to informational; (b) dead duplicate _make_timedelta app.py:72-76 (live copy sansio/app.py:52); (c) ctx.py:456 redundant None-check; (d) do_teardown_* exc default changed sentinel->None (direct calls no longer auto-capture sys.exc_info); (e) wrong-context pop error type AssertionError->RuntimeError\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.9, \"evidence\": [\"code subagent findings 2-4,8,10: shim detection edge cases (renamed unannotated 2nd param misclassified as old-style -> spurious warning + broken binding; *args/**kwargs overrides get silent ctx stripping; ctx: AppContext|None union annotation not matched; keyword-only ctx undetected; non-introspectable override crashes class creation; stacklevel=2 mislocates)\", \"base mutation setattr(Flask,...) is state-dependent: direct old-convention calls like app.full_dispatch_request() only work after some old-style subclass exists\", \"multi-level subclassing re-wraps via __wrapped__ -> duplicate DeprecationWarnings + wrapper stacking\", \"make_response still uses request proxy app.py:1296,1321; _default_template_ctx_processor reads active ctx not passed ctx templating.py:21-33; get_send_file_max_age duplicated with diverging impls (app.py:381 vs blueprints.py:72); handled exceptions still delivered to teardown (pre-existing, contradicts scaffold.py:522-525 docstring)\"], \"id\": \"C26\", \"statement\": \"Shim detection heuristics have additional failure modes (renamed-param false positives, union annotations unhandled, keyword-only ctx undetected, non-introspectable overrides crash class creation); base-class mutation makes direct old-convention calls state-dependent (work only after an old-style subclass exists); multi-level subclassing yields duplicate warnings and wrapper stacking; informational code notes: make_response proxy usage, _default_template_ctx_processor active-vs-passed ctx, get_send_file_max_age divergence, teardown-delivery docstring contradiction. All fold into B3's shim-hardening scope.\", \"tier\": \"C1\", \"verdict\": \"Known\"}, {\"confidence\": 0.88, \"evidence\": [\"C6 refinement: misfire modes now concrete (C26); C22 original oversight; C23 corrected attribution; shim zero-coverage (C11)\"], \"id\": \"C6\", \"statement\": \"Dispatch-method compat shim (app.py:253-307): detects old signatures at subclass creation via 2nd-param name/annotation heuristic, wraps subclass method (remove_ctx) and mutates base Flask method (add_ctx). Failure modes: update_template_context omitted (C22); renamed-param/union-annotation/keyword-only misfires and *args silent stripping (C26); base mutation is process-global and state-dependent (direct old-convention calls work only after an old-style subclass exists); wrapper accumulation + duplicate warnings on multi-level subclassing; staticmethod/classmethod overrides broken; post-class monkeypatch uncovered. Zero test coverage (C11).\", \"tier\": \"C1\", \"verdict\": \"Known\"}]}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"EVIDENCE_MAP\", \"hypotheses\": [{\"dependsOn\": [\"C1\", \"C3\"], \"id\": \"H1\", \"statement\": \"Snapshot is a stable mature project (Flask) mid-3.2-refactor; highest-value findings are the in-flight refactor's risks and concrete defects, not missing features\", \"status\": \"active\"}, {\"dependsOn\": [\"C4\", \"C5\", \"C6\", \"C10\", \"C11\", \"C22\"], \"id\": \"H2\", \"statement\": \"The context merge and dispatch-signature change carry hidden compatibility hazards (ecosystem patterns, subclass overrides) that are under-tested and under-documented; C6 refinement (concrete shim misfire modes, update_template_context original oversight) and C5 refinement (session-order history) strengthen rather than weaken this\", \"status\": \"active\"}, {\"dependsOn\": [\"C2\"], \"id\": \"H3\", \"statement\": \"The snapshot environment itself has a defect: CRLF-polluted working tree that will poison any subsequent diff/patch-based workflow\", \"status\": \"active\"}], \"recompute\": [\"H2\", \"PROJECT_MODEL\", \"DIAGNOSIS\"]}"
+    }
+  ]
+}

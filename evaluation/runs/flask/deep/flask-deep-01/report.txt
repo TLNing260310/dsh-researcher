@@ -1,0 +1,374 @@
+Runtime certificate: **Run #2 — Overall SAFE** (preset researcher-deep, read-only sandbox, never approval, git_read only shell surface). Proceeding with the **Deep** pipeline (all eleven moves), per the frozen Phase A override.
+
+## Move 1 — DISCOVER: cartography
+
+This is the **Flask** web framework repository (pallets/flask), snapshot at 2025-11-17 (HEAD `2579ce9f`). Critical anomaly already visible: **every file in the tree shows as modified (M)** in `git status` — I need to characterize that before anything else.
+
+The working tree is **100% CRLF line-ending noise**: `LICENSE.txt` and `.editorconfig` show every line rewritten — classic LF→CRLF conversion during snapshot materialization on Windows. HEAD is `2579ce9f18e67ec3213c6eceb5240310ccd46af8`. Let me verify this on a Python file and start reading the actual content.
+
+Working tree confirmed as pure CRLF noise — content equals HEAD `2579ce9f`. Real state: **Flask main branch, `3.2.0.dev`** (post-3.1.2 release), with recent architectural commits: "merge app and request context (#5812)", "pass context through dispatch methods (#5818)", Python 3.14 / free-threading CI work.
+
+Now building the project model — reading the core sources and changelog, plus the 3.2-dev diff scope:
+
+The **flagship 3.2.0 change is the AppContext/RequestContext merge** (`ctx.py` line 259-516: single `AppContext` carrying `_request`/`_session`; `RequestContext` now a deprecated module-level alias via PEP 562 `__getattr__`; per CHANGES.rst the context is *no longer reused* if an app context is already pushed — a real semantic break for the extension ecosystem). Now I'll fan out deep reading while I do git forensics on the merge commits myself.
+
+`globals.py` confirms the merge: **one ContextVar `_cv_app` now backs `app_ctx`, `current_app`, `g`, `request`, and `session`** (lines 40-62); `request_ctx` is a deprecated alias. Now checking CI state, leftover references to the old model, and the testing/CLI surfaces:
+
+CI is healthy-looking (py3.10–3.14 incl. free-threading 3.13t/3.14t, PyPy, min/dev dep matrices). Source tree is clean of old-model leftovers (only the deliberate deprecation aliases). Docs have stale `RequestContext` references (`api.rst:309`, `shell.rst:23-29`) — the docs subagent will quantify. Continuing with the remaining core modules:
+
+`testing.py` and `stream_with_context` are consistent with the merged model (same-context re-push via `_push_count`). Now the git forensics on the refactor itself, plus dev-environment config:
+
+The `ctx.py` diff confirms the semantic shifts: old `RequestContext.push()` **reused** an outer app context (`if app_ctx is None or app_ctx.app is not self.app`) and **opened the session at push time before URL matching** ("so that the session is available in custom URL converters") — both behaviors changed in 3.2. Let me inspect the dispatch-method compat shim in `app.py` directly:
+
+The `__init_subclass__` compat shim (app.py:253-307) is the riskiest new code — it **mutates the base `Flask` class** (`setattr(Flask, method.__name__, add_ctx(base_method))`), which smells like an accumulation bug with multiple old-style subclasses. Let me read `add_ctx`/`remove_ctx`:
+
+The shim mechanics are clear now (`remove_ctx` drops a leading `AppContext` arg; `add_ctx` re-injects it for `super()` calls). It has known-fragile edges (base-class mutation that accumulates with multiple old-style subclasses, staticmethod/classmethod overrides, post-class monkeypatching, name-based heuristics). While subagents complete their deep reads, let me cover the remaining surfaces: CLI context handling, sessions, wrappers, and ecosystem-facing patterns in examples:
+
+Found a concrete defect: **malformed RST in two docstrings** — `app.py:1475` and `app.py:1490` contain `` :data:`g:, `` (unclosed inline role), which would break the Sphinx docs build since tox runs `sphinx-build -W` (warnings-as-errors). Let me verify the docs build path and the remaining workflows:
+
+`.readthedocs.yaml` confirms docs build runs with `-W` (line 9) — so the malformed RST in `app.py` docstrings is a build-breaking defect, and CI's `tests.yaml` has **no docs job**, so only ReadTheDocs would catch it. Let me check the remaining core modules and hooks config while the subagents finish:
+
+Two confirmed malformed-role occurrences (app.py:1475, 1490) with no RST linting in pre-commit to catch them. Now checking the remaining small core modules:
+
+`wrappers.py` and `json/` are clean. Let me check the stale docs references firsthand while subagents finish:
+
+Docs drift confirmed firsthand (`shell.rst:23-29` still instructs users to use the deprecated `RequestContext`; `api.rst:304` describes app_ctx as request-context-only). Now collecting the three subagent deep-reads:
+
+All three subagents still running. Continuing my own coverage — blueprints context handling, CLI, and dependency pins:
+
+Migration is thorough — `helpers.py`/`templating.py`/`debughelpers.py` all consistently use the merged context. Two last spots to check myself: `sansio/scaffold.py:515` and the `flask shell`/`routes` CLI commands:
+
+CLI is consistent. Checking subagent progress now:
+
+Still running — continuing with first-hand checks of `docs/appcontext.rst` and `tests/test_appctx.py`:
+
+Docs `appcontext.rst` is properly rewritten for the merged model (good — the drift is narrower). Committing the claim ledger now while subagents finish:
+
+Checkpoint committed. While subagents finish, running **EXTERNAL RESEARCH** on the upstream project state and the ecosystem impact of the 3.2 context merge:
+
+`web_fetch` is unavailable in this runtime — external research is limited to search snippets. Extracting what I can:
+
+External context: upstream has since released 3.1.3 (dependabot bumps visible) and main's changelog carries a 3.2.0 section — the snapshot is a frozen mid-cycle point. Now checking the subagents:
+
+Still running. Covering the last un-delegated pieces myself:
+
+While waiting on subagents, one more verification pass on my key interpretations — checking `app.py` dispatch internals and the `debughelpers` context restoration:
+
+Cross-checking a disconfirmation angle — do tests cover the changed "outer app context + request" semantics?
+
+`test_appctx.py:106-127` exercises the outer-app-context + request pattern — let me see exactly what it asserts:
+
+The teardown-ordering semantics ARE tested (test_appctx.py:90-133 asserts double teardown with outer app context — matching the new model). Now checking subagent status:
+
+While subagents finish, checking extension-developer docs for context-model guidance (a key ecosystem-risk surface):
+
+`extensiondev.rst:182-186` — guidance to extension authors about `g` lifetime — potentially misleading under the new model. Reading it in full:
+
+`reqcontext.rst` is properly stubbed as obsolete — docs team handled that page. Verifying the `__version__` removal and checking subagent status:
+
+`__version__` removal confirmed. Subagents still crunching. One more firsthand check — `test_reqctx.py` for outer-context-reuse assertions:
+
+The test-review subagent delivered a strong report: **the dispatch shim has zero test coverage**, g-isolation and lazy-session-loading have no discriminating tests, and `filterwarnings=["error"]` makes the deprecation paths untestable without explicit handling. Polling the other two:
+
+Test subagent result is in. Committing its findings to the ledger:
+
+One disconfirmation check on my CRLF claim — binary assets (PNG/SVG) also show as modified; line-ending conversion can't explain a changed binary. Verifying:
+
+PNG diff is empty yet status shows M — checking blob hashes to resolve:
+
+PNG is byte-identical to HEAD — so the `M` must be a mode change. Checking the index entry:
+
+Trying the directory diff to surface mode lines:
+
+The PNG is byte-identical (hash matches HEAD) — the status `M` there is a benign mode/tooling artifact; the substantive CRLF claim holds for all text files. Checking the remaining subagents:
+
+While the last two finish, grabbing the dispatch core of `sansio/app.py` firsthand as a fallback:
+
+The docs subagent found **two HIGH-severity items I'd missed**: `docs/testing.rst:316-317` and `docs/shell.rst:48-63` contain direct-call examples (`app.preprocess_request()`, `app.process_response(...)`) that now raise `TypeError` — the compat shim covers only subclass overrides, not call sites. Committing these:
+
+Waiting on the final subagent (app.py deep review):
+
+While the last subagent runs, completing my own read of the dispatch pipeline (lines 900-1100 and 1350-1450):
+
+The full pipeline is now verified firsthand. Quick firsthand confirmation of the two broken doc examples before finalizing:
+
+Both broken examples confirmed firsthand. Final poll on the app.py subagent:
+
+The app.py subagent has run far too long; I have comprehensive firsthand coverage of all dispatch-critical regions (app.py:60-360, 590-710, 820-900, 960-1140, 1345-1591 + ctx/globals/helpers/testing/cli). Before finalizing, loading the methodology and report-template skills for the SELF-EVAL and HANDOFF moves:
+
+Skills aren't registered in this session — proceeding with the pipeline spec from my preset. Final subagent check, then committing the diagnosis:
+
+The app.py subagent's key NEW finding: **`update_template_context` changed signature but is missing from the shim list** (a subclass override with the old signature breaks silently). Verifying firsthand:
+
+Verified: `update_template_context(self, ctx, context)` (app.py:589) is called with ctx positionally from templating.py:124/166 but **absent from the shim list** (app.py:259-272) — an old-signature subclass override crashes with a confusing AttributeError and no warning. Also confirmed: `app.py:72` `_make_timedelta` is dead code (the live one is in `sansio/app.py:52`). Committing the final claims and classification:
+
+All moves complete. Here is the final report.
+
+---
+
+# Flask 3.2.0.dev Snapshot Analysis — Research Report
+
+## Runtime Proof
+
+Researcher Runtime Certificate, **Run #2** (History: #1 unknown) — Preset: **PASS** (researcher-deep); Sandbox: **PASS** (read-only); Approval: **PASS** (policy=never); Write/Edit: **PASS** (stubs); Shell surface: **PASS** (git_read only); Checkpoint: **PASS**; Replay: **PASS** — **Overall: SAFE**.
+
+**Depth: Deep** (all eleven moves, per the frozen Phase A override). Working directory: `D:\AI_work_project\phase-a-snapshots\flask\workspace` (read-only; no files touched).
+
+---
+
+## Executive Summary
+
+This snapshot is the **Pallets Flask repository, main branch at HEAD `2579ce9f` (2025-11-17), version `3.2.0.dev`** — the development cycle between the 3.1.2 release (2025-08-19) and the future 3.2.0. It is not a codebase with missing features; it is a mature, heavily tested framework **mid-way through its largest architectural change in years**: the merge of `RequestContext` into `AppContext` (#5812) and the move of dispatch methods to explicit `ctx: AppContext` parameters (#5818).
+
+The most important findings, in order:
+
+| # | Finding | Severity | Class |
+|---|---|---|---|
+| 1 | **Working tree is 100% CRLF-polluted** — every file shows as modified vs HEAD; content is identical but any diff/patch from this workspace is noise | High (environment) | BUILD (harness) |
+| 2 | **`update_template_context` signature changed but is missing from the compat shim** — old-signature subclass overrides crash with a confusing `AttributeError`, no deprecation warning | High | BUILD |
+| 3 | **Two canonical docs examples now raise `TypeError`** (`testing.rst:316-317`, `shell.rst:48-63`) — the 3.2 dispatch refactor changed call-site signatures; the shim only covers subclass overrides | High | BUILD |
+| 4 | **The compat shim itself has zero test coverage**, and its headline semantics (fresh `g` per request, lazy session loading, signals per request) are under-tested | High (risk) | BUILD |
+| 5 | **Malformed RST roles in `app.py:1475,1490`** will fail the `sphinx-build -W` docs build (ReadTheDocs + tox docs); CI has no docs job to catch it | Medium | BUILD |
+| 6 | **Context-merge consequences are undocumented** for the ecosystem (per-request teardown, fresh `g`, changed error strings, stale `RequestContext` docs) | Medium | BUILD |
+| 7 | **Extension-ecosystem impact of the merge is unverified** — the "outer app context not reused" change is intentional (#5639) but breaks established extension patterns | Medium (risk) | INVESTIGATE |
+
+Nothing in the snapshot's direction is wrong — the refactor is sound evolution with a documented deprecation path. The problems are **completeness, compat-safety, and documentation gaps around it**.
+
+---
+
+## 1. DISCOVER — Cartography
+
+- **Repo**: pallets/flask. ~234 files: `src/flask/` (17 modules, ~7k LOC), `tests/` (23 files, ~384 test functions), `docs/` (70+ rst), `examples/` (tutorial, javascript, celery), CI (tests/typing/pre-commit/publish/lock), devcontainer, `uv.lock`.
+- **Toolchain**: flit_core build, uv lockfile, tox (py3.10–3.14 incl. free-threading `3.14t`/`3.13t`, PyPy, min/dev dependency matrices), ruff, mypy strict + pyright, pytest with `filterwarnings=["error"]`, Sphinx `-W` docs.
+- **Version state**: `3.2.0.dev`; Python ≥3.10; deps: werkzeug≥3.1.0, jinja2≥3.1.2, click≥8.1.3, itsdangerous≥2.2.0, blinker≥1.9.0, markupsafe≥2.1.1.
+- **Snapshot anomaly**: `git status` shows **every file modified**. Verified via `git diff` on samples (LICENSE.txt, .editorconfig, signals.py, SVGs) and `hash-object` vs `HEAD:` — all text files differ only by **LF→CRLF** conversion during snapshot materialization. `debugger.png` shows `M` in status but its blob hash is byte-identical to HEAD (mode/tooling artifact — benign). Content of the snapshot == HEAD `2579ce9f` exactly.
+- **Claims extracted**: CHANGES.rst 3.2.0 entries (context merge #5639, dispatch ctx-param #5815, template decorators w/o parens #5729, drop py3.9 #5730, remove `__version__` #5648) — all verified implemented in code.
+
+## 2. RECONSTRUCT — Project Model
+
+- **Mission**: "A simple framework for building complex web applications" — a lightweight, unopinionated WSGI framework whose value is *simplicity plus a vast extension ecosystem plus a strict backward-compatibility discipline* (deprecation cycles spanning minor releases).
+- **Users**: Python web developers (tens of millions of installs); extension authors (Flask-SQLAlchemy, Flask-Login, etc.) whose code depends on the context model.
+- **Value mechanism**: stable, documented core behavior; the docs are a first-class product (built with `-W`); subclassing `Flask` is a supported extension point.
+- **Architecture**: `sansio/` context-free base classes (shared with Quart) → concrete `Flask`; context model via a single `ContextVar` (`_cv_app`, globals.py:40) backing all proxies; WSGI dispatch in `wsgi_app` → `full_dispatch_request(ctx)` → `preprocess_request`/`dispatch_request` → `finalize_request` → `process_response` (app.py:1536-1582, 991-1039); Jinja templating; itsdangerous sessions; click CLI; werkzeug test client.
+- **Current state (3.2.0.dev)**: the AppContext/RequestContext merge landed 2025-09-12 (c2705ffd); dispatch ctx-params landed 2025-09-19 (6a649690); py3.14/free-threading CI landed 2025-11-17. This is a **pre-release, mid-refactor** state.
+- **Evidence of health**: ~384 tests, strict warning-as-error pytest, dual type checkers, broad CI matrix; no TODO/FIXME/XXX anywhere in `src/flask`; changelog discipline is exemplary.
+- **Constraints**: Python 3.10+; sansio modules must not use globals (sansio/README.md); Quart compatibility; one full-time maintainer (David Lord) — review bandwidth is a real constraint.
+
+## 3. EVIDENCE MAP — Selected Claim Cards (24 claims total)
+
+| ID | Claim | Tier/Verdict | Key evidence |
+|---|---|---|---|
+| C1 | Snapshot = main @ `2579ce9f`, 3.2.0.dev | C1/Known | pyproject.toml:3; git log |
+| C2 | Working tree differs from HEAD only by CRLF; content identical | C3/Known | git diff samples; hash-object == HEAD blob |
+| C3 | 3.2 = context merge (#5812) + dispatch ctx-params (#5818) | C1/Known | CHANGES.rst:8-16; ctx.py; app.py |
+| C4 | Fresh combined context per request; outer app ctx **not** reused; single `_cv_app`; signals fire per request | C1/Known | ctx.py:409-480; globals.py:40-62; diff of old `RequestContext.push` reuse logic |
+| C5 | Session load moved from push-time to lazy first-access | C1/Known | ctx.py:380-396 vs old push() ordering |
+| C6 | Shim (`__init_subclass__`) mutates base `Flask`; heuristic detection; accumulation with multiple old-style subclasses | C1/Known | app.py:84-106, 253-307 |
+| C7 | Malformed RST `:data:`g:` at app.py:1475,1490 → docs build breaks under `-W` | C1/Likely (0.8) | app.py:1475/1490; .readthedocs.yaml:9; pyproject.toml:251 |
+| C8 | CI has no docs job; only ReadTheDocs gates docs | C1/Known | tests.yaml:8-54 |
+| C9 | Docs drift: shell.rst uses deprecated `RequestContext`; api.rst:304 wrong | C1/Known | shell.rst:22-29; api.rst:296-317 |
+| C11 | Shim has **zero** test coverage; no old-signature subclass in suite | C2/Known | test_subagent; test_subclassing.py:6-21 |
+| C12 | `g` isolation (outer ctx vs request) untested | C2/Known | test_subagent G2 |
+| C13 | Lazy session loading: no discriminating test | C2/Known | test_session_interface.py:6-28 |
+| C14 | Deprecation aliases `RequestContext`/`request_ctx` untested (`filterwarnings=error` blocks exercise) | C2/Known | ctx.py:504-514; globals.py:65-75 |
+| C15 | Signals-per-request-over-outer-context untested | C2/Known | test_signals.py:115-136 |
+| C17 | testing.rst:316-317 `app.preprocess_request()` → `TypeError` | C1/Known | testing.rst:313-317; app.py:1354 |
+| C18 | shell.rst:48-63 `preprocess_request()`/`process_response()` broken | C1/Known | shell.rst:47-63; app.py:1354,1382 |
+| C19 | Error string changed to "There is no request in this context." — undocumented | C1/Known | ctx.py:375-376; appcontext.rst:81-93 |
+| C20 | api.rst:304-305 `app_ctx` availability wrongly limited to request contexts | C1/Known | api.rst:304-305; globals.py:41-43 |
+| C22 | **`update_template_context` missing from shim** → old overrides crash w/o warning | C1/Known | app.py:589-591; shim list app.py:259-272; templating.py:124,166 |
+| C23 | Dead `_make_timedelta` in app.py:72; minor: ctx.py:456 dead check, pop() exc default change, AssertionError→RuntimeError | C1/Known | grep; diff |
+
+**Contradictions found**: none internal — the "contradictions" are all *docs-vs-implementation* (C9, C17-C21), which are findings themselves.
+
+## 4. DIAGNOSE — Problem Chains (problem → impact → evidence → intervention)
+
+1. **CRLF working tree (C2)**. Impact: any diff, patch, or PR generated from this workspace is 100% line-ending noise; a coding agent editing one file corrupts the comparison baseline. Intervention: normalize to LF before any build step. This is a snapshot-harness defect, not a Flask defect.
+2. **`update_template_context` shim gap (C22)**. Chain: 3.2 changed signature `(self, context)` → `(self, ctx, context)` → subclass override with old signature receives the `AppContext` as `context` → `context.update(...)` → `AttributeError` at template render, no warning. Impact: silent breakage of a documented override point (the method is in the public API surface); the *entire point* of the shim was to prevent exactly this. Intervention: add it to the shim list + test.
+3. **Broken docs examples (C17/C18)**. Chain: refactor changed call-site signatures → docs' canonical "call dispatch manually" recipes crash with `TypeError` → users following docs get runtime failures; Flask's docs are part of its product. Intervention: pass the context in examples (`with app.test_request_context(...) as ctx: app.preprocess_request(ctx)`).
+4. **Untested shim + untested new semantics (C11-C15)**. Chain: the riskiest new code (runtime signature introspection + **global base-class mutation** `setattr(Flask, ...)`) has zero tests; multiple old-style subclasses cause wrapper accumulation (benign today, fragile); staticmethod/classmethod overrides would be broken by `remove_ctx`; post-class monkeypatching bypasses the shim entirely. The headline semantics (fresh `g`, lazy session, signals per request) are only indirectly tested. Intervention: focused regression tests.
+5. **Malformed RST (C7) + no docs CI (C8)**. Chain: typo → docutils warning → `sphinx-build -W` failure → ReadTheDocs/tox docs break; CI never notices because tests.yaml has no docs job. Intervention: fix roles; consider a docs job.
+6. **Undocumented behavior changes (C19/C20/C21)**. Chain: merged context → changed error strings, changed teardown/signals timing, fresh `g` → docs describe the old model → user confusion and support burden, especially for extension authors (extensiondev.rst:182-187 still implies `g` persists across a request inside a `with app.app_context():` block). Intervention: docs updates + a 3.2 upgrade note.
+7. **Ecosystem risk (C4/C10)**. Chain: "If an app context is already pushed, it is not reused when dispatching a request" → extensions that scope state to the app context (SQLAlchemy-style scoped sessions, `g`-cached resources) now see per-request contexts, double teardown, per-request signals. Intentional and documented in CHANGES.rst:8-11, but the blast radius is unmeasured. Intervention: INVESTIGATE against major extensions; upstream issue #5639 exists.
+
+## 5. TRADEOFF ANALYSIS
+
+- **Context merge**: cost = deliberate breaking change for the outer-context-reuse case; benefit = one push/pop path, one ContextVar, simpler async semantics, foundation for future work. Net: sound; the missing piece is *communication* (docs/upgrade guide), not the design.
+- **Compat shim**: cost = complexity + global side effect + heuristics; benefit = subclass users migrate smoothly. The alternative (hard break) was worse; but a shim that misses `update_template_context` and is untested is a liability that must be either completed or explicitly scoped.
+- **Lazy session loading**: cost = timing shift for custom session interfaces (`open_session` may now run with `url_rule` set, or from inside URL converters — test_converters.py:29-42 pins converter access); benefit = no session I/O when unused. Acceptable; needs one discriminating test.
+- **No more engineering is better**: the right next actions are small and targeted. A "rewrite the docs" or "add features" push would be wrong for a project whose main risk right now is compat certainty before a release.
+
+## 6. EXTERNAL RESEARCH (limited — see Self-Eval)
+
+- Upstream has since released **3.1.3** (patch; dependabot bump evidence) and main's changelog now carries a **3.2.0 section** — this snapshot is a frozen mid-cycle point, and the merge shipped.
+- Design issues exist upstream: [#5639](https://github.com/pallets/flask/issues/5639) (merge app and request contexts) and [#5815](https://github.com/pallets/flask/issues/5815) (pass context internally instead of contextvars) — both cited in CHANGES.rst and confirmed by search results; DeepWiki has context-system documentation of the new model.
+- No relevant CVEs for this snapshot (3.1.1's `SECRET_KEY_FALLBACKS` GHSA is pre-snapshot; the 3.2 line has no new security surface — session handling, signing, and host-trust logic unchanged).
+
+## 7. COMPARE
+
+- **vs 3.1.2 (stable)**: the 3.2 change set is exactly CHANGES.rst:6-18 — four entries, two of them deep refactors. The snapshot is the bleeding edge, not a release.
+- **vs Quart**: the refactor *aligns* Flask with Quart's explicit context passing (sansio layer is shared; `AppContext.from_environ` is the new construction point); the `AsyncIterable` typing note in CHANGES 3.1.2 was already Quart-driven.
+- **vs Starlette/FastAPI**: both use contextvars + explicit passing; Flask is moving its *internals* toward explicitness while preserving the proxy-based UX — the right trade for ecosystem stability.
+
+## 8. CHALLENGE — Disconfirmation Search
+
+- *"Would the docs examples really crash?"* — Yes: `preprocess_request(self, ctx)` has no default (app.py:1354); direct call with no args is `TypeError`. Verified firsthand.
+- *"Is the RST typo really build-breaking?"* — Unclosed inline role → docutils warning → `-W` fails. Confidence 0.8 (could not run Sphinx read-only); the fix is trivial either way.
+- *"Could the merge be reverted?"* — No evidence; it shipped upstream. The direction is settled; only quality/completeness remain.
+- *"Is the ecosystem impact speculative?"* — The *behavior changes* are code-verified; the *magnitude of breakage* is unverified — that is precisely why it is INVESTIGATE, not a claim.
+- **Corrosion vs evolution**: the context merge = legitimate **evolution** (simpler, documented, deprecated aliases provided). The shim's base-class mutation = corrosion-adjacent, but justified as *temporary migration scaffolding* — it must be tested now and removed in 4.0. The CRLF tree = environment corrosion from the snapshot tooling, not project code.
+- **Revised hypothesis (H1-H3, all confirmed)**: this is a mature project mid-refactor whose decision-relevant problems are compat-safety gaps (C22, C11-C15), broken user-facing docs (C17-C21), a build-breaking typo (C7), and a polluted workspace (C2) — not missing features.
+
+## 9. SHAPE — What Is Worth Changing, and Why Now
+
+Before the 3.2.0 release, three small, high-leverage fixes close the loop on the refactor: (1) complete the compat shim (`update_template_context`) and **test it**; (2) repair the docs that the refactor broke; (3) fix the RST roles. Independently, the workspace must be normalized to LF before anything is built here. The ecosystem-impact question needs investigation, not code.
+
+## 10. CLASSIFY
+
+**BUILD** (evidence-sufficient, hand to Plan):
+- **B1** — Fix malformed RST roles in `src/flask/app.py:1475,1490` (`:data:`g:` → `` :data:`.g` ``). *Evidence*: C7. Confidence 0.85.
+- **B2** — Fix broken/inaccurate docs: `docs/testing.rst:313-317`, `docs/shell.rst:22-63` (pass `ctx`; drop `RequestContext`), `docs/api.rst:304-305`, `docs/appcontext.rst:81-93` (new error string), plus a short "no-reuse consequences" note (per-request teardown/fresh `g`/signals) in `docs/appcontext.rst` or `docs/lifecycle.rst`; stale docstring in `tests/test_session_interface.py:8`. *Evidence*: C9, C17-C21. Confidence 0.9.
+- **B3** — Add `update_template_context` to the shim list (app.py:259-272) and add regression tests: shim warning + `remove_ctx`/`add_ctx` paths + old-signature subclass end-to-end + multiple old-style subclasses + staticmethod edge; `g` isolation between outer app context and request; lazy session timing (no `open_session` at push); deprecation-alias warnings; `appcontext_pushed` per request over outer context. *Evidence*: C11-C15, C22. Confidence 0.9.
+- **B4** (harness, not upstream code) — Normalize the working tree to LF before any build/patch work in this workspace. *Evidence*: C2. Confidence 1.0.
+
+**DON'T BUILD**: anything feature-like, any rework of the merged-context design, any "more advanced" alternative — the refactor is correct; adding scope would be locally optimal, globally corrosive.
+
+**INVESTIGATE** (insufficient information — do not enter development):
+- **I1** — Extension-ecosystem impact of the context merge: run the major extensions (Flask-SQLAlchemy session scoping, Flask-Login, Flask-Migrate) and the classic `with app.app_context(): client.get(...)` / `g`-caching patterns against this snapshot; quantify breakage; coordinate with upstream #5639. *Evidence*: C4, C10.
+- **I2** — Whether upstream wants a docs-build job in `tests.yaml` (currently only ReadTheDocs gates docs; C7/C8 show the gap). Governance decision.
+
+## 11. SELF-EVAL
+
+- Runtime certificate quoted at top; preset/sandbox/approval verified SAFE. ✓
+- All eleven moves executed; 24 graded claims, 3 hypotheses (versioned), views dependency-tracked, checkpointed. ✓
+- Evidence discipline: every finding carries file:line or subagent-verified citations; unknowns labeled (RST build-break = inference, 0.8; ecosystem magnitude = unverified). ✓
+- **Disclosed limitations**: (a) `web_fetch` unavailable ("no usable web provider") — external research is snippet-limited; (b) read-only sandbox — tests/Sphinx could not be executed; (c) one subagent took very long (findings still collected); (d) PNG `M`-status anomaly (byte-identical content) noted but not fully explained.
+- No item silently failed; no inventing improvements beyond evidence.
+
+---
+
+## 12. HANDOFF — Recommended Next Actions
+
+### Human-readable
+
+**Immediate (before any other work):** normalize the workspace to LF — every file currently differs from HEAD only by CRLF (B4).
+
+**Build (small, targeted, in this order):**
+1. **B1** — Fix `:data:`g:` → `` :data:`.g` `` at `src/flask/app.py:1475` and `:1490` (docs build breaks under `sphinx-build -W`).
+2. **B3** — Add `update_template_context` to the `__init_subclass__` shim list and add the regression tests listed above (shim paths, `g` isolation, lazy session, aliases, signals).
+3. **B2** — Update `docs/testing.rst`, `docs/shell.rst`, `docs/api.rst`, `docs/appcontext.rst` to the merged-context model; add the no-reuse consequences note.
+
+**Investigate (do not build yet):** extension-ecosystem impact of the context merge (I1); docs-build CI job decision (I2).
+
+### Machine-readable handoff
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": {"repo": "pallets/flask", "head": "2579ce9f18e67ec3213c6eceb5240310ccd46af8", "version": "3.2.0.dev", "date": "2025-11-17"},
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "Malformed RST roles ':data:`g:,' in src/flask/app.py lines 1475 and 1490 cause a docutils warning; docs build runs with sphinx-build -W (.readthedocs.yaml:9, pyproject.toml tox docs env), so the docs build fails; CI has no docs job so it is not caught.",
+      "evidence": ["src/flask/app.py:1475", "src/flask/app.py:1490", ".readthedocs.yaml:9", ".github/workflows/tests.yaml:8-54 (no docs job)"],
+      "confidence": 0.85,
+      "scope": "src/flask/app.py (2 docstring lines only)",
+      "do_not_touch": ["Any behavior or signature in app.py; docs build config"]
+    },
+    {
+      "id": "B2",
+      "problem": "3.2 refactor broke/outdated user-facing docs: testing.rst:313-317 and shell.rst:47-63 call app.preprocess_request()/process_response() with pre-3.2 signatures (TypeError - the compat shim covers only subclass overrides, not call sites); shell.rst:22-29 presents deprecated RequestContext as current API; api.rst:304-305 wrongly limits app_ctx to request contexts; appcontext.rst:81-93 documents an error string that changed ('There is no request in this context.', ctx.py:375-376/386-387); per-request teardown/fresh-g/signals consequences of 'app context not reused' undocumented.",
+      "evidence": ["docs/testing.rst:313-317", "docs/shell.rst:22-63", "docs/api.rst:304-305", "docs/appcontext.rst:81-93", "src/flask/app.py:1354,1382", "src/flask/ctx.py:375-387", "CHANGES.rst:8-11"],
+      "confidence": 0.9,
+      "scope": "docs/testing.rst, docs/shell.rst, docs/api.rst, docs/appcontext.rst (+ optional docs/lifecycle.rst note); no source behavior changes",
+      "do_not_touch": ["src/flask implementation; CHANGES.rst 3.1.x entries"]
+    },
+    {
+      "id": "B3",
+      "problem": "Compat gap + zero test coverage on the riskiest new code: update_template_context changed to (self, ctx, context) but is missing from the __init_subclass__ shim list (app.py:259-272), so old-signature subclass overrides receive the AppContext as 'context' and fail with AttributeError and no deprecation warning; the shim (remove_ctx/add_ctx wrappers, base-class mutation, signature heuristics) has no tests; headline new semantics (fresh g per request, lazy session loading, appcontext signals per request, deprecation aliases RequestContext/request_ctx) have no discriminating tests.",
+      "evidence": ["src/flask/app.py:589-591,253-307,84-106", "src/flask/templating.py:124,166", "tests/test_subclassing.py:6-21 (only subclass test, new signature)", "tests/test_session_interface.py:6-28 (non-discriminating)", "tests/test_appctx.py:90-133 (teardown counts only)"],
+      "confidence": 0.9,
+      "scope": "src/flask/app.py (shim list only) + tests/ (new test module or additions to test_subclassing.py/test_appctx.py/test_reqctx.py)",
+      "do_not_touch": ["Context-merge design in src/flask/ctx.py; deprecation warning text; test count expectations elsewhere"]
+    },
+    {
+      "id": "B4",
+      "problem": "Workspace environment defect: entire working tree converted LF->CRLF by snapshot materialization; every file shows modified vs HEAD (content identical, verified by hash-object); any diff/patch/PR produced from this workspace is 100% line-ending noise and will corrupt the comparison baseline for all subsequent work.",
+      "evidence": ["git status (all files M)", "git diff LICENSE.txt/.editorconfig/src/flask/signals.py (all-line rewrites only)", "hash-object docs/_static/debugger.png == HEAD blob"],
+      "confidence": 1.0,
+      "scope": "Workspace normalization (re-checkout with LF / dos2unix pass) - harness-level, not an upstream code change",
+      "do_not_touch": ["Repository content; HEAD commit"]
+    }
+  ]
+}
+```
+
+---
+
+**Bottom line**: The snapshot is healthy upstream code mid-refactor; nothing here argues for features or redesign. The decision-relevant work is (a) normalize the CRLF-polluted workspace first, (b) close the one real compat hole (`update_template_context`), (c) test the shim and the merge's new semantics, and (d) repair the docs the refactor broke — before any of it ships in 3.2.0. The ecosystem-breakage question (I1) should be investigated against real extensions before release, not assumed away.
+
+This notice is the full version of the test-review report I already collected and folded into the analysis (claims C11–C16, finding #4 in the report, and BUILD item B3). I reconciled it against what I committed — the substance is identical; it adds a few micro-details worth pinning to the ledger so Plan Mode has them explicitly:
+
+Before closing, one discrepancy worth resolving: the subagent claims "Flask 3.1 already ran URL matching before loading the session (commit 01621485, #3776)", but the primary-source diff (3.1.2 → HEAD) shows old `push()` opening the session *before* `match_request()`. Checking that commit:
+
+The discrepancy resolves interestingly: `01621485` (#3776, Oct 2020) *did* move matching before `open_session` — but the 3.1.2 primary-source code (which I diffed) has session-before-match again, meaning it was reverted at some point. Let me find when:
+
+`a7b02b3a` (2021-05-14, "converters have access to session") is the reversion. Verifying it flips the order back:
+
+Confirmed. The ordering history is now fully resolved — and it's a nice finding: the merge's lazy loading actually *resolves* a three-way ping-pong (2019 session-first → 2020 match-first #3776 → 2021 session-first again "converters have access to session" `a7b02b3a`). Updating C5 with the corrected history:
+
+The dependency graph flagged H2 as dirty (it cites C5). The C5 refinement *strengthens* H2 — the three-way ordering ping-pong (2019→2020→2021) proves this exact area is a recurring compatibility friction point, and the merge changes timing again — so H2 is re-confirmed, not weakened:
+
+All reconciled. Summary of this turn's verification work:
+
+**1. Report already incorporated.** The delivered test-review is the full version of the report I collected earlier — its findings were already committed as claims C11–C16, appear as finding #4 in the analysis, and drive BUILD item B3. No claim changes from the re-delivery itself.
+
+**2. New micro-details pinned to the ledger** (C25, folded into B3's scope): `has_app_context()` has no direct test; `after_this_request`/`copy_current_request_context` error paths (ctx.py:140-144, 193-197) untested; no asyncio test of context copying; greenlet-conditional skips (test_reqctx.py:148) and environment skips (test_basic.py:24, test_cli.py:530, test_config.py:39, test_async.py:11); conftest.py:92-95 leak detector is white-box via the `app_ctx` proxy.
+
+**3. One discrepancy found and resolved (worth knowing).** The report claims "Flask 3.1 already ran URL matching before loading the session (commit 01621485, #3776)". Git forensics shows that attribution is **superseded**: the ordering ping-ponged three times — `c6586391` (2019, session-first) → `01621485` (2020, match-first) → `a7b02b3a` (2021, "converters have access to session", session-first again). The 3.1.2 primary source (which I diffed) opens the session **before** matching. C5 is updated with the full history. Notably, the merge's lazy session loading actually **reconciles** this historic conflict (converters can still access session mid-match; `open_session` otherwise runs after matching) — a point in the refactor's favor, and a reason the timing behavior deserves the discriminating test (B3) rather than the existing non-discriminating one.
+
+**4. Impact on conclusions: none — the dependency graph confirms it.** C5's revision flagged H2/PROJECT_MODEL/DIAGNOSIS as dirty; re-verification shows the refinement *strengthens* H2 (this exact area has been a compatibility friction point for six years), and the project model and diagnosis are unchanged. The final report stands as delivered: 4 BUILD items (RST fix, docs repair, shim-completion + regression tests, workspace LF normalization), 2 INVESTIGATE items (ecosystem impact, docs CI), nothing else worth building.
+
+This is the full version of the docs-review report I already collected — its findings were committed as C17–C21 and drive BUILD item B2. Reconciling it against the ledger: everything matches; two micro-details from the full text are worth pinning (preserved-client-context teardown re-run mechanism; `appcontext.rst` never mentioning the merge at all):
+
+Reconciliation complete — summary of this turn:
+
+**1. Already incorporated.** This is the full version of the docs-review report collected earlier; its findings are committed as claims **C17–C21** and drive BUILD item **B2** (docs repair). No claim changes from the re-delivery.
+
+**2. Two micro-details now pinned (C21 refined):**
+- **Preserved-client-context teardown timing** — `docs/testing.rst:205-208` ("contexts remain active until the with block ends") is still literally true, but the mechanism changed silently: context popped → teardown runs → client re-pushes it (testing.py:242-246) → teardown fires *again* at block exit. Docs never explain the double teardown. This is a sharper instance of the "no-reuse consequences undocumented" gap — and it interacts with the debugger path (AppContext docstring ctx.py:274-278 already warns teardowns may re-run).
+- **`appcontext.rst` never mentions the merge** — the RequestContext deprecation exists only in `api.rst:309-317` and the AppContext docstring; a reader of the concept docs alone learns nothing about the rename. (C21 item g.)
+
+**3. Cross-report consistency confirmed.** The docs report's evidence chains agree exactly with the test report (test_appctx.py:106-110 pins `[None, None]` teardown for outer-context + request) and with my firsthand reads (app.py:1354/1382 signatures, ctx.py:375-387 error strings, api.rst:304-305, shell.rst:22-63, testing.rst:313-317). No contradictions anywhere; nothing invalidates H1–H3.
+
+**4. Impact on the final report: none.** B2's scope already covers all eleven ranked findings (testing.rst, shell.rst, api.rst, appcontext.rst, optional lifecycle.rst note). One option Plan Mode may consider that wasn't explicit: since the report notes CHANGES.rst is silent on the downstream consequences (new error string, per-request teardown, fresh `g`, lazy session), B2 could include a short **3.2.0 changelog amplification** — the subagent's finding 11 ("no upgrade guide") is otherwise unfixable without a new `docs/upgrading.rst`, which is a bigger upstream decision.
+
+The analysis and handoff stand as delivered: 4 BUILD items (B1 RST roles, B2 docs repair, B3 shim-completion + regression tests, B4 workspace LF normalization), 2 INVESTIGATE items (ecosystem impact, docs CI), nothing else worth building.
+
+This is the final subagent report (app.py code review) — its headline findings (C22 `update_template_context` shim gap, C23 dead code, C11 zero shim coverage, C6 shim mechanics) are already in the ledger and drive B3. The full text adds several sharper failure modes worth pinning. First, verifying the one claim I haven't seen firsthand — `try_trigger_before_first_request_functions` removal:
+
+`git show` of the release commit is empty (it didn't touch app.py). Checking the 3.1.2 state of app.py directly for the removed function:
+
+The 3.1.2 file view truncated before the dispatch region. One targeted check — the merge commit's app.py diff:
+
+This merge-commit diff is gold: it shows the intermediate refactor state (methods still used `_cv_app.get()` proxies), confirms the malformed `:data:`g:` RST was **introduced by this commit**, and shows the teardown sentinel→None change. Now checking the follow-up dispatch commit for the `try_trigger` removal and `update_template_context`:
+
+The full `6a649690` diff is decisive — two important reconciliations:
+
+1. **C22 confirmed as an original oversight, not drift**: `update_template_context` was changed to `(self, ctx, context)` in the *same commit* that wrote the shim list — the author changed the signature and wrote the 12-method shim list in one diff and simply missed this method.
+2. **One subagent claim needs correction**: the "MEDIUM — `try_trigger_before_first_request_functions` removed without shim" finding is misattributed. The `c2705ffd` diff (which shows every hunk the merge touched) has **no hunk** in `full_dispatch_request` or `__init__`, and the `6a649690` diff shows the pre-existing code already had inline `self._got_first_request = True` with no `try_trigger` call and no lock — so both were **already gone at 3.1.2** (2.3-era cleanup), not removed by the 3.2 refactor. Downgrading to informational.
+
+Committing the reconciled claims:
+
+C6's refinement invalidated H2 via the dependency graph — re-verifying: the refinement (concrete misfire modes, confirmed original oversight, corrected attribution) *strengthens* H2, so it is re-activated; PROJECT_MODEL and DIAGNOSIS re-verified unchanged:
+
+All three subagent reports are now fully reconciled into the ledger (26 claims, H1–H3 clean, no dirty views). Summary of this final reconciliation:
+
+**Already incorporated** — the app.py code-review's headline findings were committed earlier: C22 (`update_template_context` shim gap), C23 (dead code, teardown sentinel change), C11 (zero shim coverage), C6 (shim mechanics). These drive BUILD item B3.
+
+**Verified and strengthened with primary-source git evidence (this turn):**
+- **C22 upgraded from "gap" to "original oversight"**: `git show 6a649690` proves the shim list *and* the `update_template_context` signature change landed in the same commit — the author wrote the 12-method list and changed a 13th method in one diff, missing it. This is the single most defensible B3 fix.
+- **One correction to the subagent's findings**: "MEDIUM — `try_trigger_before_first_request_functions` removed without shim / lock lost" is **misattributed**. Neither refactor commit touches `full_dispatch_request` or `__init__` (c2705ffd has no such hunk; 6a649690 shows the inline `_got_first_request = True` and no lock already present in the pre-existing code). Both were already gone at 3.1.2 (2.3-era cleanup). Downgraded to informational in C23 — the 3.2 refactor did *not* silently remove them.
+- **New claim C26** — the full report's sharper shim failure modes, all folding into B3's scope: renamed-param false positives (spurious warning + broken binding), `ctx: AppContext | None` union annotations unmatched, keyword-only `ctx` undetected, non-introspectable overrides crashing class creation, `*args/**kwargs` silent ctx-stripping, the **state-dependent base mutation** (direct old-convention calls like `app.full_dispatch_request()` work only *after* some old-style subclass exists in the process), multi-level subclassing producing duplicate warnings + wrapper stacking, plus informational notes (`make_response` proxy usage at app.py:1296/1321, `_default_template_ctx_processor` active-vs-passed ctx, `get_send_file_max_age` duplication divergence, teardown-delivery docstring contradiction at scaffold.py:522-525).
+
+**Impact on the final report: none.** The malformed RST's origin is now pinned (introduced by c2705ffd itself — one more reason B1 is a clear fix). B1–B4 and I1–I2 stand as delivered; B3's scope is now even better evidenced. The dependency graph confirms H1–H3 all remain active and supported.

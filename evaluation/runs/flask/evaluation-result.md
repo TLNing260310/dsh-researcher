@@ -1,0 +1,49 @@
+# Phase A Evaluation Result — Flask (dsh-researcher v0.6.0)
+
+> **Preliminary, not statistically conclusive** (protocol §7). 1 repository × 4 modes × 3 runs. All artifacts, traces, and this report are preserved; nothing was deleted.
+
+## Environment
+
+- Repository: pallets/flask @ T0 `2579ce9f18e6` (2025-11-17, 3.2.0.dev), Rule A T0 selection (seed `dsh-researcher-v0.6-phase-a:flask`, draw 7/10)
+- Snapshot: `D:/AI_work_project/phase-a-snapshots/flask` — blind-doctor 6/6 PASS pre/post every run; canary clean on all 12 runs
+- Ground truth: v0.1, 5 items (GT-01 teardown chain abort / GT-02 automatic_options enable path / GT-03 should_ignore_error / GT-04 tutorial instance folder / GT-05 400-vs-415 docs drift), sha256 `e5b3825be560` locked pre-run
+- Model: deepseek-official/deepseek-v4-flash, reasoning max, budget cap 500000 (deviation D003: switched from v4-pro after quota exhaustion; all scored runs share one model)
+- Prompt (frozen): "Analyze this repository at the current snapshot. Identify the most important problems, risks, architectural concerns, and recommended next actions."
+- Run conditions: fresh headless session per run, cwd = workspace, sandbox read-only + approval never (uniform), seeded random order (`dsh-researcher-v0.6-phase-a:flask-runs`), eval presets per mode (D002), runtime certificate SAFE on all researcher runs
+- Timestamp: 2026-08-21; run log `evaluation/runs/flask/execution-log.jsonl`
+- Operational notes: (a) all three Plan runs could not complete the plan-approval flow (headless profile registers no user-questions provider; exit_plan_mode failed twice per run) and delivered their analysis directly while staying in plan mode — the Plan deliverable is the analysis text, not an approved plan; (b) the snapshot working tree is CRLF-converted (Windows checkout artifact) — all runs correctly identified the diff noise, two runs (quick-02, deep-03) additionally recommended normalizing the workspace as an action item (artifact-adjacent false alarm, disclosed by the runs); (c) web_fetch had no usable provider in the researcher runs, limiting external verification (disclosed per run as C0/Unknown); (d) 1 run (deep-02) used subagent delegation (fork) for parallel module audits — within the preset's designed toolset.
+- Exploratory (excluded from scoring): flask-standard-01/quick-03 (v4-pro) + deep-03 (QUOTA 402 failure) under `evaluation/runs/flask-pro/`
+
+## Results
+
+| Mode | Recall (mean) | Precision (mean) | Cost (k billed tok/run) | Duration (min/run) | Unsupported/10 findings |
+|---|---|---|---|---|---|
+| Standard | 0.00 (0/0/0) | 80% (80/70/89) | 305 (285/316/315) | 6.1 (3.6/9.6/5.2) | 0.0 |
+| Plan | 0.00 (0/0/0) | 76% (77/64/88) | 300 (333/243/323) | 5.7 (5.1/4.5/7.4) | 0.0 |
+| Quick | 0.00 (0/0/0) | 85% (86/86/83) | 248 (263/224/257) | 5.9 (6.3/5.5/5.9) | 0.0 |
+| Deep | 0.00 (0/0/0) | 81% (92/75/75) | 469 (534/517/356) | 11.7 (13.2/13.1/8.8) | 0.0 |
+
+**Recall = 0/5 for every mode and every run (0/60).** No mode identified any of the five ground-truth problems. All candidates were keyword false positives (verified per-run: `options` → jinja_options/make_default_options_response; `tutorial` → repo-structure text; `415` → finding-ID digits; `teardown` → lifecycle-semantics discussions of the 3.2 context merge, not the chain-abort defect).
+
+## Important cases
+
+1. **Researcher-unique findings (qualitative, not GT-lift)**: deep-02 additionally identified CVE-2026-27205 (Vary: Cookie session-read path, fix shipped in 3.1.3 after T0 — an actual latent security issue), MethodView 405-assert, Blueprint.register atomicity, add_url_rule orphan-rule, get_debug_flag truthiness, SESSION_COOKIE_PARTITIONED docs/code contradiction, pre-commit permissions; deep-03 identified the broken devcontainer (installs nonexistent requirements/dev.txt — verified); plan-01 identified the update_template_context shim gap (verified); standard-03 identified the request-cycle cleanup regression (3.1.2 cleared environ['werkzeug.request'], T0 does not — verified).
+2. **Plan-found but Researcher-missed (qualitative)**: plan-01/03's shim warning-cascade-down-hierarchies analysis and plan-02's preserve_context timing shift were not surfaced by standard runs; no GT items were found by anyone, so there is no GT-level Plan-vs-Researcher difference.
+3. **All modes failed**: GT-01 (teardown chain abort — 12/12 missed despite every run reading do_teardown_request/app.py deeply; standard-02 and quick-01 found ADJACENT defects in the same pop() region — request.close/reset skipped on raising teardown — but not the chain-abort), GT-03 (should_ignore_error — 0 candidates in any run), GT-04 (tutorial instance folder), GT-05 (docs 400/415 — the internal docs contradiction went unnoticed despite deep-02's extensive docs work).
+4. **Researcher misjudgments / false alarms**: all three quick runs and deep-03 surfaced the CRLF working-tree state; quick-02 and deep-03 additionally recommended normalizing the workspace as a BUILD action — the observation is correct (git diff = pure line-ending noise) but it is a harness/snapshot artifact, not a repository defect (quick-01 and quick-03 explicitly labeled it as such; quick-02/deep-03 treated it as an actionable item → false-alarm-adjacent). No run produced an unsupported significant claim in the scored set.
+
+## Recall / Precision / Lift / Cost — commentary
+
+- **Recall: 0.00 across the board.** The v0.1 GT set was compiled as "high-confidence, code-review-discoverable latent issues"; every mode instead converged on the snapshot's dominant reality — the 3.2 context-merge blast radius (shim, docs breakage, semantic changes) — which is real, but none of the five GT problems surfaced. Possible reasons: (a) the GT problems are in code paths the runs read but did not interrogate with the specific question (e.g., "what happens when a teardown raises?" — the docs contract 'callbacks must not fail' rationalizes the chain-abort); (b) the 400/415 docs contradiction sits in patterns/javascript.rst, outside the refactor's doc attention zone; (c) tutorial/instance-folder code is peripheral to a framework-core analysis.
+- **Precision: Standard 0.80 / Plan 0.76 / Quick 0.85 / Deep 0.81 (mean of per-run precision).** All four modes produced mostly evidence-backed claims (multi-run convergence on the shim/docs/semantics clusters, spot-verified against the snapshot). Quick and Deep were slightly more precise per scored finding; Plan slightly lower (more inferred behavioral claims marked partial).
+- **Researcher Lift: 0 GT-level lift** (nobody matched any GT). Qualitatively, Deep added verified unique findings Standard missed (CVE-2026-27205, devcontainer, MethodView/Blueprint/add_url_rule defects, SESSION_COOKIE_PARTITIONED contradiction) at ~1.5× billed tokens of Standard (mean 469k vs 305k) and ~1.9× duration (mean 11.7 min vs 6.1 min).
+- **Quick vs Deep: Quick's scored findings overlap Deep's core clusters; Deep adds security-ledger depth (CVE, Vary: Cookie, dependency CVEs), more verified unique defects, and a structured handoff ledger, at ~1.9× the tokens (quick mean 248k billed, deep 469k). Quick's per-finding precision was 0.85 vs Deep 0.81 — the additional depth did not improve precision.
+- **Cost-adjusted value** (supported significant findings per 1M billed tokens, mean): Standard 25.1/1M, Plan 26.7/1M, Quick 22.8/1M, Deep 24.9/1M. Useful findings per minute: Standard 1.25, Plan 1.41, Quick 0.96, Deep 1.00. Plan and Standard yield the most supported findings per token/minute; Deep's extra cost buys breadth (more unique verified findings), not precision.
+- **False Alarm Burden**: 0 unsupported significant findings per 10 scored findings for all modes (partials per 10: Standard 2.1, Plan 2.5, Quick 1.5, Deep 2.0 — mostly inference-class claims, honestly labeled by the runs). The CRLF-as-BUILD items (quick-02, deep-03) are the closest to false alarms, and both runs disclosed the artifact nature.
+- **Decision Change**: all modes would recommend release-blocking work on the compat shim and docs; none would have changed the development direction of the snapshot's own refactor (all judged the merge direction sound — DON'T BUILD on reverting it). On this snapshot, no mode's findings would redirect a maintainer's plan toward the GT problems.
+
+## Conclusion
+
+On this repository snapshot (Flask main @ 2025-11-17, v0.6.0 Phase A), the GT-level comparison is unambiguous: **Recall = 0/5 for every mode and every run (0/60), so Researcher Lift = 0**. No mode found any of the five pre-registered latent problems, despite all modes producing substantial, mostly-evidence-backed analyses of the snapshot's dominant reality (the 3.2 context-merge blast radius). The differences that do exist are: (a) precision per scored finding (Quick 0.85, Deep 0.81, Standard 0.80, Plan 0.76), (b) breadth of verified unique findings (Deep > Quick > Plan ≈ Standard) at proportionally higher cost (Deep: 469k billed tokens, 11.7 min/run vs Standard: 305k, 6.1 min), and (c) cost-adjusted yield, where Plan (26.7/1M tokens) and Quick (22.8/1M) beat Deep (24.9/1M).
+
+**Current evidence does not justify additional Researcher complexity for GT-level hidden-problem discovery on this snapshot**: with zero GT hits across 60 run-GT pairs, no mode demonstrates an advantage at finding the pre-registered latent issues, and Deep's extra depth/token cost buys breadth rather than GT recall or precision. Per protocol §7 this is **Preliminary, not statistically conclusive** — commander.js and cheerio cases are required before any directional claim; the GT set itself (v0.1, strict matched-only adjudication) may sit outside every mode's attention surface on this snapshot, and the operational notes (Plan approval channel unavailable headless; CRLF artifact pollution) constrain generalization.

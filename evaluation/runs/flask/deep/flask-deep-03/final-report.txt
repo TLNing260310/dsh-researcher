@@ -1,0 +1,164 @@
+All eleven moves complete. Here is the final report.
+
+---
+
+# Repository Analysis Report — pallets/flask @ 2579ce9f (2025-11-17, `3.2.0.dev`)
+
+## Runtime Proof
+
+Researcher Runtime Certificate: **Run #2 — Overall SAFE** (preset `researcher-deep` PASS; sandbox read-only PASS; approval policy `never` PASS; write/edit stubs refusing PASS; `git_read` the only code surface PASS; checkpoint + replay PASS). All findings below come from read-only inspection — nothing was executed, installed, or modified. Depth: **Deep (all eleven moves)** per the frozen Phase-A override (D002); no tests could be run (no shell), so all evidence tiers are static-analysis grades, stated per claim.
+
+---
+
+## 1. What this snapshot is (DISCOVER + RECONSTRUCT)
+
+**Identity.** This is the upstream **Pallets Flask repository at `main`**, HEAD `2579cef9` (2025-11-17), version **3.2.0.dev** (`pyproject.toml:3`). It is not a user application; it is the framework itself, mid-way through its largest internal refactor in a decade.
+
+**Critical environment finding first.** `git status` reports **all 234 tracked files as modified**, but sampled diffs (`.editorconfig`, `src/flask/__init__.py`, `src/flask/ctx.py`) show **pure LF→CRLF line-ending conversion, zero content change** — a snapshot/checkout artifact (no `.gitattributes` exists). Content of the working tree == HEAD. Consequences: this workspace is git-dirty by construction; the `uv-lock` pre-commit hook and any `git diff --exit-code` guard will fail; `.sh` scripts are CRLF-broken in Linux containers. **Upstream CI is unaffected** (Linux checkouts produce LF).
+
+**Project model.**
+- **Mission**: "A simple framework for building complex web applications" — a small-core, high-stability WSGI micro-framework; the dominant Python web framework, BSD-3.
+- **Users**: the Pallets maintainers, ~thousands of contributors, and a vast downstream ecosystem (applications, extensions such as flask-sqlalchemy, Quart via the shared sansio layer, tutorials, books).
+- **Value mechanism**: simplicity + a near-sacred backward-compatibility discipline (deprecate in minors, remove only in majors — see the 2.3.0/3.0.0 removal lists, `CHANGES.rst:114-210`) + docs quality + ecosystem.
+- **Architecture**: `src/flask/` with a sansio base layer (`sansio/app.py`, `sansio/blueprints.py`, `sansio/scaffold.py` — IO-free, shared with Quart), concrete `Flask` (`app.py`), and a **single context system**: one `ContextVar[AppContext]` (`globals.py:40`), one merged context class holding app + optional request + `g` + lazy session (`ctx.py`). Dispatch chain: `wsgi_app` → `request_context(environ)` → `push()` → `full_dispatch_request(ctx)` → preprocess/dispatch/finalize(ctx) → `pop()` (`app.py:1536-1591`).
+- **Current state**: `3.2.0.dev` with four unreleased changes (`CHANGES.rst:1-18`): drop Python 3.9; remove `__version__`; **merge `RequestContext` into `AppContext` (#5639/#5812)**; **dispatch methods take `ctx: AppContext` as first param (#5815/#5818)**; template decorators without parens.
+
+---
+
+## 2. Claim ledger (EVIDENCE MAP) — key cards
+
+| ID | Claim | Tier/Verdict | Evidence | Confidence |
+|---|---|---|---|---|
+| C1 | Snapshot = Flask main @ 2579ce9f, 3.2.0.dev | C4 Known | `git log`, `pyproject.toml:3` | 1.0 |
+| C2 | Working tree == HEAD except LF→CRLF | C3 Likely | `git status` (all M); 3 sampled diffs pure `\r` | 0.9 |
+| C3 | RequestContext merged into AppContext; both `RequestContext` and `request_ctx` are deprecated aliases | C4 Known | `CHANGES.rst:8-11`; `ctx.py:506-515`; `globals.py:65-76` | 1.0 |
+| C4 | 12 dispatch methods take `ctx`; `__init_subclass__` shim warns, wraps subclass method **and monkey-patches base `Flask`** | C4 Known | `app.py:253-307`, `app.py:82-105` | 1.0 |
+| C5 | `update_template_context(ctx, context)` signature changed **but is absent from the shim list** → old-signature overrides get a hard TypeError, no warning | C4 Known | `app.py:589-590` vs shim list `app.py:259-272`; call sites `templating.py:124,166` | 0.95 |
+| C6 | Session now loaded lazily on first access; `sessions.py:263-275` docstring still describes push-time loading | C4 Known | `ctx.py` `session` property; `sessions.py:263-275` | 0.95 |
+| C7 | Behavior change: an already-pushed app context is **not reused** when dispatching a request; a fresh combined context is pushed each time | C4 Known | `CHANGES.rst:9-10`; `ctx.py` docstring | 0.95 |
+| C8 | Old privates `_cv_request`/`_app_ctx_stack`/`_request_ctx_stack` fully removed; no shim for them | C4 Known | grep of `src/` (only `ctx.py:286,507,509`) | 1.0 |
+| C13 | Merged-context **runtime** is well tested (375 tests, 0 xfail; push/pop refcounts, teardown ordering, double-teardown-per-request encoded at `test_appctx.py:90-133`) | C4 Known | test audit | 1.0 |
+| C14 | The **compat/deprecation layer is entirely untested**: shim (incl. its global `Flask` mutation), both aliases, lazy-session timing, g-isolation under nested contexts | C4 Known | test audit; git forensics (`test_subclassing.py` migrated to new signature instead of kept as a compat test) | 0.95 |
+| C15 | Genuine free-threading (3.13t/3.14t) CI coverage enabled only **2025-11-17**, the day before this snapshot | C4 Known | CI audit; commit `607d1948` | 0.9 |
+| C16 | `.devcontainer` broken: installs from nonexistent `requirements/dev.txt` (pre-uv-migration staleness) | C4 Known | CI audit | 0.95 |
+| C17 | No docs build job in GitHub Actions; docs verified only via ReadTheDocs | C4 Known | CI audit | 0.9 |
+| C18 | No `.gitattributes` → Windows CRLF checkouts break `uv-lock` hook, dirty `git status` | C3 Likely | CI audit (hook semantics, not executed) | 0.85 |
+| C19 | **Broken/stale docs**: `docs/shell.rst:23-29` teaches deprecated `RequestContext.push()/pop()`; **`docs/shell.rst:52,61` call `preprocess_request()`/`process_response()` with old signatures — now a `TypeError`** for plain Flask | C4 Known | direct reads | 0.98 |
+| C20 | `uv.lock` consistent with pyproject floors; CI enforces lock; `tests-min`/`tests-dev` floor/git-main envs exist | C4 Known | CI audit | 0.95 |
+| C10-12 | External: 3.1.3 released on stable after snapshot; 3.2.0 section exists on upstream main; **PYSEC-2026-1377** flask advisory exists (details unknown) | C2 Likely/Unknown | web_search snippets only (fetch unavailable); details 未验证 | 0.5-0.8 |
+
+---
+
+## 3. Diagnosis — problem chains, most important first (DIAGNOSE)
+
+**P1 — The compat shim is the single highest-risk artifact (HIGH).**
+Flask's #1 asset is compatibility; the refactor changes the signature of 12 subclassable methods (`app.py:259-272`). The shim — the *only* protection for old-signature overrides until 4.0 — (a) has **zero test coverage** (C14), (b) mutates the **shared base class** per subclass creation (`setattr(Flask, method.__name__, add_ctx(base_method))`, `app.py:307`) — process-global, order-dependent, non-idempotent: each old-style subclass adds a wrapper layer to `Flask` for *all* instances, and a subclass-of-subclass re-triggers the warning and re-wraps; (c) emits `DeprecationWarning` at class-definition (import) time, which under the ecosystem's common `filterwarnings=error` (Flask's own setting, `pyproject.toml:109-111`) turns into **import-time failures** in downstream test suites; (d) has a silent false-negative: an override whose 2nd param is *named* `ctx` but semantically old passes the new-signature check → miswired dispatch with no warning (`app.py:284-298`). Downstream canary confirmed: [flask-sqlalchemy #1068 "Adopt new context tracking system"](https://github.com/pallets-eco/flask-sqlalchemy/issues/1068) is open.
+
+**P2 — `update_template_context` compat gap (MEDIUM-HIGH).** The exact failure the shim exists to prevent, for an un-shimmed method: an old-signature override (`def update_template_context(self, context)`) is called with `(ctx, context)` (`templating.py:124,166`) → `TypeError` at render time, silently. This is a documented-override surface (`docs/patterns/subclassing.rst`).
+
+**P3 — Deliberate semantic break: app context not reused (HIGH blast radius, deliberate).** `with app.app_context(): client.get(...)` now (a) gives the view a **fresh `g`** (outer `g` invisible, view `g` doesn't leak back), (b) runs `teardown_appcontext` **twice** (once at request end, once at outer pop) — encoded in tests (`test_appctx.py:90-133`) — and (c) fires `appcontext_pushed/popped` twice. For extensions scoping resources to the app context (flask-sqlalchemy's session), resources created in the outer context are now torn down mid-block. Deliberate (#5639), but it breaks the project's own convention of *behavior changes only in majors* — this needs an explicit release-note + migration-guidance callout, which is currently missing (CHANGES entry is one line).
+
+**P4 — Lazy session: drift + a second-open wrinkle (MEDIUM).** Session now opens on first access; but `process_response` unconditionally touches `ctx.session` (`app.py:1403`), so every request still opens it at finalization — laziness only shifts timing for code between push and finalize. New wrinkle: a `teardown_request` handler that touches `session` triggers a **second `open_session`** after `save_session` already ran (different object identity; DB-backed interfaces pay an extra read). Stale docstrings (`sessions.py:263-275`).
+
+**P5 — Deprecation-alias trap (LOW-MEDIUM).** `RequestContext(app, environ)` (old constructor) → `TypeError` (new `__init__` is `(app, *, request, session)`), not a warning; `RequestContext`/`request_ctx` aliases untested; `from flask.globals import _cv_request` → hard `AttributeError` (private, but extensions used it).
+
+**P6 — Broken docs (MEDIUM for users, trivial to fix).** `docs/shell.rst:52,61` now raise `TypeError`; `docs/shell.rst:23-29` teaches the deprecated alias; "requet" typo in the new `docs/appcontext.rst`.
+
+**P7 — Tooling gaps (LOW-MEDIUM).** Broken devcontainer (C16); no docs build in CI (C17); Windows/macOS CI only on 3.14; free-threading coverage one day old (C15); no `.gitattributes` (C18).
+
+**P8 — External timing (INVESTIGATE).** Post-snapshot releases (3.1.3; 3.2.0 appears released upstream, 未验证) and **PYSEC-2026-1377** (flask advisory, 2026 — details unverifiable without fetch) could affect this code.
+
+## 4. Tradeoff analysis
+
+The ctx-passing refactor: cost = signature churn + the shim's complexity/risk; benefit = one ContextVar instead of two stacks (simpler push/pop, `ctx.py` net simpler), dispatch free of proxy indirection, alignment with modern single-context frameworks, and a cleaner base for free-threading (fewer shared globals). Performance: marginal positive; reliability: risk concentrated in the transition; complexity: net reduction; maintainability: better after 4.0; DX: churn now, simpler model later; security: no new surface (TRUSTED_HOSTS already in `app.py:529-533`). **Verdict: the direction is right; the execution risk (untested shim) is the issue — not the refactor itself.**
+
+## 5. External research (provenance: web_search snippets only — fetch unavailable)
+
+- [Upstream main CHANGES.rst now shows "Version 3.2.0"](https://raw.githubusercontent.com/pallets/flask/main/CHANGES.rst) (released after this snapshot; date 未验证). 
+- [3.1.3 tag exists](https://github.com/pallets/flask/blob/3.1.3/CHANGES.rst) — post-snapshot bugfix release; contents 未验证.
+- [PYSEC-2026-1377 flask advisory](https://github.com/pypa/advisory-database/blob/main/vulns/flask/PYSEC-2026-1377.yaml) — exists; scope/severity 未验证.
+- [flask-sqlalchemy #1068 — adopt new context tracking](https://github.com/pallets-eco/flask-sqlalchemy/issues/1068) — the ecosystem canary.
+- [Flask #5639 — merge app and request contexts](https://github.com/pallets/flask/issues/5639) — the design issue.
+- CVE-2025-47278 (stale signing-key selection) was fixed in 3.1.1 — **already included** in this snapshot.
+
+## 6. Compare
+
+The old two-context/stack model (Flask 0.9-era) vs. the merged single-context model now matches how Starlette/FastAPI (`request.state`) and Django (per-request middleware) treat request scope, while Flask keeps its proxies for user code. Quart shares the sansio layer, so the merged context propagates there — Quart's overrides will exercise the shim (or break on `update_template_context`-style gaps). The 70%-overlap alternative — pass `request` explicitly everywhere, Starlette-style — was consciously rejected: the proxies remain the public API; ctx-passing is internal-only. No competing framework is a "replacement" candidate; this is a compat-preserving modernization.
+
+## 7. Challenge (disconfirmation)
+
+What would make H2 wrong? (a) The shim may rarely trigger (few overrides of these 12 methods) and upstream may have added tests after this snapshot — but C5 (TypeError gap) and C14 (zero coverage *at this snapshot*) are code-verifiable regardless. (b) "App context not reused" might be a non-issue — but the double-teardown is asserted as *intended* (`test_appctx.py:90-133`), confirming the semantic change is real, and flask-sqlalchemy's open issue confirms real-world impact. (c) The CRLF tree might be intended — it is not; it is a mechanical artifact. **Corrosion vs evolution**: the merged context is legitimate EVOLUTION (the two-context stack existed for historical reasons that no longer hold — one contextvar + explicit passing is simpler and thread-safe); the untested global-mutation shim and the un-shimmed `update_template_context` are CORROSION relative to the project's own compat discipline. H1 invalidated → **H2 (current)**: *refactor code-complete and directionally sound; release-blocking execution risks remain: untested globally-mutating shim with a coverage gap, untested aliases, stale/broken docs, unasserted semantic changes.*
+
+## 8. Shape + Classify
+
+- **B1 BUILD** — Harden the shim: add `update_template_context`; replace `setattr(Flask, ...)` global mutation with an idempotent mechanism; regression tests for all 13 methods × old signature, multi-subclass and inherited-subclass scenarios, new-after-old ordering. *Why now*: pre-release; the shim is the 4.0 bridge.
+- **B2 BUILD** — Tests for deprecation aliases (`pytest.warns`), lazy-session first-access timing, g-isolation, double teardown/signals, teardown second-open.
+- **B3 BUILD** — Docs: `docs/shell.rst` (both breaks), `sessions.py` docstring, `test_session_interface.py:8`, "requet" typo, explicit CHANGES callout for the g-isolation/double-teardown behavior change.
+- **B4 BUILD** — Tooling: devcontainer (uv) or delete; docs build job in CI; `.gitattributes` (LF).
+- **B5 BUILD (workspace)** — Normalize this snapshot's tree to LF.
+- **I1/I2 INVESTIGATE** — PYSEC-2026-1377 scope; 3.1.3/3.2.0 deltas vs this snapshot.
+- **DON'T BUILD** — Reverting the merge; any new features. Nothing else in this repo warrants intervention.
+
+## 9. Self-eval
+
+Honest checks: all factual statements carry citations or 未验证 labels; claims graded C0–C4 with verdicts (27 in ledger); absence of tests reported as a finding (C14); contradictions first-class (C5, C6, C19); problem→direction ordering respected; disconfirmation performed (H1→H2); checkpoints recorded at RECONSTRUCT/EVIDENCE_MAP/CHALLENGE/CLASSIFY. **Disclosures**: no tests executed (read-only); external claims are search-snippet grade (fetch unavailable); C2 is a sampled conclusion; the docs-audit subagent was interrupted after overrunning — its findings were verified directly and are included.
+
+## 10. Handoff brief (BUILD items only)
+
+1. **B1 — Compat-shim hardening (code+tests)** — `src/flask/app.py:253-307`: add `update_template_context` to the shim list; make base-class patching idempotent/instance-safe; add old-signature regression tests (warning + correct dispatch) for all 13 methods incl. multi-subclass and inherited-subclass cases. Confidence 0.9. Do not touch: the merged-context semantics themselves (C7 is deliberate).
+2. **B2 — Deprecation/semantics test coverage** — `RequestContext`/`request_ctx` aliases, lazy-session timing, g-isolation, double teardown/signals. Confidence 0.9.
+3. **B3 — Docs fixes** — `docs/shell.rst:23-29,47-63`; `src/flask/sessions.py:263-275`; `tests/test_session_interface.py:8`; `docs/appcontext.rst` typo; CHANGES 3.2 behavior-change callout. Confidence 0.95.
+4. **B4 — Tooling hygiene** — devcontainer, docs CI job, `.gitattributes`. Confidence 0.8.
+5. **B5 — Workspace CRLF→LF normalization** — restore clean `git status`. Confidence 0.95.
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": {"repo": "pallets/flask", "head": "2579ce9f", "version": "3.2.0.dev", "date": "2025-11-17"},
+  "hypothesis": "H2: refactor code-complete and directionally sound; release-blocking execution risks: untested globally-mutating compat shim (with update_template_context gap), untested deprecation aliases, stale/broken docs, unasserted semantic changes",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "Dispatch-signature compat shim (app.py:253-307) is untested, mutates base Flask class globally per subclass creation (non-idempotent, cross-subclass), and misses update_template_context (app.py:589-590) which breaks old-signature overrides with a silent TypeError",
+      "evidence": ["app.py:253-307", "app.py:589-590 vs shim list 259-272", "templating.py:124,166", "test audit: zero shim coverage"],
+      "confidence": 0.9,
+      "scope": "src/flask/app.py, src/flask/templating.py, tests/test_subclassing.py, tests/test_appctx.py",
+      "do_not_touch": ["Merged AppContext semantics (fresh-context-per-request is deliberate, issue #5639)", "The 12 new method signatures themselves"]
+    },
+    {
+      "id": "B2",
+      "problem": "Deprecation aliases (RequestContext, request_ctx), lazy-session timing, g-isolation under nested app_context+dispatch, double teardown/signal firing are all unasserted; RequestContext(app, environ) raises TypeError instead of a deprecation warning",
+      "evidence": ["ctx.py:506-515", "globals.py:65-76", "ctx.py session property", "test_appctx.py:90-133 (double teardown asserted, g isolation not)"],
+      "confidence": 0.9,
+      "scope": "tests/test_appctx.py, tests/test_reqctx.py, tests/test_session_interface.py, tests/test_signals.py",
+      "do_not_touch": []
+    },
+    {
+      "id": "B3",
+      "problem": "Docs actively wrong: shell.rst:52,61 call preprocess_request()/process_response() with old signatures (TypeError now); shell.rst:23-29 teaches deprecated RequestContext; sessions.py:263-275 open_session docstring stale; test_session_interface.py:8 stale comment; 'requet' typo in appcontext.rst; CHANGES 3.2 lacks behavior-change callout (g isolation, double teardown)",
+      "evidence": ["docs/shell.rst:23-29,47-63", "src/flask/sessions.py:263-275", "tests/test_session_interface.py:8", "CHANGES.rst:8-18"],
+      "confidence": 0.95,
+      "scope": "docs/shell.rst, docs/appcontext.rst, docs/api.rst, src/flask/sessions.py, tests/test_session_interface.py, CHANGES.rst",
+      "do_not_touch": []
+    },
+    {
+      "id": "B4",
+      "problem": "Tooling gaps: .devcontainer installs nonexistent requirements/dev.txt (uv migration staleness); no docs build in GitHub Actions; no .gitattributes so Windows checkouts are CRLF (uv-lock pre-commit hook fails)",
+      "evidence": [".devcontainer/on-create-command.sh:5", "workflows/tests.yaml (no docs job)", "no .gitattributes in tree"],
+      "confidence": 0.8,
+      "scope": ".devcontainer/, .github/workflows/, .gitattributes (new)",
+      "do_not_touch": []
+    },
+    {
+      "id": "B5",
+      "problem": "Workspace snapshot has LF->CRLF conversion on all files: git status fully dirty, pre-commit uv-lock hook fails, .sh scripts broken in containers",
+      "evidence": ["git status: all files M", "diffs show pure CRLF", "no .gitattributes"],
+      "confidence": 0.95,
+      "scope": "workspace tree normalization (git config core.autocrlf + re-checkout, or bulk LF conversion)",
+      "do_not_touch": []
+    }
+  ]
+}
+```
+
+**Bottom line**: The snapshot is a healthy, well-governed framework mid-refactor — the merge direction is right and the runtime is tested. What would block a clean 3.2.0 is execution hygiene: the untested, globally-mutating compat shim (plus its `update_template_context` hole), untested deprecation aliases and semantic changes, and docs that now teach broken or deprecated APIs. Fix those (B1–B3), tidy the tooling (B4), normalize the workspace (B5), and verify the two open external threads (PYSEC-2026-1377, 3.1.3/3.2.0 deltas) before treating this snapshot as release-ready.

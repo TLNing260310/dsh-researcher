@@ -1,0 +1,378 @@
+{
+  "schema": "dsh-researcher/phase-a-scores/v1",
+  "gt_count": 5,
+  "rows": [
+    {
+      "run_id": "flask-deep-01",
+      "mode": "deep",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-deep-02",
+      "mode": "deep",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-05": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-deep-03",
+      "mode": "deep",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-plan-01",
+      "mode": "plan",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-plan-02",
+      "mode": "plan",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-plan-03",
+      "mode": "plan",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-quick-01",
+      "mode": "quick",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-quick-02",
+      "mode": "quick",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-quick-03",
+      "mode": "quick",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-standard-01",
+      "mode": "standard",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-standard-02",
+      "mode": "standard",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    },
+    {
+      "run_id": "flask-standard-03",
+      "mode": "standard",
+      "gt": {
+        "GT-01": {
+          "candidate": "CANDIDATE",
+          "verdict": "PENDING"
+        },
+        "GT-02": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-03": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-04": {
+          "candidate": "NO",
+          "verdict": "NO"
+        },
+        "GT-05": {
+          "candidate": "NO",
+          "verdict": "NO"
+        }
+      },
+      "recall": {
+        "matched": 0,
+        "partial": 0,
+        "total": 5
+      }
+    }
+  ]
+}

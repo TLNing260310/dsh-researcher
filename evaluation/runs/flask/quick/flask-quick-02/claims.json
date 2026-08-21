@@ -1,0 +1,486 @@
+{
+  "checkpoint_claims": [
+    {
+      "phase": "DECISION",
+      "revise": [
+        {
+          "id": "C1",
+          "statement": "Snapshot = pallets/flask main @ 2579ce9f (2025-11-17), version 3.2.0.dev (unreleased; 3.1.2 released 2025-08-19)",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "git log 2579ce9f",
+            "pyproject.toml version = 3.2.0.dev",
+            "CHANGES.rst:1-24"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C2",
+          "statement": "Working tree differs from HEAD only by CRLF line endings (all files M); no content drift",
+          "tier": "C3",
+          "verdict": "Known",
+          "evidence": [
+            "git diff src/flask/__init__.py",
+            "git diff pyproject.toml — pure \\r\\n deltas",
+            "git status: every file M"
+          ],
+          "confidence": 0.97
+        },
+        {
+          "id": "C3",
+          "statement": "RequestContext merged into AppContext (deprecated module __getattr__ alias, removal in 4.0); one contextvar _cv_app for all proxies",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "src/flask/ctx.py:259-516",
+            "src/flask/globals.py:40-75",
+            "CHANGES.rst:8-11"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C4",
+          "statement": "Behavior change: outer app context no longer reused during request dispatch; per-request appcontext_pushed/popped and teardown_appcontext; g of outer context not visible during request (3.1 reused it)",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "ctx.py:409-480 push/pop",
+            "git show c2705ffd^:src/flask/ctx.py (3.1 RequestContext.push reuse logic)",
+            "CHANGES.rst:8-11"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C5",
+          "statement": "12 Flask dispatch/teardown methods now take ctx first param; __init_subclass__ detects old-signature overrides, warns DeprecationWarning at class-definition time, wraps subclass method (remove_ctx) and globally patches base Flask (add_ctx)",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "app.py:84-105",
+            "app.py:253-307",
+            "CHANGES.rst:12-16"
+          ],
+          "confidence": 0.98
+        },
+        {
+          "id": "C6",
+          "statement": "Old-signature compat path (warn+wrap branch) has no direct test coverage; new-signature path covered by test_subclassing.py only",
+          "tier": "C2",
+          "verdict": "Likely",
+          "evidence": [
+            "grep of tests for subclass overrides (8 Flask subclasses, none old-style of the 12 methods)",
+            "test_subclassing.py uses new signature"
+          ],
+          "confidence": 0.8
+        },
+        {
+          "id": "C7",
+          "statement": "Session now lazy-loaded on first access instead of at context push (before routing) as in 3.1; process_response still touches ctx.session unconditionally",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "ctx.py:381-396",
+            "app.py:1403-1404",
+            "3.1 push() eager open"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C8",
+          "statement": "docs/shell.rst examples broken under new signatures: app.preprocess_request() and app.process_response(app.response_class()) missing ctx argument",
+          "tier": "C3",
+          "verdict": "Known",
+          "evidence": [
+            "docs/shell.rst:50-63",
+            "app.py:1354 preprocess_request(self, ctx)",
+            "app.py:1382 process_response(self, ctx, response)"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C9",
+          "statement": "docs/shell.rst still refers to test_request_context() as creating a RequestContext (stale naming); docs/api.rst documents the alias correctly; docs/appcontext.rst rewritten with typo 'requet' (line 122)",
+          "tier": "C3",
+          "verdict": "Known",
+          "evidence": [
+            "docs/shell.rst:13-29",
+            "docs/api.rst:293-312",
+            "docs/appcontext.rst:122"
+          ],
+          "confidence": 0.95
+        },
+        {
+          "id": "C10",
+          "statement": "Signal docstrings removed from signals.py; request_started/request_tearing_down now fired in full_dispatch_request/do_teardown_request (dispatch-bound, not push-bound); docs/signals.rst updated to match",
+          "tier": "C3",
+          "verdict": "Known",
+          "evidence": [
+            "signals.py (bare declarations)",
+            "app.py:1001, 1430",
+            "docs/signals.rst:147-150"
+          ],
+          "confidence": 0.85
+        },
+        {
+          "id": "C11",
+          "statement": "Test-client preserved-context machinery coherent with merged context: preserved contexts popped before each open(), re-pushed after; g persistence inside `with client:` tested",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "testing.py:230-246",
+            "test_testing.py:201-227"
+          ],
+          "confidence": 0.9
+        },
+        {
+          "id": "C12",
+          "statement": "CI: tox matrix 3.10-3.14 + free-threaded (t) + PyPy + tests-min/dev, mypy strict + pyright typing job, uv --locked; pytest filterwarnings=error in pyproject",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "tests.yaml",
+            "pyproject.toml [tool.pytest] [tool.tox]"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C13",
+          "statement": "Python 3.9 dropped (requires-python >=3.10); flask.__version__ removed repo-wide (replacement importlib.metadata)",
+          "tier": "C4",
+          "verdict": "Known",
+          "evidence": [
+            "CHANGES.rst:6-7",
+            "pyproject.toml",
+            "grep __version__ -> no matches in *.py"
+          ],
+          "confidence": 1
+        },
+        {
+          "id": "C14",
+          "statement": "Robustness gap: __init_subclass__ calls inspect.signature(method) unguarded — signature-mangling decorators on overridden methods can raise at class definition, crashing imports",
+          "tier": "C2",
+          "verdict": "Likely",
+          "evidence": [
+            "app.py:280 (no try/except)",
+            "functools.wraps-less decorators break inspect.signature"
+          ],
+          "confidence": 0.75
+        },
+        {
+          "id": "C15",
+          "statement": "Import-time DeprecationWarning for every old-style Flask subclass hard-fails user suites running -W error / filterwarnings=error (Flask's own convention); unavoidable per-call-site silencing",
+          "tier": "C2",
+          "verdict": "Likely",
+          "evidence": [
+            "app.py:299-305",
+            "pyproject filterwarnings=['error']"
+          ],
+          "confidence": 0.85
+        },
+        {
+          "id": "C16",
+          "statement": "External state: upstream main still shows Version 3.2.0 section in CHANGES.rst; 3.2.0 release status after 2025-11-17 Unknown (web_fetch unavailable this session)",
+          "tier": "C0",
+          "verdict": "Unknown",
+          "evidence": [
+            "web_search snippets only"
+          ],
+          "confidence": 0.4
+        }
+      ],
+      "hypotheses": [
+        {
+          "id": "H1",
+          "statement": "This is Flask main at 3.2.0.dev; its defining feature is the merged app/request context refactor (#5639/#5812), which is the primary analysis target",
+          "status": "active",
+          "dependsOn": [
+            "C1",
+            "C3"
+          ]
+        },
+        {
+          "id": "H2",
+          "statement": "The refactor is architecturally coherent and code-level well-tested; dominant risks are (a) ecosystem blast radius of the context-reuse semantic change + import-time deprecation shim, (b) incomplete docs (broken shell.rst examples), (c) untested old-signature shim path, (d) snapshot CRLF noise; no corrosion — deliberate upstream evolution",
+          "status": "active",
+          "dependsOn": [
+            "C3",
+            "C4",
+            "C5",
+            "C6",
+            "C8",
+            "C9",
+            "C14",
+            "C15",
+            "C2"
+          ]
+        }
+      ],
+      "views": [
+        {
+          "name": "project_model",
+          "dependsOn": [
+            "C1",
+            "C3",
+            "C4",
+            "C12"
+          ]
+        },
+        {
+          "name": "diagnosis",
+          "dependsOn": [
+            "C4",
+            "C5",
+            "C6",
+            "C7",
+            "C8",
+            "C9",
+            "C14",
+            "C15"
+          ]
+        },
+        {
+          "name": "challenge",
+          "dependsOn": [
+            "C2",
+            "C16"
+          ]
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "name": "research_doctor",
+      "arguments": "{}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"status\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 50}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"src/flask/__init__.py\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"diff\", \"path\": \"pyproject.toml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\CHANGES.rst\", \"limit\": 150}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"log\", \"maxCount\": 20, \"path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\ctx.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"DeprecationWarning|deprecated\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"_cv_request|old signature|def wsgi_app|def full_dispatch_request|def dispatch_request|def try_trigger_before_first_request_functions|def make_default_options_response|def create_url_adapter|def do_teardown_request|def do_teardown_appcontext|def handle_user_exception|def handle_http_exception|def handle_exception|def should_ignore_error\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\globals.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"offset\": 240, \"limit\": 100}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"offset\": 820, \"limit\": 260}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"pattern\": \"def add_ctx|def remove_ctx|def request_context|def test_request_context|def app_context|def do_teardown_request|def do_teardown_appcontext|def preprocess_request|def process_response|def finalize_request|def wsgi_app\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 130, \"offset\": 1530}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 80, \"offset\": 60}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 90, \"offset\": 1445}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\reqcontext.rst\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"not reused|is not reused|old signature|deprecat|shares|shared|app_context.*client|client.*app_context\", \"include\": \"test_reqctx.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\appcontext.rst\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"remove_ctx|add_ctx|__init_subclass__|signature|ctx: AppContext|def dispatch_request\\\\(self, ctx|def full_dispatch_request\\\\(self, ctx\"}"
+    },
+    {
+      "name": "git_read",
+      "arguments": "{\"action\": \"show\", \"ref\": \"c2705ffd^:src/flask/ctx.py\", \"path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"AppContext|DeprecationWarning|pytest.warns|subclass\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\app.py\", \"limit\": 70, \"offset\": 1380}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"stream_with_context|preserve_context|_cv_app|session_interface.save_session|open_session\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"def dispatch_request|def process_response|def handle_exception|def full_dispatch_request|def do_teardown|def preprocess_request|def finalize_request|def make_default_options|def log_exception|def handle_user_exception|def handle_http_exception\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\cli.py\", \"pattern\": \"app_context|with_appcontext|_cv_app|ctx\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_basic.py\", \"limit\": 45, \"offset\": 995}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_user_error_handler.py\", \"limit\": 30, \"offset\": 278}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_subclassing.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"\\\\(flask\\\\.Flask\\\\)|\\\\(Flask\\\\)|class .*Flask\\\\b\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_async.py\", \"limit\": 40, \"offset\": 1}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_reqctx.py\", \"limit\": 60, \"offset\": 200}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\testing.py\", \"limit\": 120, \"offset\": 100}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\signals.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\helpers.py\", \"limit\": 80, \"offset\": 240}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\helpers.py\", \"limit\": 75, \"offset\": 319}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"TODO|FIXME|XXX|HACK\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\README.md\", \"limit\": 60}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\.github\\\\workflows\\\\tests.yaml\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\signals.rst\", \"pattern\": \"request_started|request_tearing_down|appcontext_pushed|pushed\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"pallets flask 3.2.0 release context merge RequestContext AppContext\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://raw.githubusercontent.com/pallets/flask/main/CHANGES.rst\"}"
+    },
+    {
+      "name": "web_search",
+      "arguments": "{\"query\": \"\\\"flask 3.2.0\\\" released 2025 changelog\"}"
+    },
+    {
+      "name": "web_fetch",
+      "arguments": "{\"url\": \"https://mirror.osredm.com/root/flask/src/branch/main/CHANGES.rst\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\", \"pattern\": \"__version__\", \"include\": \"*.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\helpers.py\", \"limit\": 85, \"offset\": 45}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_reqctx.py\", \"limit\": 100}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"include\": \"test_*.py\", \"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\", \"pattern\": \"app_context\\\\(\\\\):|g\\\\.\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\\\\testing.py\", \"limit\": 80, \"offset\": 219}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_blueprints.py\", \"limit\": 80, \"offset\": 910}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\tests\\\\test_testing.py\", \"limit\": 45, \"offset\": 195}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\src\\\\flask\", \"pattern\": \"__init_subclass__|RequestContext\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\", \"pattern\": \"RequestContext|AppContext\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\shell.rst\", \"limit\": 40, \"offset\": 10}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"D:\\\\AI_work_project\\\\phase-a-snapshots\\\\flask\\\\workspace\\\\docs\\\\shell.rst\", \"limit\": 32, \"offset\": 49}"
+    },
+    {
+      "name": "research_checkpoint",
+      "arguments": "{\"phase\": \"DECISION\", \"revise\": [{\"id\": \"C1\", \"statement\": \"Snapshot = pallets/flask main @ 2579ce9f (2025-11-17), version 3.2.0.dev (unreleased; 3.1.2 released 2025-08-19)\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"git log 2579ce9f\", \"pyproject.toml version = 3.2.0.dev\", \"CHANGES.rst:1-24\"], \"confidence\": 1.0}, {\"id\": \"C2\", \"statement\": \"Working tree differs from HEAD only by CRLF line endings (all files M); no content drift\", \"tier\": \"C3\", \"verdict\": \"Known\", \"evidence\": [\"git diff src/flask/__init__.py\", \"git diff pyproject.toml — pure \\\\r\\\\n deltas\", \"git status: every file M\"], \"confidence\": 0.97}, {\"id\": \"C3\", \"statement\": \"RequestContext merged into AppContext (deprecated module __getattr__ alias, removal in 4.0); one contextvar _cv_app for all proxies\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"src/flask/ctx.py:259-516\", \"src/flask/globals.py:40-75\", \"CHANGES.rst:8-11\"], \"confidence\": 1.0}, {\"id\": \"C4\", \"statement\": \"Behavior change: outer app context no longer reused during request dispatch; per-request appcontext_pushed/popped and teardown_appcontext; g of outer context not visible during request (3.1 reused it)\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"ctx.py:409-480 push/pop\", \"git show c2705ffd^:src/flask/ctx.py (3.1 RequestContext.push reuse logic)\", \"CHANGES.rst:8-11\"], \"confidence\": 0.95}, {\"id\": \"C5\", \"statement\": \"12 Flask dispatch/teardown methods now take ctx first param; __init_subclass__ detects old-signature overrides, warns DeprecationWarning at class-definition time, wraps subclass method (remove_ctx) and globally patches base Flask (add_ctx)\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"app.py:84-105\", \"app.py:253-307\", \"CHANGES.rst:12-16\"], \"confidence\": 0.98}, {\"id\": \"C6\", \"statement\": \"Old-signature compat path (warn+wrap branch) has no direct test coverage; new-signature path covered by test_subclassing.py only\", \"tier\": \"C2\", \"verdict\": \"Likely\", \"evidence\": [\"grep of tests for subclass overrides (8 Flask subclasses, none old-style of the 12 methods)\", \"test_subclassing.py uses new signature\"], \"confidence\": 0.8}, {\"id\": \"C7\", \"statement\": \"Session now lazy-loaded on first access instead of at context push (before routing) as in 3.1; process_response still touches ctx.session unconditionally\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"ctx.py:381-396\", \"app.py:1403-1404\", \"3.1 push() eager open\"], \"confidence\": 0.95}, {\"id\": \"C8\", \"statement\": \"docs/shell.rst examples broken under new signatures: app.preprocess_request() and app.process_response(app.response_class()) missing ctx argument\", \"tier\": \"C3\", \"verdict\": \"Known\", \"evidence\": [\"docs/shell.rst:50-63\", \"app.py:1354 preprocess_request(self, ctx)\", \"app.py:1382 process_response(self, ctx, response)\"], \"confidence\": 0.9}, {\"id\": \"C9\", \"statement\": \"docs/shell.rst still refers to test_request_context() as creating a RequestContext (stale naming); docs/api.rst documents the alias correctly; docs/appcontext.rst rewritten with typo 'requet' (line 122)\", \"tier\": \"C3\", \"verdict\": \"Known\", \"evidence\": [\"docs/shell.rst:13-29\", \"docs/api.rst:293-312\", \"docs/appcontext.rst:122\"], \"confidence\": 0.95}, {\"id\": \"C10\", \"statement\": \"Signal docstrings removed from signals.py; request_started/request_tearing_down now fired in full_dispatch_request/do_teardown_request (dispatch-bound, not push-bound); docs/signals.rst updated to match\", \"tier\": \"C3\", \"verdict\": \"Known\", \"evidence\": [\"signals.py (bare declarations)\", \"app.py:1001, 1430\", \"docs/signals.rst:147-150\"], \"confidence\": 0.85}, {\"id\": \"C11\", \"statement\": \"Test-client preserved-context machinery coherent with merged context: preserved contexts popped before each open(), re-pushed after; g persistence inside `with client:` tested\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"testing.py:230-246\", \"test_testing.py:201-227\"], \"confidence\": 0.9}, {\"id\": \"C12\", \"statement\": \"CI: tox matrix 3.10-3.14 + free-threaded (t) + PyPy + tests-min/dev, mypy strict + pyright typing job, uv --locked; pytest filterwarnings=error in pyproject\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"tests.yaml\", \"pyproject.toml [tool.pytest] [tool.tox]\"], \"confidence\": 1.0}, {\"id\": \"C13\", \"statement\": \"Python 3.9 dropped (requires-python >=3.10); flask.__version__ removed repo-wide (replacement importlib.metadata)\", \"tier\": \"C4\", \"verdict\": \"Known\", \"evidence\": [\"CHANGES.rst:6-7\", \"pyproject.toml\", \"grep __version__ -> no matches in *.py\"], \"confidence\": 1.0}, {\"id\": \"C14\", \"statement\": \"Robustness gap: __init_subclass__ calls inspect.signature(method) unguarded — signature-mangling decorators on overridden methods can raise at class definition, crashing imports\", \"tier\": \"C2\", \"verdict\": \"Likely\", \"evidence\": [\"app.py:280 (no try/except)\", \"functools.wraps-less decorators break inspect.signature\"], \"confidence\": 0.75}, {\"id\": \"C15\", \"statement\": \"Import-time DeprecationWarning for every old-style Flask subclass hard-fails user suites running -W error / filterwarnings=error (Flask's own convention); unavoidable per-call-site silencing\", \"tier\": \"C2\", \"verdict\": \"Likely\", \"evidence\": [\"app.py:299-305\", \"pyproject filterwarnings=['error']\"], \"confidence\": 0.85}, {\"id\": \"C16\", \"statement\": \"External state: upstream main still shows Version 3.2.0 section in CHANGES.rst; 3.2.0 release status after 2025-11-17 Unknown (web_fetch unavailable this session)\", \"tier\": \"C0\", \"verdict\": \"Unknown\", \"evidence\": [\"web_search snippets only\"], \"confidence\": 0.4}], \"hypotheses\": [{\"id\": \"H1\", \"statement\": \"This is Flask main at 3.2.0.dev; its defining feature is the merged app/request context refactor (#5639/#5812), which is the primary analysis target\", \"status\": \"active\", \"dependsOn\": [\"C1\", \"C3\"]}, {\"id\": \"H2\", \"statement\": \"The refactor is architecturally coherent and code-level well-tested; dominant risks are (a) ecosystem blast radius of the context-reuse semantic change + import-time deprecation shim, (b) incomplete docs (broken shell.rst examples), (c) untested old-signature shim path, (d) snapshot CRLF noise; no corrosion — deliberate upstream evolution\", \"status\": \"active\", \"dependsOn\": [\"C3\", \"C4\", \"C5\", \"C6\", \"C8\", \"C9\", \"C14\", \"C15\", \"C2\"]}], \"views\": [{\"name\": \"project_model\", \"dependsOn\": [\"C1\", \"C3\", \"C4\", \"C12\"]}, {\"name\": \"diagnosis\", \"dependsOn\": [\"C4\", \"C5\", \"C6\", \"C7\", \"C8\", \"C9\", \"C14\", \"C15\"]}, {\"name\": \"challenge\", \"dependsOn\": [\"C2\", \"C16\"]}]}"
+    }
+  ]
+}

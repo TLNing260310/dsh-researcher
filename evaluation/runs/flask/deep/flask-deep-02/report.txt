@@ -1,0 +1,449 @@
+Runtime certificate: **SAFE** (Run #2 — preset researcher-deep, read-only sandbox, never approval, stubs verified). Beginning **DISCOVER** — cartography first.
+
+This is the **Flask framework repository** (pallets/flask), snapshot at HEAD 2579ce9f (2025-11-17). Notable: **every tracked file shows as modified** — need to characterize that before anything else. Let me examine the diff nature and the full file list.
+
+Confirmed: the working-tree "modifications" are **pure CRLF line-ending noise** — every line of every file shows `\r` insertion (snapshot artifact from Windows checkout), zero semantic content. So the real subject is the Flask repo at HEAD `2579ce9f` (2025-11-17). Now reading core project metadata.
+
+Version is **3.2.0.dev** — main is heading toward 3.2.0 (not 4.0 yet, despite 4.0-era deprecations in code). Reading the changelog head and the sansio architecture note, plus deeper git history.
+
+Good picture forming. The 3.2.0 dev cycle's headline change is the **AppContext/RequestContext merge (#5812)** plus **dispatch-method signature changes (#5818)** — both very recent (Sept–Nov 2025) and still settling. Let me dig into the core context code and scan for markers.
+
+ctx.py confirms the merged-context design (lazy session, `RequestContext` deprecation shim via module `__getattr__`, push-count semantics). Now I'll fan out module analysis to subagents while I read the dispatch core myself.
+
+Four module audits are running. Meanwhile, reading the dispatch core — `sansio/app.py` and `app.py`.
+
+Now the main `app.py` — the concrete Flask class with the WSGI dispatch path.
+
+The `__init_subclass__` signature-shim machinery (app.py:253-307) is notable — it monkey-patches both the subclass and the base class at class-creation time. Continuing through the dispatch path.
+
+app.py read complete. The dispatch path now threads `ctx` through everything, with the `__init_subclass__` shim as the compat bridge. Now: git forensics on the two big refactor commits, plus external research in parallel.
+
+Search noise — going directly to authoritative sources: PyPI for the latest Flask release, the context-merge issue, and Werkzeug CVE status.
+
+`web_fetch` is unavailable in this environment — switching to search-only external research. CVE-2025-66221 (Werkzeug, Windows device names) is already visible. Checking the lockfile pins and CI setup, plus more targeted searches.
+
+Lockfile pins werkzeug **3.1.3** — and the Snyk reference says the Windows-device-names CVE is remediated at werkzeug ≥3.1.6. Flask 3.1.3 also exists upstream. Verifying both.
+
+Werkzeug 3.1.3 is confirmed vulnerable to CVE-2025-66221 (IBM bulletins name it explicitly), and one source says 3.1.3 carries **2** vulnerabilities. Digging for the second one and Flask 3.1.3's contents.
+
+Major finds: **CVE-2026-27205 (Flask — missing `Vary: Cookie`)** and a cluster of 2025/2026 Werkzeug CVEs (CVE-2025-61911/61912, CVE-2026-27199, CVE-2026-21860) affecting werkzeug 3.1.3/3.1.4. Getting their details.
+
+External picture is now clear. Let me read `sessions.py` and `wrappers.py` myself since CVE-2026-27205 (Vary: Cookie) lives in that area.
+
+The Vary: Cookie mechanism is now clear (sessions.py:362-364, 399: Vary added only when `session.accessed`). One more check on the Flask 3.1.3 fix content, then I'll pull subagent reports.
+
+**Confirmed: GHSA-68rp-wp8r-4726 = CVE-2026-27205, fixed in Flask 3.1.3** (grafana's `[security]` bump is direct evidence) — this snapshot predates that fix, and its locked werkzeug 3.1.3 carries multiple CVEs. Now collecting the five module-audit reports.
+
+Subagents still running. Meanwhile, reading `testing.py` myself — the test client's preserved-context logic is the most delicate part of the context merge.
+
+testing.py reviewed — the preserved-context dance now revolves around a single merged AppContext. Let me check how the 3.2 behavior changes are documented and tested.
+
+Docs have almost no 3.2 markers — only the api.rst deprecation entries. Checking the app-context docs page for how the merge is (not) documented.
+
+The docs still describe the legacy model (and contain a "requet" typo at appcontext.rst:122) with no 3.2 markers for the merge. Let me check test coverage of the new semantics directly.
+
+Test at test_appctx.py:106-110 confirms the intentional double-teardown semantics under the merge. Now collecting subagent reports.
+
+While subagents finish: inventorying all deprecation shims in the codebase — central to the compat-risk analysis.
+
+Still running — continuing with `blueprints.py` myself.
+
+CI is exemplary (SHA-pinned actions, OIDC publishing, free-threading coverage). Checking subagent progress.
+
+One subagent settled; its detailed findings need restating. Requesting them while the rest finish.
+
+While waiting — checking `cli.py` myself for the dev-server posture.
+
+Strong findings from the first audit. While the rest finish, verifying the `__init_subclass__` shim's test coverage myself.
+
+This is a potential red-CI situation — old-signature overrides exist in tests while pytest runs with `filterwarnings = error`. Verifying each.
+
+Those were error-handler callbacks, not method overrides — false alarm. Checking for actual `Flask` subclasses in tests that override dispatch methods.
+
+The shim's warning path is untested (only the new-signature path is exercised). Checking on remaining subagents.
+
+While they run — quick verification of `wrappers.py` and `config.py`.
+
+Let me commit the research state so far to the checkpoint ledger while the audits finish.
+
+While waiting, checking pre-commit config and the GHSA history in CHANGES.
+
+Clean test suite — no xfails. Checking subagents once more.
+
+Excellent sansio audit. Checking the remaining three.
+
+Verifying the two most consequential sansio claims myself — `logging.py` globals leak and `register()` mutation order.
+
+Both sansio claims verified first-hand (logging.py:9/52 global import; blueprints.py:319-320 mutation-before-deferred). Checking the last three agents.
+
+Let me verify the JSON provider's XSS posture first-hand, then assemble.
+
+Updating the checkpoint with verified subagent findings, then assembling the final analysis.
+
+CI audit corroborates the shim-test-gap finding and adds publish-flow gaps. Nudging the two stragglers to wrap up.
+
+The two stragglers' areas (sessions/helpers, CLI/config/testing) were already covered completely first-hand, so I'm proceeding to the final report; I'll disclose their status honestly.
+
+---
+
+# Flask 3.2.0.dev Snapshot Analysis — pallets/flask @ `2579ce9f` (2025-11-17)
+
+## Runtime Proof
+
+Researcher Runtime Certificate **Run #2 — Overall: SAFE** (preset `researcher-deep` PASS; read-only sandbox PASS; approval policy `never` PASS; write/edit stubs PASS; `git_read` only shell surface PASS; checkpoint + replay PASS). Depth: **Deep** (all eleven moves, per frozen Phase-A override D002). All work read-only; no files created or modified.
+
+**Scope note:** the working tree shows *every* file as modified, but `git diff` proves this is 100 % CRLF line-ending noise (each line gains only `\r`) — a Windows-checkout snapshot artifact with zero semantic content. The analysis therefore targets the repository content at HEAD `2579ce9f` ("Merge branch 'stable'", 2025-11-17), version **3.2.0.dev** (pyproject.toml:3). Two of five delegated module audits (sessions/helpers, CLI/config/testing) were still settling at report time; both areas were additionally covered first-hand at full depth, so no findings depend on them.
+
+---
+
+## 1. DISCOVER — What this repository is
+
+- **Identity:** the Flask web framework itself (upstream `main` branch of pallets/flask), not a user application. 234 tracked files: `src/flask` (22 modules, ~9.5k LOC), `tests/` (~40 test modules), `docs/`, `examples/` (tutorial, javascript, celery), full CI/CD.
+- **Position in the project's lifecycle:** 3.1.2 shipped 2025-08-19; `main` is one minor version ahead (3.2.0.dev) and is in the middle of its largest internal refactor in a decade — the **AppContext/RequestContext merge** (#5812, merged 2025-09) and the follow-up **"pass ctx through dispatch methods"** migration (#5818, merged 2025-11-17, the last commit in the snapshot).
+- **Toolchain:** flit_core build, uv lockfile, tox+uv CI, ruff, mypy strict + pyright, sphinx docs, pre-commit. Python ≥3.10; test matrix 3.10–3.14 including free-threaded (3.13t/3.14t), PyPy, Windows/macOS, plus tests-min (pinned floors) and tests-dev (git-main deps).
+
+**Initial hypothesis H1 (v1):** this is a healthy, unusually well-run framework repo mid-refactor; the dominant risks are (a) ecosystem compatibility fallout from the context merge and its compat shim, (b) a stale security posture in the snapshot's pinned dev dependencies, and (c) documentation lagging the refactor. *(H1 retained, revised as evidence accumulated.)*
+
+## 2. RECONSTRUCT — Project model
+
+| Dimension | Model |
+|---|---|
+| **Mission** | "A simple framework for building complex web applications" — minimal, un-opinionated WSGI framework; suggestions, not enforcement (README.md:5-14) |
+| **Users** | Beginner→expert Python web developers; critically, the **extension ecosystem** (flask-sqlalchemy, flask-login, flask-admin, …) that composes around the context/`g`/teardown model |
+| **Problem** | Boilerplate-free request handling + progressive structure (blueprints, app factories, config, testing, CLI) on top of WSGI (PEP 3333) |
+| **Value mechanism** | Simplicity + extensibility + a trusted, conservatively-evolved public API; sansio layer additionally re-serves Quart (ASGI twin, now a Pallets project) |
+| **Architecture** | `Scaffold` → `App`/`Blueprint` (sansio, no IO/globals) → `Flask`/`Blueprint` (IO layer); one `AppContext` per activity (3.2: merged with request data, `contextvars` + `LocalProxy` globals); Werkzeug (HTTP/routing), Jinja, itsdangerous (sessions), blinker (signals), click (CLI) |
+| **Current state** | main = 3.2.0.dev: context merge complete (ctx.py), dispatch methods now take `ctx` with an `__init_subclass__` compat shim (app.py:253-307), `RequestContext`/`request_ctx` deprecated aliases, session lazily loaded, py3.14 + free-threading tested; stable = 3.1.2 → **3.1.3 (security) upstream** |
+| **Evidence it works** | Huge community adoption; ~9.5k-LOC core with ~15k-LOC tests, warnings-as-errors, no xfails, strict typing, SHA-pinned CI, OIDC publishing |
+| **Constraints** | WSGI compatibility mandate; deprecation-cycle discipline (removals only in 4.0); Python ≥3.10 floor; small maintainer team; backwards compat with subclassers/extensions |
+
+## 3. EVIDENCE MAP — key claims (full ledger in session checkpoint)
+
+| # | Claim | Tier/Verdict | Evidence |
+|---|---|---|---|
+| C0 | Snapshot = flask main @ 2579ce9f, 3.2.0.dev | C4 Known | git log; pyproject.toml:3 |
+| C1 | Working-tree diff is pure CRLF noise | C4 Known | git diff .editorconfig, globals.py |
+| C2 | AppContext/RequestContext merged (#5812); per-request combined context | C4 Known | CHANGES.rst:8-11; ctx.py:259-516 |
+| C3 | Session lazily loaded on first access (3.2) | C4 Known | ctx.py:380-396 |
+| C4 | 12 dispatch methods now take `ctx`; `__init_subclass__` shim patches subclass + base | C4 Known | app.py:82-106, 253-307 |
+| C5 | Shim annotation heuristic can misclassify (`ctx: AppContext \| None`, `t.Any`) → false-positive wrap | C2 Likely (static analysis; no runtime here) | app.py:284-298 |
+| C6 | Shim warning/wrapping path has zero direct test coverage | C3 Known | test_subclassing.py (21 lines, new-sig only); CI audit |
+| C7 | Request inside pushed app context → new context; `g` not shared; teardown_appcontext fires per pop (2× nested) | C4 Known | app.py:1562-1582; test_appctx.py:106-110 (`[None, None]`) |
+| C8 | Snapshot predates 3.1.3 security fix **CVE-2026-27205 / GHSA-68rp-wp8r-4726** (missing `Vary: Cookie` for some session accesses) | C3 Known | [advisory](https://secdb.nttzen.cloud/security-advisory/pip/PIP:GHSA-68RP-WP8R-4726); [grafana `[security]` bump to 3.1.3](https://github.com/grafana/docker-otel-lgtm/commit/fa7186c30e76e9a397c217b98c2024d557fa3b83); sessions.py:84-94, 362-364 |
+| C9 | Locked werkzeug **3.1.3** affected by CVE-2025-66221 (fix ≥3.1.6), CVE-2025-61911/61912, CVE-2026-21860 (GHSA-87hc-h4r5-73f7), CVE-2026-27199 (still affects 3.1.5) | C3 Known | uv.lock:1657-1658; [IBM bulletins](https://www.ibm.com/support/pages/node/7268615) naming 3.1.3/3.1.4/3.1.5; [Snyk remediation 3.1.6](https://snyk.io/test/github/Patrowl/PatrowlEngines) |
+| C10 | Narrative docs lag 3.2 ("requet" typo; legacy dual-context description; only api.rst has 3.2 markers) | C4 Known | docs/appcontext.rst:9-13, 122, 152-160; docs grep |
+| C14 | `Blueprint.register` mutates state before deferred/nested steps → permanent half-registration on failure | C4 Known | sansio/blueprints.py:319-320 vs 334-335, 349-377 |
+| C15 | `add_url_rule` inserts rule before collision check → orphan rule | C4 Known | sansio/app.py:650 vs 651-658 |
+| C16 | Sansio purity contract violated in 4 places (globals/IO in sansio path) | C4 Known | scaffold.py:19→templating.py:25; sansio/app.py:28→logging.py:9,52; sansio/blueprints.py:337-347; sansio/app.py:492 |
+| C17 | `View.decorators` shared mutable ClassVar; MethodView asserts instead of 405 | C3 Known | views.py:64, 187-190 |
+| C19 | `accessed` flag only set by `__getitem__`/`get`/`setdefault`; iteration/len/views reads skip `Vary: Cookie` — matches CVE-2026-27205 mechanism | C3 Known | sessions.py:84-94, 362-364, 399 |
+
+## 4. Findings — problems, risks, architectural concerns (ranked)
+
+### 🔴 HIGH
+
+**F1 — Security posture behind stable: the CVE-2026-27205 fix (Flask 3.1.3) is not in this snapshot.**
+The session `accessed` flag — the sole trigger for `Vary: Cookie` (sessions.py:362-364, 399) — is set only by `__getitem__`, `get`, `setdefault`, and mutation callbacks (sessions.py:84-94). Reading a session by **iteration, `len()`, `keys()`, `items()`, `values()`** leaves `accessed=False`, so caching proxies are not told the response varies per user — the exact class of issue [GHSA-68rp-wp8r-4726 / CVE-2026-27205](https://app.opencve.io/cve/CVE-2026-27205) describes, fixed upstream in [Flask 3.1.3](https://github.com/pallets/flask/blob/3.1.3/CHANGES.rst) (post-snapshot). The exact upstream patch is 未验证（研究者推断 — no post-snapshot commits fetchable here), but the vulnerable mechanism is verified in this snapshot's code. **Risk:** users tracking `main` (and anyone on ≤3.1.2) serve cacheable responses for session-dependent pages.
+
+**F2 — The repo's own dev/test environment runs on known-vulnerable Werkzeug.**
+uv.lock pins werkzeug **3.1.3**; the minimum-version CI job pins **3.1.0** (pyproject.toml:207), and the runtime floor is `werkzeug>=3.1.0` (pyproject.toml:29). Werkzeug 3.1.3 is named in vendor bulletins for [CVE-2025-66221](https://security-tracker.debian.org/tracker/CVE-2025-66221) (Windows device names; fixed in 3.1.6), [CVE-2025-61911/61912](https://www.ibm.com/support/pages/node/7268639), [CVE-2026-21860](https://deps.dev/advisory/osv/GHSA-87hc-h4r5-73f7) (safe_join compound device names), and [CVE-2026-27199](https://security.alpinelinux.org/vuln/CVE-2026-27199) (still open in 3.1.5). Fresh installs resolve to patched Werkzeug, but the framework's own CI and lockfile exercise vulnerable code, and `tests-min` enshrines it. The repo has `update-requirements` tox envs — the lock is simply stale relative to the snapshot date.
+
+**F3 — Architectural: the context merge changes `g`/teardown semantics that the extension ecosystem is built on.**
+Every request now pushes a **fresh combined context even when an app context is already active** (app.py:1562-1582), so: (a) `g` is no longer shared between an outer `with app.app_context():` and a request dispatched inside it; (b) `teardown_appcontext` fires once per context pop — **twice** for a request inside an app context (asserted `[None, None]` at test_appctx.py:110); (c) the session is now lazily opened on first access (ctx.py:389-396). This is deliberate (issue #5639, CHANGES.rst:8-11) and simplifies internals, but it silently changes behavior for the most common extension patterns: flask-sqlalchemy scoped sessions, flask-login, flask-principal, and any background-task/Celery pattern that wraps a request in a pushed app context. The blast radius is ecosystem-wide and will surface as **3.2.0 upgrade regressions**, not import errors. The migration story is currently thin: changelog entry yes; narrative docs no (F11).
+
+**F4 — The `__init_subclass__` compat shim is the riskiest new machinery and it is untested.**
+app.py:253-307 introspects every `Flask` subclass's overrides of 12 dispatch methods and, on detecting an old signature: warns, wraps the subclass method with `remove_ctx`, and **monkey-patches the shared `Flask` base class** with `add_ctx`. Problems: (1) the detection heuristic (app.py:284-298) accepts only unannotated `ctx`, string annotations ending in `AppContext`, or exact `AppContext` subclasses — annotations like `ctx: AppContext | None`, `ctx: t.Any`, or string-union forms are **misclassified as old-style**, triggering a wrap of a *working new-signature* method → `TypeError` at dispatch; (2) the base-class mutation is global and permanent, triggered by any third-party extension defining a legacy subclass (and `DeprecationWarning` is hidden by default, so it happens invisibly); (3) wrappers accumulate (`add_ctx(add_ctx(…))`) across multiple legacy subclasses; (4) `remove_ctx` strips any first positional arg that *is* an `AppContext`, regardless of intent; (5) **zero direct test coverage** — test_subclassing.py has one test using the new signature. The failure modes are analysis-derived (C2), but the absence of tests is verified (C6).
+
+### 🟠 MEDIUM
+
+**F5 — `MethodView.dispatch_request` asserts instead of returning 405** for an unimplemented method on a registered route → `AssertionError`/500; under `python -O` the assert vanishes and `None(...)` raises `TypeError` — inconsistent failure modes for a public API (views.py:187-190).
+
+**F6 — `Blueprint.register` is not failure-atomic:** `app.blueprints[name] = self` and `_got_registered_once = True` (sansio/blueprints.py:319-320) happen *before* deferred functions (334-335) and nested registrations (349-377); a route conflict or nested-name clash leaves the blueprint permanently locked and half-registered ("already registered" on retry).
+
+**F7 — `add_url_rule` inserts the rule into `url_map` before the endpoint-collision check** (sansio/app.py:650 vs 651-658) — a failed duplicate registration leaves an orphan rule silently overriding routes.
+
+**F8 — The sansio purity contract (no IO, no Flask globals — the entire reason Quart can share this code) is violated in four places:** the default template context processor calls the `app_ctx` global (scaffold.py:19 → templating.py:25-31); sansio imports `create_logger` which imports the `request` global (sansio/app.py:28 → logging.py:9, 52); `Blueprint.register` touches `cli`, an IO-layer-only attribute (sansio/blueprints.py:337-347 — `AttributeError` for sansio-only implementations); `make_config` reads `FLASK_DEBUG` from the environment (sansio/app.py:492). Since **Quart is now a Pallets project**, this coupling is a concrete cross-project maintenance risk, and nothing tests the contract (`grep sansio tests/` → none).
+
+**F9 — Publish workflow gaps:** no PEP 740 build attestations (SLSA provenance was removed 2025-06), and the `tags: ['*']` trigger (publish.yaml:4) publishes *any* tag to PyPI without a version-format guard.
+
+**F10 — `View.decorators` is a shared mutable `ClassVar` list** (views.py:64); in-place mutation on any subclass without its own list leaks to `View` and all siblings.
+
+**F11 — Test gaps around the new context semantics:** push/pop-count `RuntimeError` contracts, the lazy-session positive path, `make_null_session` fallback, non-greenlet `copy_current_request_context`, and the `request_ctx`/`RequestContext` deprecation aliases are all untested.
+
+### 🟡 LOW (selected)
+
+F12 Streaming template signal asymmetry — `before_render_template` fires eagerly, `template_rendered` only on full generator exhaustion (templating.py:162-177). F13 `first_name_registration` is tautologically True (sansio/blueprints.py:317, 331) — dead condition. F14 plain `cached_property` (no lock) → benign double-creation races (sansio/app.py:422, 439, 466). F15 `jinja_options: dict = {}` is a shared class attribute across all app instances (sansio/app.py:248). F16 `static_folder` setter `rstrip(r"\/")` corrupts Windows root paths `"C:\"` → `"C:"` (scaffold.py:236). F17 json tag: `_untag_scan` unbounded recursion on deeply nested session data; `TagDateTime` lossy round-trip (tag.py:205-216, 309-319). F18 template-loading explainer logs absolute search paths (debughelpers.py:107-121 — debug-only). F19 dead code: `BeforeFirstRequestCallable` (typing.py:54), `UnexpectedUnicodeError` (debughelpers.py:17), redundant `_cv_token` re-check (ctx.py:456), stale `RequestContext.match_request()` comment (tests/test_session_interface.py:8). F20 async signal receivers wrapped in `functools.partial` may defeat blinker's coroutine detection (upstream limitation, all 10 signal sites affected). F21 `flask.sansio` is a namespace package (no `__init__.py`).
+
+### ✅ Verified strengths (counterweight — this is a healthy project)
+No TODO/FIXME/XXX anywhere in `src/flask`; no xfails; warnings-as-errors; mypy strict + pyright; every CI action SHA-pinned with tag comments; OIDC trusted publishing with least-privilege permissions; free-threading and PyPy in matrix; tests-min/tests-dev dependency-strategy jobs; reproducible builds (`SOURCE_DATE_EPOCH`); fast security response (3.1.1 GHSA fix, 3.1.3 CVE fix); only three deprecation shims remain (all tied to the merge); all internal ctx-param call sites verified consistent.
+
+## 5. TRADEOFF / COMPARE / CHALLENGE
+
+- **Tradeoffs judged sound:** the context merge trades nested-context subtleties for a single-context mental model — reasonable, *if* the ecosystem impact is communicated (F3 is a communications+compat problem more than a code problem); removing `htmlsafe_dumps`/JSON XSS guardrails (2.3) is a documented deliberate migration; the thin asgiref async bridge vs native ASGI is a deliberate stance (Quart owns ASGI); frozen locks for reproducibility vs dependency freshness — the fix is process (they have `update-*` envs), not architecture.
+- **Compare:** vs **Quart** — the sansio contract is the mechanism that lets Quart track Flask's API; its violations (F8) erode that. vs **Starlette/FastAPI** — async-native competition; Flask's WSGI+asgiref bridge is increasingly a niche position, which raises the stakes for the 3.2 migration going smoothly. vs **Django** — different value proposition (batteries vs minimal); not a real tradeoff axis for Flask.
+- **Challenge (disconfirmation):** *"Is the context-merge risk overstated?"* — The nested-case change only bites when a request runs inside a pushed app context (tests, CLI scripts, background tasks) — most production request paths are unaffected; and the double-teardown is intentional and tested. So F3's severity is bounded: it is a *high-severity ecosystem-comms risk*, not a correctness defect. *"Is the shim breakage real?"* — the annotation-misclassification path is analysis, not runtime-verified; but the untested status of the whole shim is verified, and the global base-class mutation is visible in code. *"Is the CVE finding stale?"* — it is a snapshot fact: the fix is upstream in 3.1.3 and absent here; labeled accordingly. Revised hypothesis **H1 v2** stands; added **H2**: the shim needs tests and narrowing, or it can break working subclasses.
+
+## 6. CLASSIFY
+
+| Finding | Class | Rationale |
+|---|---|---|
+| F1 merge CVE fix + regression tests | **BUILD** | Known vuln, verified mechanism, upstream fix exists |
+| F2 lock/min-constraint refresh + security scan in CI | **BUILD** | Verified vulnerable pins; process exists, lock stale |
+| F3 3.2 migration guide + extension coordination + doc update | **BUILD** | Ecosystem blast radius; docs lag |
+| F4 shim hardening + tests | **BUILD** | Verified untested; plausible breakage; narrow before 3.2 ships |
+| F5 MethodView 405 | **BUILD** | Clear correctness bug in public API |
+| F6 register atomicity / F7 orphan rule | **BUILD** | Verified partial-state bugs |
+| F8 sansio purity (or documented exceptions + contract test) | **INVESTIGATE→BUILD** | Contract violations verified; fix shape needs Quart-coordination |
+| F9 PEP 740 attestations + tag guard | **BUILD** | Supply-chain hygiene, small |
+| F10 View.decorators | **BUILD** | Trivial, clear |
+| F11 context-contract tests | **BUILD** | Test gaps around the flagship change |
+| F12–F21 low items | **INVESTIGATE/DON'T BUILD** | Mostly cosmetic/benign; do not churn a stable codebase |
+| Re-add JSON htmlsafe; native ASGI; locked_cached_property | **DON'T BUILD** | Deliberate prior decisions; Quart's domain |
+
+## 7. Recommended next actions (SHAPE — what, and why now)
+
+1. **Sync the CVE-2026-27205 fix from stable 3.1.3 into main immediately**, with regression tests for iteration/len/views session reads setting `accessed` (F1).
+2. **Refresh uv.lock to a fixed Werkzeug (≥3.1.6), bump the `werkzeug>=` floor and `tests-min` pin**, and add `uv audit`/`pip-audit` to CI so the repo's own environment never trails advisories again (F2).
+3. **Before 3.2.0 ships:** harden the `__init_subclass__` shim (narrow detection to unannotated-or-exact `AppContext` params; test old/new/odd-annotation/keyword-only/multi-subclass cases; consider making base-class mutation explicit) (F4).
+4. **Write the 3.2 migration guide** (merged context, `g` non-sharing, double teardown, lazy session, alias removal timeline) and run a compat check against the top extensions; update docs/appcontext.rst (F3/F11).
+5. **Small correctness fixes:** MethodView 405; blueprint register atomicity; add_url_rule orphan rule; View.decorators copy (F5/F6/F7/F10).
+6. **Restore supply-chain posture:** PEP 740 attestations + tag-pattern guard on publish (F9).
+7. **Resolve the sansio contract question explicitly** with Quart maintainers — either fix the four leaks or document them as sanctioned exceptions + add a contract test (F8).
+
+## 8. SELF-EVAL
+
+Runtime proof quoted ✓; Deep depth with all moves ✓ (DISCOVER→HANDOFF); every factual statement carries file:line/URL or 未验证 label ✓; contradictions treated as findings (CRLF artifact; false-alarm greps) ✓; claims graded C0–C4 with verdicts ✓; external research with citations (CVE/GHSA/vendor bulletins) ✓; challenge move performed with explicit bounded-severity reasoning ✓; hypothesis trail versioned ✓; two delegated audits still settling — disclosed, their scope covered first-hand ✓; no invented improvements: DON'T BUILD list included ✓. Known limits: no post-snapshot commit history fetchable (web_fetch unavailable) — fix-merge status and exact 3.1.3 patch marked 未验证; shim breakage is static analysis (C2), not runtime-verified.
+
+---
+
+## 9. Handoff brief — BUILD items
+
+| # | Problem | Evidence | Confidence | Scope | Do-not-touch |
+|---|---|---|---|---|---|
+| B1 | Session `accessed` tracking misses iteration/len/views reads → missing `Vary: Cookie` (CVE-2026-27205) | sessions.py:84-94, 362-364; GHSA-68rp-wp8r-4726; fix upstream in 3.1.3 | 0.9 | Sync stable fix into main + regression tests for all read forms | Session save/cookie-set logic otherwise |
+| B2 | Locked werkzeug 3.1.3 (and tests-min 3.1.0) vulnerable to CVE-2025-66221/61911/61912, CVE-2026-21860/27199 | uv.lock:1657; pyproject.toml:29,207; vendor bulletins | 0.9 | Refresh lock to ≥3.1.6; bump floor+min; add security audit to CI | Runtime API of werkzeug usage |
+| B3 | 3.2 context-merge behavior changes (`g` non-sharing, double teardown, lazy session) undocumented for users/extensions | ctx.py; app.py:1562-1582; test_appctx.py:106-110; docs/appcontext.rst | 0.95 | Migration guide + appcontext.rst/lifecycle.rst 3.2 pass + top-extension compat check | The merge semantics themselves (deliberate) |
+| B4 | `__init_subclass__` shim: global base-class monkey-patching, annotation misclassification risk, zero tests | app.py:253-307; test_subclassing.py | 0.75 | Narrow detection, add shim tests (old/new/odd annotations, keyword-only, multi-subclass) | The deprecation contract (old sigs must keep working through 3.x) |
+| B5 | MethodView returns 500/TypeError instead of 405 for unimplemented methods | views.py:187-190 | 0.9 | Raise proper 405 / use werkzeug's MethodNotAllowed semantics | View.as_view dispatch otherwise |
+| B6 | `Blueprint.register` partial mutation on failure; `add_url_rule` orphan rule on collision | sansio/blueprints.py:319-320, 334-335; sansio/app.py:650 | 0.9 | Validate-before-mutate in both | Registration ordering semantics |
+| B7 | `View.decorators` shared mutable ClassVar | views.py:64 | 0.9 | Copy-on-mutate (tuple or per-class list) | as_view behavior |
+| B8 | Publish workflow: no PEP 740 attestations; any-tag publish | publish.yaml:4, 43-58 | 0.8 | Attestations + tag-format guard | OIDC publishing mechanism |
+| B9 | Sansio purity contract violated (4 leaks) — decision needed with Quart | scaffold.py:19; sansio/app.py:28,492; sansio/blueprints.py:337-347 | 0.85 | Fix leaks or document exceptions + contract test | sansio public API |
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": {"repo": "pallets/flask", "ref": "2579ce9f", "date": "2025-11-17", "version": "3.2.0.dev"},
+  "runtime": {"certificate": "Run #2", "overall": "SAFE"},
+  "build_items": [
+    {"id": "B1", "problem": "Session reads via iteration/len/views do not set accessed; Vary: Cookie omitted (CVE-2026-27205, fixed upstream in Flask 3.1.3)", "evidence": ["src/flask/sessions.py:84-94, 362-364", "GHSA-68rp-wp8r-4726"], "confidence": 0.9, "scope": "Sync fix from stable 3.1.3 into main; regression tests for all session read forms", "do_not_touch": "Session save/cookie-set logic otherwise"},
+    {"id": "B2", "problem": "Dev lockfile (werkzeug 3.1.3) and tests-min (3.1.0) run known-vulnerable Werkzeug", "evidence": ["uv.lock:1657-1658", "pyproject.toml:29, 207", "CVE-2025-66221/61911/61912, CVE-2026-21860/27199"], "confidence": 0.9, "scope": "Refresh lock to fixed werkzeug >=3.1.6; bump floor and tests-min; add dependency security audit to CI", "do_not_touch": "Werkzeug runtime API usage"},
+    {"id": "B3", "problem": "Context-merge behavior changes (g not shared inside nested requests, teardown_appcontext per pop, lazy session) undocumented; ecosystem migration risk", "evidence": ["src/flask/ctx.py:380-396", "src/flask/app.py:1562-1582", "tests/test_appctx.py:106-110", "docs/appcontext.rst:9-13,122"], "confidence": 0.95, "scope": "3.2 migration guide; update appcontext.rst/lifecycle.rst; coordinated compat check with top extensions", "do_not_touch": "Merged-context semantics (deliberate design)"},
+    {"id": "B4", "problem": "__init_subclass__ shim monkey-patches Flask base class globally; annotation heuristic can misclassify; zero test coverage", "evidence": ["src/flask/app.py:253-307", "tests/test_subclassing.py"], "confidence": 0.75, "scope": "Narrow detection heuristics; add tests for old/new/odd annotations, keyword-only ctx, multiple subclasses", "do_not_touch": "Deprecation contract: old signatures must work through 3.x"},
+    {"id": "B5", "problem": "MethodView.dispatch_request asserts (500, TypeError under -O) instead of 405 for unimplemented methods", "evidence": ["src/flask/views.py:187-190"], "confidence": 0.9, "scope": "Return proper 405 via werkzeug MethodNotAllowed semantics", "do_not_touch": "View dispatch otherwise"},
+    {"id": "B6", "problem": "Blueprint.register and App.add_url_rule leave partial/orphan state on failure", "evidence": ["src/flask/sansio/blueprints.py:319-320, 334-335", "src/flask/sansio/app.py:650-658"], "confidence": 0.9, "scope": "Validate before mutating in both paths", "do_not_touch": "Registration ordering semantics"},
+    {"id": "B7", "problem": "View.decorators shared mutable ClassVar leaks across subclasses", "evidence": ["src/flask/views.py:64"], "confidence": 0.9, "scope": "Copy-on-mutate", "do_not_touch": "as_view behavior"},
+    {"id": "B8", "problem": "Publish workflow lacks PEP 740 attestations and publishes any tag", "evidence": [".github/workflows/publish.yaml:4, 43-58"], "confidence": 0.8, "scope": "Add build attestation; guard tag format", "do_not_touch": "OIDC trusted publishing"},
+    {"id": "B9", "problem": "Sansio purity contract violated in 4 places; coupling with Quart", "evidence": ["src/flask/sansio/scaffold.py:19", "src/flask/sansio/app.py:28, 492", "src/flask/sansio/blueprints.py:337-347", "src/flask/logging.py:9, 52"], "confidence": 0.85, "scope": "Fix leaks or document sanctioned exceptions; add contract test", "do_not_touch": "Sansio public API surface"}
+  ]
+}
+```
+
+**Bottom line:** this snapshot is a well-governed project one security release and one dependency refresh behind upstream, carrying one genuinely high-risk piece of new machinery (the untested, globally-mutating signature shim), one high-blast-radius behavioral change (the context merge — deliberate but under-documented), and a handful of small correctness defects. The highest-leverage next actions are: pull the 3.1.3 security fix into main, refresh the Werkzeug pins, and harden+test the shim before 3.2.0 ships.
+
+Both remaining audits landed with substantive findings. Before integrating, I'm verifying the four most consequential new claims first-hand: `FLASK_DEBUG` truthiness, `stream_with_context` push timing, the `SESSION_COOKIE_PARTITIONED` docs/code contradiction, and the key-rotation ordering.
+
+`FLASK_DEBUG=off` → debug **on** confirmed (helpers.py:31-32), and the docs/code contradiction on `SESSION_COOKIE_PARTITIONED` confirmed (docs/config.rst:205 vs sessions.py:216-235). Reading the rest of `stream_with_context` and the key-rotation test.
+
+All four claims verified: `FLASK_DEBUG=off`→debug-on (helpers.py:32), PARTITIONED docs/code contradiction (docs/config.rst:205 vs sessions.py:216-235), `from_prefixed_env` leaf/parent TypeError (config.py:172-183), and `stream_with_context` push-at-setup (helpers.py:113-135, thread-sensitive vs 3.1.2's push-at-resume). The key-rotation code is correct per test_basic.py:374-399 (stale comment only). Committing these to the ledger.
+
+# Addendum — Integrated Findings from the Two Final Module Audits
+
+All findings below were re-verified first-hand against the snapshot before inclusion. This amends the main report; unchanged items stand.
+
+## New MEDIUM findings (verified)
+
+**M1 — `FLASK_DEBUG` truthiness footgun can enable the debugger in production.** `get_debug_flag()` (helpers.py:31-32) treats *any* value outside `{"0","false","no"}` as true. `FLASK_DEBUG=off`, `FLASK_DEBUG=disabled`, or `FLASK_DEBUG=FALSE` (case is lowercased for the falsey set only) all **enable** debug mode — including the interactive debugger (evalex). Operators following the common "off/disabled" convention get the opposite of what they asked for. The same falsey-set pattern in `get_load_dotenv` (helpers.py:42-47) is benign by direction, but the debug one is a production-incident class. → **BUILD** (accept explicit `off`/`disabled`/`0`/`false`/`no`; document).
+
+**M2 — Docs/code contradiction on `SESSION_COOKIE_PARTITIONED`.** docs/config.rst:205 states "Enabling this implicitly enables `SESSION_COOKIE_SECURE` as well"; no code does this — `get_cookie_secure` (sessions.py:216-220) and `get_cookie_partitioned` (229-235) are fully independent. CHIPS requires `Secure`; browsers drop `Partitioned` cookies without it, so users following the docs get silently broken sessions. → **BUILD** (either implement the coupling or fix the docs; add a test).
+
+**M3 — `config.from_prefixed_env` crashes on leaf/parent key conflict.** With both `FLASK_A=1` and `FLASK_A__B=2` in the environment, sorted order sets `A` as a scalar, then `current = current["A"]` = `1` and `current["B"] = value` raises an **unhandled `TypeError`** (config.py:172-183). A public, commonly-recommended config API should not hard-crash on adversarial-but-plausible env layouts (the reverse order would silently clobber the nested dict — also wrong). → **BUILD** (deterministic precedence or clear error).
+
+**M4 — `stream_with_context` lost its thread-agnostic property in the context merge.** The 3.1.2 fix (9822a035) pushed the context lazily at *resume*, so push and pop both happened in the consuming thread. The current snapshot pushes at *setup* (helpers.py:113-135: `next(wrapped_g)` runs during the request), and pops at stream exhaustion — correct for the normal same-thread WSGI path, but if the response iterable is consumed in a different thread (async bridges, middleware thread pools, exotic servers), `pop()` fails with "Cannot pop this context… no active context" (ctx.py:454-459) mid-stream. No cross-thread test; the regression is silent. → **BUILD** (re-push at resume like 3.1.2, or bound the ctx to the consuming thread; add a cross-thread test).
+
+**M5 — `ctx.pop()` no longer auto-detects the active exception.** 3.1's `RequestContext.pop` fell back to `sys.exc_info()[1]` when `exc` wasn't given; the merged `AppContext.pop` defaults to `None` (ctx.py:432) — only `__exit__` passes the exception. Code doing manual `ctx.pop()` inside an `except` block (an extension pattern) now delivers `None` to `teardown_request`/`teardown_appcontext` handlers. Silent behavior change in a deprecation-adjacent path. → **INVESTIGATE→BUILD** (restore `sys.exc_info()` fallback for manual pops, or document loudly in the 3.2 migration guide).
+
+**M6 — Dev CLI env pollution makes later `app.run()` calls silent no-ops.** The CLI writes `FLASK_RUN_FROM_CLI=true` (cli.py:667) and `FLASK_DEBUG` (cli.py:481) into the process environment and never restores them; `app.run()` checks `FLASK_RUN_FROM_CLI` and returns early (app.py:696-706). In long-lived processes (test suites invoking the CLI, notebooks), subsequent `app.run()` calls die silently. Also `--cert` performs `import_string` (cli.py:820) — a second arbitrary-import seam beside `--app` (dev-tool trust domain, but surprising for a TLS flag). → **LOW-MED**, fix env hygiene; document `--cert`.
+
+## New LOW findings (selected, verified)
+
+- **L1** `RequestContext(app, environ)` positional construction now raises `TypeError` (ctx.py:299-305 keyword-only) — the alias shim covers the name, not the signature. (ctx.py:504-514)
+- **L2** Stale security-adjacent comment: sessions.py:326 says "itsdangerous expects current key at top" but the code appends the current key **last** — which is what the rotation test (test_basic.py:374-399) validates as correct. Comment invites a future re-break of the GHSA-4grg-w6v8-c28g fix.
+- **L3** `from_prefixed_env()`'s default `FLASK` prefix pulls CLI control vars (`FLASK_APP`, `FLASK_DEBUG`, `FLASK_RUN_*`) into app config, and its `json.loads` accepts `NaN`/`Infinity` (config.py:126-185).
+- **L4** Logging: `default_handler` is a process-wide singleton while loggers are keyed by `app.name` (cross-app leakage, logging.py:52, 71); `has_level_handler` adds a duplicate handler when a user handler's level is above the effective level (logging.py:35-47, 76-77); DEBUG level set at debug-on is never reverted (logging.py:73-74).
+- **L5** `FlaskClient.open` silently drops kwargs when the first arg is an EnvironBuilder/dict/BaseRequest (testing.py:211-225); preserved contexts leak in `_new_contexts` if `open()` raises (testing.py:242-246); `werkzeug.debug.preserve_context` is left in environ (app.py:1576-1577).
+- **L6** Default session cookies carry **no SameSite attribute** (`SESSION_COOKIE_SAMESITE=None`, app.py:223) and `Secure=False` (app.py:221) — documented, but worth a security-baseline review.
+- **L7** `session_json_serializer` is a module-level singleton delegating to context-dependent `flask.json` (sessions.py:287) — cross-app coupling for custom JSON providers.
+- **L8** `_cv_request` ContextVar removed with no shim (globals.py) — private API, acceptable, but a 3.2 break for extensions that touched it.
+
+## Revised classification & handoff
+
+**Classified:** M1–M4 → **BUILD** (verified, user-impacting, small scope). M5 → **INVESTIGATE** (needs maintainer intent confirmation: restore `sys.exc_info()` fallback vs. documented change). M6 → **BUILD** (env hygiene). L1–L8 → **DON'T BUILD / fold into the 3.2 migration guide + docs pass** (B3).
+
+**Handoff additions to the main brief** (same `dsh-researcher/handoff/v1` schema; new items):
+
+| id | Problem | Evidence | Confidence | Scope | Do-not-touch |
+|---|---|---|---|---|---|
+| B10 | `FLASK_DEBUG=off/disabled` enables debug mode | helpers.py:31-32 | 0.95 | Accept explicit off-values; document | Debug-flag resolution otherwise |
+| B11 | Docs promise `SESSION_COOKIE_PARTITIONED`→`SECURE` coupling that code doesn't implement → dropped cookies | docs/config.rst:205 vs sessions.py:216-235 | 0.9 | Implement coupling or fix docs + test | Cookie attribute code otherwise |
+| B12 | `from_prefixed_env` unhandled TypeError on leaf/parent env conflict | config.py:172-183 | 0.95 | Deterministic precedence or clear error | Nested-key semantics otherwise |
+| B13 | `stream_with_context` push-at-setup breaks cross-thread consumption (3.1.2 was thread-agnostic) | helpers.py:113-135; 3.1.2 9822a035 | 0.8 | Push at resume or bind ctx to consuming thread; cross-thread test | stream_with_context public API |
+| B14 | Manual `ctx.pop()` in except block passes `None` to teardowns (no `sys.exc_info()` fallback) | ctx.py:432 | 0.8 | Restore fallback or document in migration guide | Teardown ordering |
+| B15 | CLI env pollution (`FLASK_RUN_FROM_CLI`/`FLASK_DEBUG`) → later `app.run()` silent no-op; `--cert` import_string seam | cli.py:481, 667, 820; app.py:696 | 0.85 | Restore env after CLI; document --cert | CLI command semantics |
+
+**Net assessment (unchanged core, refined edges):** the snapshot is one security release behind (CVE-2026-27205), runs known-vulnerable pinned Werkzeug, and carries one high-risk untested shim + a deliberate-but-under-documented context merge. The new audits add **five more verified medium issues** — two of them (M1 debug-enablement, M2 broken CHIPS sessions) are production-impacting for end users, and two (M3, M4) are regressions/robustness holes in public APIs. All are small-scope fixes that belong in the 3.2.0 release cycle alongside the security sync. The audit also reconfirmed the project's health: no TODOs, no xfails, warnings-as-errors, strict typing, exemplary CI — the problems here are concentration of risk in the in-flight refactor and its docs, not systemic decay.
+
+*Full report + main handoff (B1–B9) delivered above; research state (28 claims, H1/H2) committed to the session checkpoint; runtime certificate Run #2 SAFE throughout.*
+
+That re-delivery of the json/templating/views audit (b0d2a3ad) adds **no new information** — its 13 findings were already received, verified, and integrated into the main report (F5 MethodView-405, F10 `View.decorators`, F12 template-signal asymmetry, F17 JSON-tag recursion/datetime lossiness, F18 loader-path disclosure, F19 dead code, F20 async-signal detection) and its "verified sound" items matched my own first-hand checks (tag-collision design, app-first loader precedence, `_async_wrapper` on all ten signal sites, PEP-604/`>=3.10` compatibility, four-form decorator tests).
+
+## Final state — all delegated audits folded in
+
+| Audit | Status | Integration |
+|---|---|---|
+| json/templating/views (b0d2a3ad) | ✅ complete | Main report (F5, F10, F12, F17-F20) |
+| sansio/blueprints (61aa1951) | ✅ complete | Main report (F4, F6-F8, F13-F16) |
+| tests/CI (ef731073) | ✅ complete | Main report (F4 tests, F9, F11) |
+| CLI/config/testing (0af6f595) | ✅ complete | Addendum (M5-M6, L1, L3-L5, L8) |
+| sessions/helpers (78f7829a) | ✅ complete | Addendum (M1-M4, L2, L6-L7) |
+
+**No findings changed, no classifications revised** — the re-delivered audit confirms rather than contradicts the established picture.
+
+## Analysis complete — final summary
+
+**Runtime proof:** Run #2, **SAFE** (researcher-deep; read-only; all checks PASS).
+
+**Snapshot verdict:** pallets/flask `main` @ `2579ce9f` (2025-11-17, 3.2.0.dev) — a healthy, well-governed project mid-way through its largest refactor in a decade (AppContext/RequestContext merge, #5812/#5818), one security release and one dependency refresh behind upstream.
+
+**Top risks, in order:**
+1. **Security lag** — CVE-2026-27205 (`Vary: Cookie`, fixed in stable 3.1.3) absent from main; locked Werkzeug 3.1.3 vulnerable to ≥4 CVEs (CVE-2025-66221/61911/61912, CVE-2026-21860/27199).
+2. **Untested, globally-mutating `__init_subclass__` compat shim** (app.py:253-307) — can misclassify annotations and break working subclasses; zero direct test coverage.
+3. **Context-merge ecosystem blast radius** — `g` non-sharing, double `teardown_appcontext`, lazy session; deliberate but under-documented.
+4. **Five verified medium defects** — `FLASK_DEBUG=off` enables debug; `SESSION_COOKIE_PARTITIONED` docs/code contradiction; `from_prefixed_env` crash; `stream_with_context` thread-sensitivity regression; `ctx.pop()` exception-detection loss.
+
+**Handoff:** 15 BUILD items (B1-B15) with evidence, confidence, scope, and do-not-touch constraints — B1-B9 in the main report, B10-B15 in the addendum — plus an explicit DON'T BUILD list (re-adding JSON htmlsafe, native ASGI, locked_cached_property). Research state (28 claims, hypotheses H1/H2) committed to the session checkpoint; project filesystem untouched throughout.
+
+That re-delivery of the sansio/blueprints audit (61aa1951) likewise adds **no new material** — its findings were already received, first-hand verified, and integrated:
+
+| Audit finding | Integrated as |
+|---|---|
+| Sansio purity contract violated in 4 places (scaffold.py:19→templating.py:25 `app_ctx` global; sansio/app.py:28→logging.py:9 globals; blueprints.py:337-347 `cli` touch) | **F8** (main report) + handoff **B9** |
+| `__init_subclass__` shim globally monkey-patches base `Flask` | **F4** + handoff **B4** |
+| Partial-state mutation on failed registration (blueprints.py:319-320; sansio/app.py:650) | **F6/F7** + handoff **B6** |
+| No TODO/FIXME/XXX; no `locked_cached_property`; no sansio-purity test | F13/F14/F19, "verified strengths" |
+
+All five delegated audits are now confirmed complete and folded into the final deliverable; nothing was re-classified.
+
+---
+
+## Final state — analysis closed
+
+**Runtime proof:** Run #2, **SAFE** (researcher-deep, read-only, all checks PASS). Research state: 28 claims (C0–C27) + hypotheses H1/H2 committed to the session checkpoint; project filesystem untouched.
+
+**Deliverables already in this conversation:**
+1. **Main report** — project model (RECONSTRUCT), evidence map, 20+ findings ranked 🔴HIGH (F1–F4) → 🟠MED (F5–F11) → 🟡LOW (F12–F21), tradeoffs/compare/challenge, classification, recommended next actions, self-eval, handoff brief **B1–B9** + machine-readable `dsh-researcher/handoff/v1` JSON.
+2. **Addendum** — five verified medium findings (M1–M5: `FLASK_DEBUG` truthiness, `SESSION_COOKIE_PARTITIONED` docs/code contradiction, `from_prefixed_env` crash, `stream_with_context` thread-sensitivity, `ctx.pop()` exception-detection loss) + low items, handoff additions **B10–B15**.
+
+**The one-paragraph answer to the original question:** this snapshot of Flask (main @ 2025-11-17, 3.2.0.dev) is a healthy, unusually well-governed codebase in the middle of its biggest refactor in a decade — the AppContext/RequestContext merge — whose dominant problems are (a) it predates the Flask 3.1.3 security fix (CVE-2026-27205) and pins a Werkzeug (3.1.3) carrying multiple 2025/2026 CVEs, (b) the compat shim for the new dispatch signatures is untested, annotation-fragile, and globally monkey-patches the base class, (c) the merge silently changes `g`/teardown semantics the extension ecosystem depends on, with narrative docs still describing the old model, plus a handful of verified medium defects (debug-flag footgun, CHIPS docs contradiction, config-env crash, streaming thread regression). Recommended next actions: sync the 3.1.3 fix and refresh Werkzeug pins (B1/B2), harden and test the shim (B4), write the 3.2 migration guide and coordinate with extensions (B3), fix the five medium defects (B10–B15), then the small correctness items (B5–B8) and the sansio-contract decision with Quart (B9).
+
+The full CI/test audit adds three genuinely new details beyond what was already integrated: (1) keyword-only `ctx` misdetection in the shim (silent TypeError), (2) the pre-commit autofix workflow's missing `permissions`, (3) the greenlet×free-threading wheel risk. Verifying the workflow permissions claim first-hand.
+
+Verified — no `permissions:` block in pre-commit.yaml; the lite-action autofix depends on the org default token scope. The keyword-only `ctx` misdetection is also confirmed by logic (app.py:284-298 never checks `param.kind`). Committing the final delta to the ledger.
+
+# Final integration — CI/test audit delta
+
+The full CI/test-suite report (ef731073) is now folded in. It confirms the earlier summary's findings (shim zero coverage → **F4/B4**; PEP 740 + any-tag publish → **F9/B8**; context-contract test gaps → **F11**) and adds three verified deltas:
+
+## New items (verified)
+
+**D1 — Shim misdetects keyword-only `ctx` → silent TypeError.** The heuristic (app.py:284-298) checks the second parameter's name/annotation but **never `param.kind`**. A subclass defining `def dispatch_request(self, *, ctx)` is classified as new-style (no warning), yet internal callers pass `ctx` positionally (app.py:1004) → runtime `TypeError`. Conversely, `*args`/`**kwargs` overrides trip the warn+patch path. Adds two more variants to the shim-fragility catalog (B4 scope). *(Static analysis, C3/Likely — C29.)*
+
+**D2 — pre-commit.yaml lacks `permissions:` (verified first-hand, lines 1-25).** The `pre-commit-ci/lite-action` (line 24) auto-commits fixes on PRs and needs `contents: write`; with no permissions block, whether autofix works depends on the repo/org default token scope. One-line hardening; LOW-MED. *(C28, Known.)*
+
+**D3 — greenlet × free-threading CI risk.** `greenlet` is a hard member of the `tests` dependency group (pyproject.toml:60) consumed by the new `3.13t`/`3.14t` jobs; a missing free-threaded wheel would break those jobs. Not verifiable from the snapshot — flagged as a watch item, not a defect. *(C30, Likely.)*
+
+Also noted: ~384 test functions / ~381 parametrize markers, zero xfails, `tests-dev` canary on 3.10 (inherent design risk, LOW), positive-only typing checks with no coverage of the new `ctx:` signatures (LOW).
+
+## Classification update
+
+| Item | Class | Action |
+|---|---|---|
+| D1 keyword-only/`*args` shim variants | **BUILD** | Fold into B4 (shim hardening + tests) — add keyword-only and varargs cases to the test matrix |
+| D2 pre-commit permissions | **BUILD** | Add explicit `permissions: contents: write` to pre-commit.yaml job |
+| D3 greenlet×free-threading | **INVESTIGATE** | Watch free-threaded greenlet wheels; consider making greenlet an optional test extra |
+| All other audit items | — | Already integrated (F4/F9/F11, B4/B8) |
+
+Handoff **B4** scope is now: narrow detection (name+annotation+**kind** checks), add tests for old/new/`t.Any`/unions/`Optional`/keyword-only/`*args`/multi-subclass/async variants, and assert the `ctx` identity passed to overrides. Handoff **B8** scope gains: explicit permissions block in pre-commit.yaml.
+
+---
+
+**Analysis closed.** Runtime certificate Run #2 **SAFE** throughout; all five delegated audits complete and integrated (no contradictions; three verification-only deltas this round); research state at **31 claims (C0–C30) + H1/H2** in the session checkpoint; project filesystem untouched. Final deliverable = main report (B1–B9) + addendum (M1–M6, B10–B15) + this delta (D1–D3). The verdict stands: healthy project, one security release and one dependency refresh behind, one high-risk untested shim, one deliberate-but-under-documented ecosystem-breaking refactor, and a set of small verified defects — with the recommended next actions being the security sync (B1/B2), shim hardening (B4), the 3.2 migration guide (B3), and the medium-defect fixes (B10–B15).
+
+The final audit (0af6f595) lands with **no classification changes** — everything in it was already integrated (shim → F4/B4; teardown-exc → M5/B14; pop RuntimeError type → L-item; `FLASK_DEBUG` → M1/B10; env pollution → M6/B15; `from_prefixed_env` → M3/B12; duplicate logging handler → L4; preserved-context re-match → L5). Two genuinely new nuggets worth recording:
+
+**N1 — Positive security verification: factory args are `ast.literal_eval`-restricted.** The CLI's `--app 'mod:factory(**x)'` path (cli.py:151-155) evaluates factory kwargs via `literal_eval`, not `eval` — so the arbitrary-import seam is bounded to the by-design `--app`/`--cert` import_string surface, with no expression-evaluation RCE added. Good.
+
+**N2 — The 3.2 risk surface is precisely delimited.** `testing.py`, `config.py`, and `logging.py` are **textually unchanged since 3.1.2**; `cli.py` differs only by dropping the py<3.10 `importlib_metadata` backport (consistent with the Python 3.9 drop). Every 3.2.0.dev behavior delta in this snapshot lives in `ctx.py`, `app.py`, and `globals.py` — which matches exactly where this analysis concentrated: the merged context, the dispatch-signature migration, and the three deprecation shims. The audit also honestly flagged werkzeug-internal claims (e.g., `LocalProxy.__bool__`) as 未验证 since Werkzeug's source is outside the snapshot — a limitation already respected in my own claims (C2-tier labels).
+
+---
+
+## Analysis closed — final state
+
+**Runtime certificate:** Run #2, **SAFE** throughout (researcher-deep; read-only; all checks PASS; project filesystem untouched).
+
+**Audit coverage:** all five delegated module audits complete and mutually consistent — no contradictions, three verification-only deltas across the last rounds (D1 shim keyword-only variant, D2 pre-commit permissions, D3 greenlet×free-threading), all folded in.
+
+**Research state:** 31 claims (C0–C30) + hypotheses H1/H2 in the session checkpoint.
+
+**Deliverable (unchanged since the addendum):**
+- **Main report** — project model, evidence map, findings F1–F21 (🔴 F1–F4: CVE-2026-27205 absence, vulnerable pinned Werkzeug, context-merge ecosystem blast radius, untested globally-mutating shim; 🟠 F5–F11; 🟡 F12–F21), tradeoffs/compare/challenge, classification, next actions, handoff **B1–B9** + JSON.
+- **Addendum** — M1–M6 verified medium defects (debug-flag footgun, CHIPS docs contradiction, config-env crash, streaming thread regression, teardown-exc loss, CLI env pollution), handoff **B10–B15**.
+- **Delta** — D1–D3.
+
+**Bottom line:** healthy, well-governed project — but this snapshot is (1) one security release behind (CVE-2026-27205 fix in stable 3.1.3 absent from main), (2) developing/testing against known-vulnerable Werkzeug 3.1.3, (3) carrying an untested, annotation-fragile, globally monkey-patching compat shim as the linchpin of its biggest refactor in a decade, and (4) shipping that refactor's ecosystem-breaking semantics (`g` non-sharing, double teardown, lazy session) with narrative docs still describing the old model. Recommended next actions, in order: sync the 3.1.3 fix + regression tests (B1), refresh Werkzeug pins + add dependency auditing to CI (B2), harden and test the shim (B4), write the 3.2 migration guide and coordinate with the extension ecosystem (B3), fix the five medium defects (B10–B15), then the small correctness items (B5–B8) and the sansio-contract decision with Quart (B9).
+
+The final audit confirms everything already integrated. One evidence upgrade is warranted: the subagent anchored the key-rotation ordering to the fix commit message and itsdangerous 2.2 semantics (advisory title: "Flask uses fallback key instead of current signing key"), upgrading the confidence of the existing claim.
+
+# Analysis closed — all five audits complete and integrated
+
+The sessions/helpers audit (78f7829a) adds **no new findings** — every item was already integrated: GHSA-4grg-w6v8-c28g rotation correctness + stale comment (L2), `stream_with_context` cross-thread risk (M4/B13, with the push-count early-return mechanism now confirmed as the same-thread safety rail), `SESSION_COOKIE_PARTITIONED` docs/code contradiction (M2/B11), and the low items (L6-L8, C19). Its one upgrade — anchoring the key-rotation ordering to the fix commit `fb541598`, itsdangerous 2.2 semantics, and the advisory title — is now recorded in the ledger (C27 → Known, 1.0).
+
+## Final deliverable state
+
+**Runtime certificate:** Run #2, **SAFE** throughout. Read-only enforced; project filesystem untouched.
+
+**Research state:** 31 claims (C0–C30, all graded C0–C4 with verdicts and evidence), hypotheses H1 (healthy-project-mid-refactor) / H2 (shim fragility) active, committed to the session checkpoint.
+
+**Audit coverage matrix — 100% complete, zero contradictions:**
+
+| Area | Coverage | Key contribution |
+|---|---|---|
+| Dispatch core (app.py, ctx.py, sansio/*) | First-hand full read + 2 audits | F2-F8, M4-M5, D1 |
+| Sessions/helpers/wrappers/globals | First-hand full read + audit | M1-M2, L2, L6-L7, C19 |
+| JSON/templating/views/signals | Audit (13 findings) | F5, F10, F12, F17-F20 |
+| CLI/config/testing/logging | First-hand + audit (30 findings) | M3, M6, L1, L3-L5, N1 |
+| Tests/CI/workflows | First-hand + audit (12 findings) | F4-test-gap, F9, F11, D2-D3 |
+| External (security landscape) | Search-based, cited | CVE-2026-27205, werkzeug CVE cluster |
+
+**The answer to the original question, final form:**
+
+This snapshot of Flask (`main` @ 2579ce9f, 2025-11-17, 3.2.0.dev) is a **healthy, exceptionally well-governed codebase** — no TODOs, no xfails, warnings-as-errors, strict typing, SHA-pinned CI, OIDC publishing — whose problems concentrate in four places:
+
+1. **Security lag (🔴):** predates the stable 3.1.3 fix for CVE-2026-27205 (missing `Vary: Cookie` on iteration-style session reads), and its own lockfile/CI run on Werkzeug 3.1.3, vulnerable to ≥4 CVEs (CVE-2025-66221/61911/61912, CVE-2026-21860/27199).
+2. **The `__init_subclass__` compat shim (🔴):** zero test coverage, annotation-fragile detection (unions, `t.Any`, keyword-only, varargs variants), and permanent global monkey-patching of the base class triggered by any third-party legacy subclass.
+3. **The context merge's ecosystem blast radius (🔴→🟠):** `g` non-sharing, double `teardown_appcontext`, lazy session, teardown-exception detection loss, `stream_with_context` thread-sensitivity — deliberate simplification, under-documented (appcontext.rst still describes the old model, typo included).
+4. **Five verified medium defects (🟠):** `FLASK_DEBUG=off` enables the debugger; `SESSION_COOKIE_PARTITIONED` docs promise Secure-coupling that doesn't exist; `from_prefixed_env` hard-crashes on leaf/parent env conflicts; CLI env pollution silences later `app.run()`; logging handler-duplication quirk.
+
+**Recommended next actions** (handoff B1–B15): sync the 3.1.3 fix + regression tests; refresh Werkzeug pins and add dependency auditing to CI; harden and test the shim before 3.2.0; write the 3.2 migration guide and coordinate with the extension ecosystem; fix the five medium defects; then the small correctness items (MethodView 405, registration atomicity, `View.decorators`) and the sansio-contract decision with Quart. Explicit **DON'T BUILD**: re-adding JSON XSS guardrails, native ASGI, or locked_cached_property — all deliberate prior decisions.
+
+The machine-readable handoff (`dsh-researcher/handoff/v1`, build_items B1–B15 with id/problem/evidence/confidence/scope/do_not_touch) is in the main report and addendum above; the HOW belongs to Plan Mode.

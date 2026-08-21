@@ -1,0 +1,269 @@
+{
+  "checkpoint_claims": [],
+  "tool_calls": [
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"Get-ChildItem -Force | Select-Object Mode, Length, Name\", \"description\": \"List files in workspace root\"}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"*\"}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"src/**/*\"}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"tests/**/*.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"pyproject.toml\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git log --oneline -15; git status; git branch -a\", \"description\": \"Show git log, status, and branches\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"Get-ChildItem src\\\\flask | Select-Object Name, Length; Write-Output \\\"---\\\"; (Get-Content src\\\\flask\\\\__init__.py | Measure-Object -Line).Lines\", \"description\": \"List flask source files with sizes\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"CHANGES.rst\", \"limit\": 120}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/ctx.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/app.py\", \"offset\": 1277}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/sansio/app.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/globals.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/testing.py\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git show --stat adf36367 | Select-Object -First 40; Write-Output \\\"=====\\\"; git show --stat 70d04b5a | Select-Object -First 40\", \"description\": \"Show stat of context-merge commits\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/helpers.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/templating.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/cli.py\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"python --version; python -c \\\"import pytest; print(pytest.__version__)\\\"; python -c \\\"import flask; print(flask.__file__)\\\"\", \"description\": \"Check Python, pytest, flask availability\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_subclassing.py\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"Get-ChildItem -Force -Directory | Select-Object Name; Write-Output \\\"---\\\"; uv --version 2>$null; Write-Output \\\"---\\\"; Get-ChildItem -Force .venv -ErrorAction SilentlyContinue | Select-Object -First 5 Name\", \"description\": \"Check for venv and uv availability\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"pattern\": \"TODO|FIXME|XXX|HACK|BUG\", \"path\": \"src\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/sessions.py\", \"limit\": 120}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"DeprecationWarning|deprecated|old signature\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"remove_ctx|add_ctx|__init_subclass__|old signature|signature\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"def test_.*(handle_exception|dispatch_request|full_dispatch_request|finalize_request|process_response|preprocess_request|do_teardown|make_default_options|handle_user_exception|handle_http_exception)\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"class .*Flask|class .*\\\\(flask\\\\.Flask\\\\)|class .*\\\\(Flask\\\\)\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_reqctx.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/__init__.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".github/workflows/tests.yaml\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src\", \"pattern\": \"RequestContext|request_ctx|_cv_request|has_request_context\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/wrappers.py\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git show c2705ffd -- src/flask/globals.py src/flask/app.py | Select-Object -First 250\", \"description\": \"Show context-merge diff for globals and app\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git show c2705ffd -- src/flask/ctx.py | Select-Object -First 400\", \"description\": \"Show context-merge diff for ctx.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"docs\", \"pattern\": \"RequestContext|request_ctx|_cv_request\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"examples\", \"pattern\": \"request_ctx|RequestContext|app_ctx\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/conftest.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/api.rst\", \"offset\": 280, \"limit\": 70}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/shell.rst\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/reqcontext.rst\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/debughelpers.py\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/views.py\", \"limit\": 80}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src\", \"pattern\": \"_cv_app\\\\.get\\\\(\\\\)|_cv_app\\\\.get\\\\(None\\\\)\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \".pre-commit-config.yaml\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_appctx.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"pytest\\\\.warns|filterwarnings|catch_warnings\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"src/flask/signals.py\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git log --oneline -30 -- src/flask/app.py src/flask/ctx.py\", \"description\": \"Show recent history of app.py and ctx.py\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"tests\", \"pattern\": \"handle_exception|full_dispatch|finalize_request|process_response|preprocess_request|make_default_options\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git log --oneline -12; Write-Output \\\"=====\\\"; git show 6a649690 --stat | Select-Object -First 25\", \"description\": \"Show recent commits and dispatch-ctx commit stat\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_basic.py\", \"limit\": 60, \"offset\": 995}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_user_error_handler.py\", \"limit\": 50, \"offset\": 265}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git show c2705ffd -- src/flask/templating.py src/flask/json/__init__.py | Select-Object -First 200\", \"description\": \"Show merge diff for templating and json init\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git show 6a649690 -- src/flask/app.py src/flask/templating.py src/flask/ctx.py | Select-Object -First 330\", \"description\": \"Show dispatch-ctx commit diff\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"docs\", \"pattern\": \"shell|reqcontext\", \"include\": \"index.rst\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/conf.py\", \"limit\": 80}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"tests/test_basic.py\", \"limit\": 75, \"offset\": 1555}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"src/flask/sansio\", \"pattern\": \"AppContext|_cv_app|request_ctx\"}"
+    },
+    {
+      "name": "glob",
+      "arguments": "{\"pattern\": \"examples/**/*\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git diff 33012325..HEAD --stat | Select-Object -Last 15; Write-Output \\\"=====\\\"; git log --oneline 33012325..HEAD\", \"description\": \"Show changes since 3.1.2 release branch point\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git diff 33012325..HEAD -- src/flask/sessions.py src/flask/sansio/scaffold.py src/flask/sansio/blueprints.py src/flask/helpers.py | Select-Object -First 150\", \"description\": \"Show small diffs for sessions, scaffold, helpers\"}"
+    },
+    {
+      "name": "grep",
+      "arguments": "{\"path\": \"docs\", \"pattern\": \"preprocess_request|process_response|update_template_context\"}"
+    },
+    {
+      "name": "pwsh",
+      "arguments": "{\"command\": \"git show 607d1948 --stat | Select-Object -First 20; Write-Output \\\"=====\\\"; git show 91700009 --stat | Select-Object -First 20\", \"description\": \"Show recent CI-related commits\"}"
+    },
+    {
+      "name": "read",
+      "arguments": "{\"file_path\": \"docs/testing.rst\", \"limit\": 45, \"offset\": 290}"
+    },
+    {
+      "name": "exit_plan_mode",
+      "arguments": "{\"plan\": \"# Repository Analysis: Flask 3.2.0.dev (post app/request-context merge)\\n\\n## 1. What this snapshot is\\n\\nFlask main branch at `2579ce9f` (detached HEAD, clean tree), version **3.2.0.dev**, immediately after two landmark refactors:\\n\\n- **#5812 \\\"merge app and request context\\\"** — `RequestContext` is gone; `AppContext` now carries optional request/session data; a single `ContextVar` (`_cv_app`) drives `current_app`, `g`, `request`, `session`.\\n- **#5818 \\\"pass context through dispatch methods\\\"** — 12 `Flask` dispatch/teardown methods now take `ctx: AppContext` as their first parameter instead of reading proxies; a `__init_subclass__` shim detects old-signature overrides, warns, and wraps them.\\n\\nThe refactor is a genuine simplification (one ContextVar, push-count-based nesting, lazy session loading, no more \\\"reuse existing app context\\\" detection), but it is a **major in-flight change with several concrete defects, high-risk compat machinery, and zero test coverage for the deprecation paths**.\\n\\n## 2. Most important problems & risks\\n\\n### A. The `__init_subclass__` compat shim (`src/flask/app.py:253-307`) — highest risk\\n- **Global mutation of the base class**: when *any* subclass overrides one of the 12 listed methods with an old signature, the shim does `setattr(Flask, method.__name__, add_ctx(base_method))` — permanently replacing the base `Flask` method **process-wide** (order-dependent, affects all apps/subclasses, including already-updated ones, for the life of the process).\\n- **Double-wrapping accumulation**: a second old-signature subclass wraps the already-wrapped base again (`add_ctx(add_ctx(...))`) and wraps its own already-wrapped inherited method with `remove_ctx` again, plus repeated `DeprecationWarning`s for intermediate classes in 3+ level hierarchies.\\n- **Fragile detection**: only the *second parameter's name or annotation* is inspected (name `ctx`, string annotation ending `.AppContext`, or class subclassing `AppContext`). False positives (a second param coincidentally named `ctx` for other purposes) and false negatives are possible.\\n- **`add_ctx` requires an active context**: `app_ctx._get_current_object()` raises `RuntimeError` when the wrapped base method is called without a context — a behavior change for direct calls (e.g., `app.process_response(resp)` outside a request) once any extension has triggered the patch.\\n- **Kwargs bypass the shim**: `remove_ctx`/`add_ctx` only strip/prepend *positional* args; keyword calls (`handle_exception(ctx=ctx, e=e)`) mis-route.\\n- **Gap in the method list**: `update_template_context(self, ctx, context)` also changed signature but is **not** in the shim — old-style overrides now fail with `TypeError` at render time.\\n- **Zero test coverage**: no test exercises `remove_ctx`/`add_ctx`, any old-signature override, or the `RequestContext`/`request_ctx` deprecation aliases. With `filterwarnings = error` in `pyproject.toml`, these paths are untested and easy to break silently.\\n\\n### B. Intentional but ecosystem-breaking behavior changes (must be validated before 3.2)\\n- **Pre-pushed app contexts are no longer reused per request** (documented in CHANGES). Each request pushes a *fresh* `AppContext` with a *fresh* `g`. Consequences: `g` values set in `with app.app_context():` are no longer visible inside views; `teardown_appcontext` now runs after every request even when a context was pre-pushed; `appcontext_pushed`/`appcontext_popped` fire per request. Apps/extensions relying on shared `g` or on teardown suppression (e.g., SQLAlchemy session scoping patterns) will change behavior — the highest ecosystem risk of this release.\\n- **Session is now loaded lazily** (first access) instead of at context push — changes *when* `open_session` runs; `process_response` forces a load each request.\\n- **`AppContext.pop()` lost the `_sentinel` auto-detection**: `ctx.pop()` called manually inside an `except` block no longer passes the active exception to teardown functions (previously detected via `sys.exc_info()`).\\n- **Changed error paths**: with only an app context active, `request`/`session` proxies now raise `RuntimeError(\\\"There is no request in this context.\\\")` instead of the \\\"Working outside of request context.\\\" unbound message; `send_file`/`redirect`/`abort` outside a context now fail via `app_ctx._get_current_object()`.\\n- **`AppContext.copy()` now shares the same `Request` object** (3.1 re-created a Request from the environ) — identity semantics changed for `copy_current_request_context` consumers.\\n\\n### C. Docs are stale/broken after the refactor (will ship wrong instructions)\\n- `docs/shell.rst` (in the main toctree, built with `sphinx-build -W`): still references the deprecated `flask.ctx.RequestContext`; `app.preprocess_request()` (line 52) and `app.process_response(app.response_class())` (line 61) now raise `TypeError` with the new ctx-first signatures.\\n- `docs/testing.rst:317`: `app.preprocess_request()` — same break.\\n- `docs/api.rst` deprecation entries for `RequestContext`/`request_ctx` exist (fine), but the examples above must take `ctx` (e.g., `app.preprocess_request(ctx)`).\\n- Minor: docstring typos in `ctx.py` (\\\"will available\\\" in `has_request_context` docs).\\n\\n### D. Test/CI observations\\n- No local test environment exists here (no `uv`, no `.venv`, no pytest) — CI uses tox/uv across py3.10–3.14 incl. free-threaded `3.14t`, `tests-min`, `tests-dev`, plus mypy-strict/pyright/ruff and a `-W` docs build, which is solid. The gaps are the *untested compat paths* (A) and *unverified ecosystem semantics* (B).\\n- `leak_detector` fixture and new `test_appctx` cases cover the merged context basics; `test_app_tearing_down_with_*` confirm the per-request teardown change is deliberate.\\n\\n## 3. Recommended next actions (in priority order)\\n\\n1. **Add tests for the compat shim and deprecation aliases** (highest priority): parametrized old-signature subclasses for all 12 shim-listed methods (including no-arg `dispatch_request`) asserting dispatch still works, a two-subclass scenario to expose double-wrapping, `pytest.warns(DeprecationWarning)` for `flask.ctx.RequestContext` import and `flask.globals.request_ctx`, and a `super()`-call test from an old-signature subclass.\\n2. **Fix the shim's global-mutation design**: at minimum guard against double-wrapping (mark wrapped base methods, e.g., via a private attribute or a set of already-processed names), and prefer a design that does not permanently mutate `Flask` (wrap only the subclass, and make `super()` bridging explicit). Also decide `update_template_context`: add it to the shim or explicitly document it as internal-only.\\n3. **Fix broken docs**: update `docs/shell.rst` and `docs/testing.rst` examples to pass `ctx` (and drop `RequestContext` references in favor of `AppContext`); run the docs tox env (`-E -W`) to confirm a clean build.\\n4. **Validate and document the ecosystem-breaking semantics**: write explicit upgrade notes in CHANGES/`docs/appcontext.rst` for (a) fresh `g` per request even under a pre-pushed app context, (b) per-request `teardown_appcontext`/`appcontext_pushed` firing, (c) lazy session loading, (d) `pop()` no longer auto-detecting exceptions. Consider a temporary compatibility switch if ecosystem fallout (e.g., Flask-SQLAlchemy patterns) is judged too severe.\\n5. **Sanity-check `AppContext.copy()`/`stream_with_context` push semantics**: document the shared-Request change; verify abandoned streaming generators can't permanently suppress teardown (the push-count mechanism defers teardown until the generator's `with ctx` exits).\\n6. **Pre-release validation**: run the full matrix (`py3.10`–`py3.14`, `py3.14t`, `tests-min`, `tests-dev`, `style`, `typing`, `docs`) and spot-check against the top ecosystem extensions (Flask-SQLAlchemy, Flask-Login, Flask-WTF) for the `g`/teardown behavior change.\\n\\n## 4. Success criteria for this work\\n\\n- Compat shim: old-signature subclasses for all 12 methods dispatch correctly with a single deprecation warning each; no base-class double-wrapping; covered by tests.\\n- Docs: `shell.rst`/`testing.rst` examples run correctly against the new signatures; docs build clean with `-W`.\\n- CHANGES/upgrade notes document every behavior change in section 2B with migration guidance.\\n- Full CI matrix green on the snapshot.\\n\"}"
+    },
+    {
+      "name": "exit_plan_mode",
+      "arguments": "{\"plan\": \"# Repository Analysis: Flask 3.2.0.dev (post app/request-context merge)\\n\\n## 1. What this snapshot is\\n\\nFlask main branch at `2579ce9f` (detached HEAD, clean tree), version **3.2.0.dev**, immediately after two landmark refactors:\\n\\n- **#5812 \\\"merge app and request context\\\"** — `RequestContext` is gone; `AppContext` now carries optional request/session data; a single `ContextVar` (`_cv_app`) drives `current_app`, `g`, `request`, `session`.\\n- **#5818 \\\"pass context through dispatch methods\\\"** — 12 `Flask` dispatch/teardown methods now take `ctx: AppContext` as their first parameter instead of reading proxies; a `__init_subclass__` shim detects old-signature overrides, warns, and wraps them.\\n\\nThe refactor is a genuine simplification (one ContextVar, push-count-based nesting, lazy session loading, no more \\\"reuse existing app context\\\" detection), but it is a **major in-flight change with several concrete defects, high-risk compat machinery, and zero test coverage for the deprecation paths**.\\n\\n## 2. Most important problems & risks\\n\\n### A. The `__init_subclass__` compat shim (`src/flask/app.py:253-307`) — highest risk\\n- **Global mutation of the base class**: when *any* subclass overrides one of the 12 listed methods with an old signature, the shim does `setattr(Flask, method.__name__, add_ctx(base_method))` — permanently replacing the base `Flask` method **process-wide** (order-dependent, affects all apps/subclasses, including already-updated ones, for the life of the process).\\n- **Double-wrapping accumulation**: a second old-signature subclass wraps the already-wrapped base again (`add_ctx(add_ctx(...))`) and wraps its own already-wrapped inherited method with `remove_ctx` again, plus repeated `DeprecationWarning`s for intermediate classes in 3+ level hierarchies.\\n- **Fragile detection**: only the *second parameter's name or annotation* is inspected (name `ctx`, string annotation ending `.AppContext`, or class subclassing `AppContext`). False positives (a second param coincidentally named `ctx` for other purposes) and false negatives are possible.\\n- **`add_ctx` requires an active context**: `app_ctx._get_current_object()` raises `RuntimeError` when the wrapped base method is called without a context — a behavior change for direct calls (e.g., `app.process_response(resp)` outside a request) once any extension has triggered the patch.\\n- **Kwargs bypass the shim**: `remove_ctx`/`add_ctx` only strip/prepend *positional* args; keyword calls (`handle_exception(ctx=ctx, e=e)`) mis-route.\\n- **Gap in the method list**: `update_template_context(self, ctx, context)` also changed signature but is **not** in the shim — old-style overrides now fail with `TypeError` at render time.\\n- **Zero test coverage**: no test exercises `remove_ctx`/`add_ctx`, any old-signature override, or the `RequestContext`/`request_ctx` deprecation aliases. With `filterwarnings = error` in `pyproject.toml`, these paths are untested and easy to break silently.\\n\\n### B. Intentional but ecosystem-breaking behavior changes (must be validated before 3.2)\\n- **Pre-pushed app contexts are no longer reused per request** (documented in CHANGES). Each request pushes a *fresh* `AppContext` with a *fresh* `g`. Consequences: `g` values set in `with app.app_context():` are no longer visible inside views; `teardown_appcontext` now runs after every request even when a context was pre-pushed; `appcontext_pushed`/`appcontext_popped` fire per request. Apps/extensions relying on shared `g` or on teardown suppression (e.g., SQLAlchemy session scoping patterns) will change behavior — the highest ecosystem risk of this release.\\n- **Session is now loaded lazily** (first access) instead of at context push — changes *when* `open_session` runs; `process_response` forces a load each request.\\n- **`AppContext.pop()` lost the `_sentinel` auto-detection**: `ctx.pop()` called manually inside an `except` block no longer passes the active exception to teardown functions (previously detected via `sys.exc_info()`).\\n- **Changed error paths**: with only an app context active, `request`/`session` proxies now raise `RuntimeError(\\\"There is no request in this context.\\\")` instead of the \\\"Working outside of request context.\\\" unbound message; `send_file`/`redirect`/`abort` outside a context now fail via `app_ctx._get_current_object()`.\\n- **`AppContext.copy()` now shares the same `Request` object** (3.1 re-created a Request from the environ) — identity semantics changed for `copy_current_request_context` consumers.\\n\\n### C. Docs are stale/broken after the refactor (will ship wrong instructions)\\n- `docs/shell.rst` (in the main toctree, built with `sphinx-build -W`): still references the deprecated `flask.ctx.RequestContext`; `app.preprocess_request()` (line 52) and `app.process_response(app.response_class())` (line 61) now raise `TypeError` with the new ctx-first signatures.\\n- `docs/testing.rst:317`: `app.preprocess_request()` — same break.\\n- `docs/api.rst` deprecation entries for `RequestContext`/`request_ctx` exist (fine), but the examples above must take `ctx` (e.g., `app.preprocess_request(ctx)`).\\n- Minor: docstring typos in `ctx.py` (\\\"will available\\\" in `has_request_context` docs).\\n\\n### D. Test/CI observations\\n- No local test environment exists here (no `uv`, no `.venv`, no pytest) — CI uses tox/uv across py3.10–3.14 incl. free-threaded `3.14t`, `tests-min`, `tests-dev`, plus mypy-strict/pyright/ruff and a `-W` docs build, which is solid. The gaps are the *untested compat paths* (A) and *unverified ecosystem semantics* (B).\\n- `leak_detector` fixture and new `test_appctx` cases cover the merged context basics; `test_app_tearing_down_with_*` confirm the per-request teardown change is deliberate.\\n\\n## 3. Recommended next actions (in priority order)\\n\\n1. **Add tests for the compat shim and deprecation aliases** (highest priority): parametrized old-signature subclasses for all 12 shim-listed methods (including no-arg `dispatch_request`) asserting dispatch still works, a two-subclass scenario to expose double-wrapping, `pytest.warns(DeprecationWarning)` for `flask.ctx.RequestContext` import and `flask.globals.request_ctx`, and a `super()`-call test from an old-signature subclass.\\n2. **Fix the shim's global-mutation design**: at minimum guard against double-wrapping (mark wrapped base methods, e.g., via a private attribute or a set of already-processed names), and prefer a design that does not permanently mutate `Flask` (wrap only the subclass, and make `super()` bridging explicit). Also decide `update_template_context`: add it to the shim or explicitly document it as internal-only.\\n3. **Fix broken docs**: update `docs/shell.rst` and `docs/testing.rst` examples to pass `ctx` (and drop `RequestContext` references in favor of `AppContext`); run the docs tox env (`-E -W`) to confirm a clean build.\\n4. **Validate and document the ecosystem-breaking semantics**: write explicit upgrade notes in CHANGES/`docs/appcontext.rst` for (a) fresh `g` per request even under a pre-pushed app context, (b) per-request `teardown_appcontext`/`appcontext_pushed` firing, (c) lazy session loading, (d) `pop()` no longer auto-detecting exceptions. Consider a temporary compatibility switch if ecosystem fallout (e.g., Flask-SQLAlchemy patterns) is judged too severe.\\n5. **Sanity-check `AppContext.copy()`/`stream_with_context` push semantics**: document the shared-Request change; verify abandoned streaming generators can't permanently suppress teardown (the push-count mechanism defers teardown until the generator's `with ctx` exits).\\n6. **Pre-release validation**: run the full matrix (`py3.10`–`py3.14`, `py3.14t`, `tests-min`, `tests-dev`, `style`, `typing`, `docs`) and spot-check against the top ecosystem extensions (Flask-SQLAlchemy, Flask-Login, Flask-WTF) for the `g`/teardown behavior change.\\n\\n## 4. Success criteria for this work\\n\\n- Compat shim: old-signature subclasses for all 12 methods dispatch correctly with a single deprecation warning each; no base-class double-wrapping; covered by tests.\\n- Docs: `shell.rst`/`testing.rst` examples run correctly against the new signatures; docs build clean with `-W`.\\n- CHANGES/upgrade notes document every behavior change in section 2B with migration guidance.\\n- Full CI matrix green on the snapshot.\\n\"}"
+    }
+  ]
+}

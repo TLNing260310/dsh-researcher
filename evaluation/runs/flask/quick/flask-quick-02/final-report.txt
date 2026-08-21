@@ -1,0 +1,165 @@
+# Repository Analysis — pallets/flask @ 3.2.0.dev snapshot
+
+## Runtime Proof
+Researcher Runtime Certificate — **Run #2**, Overall **SAFE**: preset=researcher-quick (PASS), sandbox=read-only (PASS), approval=never (PASS), write/edit stubs (PASS), git_read-only shell surface (PASS), checkpoint available (PASS), replay folds deterministically (PASS).
+
+Per frozen Phase-A deviation D002, this run used **Researcher-QUICK** depth: DISCOVER → EVIDENCE MAP → DIAGNOSE → CHALLENGE → DECISION. The repo is the pallets/flask main branch at commit `2579ce9f` (2025-11-17), version **3.2.0.dev** — an unreleased development snapshot between 3.1.2 (2025-08-19) and 3.2.0.
+
+---
+
+## 1. What this repository is (project model)
+
+| Dimension | Finding |
+|---|---|
+| **Mission** | The most widely used Python WSGI micro-framework; "a simple framework for building complex web applications" (`README.md:5`) |
+| **User** | Tens of millions of developers; the *real* second-order user is the extension ecosystem (Flask-SQLAlchemy, Flask-Login, etc.) and the thousands of apps that subclass `Flask` |
+| **Problem** | Provide request routing, context-local state, templating, sessions, CLI, and testing with minimal ceremony |
+| **Value mechanism** | Mature, stable, documented API + drop-in compatibility; value accrues from *not* breaking the ecosystem |
+| **Architecture** | Sans-IO base classes (`flask/sansio/`) + concrete `Flask`; Werkzeug/Jinja/click/itsdangerous/blinker underneath; single contextvar (`_cv_app`) proxies; test client wrapping Werkzeug's |
+| **Current state** | Healthy, professional CI (3.10–3.14 incl. free-threaded `t`, PyPy, Windows/Mac, min/dev-dep runs, mypy-strict + pyright); **one major unreleased refactor** — the app/request context merge (#5639/#5812) — plus minor 3.2 features (`template_filter` without parens, Python 3.9 drop, `__version__` removal) |
+| **Constraints** | Backward compatibility is a core product property; upstream must carry deprecations for years (4.0 is the removal point) |
+
+**Initial hypothesis (H1):** the defining feature of this snapshot is the merged app/request context refactor, and it is the primary analysis target. — *Confirmed by evidence.*
+
+---
+
+## 2. The snapshot itself (finding 0 — hygiene, before anything else)
+
+`git status` reports **every one of 234 files as modified**, but `git diff` of sampled files shows **pure line-ending changes (`\n` → `\r\n`) with zero content drift** (verified on `src/flask/__init__.py` and `pyproject.toml`; consistent with the all-files pattern and the absence of `.gitattributes`). The working tree was materialized with CRLF conversion; HEAD is untouched.
+
+**Consequence:** any commit or pre-commit run from this working copy would rewrite the entire repository as CRLF (the project's own pre-commit/style pipeline would flag or auto-fix every file). **Do not commit from this tree until line endings are normalized back to LF.** Functionally, running tests from the tree is unaffected.
+
+---
+
+## 3. The 3.2.0 context refactor — what actually changed
+
+The merge (issue #5639, PR #5812, commits `c2705ffd`, `6a649690`, `70d04b5a`) collapses `RequestContext` + `AppContext` into one class:
+
+- **One contextvar** (`_cv_app`) backs `current_app`, `g`, `request`, `session` (`globals.py:40-62`); `RequestContext` and `request_ctx` are deprecated module-`__getattr__` aliases with `DeprecationWarning`, removal in 4.0 (`ctx.py:504-515`, `globals.py:65-76`).
+- **One combined context per request**: `wsgi_app` pushes an `AppContext` carrying the request; routing, session, teardown all hang off it (`app.py:1562-1582`, `ctx.py:398-480`). `AppContext.__init__(app, *, request=None, session=None)` with `from_environ` factory.
+- **Semantic breaks vs 3.1** (verified by diffing `c2705ffd^:src/flask/ctx.py`):
+  1. **No context reuse**: 3.1 reused an outer pushed app context during dispatch (shared `g`, implicit-stack bookkeeping). 3.2 always pushes a fresh combined context — so `g` set in an outer `with app.app_context():` is **invisible during a dispatched request**, `appcontext_pushed/popped` fire **per request**, and `teardown_appcontext` runs **per request** even inside an outer app context.
+  2. **Lazy session**: opened on first access (3.1 opened at push, before routing). Custom converters can still access `session` during matching (context is set before `match_request`), but custom `open_session` side effects are deferred; `process_response` still touches `ctx.session` unconditionally (`app.py:1403`), so every request still opens a session.
+  3. **Signals re-anchored**: `request_started`/`request_tearing_down` now fire from `full_dispatch_request`/`do_teardown_request` (dispatch-bound) rather than context push/pop (`app.py:1001,1430`); inline signal docstrings were removed (`signals.py` is now bare declarations).
+- **Subclass compat shim** (`app.py:253-307`): `__init_subclass__` inspects overrides of **12 methods** (`handle_http_exception`, `handle_user_exception`, `handle_exception`, `log_exception`, `dispatch_request`, `full_dispatch_request`, `finalize_request`, `make_default_options_response`, `preprocess_request`, `process_response`, `do_teardown_request`, `do_teardown_appcontext`); old-signature overrides get a `DeprecationWarning` at **class-definition time**, get wrapped by `remove_ctx`, and the base `Flask` class is **globally patched** with `add_ctx`. `wsgi_app` and `create_url_adapter` keep their signatures (the two most-overridden hooks — good call).
+
+---
+
+## 4. Claims ledger (graded)
+
+| # | Claim | Tier / Verdict | Confidence |
+|---|---|---|---|
+| C1 | Snapshot = main @ 2579ce9f, 3.2.0.dev | C4 / Known | 1.0 |
+| C2 | Working tree = HEAD + CRLF only | C3 / Known | 0.97 |
+| C3 | RequestContext merged into AppContext; deprecated aliases; single `_cv_app` | C4 / Known | 1.0 |
+| C4 | Outer app context no longer reused during dispatch; per-request signals/teardown; outer `g` invisible in request | C4 / Known | 0.95 |
+| C5 | 12 dispatch/teardown methods take `ctx`; import-time warn + wrap shim; global base-class patch | C4 / Known | 0.98 |
+| C6 | **Old-signature shim path has no direct test coverage** | C2 / Likely | 0.80 |
+| C7 | Session lazy-loaded (was eager at push) | C4 / Known | 0.95 |
+| C8 | **`docs/shell.rst` examples are broken** under new signatures | C3 / Known | 0.90 |
+| C9 | `docs/shell.rst` stale `RequestContext` naming; `docs/appcontext.rst:122` typo "requet" | C3 / Known | 0.95 |
+| C10 | Signal semantics re-anchored to dispatch; signal docstrings removed | C3 / Known | 0.85 |
+| C11 | Test-client preserve-context machinery coherent + tested (`test_testing.py:201-227`) | C4 / Known | 0.90 |
+| C12 | CI matrix / typing / `uv --locked` / `filterwarnings=error` | C4 / Known | 1.0 |
+| C13 | Py3.9 dropped; `__version__` removed repo-wide | C4 / Known | 1.0 |
+| C14 | **`inspect.signature` unguarded in `__init_subclass__`** — decorator-mangled callables can crash class definition | C2 / Likely | 0.75 |
+| C15 | Import-time `DeprecationWarning` hard-fails user suites under `-W error` | C2 / Likely | 0.85 |
+| C16 | Upstream 3.2.0 release status after 2025-11-17: Unknown (web_fetch unavailable) | C0 / Unknown | 0.40 |
+
+---
+
+## 5. Diagnosis — the important problems, ranked by real-world impact
+
+**P1 — Ecosystem blast radius of the context-reuse semantic change (C4).** The classic patterns `with app.app_context(): ... client.get(...)` (tests) and outer-context `g` as a request-scoped cache silently change meaning: `g` set outside is not visible inside the request, `teardown_appcontext` runs mid-test, and `appcontext_pushed` fires per request. Extensions that store per-request state on `g` in `before_request` are fine; extensions that rely on an *outer* app context being *the same* during dispatch are not. This is a **deliberate, documented simplification** (CHANGES.rst:8-11), not a defect — but it is a hard behavior break with **no warning mechanism**, and it will generate a wave of downstream issues after release. *Severity: high; risk, not bug.*
+
+**P2 — The compat shim is the most delicate new machinery and the least tested (C5, C6, C14, C15).** Four concrete concerns:
+- The warn-and-wrap branch (the one real-world old-style subclasses will hit) has **no direct test** in the suite — all 8 `Flask` subclasses in tests use the new signature.
+- `inspect.signature(method)` is unguarded (`app.py:280`): a `dispatch_request` wrapped by a signature-mangling decorator raises inside `__init_subclass__`, **crashing the subclass definition at import**.
+- The heuristic (param named `ctx` or annotated `AppContext`) misfires on `ctx: "RequestContext"` (the deprecated alias) or differently-named params, producing silent double-wrap behavior.
+- Every old-style subclass gets an **import-time** `DeprecationWarning`; under `-W error`/`filterwarnings=error` (Flask's own CI convention) that is a hard import failure for the entire app, not a call-site warning.
+- `setattr(Flask, ...)` globally mutates the base class — a cross-subclass side effect that is idempotent-but-fragile (multiple old-style subclasses re-wrap the base).
+
+**P3 — The refactor is incomplete in the documentation surface (C8, C9).** `docs/shell.rst:52,61` shows `app.preprocess_request()` and `app.process_response(app.response_class())` — both now **require `ctx` as first argument** and will raise `TypeError`/`AttributeError` as written. Same page still calls the thing `test_request_context()` creates a `RequestContext` (it now returns `AppContext`). `docs/appcontext.rst:122` has a typo ("requet context"). These are REPL examples, not doctests, so CI never catches them.
+
+**P4 — Minor/positive.** Lazy session loading (C7) is a real but documented change; test-client preservation (C11) is coherent and tested; signals re-anchoring (C10) is documented in `docs/signals.rst:147-150`. No TODO/FIXME markers; `__version__` removal complete (C13); CI matrix is exemplary (C12).
+
+---
+
+## 6. Challenge (disconfirmation search) — did I get it wrong?
+
+- **Is the refactor corrosion?** No. The reasons the two-context design existed (implicit app-context creation, reuse detection, dual contextvars) were internal complexity with user-visible sharp edges (the `g`-sharing ambiguity itself was a perennial docs/issue topic). The merge *reduces* the abstraction surface, and the `push`-count/`_cv_token` design preserves nesting, streaming (`stream_with_context` re-enters the same ctx), `copy_current_request_context`, debugger preservation, and `with client:` semantics. **Verdict: evolution, not corrosion** — consistent with H2.
+- **Would "add more features" be the right diagnosis?** No — feature count is not the bottleneck; compatibility management is.
+- **Could the CRLF finding be wrong?** Sampled diffs are unambiguous (`\r\n` on every changed line, identical content otherwise); extrapolation to all 234 files is an inference labeled as such.
+- **What would falsify P1's severity?** If upstream 3.2.0 ships with a prominent migration note and the ecosystem absorbs it (as it did the 3.0 sans-io restructure). The semantic break is nonetheless silent in the common test pattern, which is what makes it dangerous.
+
+**Revised hypothesis (H2, current):** coherent, well-engineered evolution with three actionable gaps — untested/delicate compat shim, broken doc examples, and a silent semantics break that needs prominent migration guidance.
+
+---
+
+## 7. Classification (BUILD / DON'T BUILD / INVESTIGATE)
+
+- **BUILD** (fix before 3.2.0 ships, evidence sufficient): P2 shim hardening + tests; P3 doc fixes.
+- **BUILD** (release-management, not code): P1 migration-note/deprecation-communication work; snapshot line-ending normalization (P0 hygiene).
+- **INVESTIGATE**: whether upstream 3.2.0 has since shipped and how the ecosystem reacted (web_fetch unavailable this session — C16 Unknown); whether `-W error`-style user suites actually break at scale (C15 Likely, not observed).
+
+---
+
+## 8. Self-eval
+
+All items pass: runtime certificate quoted; Quick depth honored (no expansion despite repo size); every factual statement carries a citation or is labeled inference; absence of tests reported as a finding (C6); contradictions checked (shim vs test suite; docs vs signatures); no improvement suggested without evidence; claims ledger committed via checkpoint (16 claims, 2 hypotheses, 3 views; no dirty nodes). Limitation disclosed: no web fetch, so external state is C0/Unknown; no execution possible (read-only), so C8/C14 are static-analysis verdicts.
+
+---
+
+## 9. Handoff brief (BUILD items only)
+
+### Human-readable
+
+1. **Snapshot hygiene (do first, blocks everything else):** normalize the working tree back to LF before any commit/pre-commit/CI run from this snapshot; the entire tree is CRLF vs HEAD.
+2. **Harden the `__init_subclass__` compat shim** (`app.py:253-307`): guard `inspect.signature()` in try/except; make the annotation/name heuristic fail open (warn, don't mis-wrap); add tests for: old-signature subclass (sync + async `dispatch_request`, decorated methods), multiple old-style subclasses (base-patch idempotency), `ctx: "RequestContext"` annotation edge case.
+3. **Fix `docs/shell.rst`** (lines 23-29, 50-63): update examples to the new `ctx`-taking signatures and the `AppContext` return type; fix `docs/appcontext.rst:122` typo.
+4. **Publish the semantic-break migration guidance** (CHANGES 3.2 + upgrade notes): outer `g` not shared into dispatched requests; per-request `appcontext_pushed`/`teardown_appcontext`; recommend explicit data passing; coordinate extension testing before release.
+5. **INVESTIGATE (no code yet):** upstream 3.2.0 status and post-release ecosystem reaction before deciding whether further compat work is warranted.
+
+### Machine-readable
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "Working tree is CRLF-normalized vs HEAD; any commit rewrites the whole repo",
+      "evidence": "git status (all 234 files M); git diff shows pure \\r\\n deltas; no .gitattributes",
+      "confidence": 0.97,
+      "scope": "repo hygiene, pre-commit/CI gate",
+      "do_not_touch": "src/flask/* content, git history"
+    },
+    {
+      "id": "B2",
+      "problem": "Old-signature compat shim untested, unguarded inspect.signature can crash subclass definition, heuristic can mis-wrap, base class mutated globally",
+      "evidence": "app.py:253-307, 84-105; no old-signature test in suite (C6); C14",
+      "confidence": 0.8,
+      "scope": "src/flask/app.py __init_subclass__ + tests/test_subclassing.py",
+      "do_not_touch": "context merge semantics (ctx.py), public API signatures"
+    },
+    {
+      "id": "B3",
+      "problem": "docs/shell.rst examples call preprocess_request()/process_response(resp) without required ctx arg; stale RequestContext naming",
+      "evidence": "docs/shell.rst:23-29,50-63 vs app.py:1354,1382",
+      "confidence": 0.9,
+      "scope": "docs/shell.rst (+ docs/appcontext.rst:122 typo)",
+      "do_not_touch": "docs/signals.rst, docs/lifecycle.rst (already updated)"
+    },
+    {
+      "id": "B4",
+      "problem": "Silent semantic break (outer g not shared, per-request teardown/signals) has no migration guidance beyond one CHANGES line",
+      "evidence": "ctx.py:409-480; 3.1 behavior via c2705ffd^; CHANGES.rst:8-11",
+      "confidence": 0.85,
+      "scope": "CHANGES.rst 3.2 section + upgrade notes; ecosystem coordination",
+      "do_not_touch": "the new semantics themselves (deliberate, documented)"
+    }
+  ]
+}
+```
+
+**Bottom line:** this is a healthy, well-run upstream snapshot whose single defining change — the context merge — is a sound architectural simplification with three sharp edges: an untested and slightly fragile subclass-compat shim, broken shell documentation, and a silent semantics break that will surprise the ecosystem. None of these is corrosion; all are pre-release completion work.

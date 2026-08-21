@@ -1,0 +1,29 @@
+{
+  "schema": "dsh-researcher/run-metrics/v1",
+  "run_id": "flask-plan-02",
+  "preset": "standard",
+  "plan_mode": true,
+  "duration_ms": 271130,
+  "tokens_total": 3919178,
+  "tokens_input": 144124,
+  "tokens_output": 58702,
+  "tokens_cache_read": 3716352,
+  "tokens_reasoning": 40610,
+  "tool_calls": 56,
+  "tool_breakdown": {
+    "pwsh": 11,
+    "glob": 4,
+    "read": 29,
+    "grep": 11,
+    "exit_plan_mode": 1
+  },
+  "claims": 0,
+  "doctor_calls": 0,
+  "write_attempts": 0,
+  "certificate_overall": null,
+  "final_text_chars": 8544,
+  "exit": 0,
+  "final_reason": {
+    "kind": "completed"
+  }
+}

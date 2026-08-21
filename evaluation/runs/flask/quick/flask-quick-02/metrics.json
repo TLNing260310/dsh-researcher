@@ -1,0 +1,32 @@
+{
+  "schema": "dsh-researcher/run-metrics/v1",
+  "run_id": "flask-quick-02",
+  "preset": "researcher-quick",
+  "plan_mode": false,
+  "duration_ms": 330862,
+  "tokens_total": 4020838,
+  "tokens_input": 111022,
+  "tokens_output": 69560,
+  "tokens_cache_read": 3840256,
+  "tokens_reasoning": 43862,
+  "tool_calls": 58,
+  "tool_breakdown": {
+    "research_doctor": 1,
+    "glob": 1,
+    "git_read": 6,
+    "read": 29,
+    "grep": 16,
+    "web_search": 2,
+    "web_fetch": 2,
+    "research_checkpoint": 1
+  },
+  "claims": 1,
+  "doctor_calls": 1,
+  "write_attempts": 0,
+  "certificate_overall": "SAFE",
+  "final_text_chars": 15899,
+  "exit": 0,
+  "final_reason": {
+    "kind": "completed"
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "schema": "dsh-researcher/phase-a-adjudication/v1",
+  "case": "flask",
+  "date": "2026-08-21",
+  "model": "deepseek-official/deepseek-v4-flash (reasoning max)",
+  "method": "Single evaluator (deviation D001). GT verdicts: matched requires the run to identify the SAME problem with evidence; different-but-related problems are unmatched (no forced matching). Precision: scored findings = the run's own major flagged findings (section-level findings, cap 14/run); support judged against the T0 snapshot code (spot-verified file:line citations). partial = claim direction holds but detail unverified/inferred. unsupported = claim wrong or artifact treated as repo defect without disclosure.",
+  "gt_verdicts": {
+    "flask-standard-01": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-standard-02": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-standard-03": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-plan-01": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-plan-02": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-plan-03": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-quick-01": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-quick-02": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-quick-03": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-deep-01": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-deep-02": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" },
+    "flask-deep-03": { "GT-01": "unmatched", "GT-02": "unmatched", "GT-03": "unmatched", "GT-04": "unmatched", "GT-05": "unmatched" }
+  },
+  "gt_notes": {
+    "near-miss_GT-01": "standard-02 #6 and quick-01 P2 found defects in the same AppContext.pop teardown region (request.close skipped / _cv_app.reset skipped when a teardown raises) — related fragility but NOT the GT-01 chain-abort defect (do_teardown_request loop stops at the first raising callback, skipping remaining callbacks). Standard-03 #4 (request-cycle cleanup) is also teardown-region-adjacent.",
+    "false_positive_demonstrations": "GT-02 candidates (deep-02, quick-02, standard-01/02) matched 'OPTIONS' -> jinja_options / make_default_options_response; GT-04 candidates (deep-01/02/03) matched 'tutorial' in repo-structure descriptions; GT-05 candidate (deep-02) matched '415' inside finding IDs. None was the GT problem.",
+    "GT-03": "no run mentioned should_ignore_error at all (0 candidates).",
+    "all_modes_missed": "All 12 runs focused on the 3.2 context-merge blast radius; none identified the teardown chain-abort, automatic_options enable-path bug, should_ignore_error dead weight, tutorial instance-folder swallow, or the 400/415 docs contradiction."
+  },
+  "precision": {
+    "flask-standard-01": {
+      "findings": [
+        { "id": "S1-F1", "claim": "__init_subclass__ shim mutates global Flask class via setattr, heuristics fragile, zero tests", "support": "supported" },
+        { "id": "S1-F2", "claim": "g not shared across app-context boundary after merge", "support": "supported" },
+        { "id": "S1-F3", "claim": "teardown_appcontext runs per request / twice in nested contexts", "support": "supported" },
+        { "id": "S1-F4", "claim": "session loading now lazy; timing shifts for custom interfaces", "support": "supported" },
+        { "id": "S1-F5", "claim": "docs/shell.rst:52,61 + testing.rst:317 teach ctx-less calls that now TypeError", "support": "supported" },
+        { "id": "S1-F6", "claim": "api.rst:304 stale app_ctx wording; appcontext.rst:122 typo", "support": "supported" },
+        { "id": "S1-F7", "claim": "ctx.py pop() has dead second _cv_token None check", "support": "supported" },
+        { "id": "S1-F8", "claim": "AppContext.match_request raises AttributeError when url_adapter is None", "support": "partial" },
+        { "id": "S1-F9", "claim": "3.2.0 CHANGES.rst under-documented (4-5 entries for a massive refactor)", "support": "supported" },
+        { "id": "S1-F10", "claim": "AppContext.push re-runs match_request on every re-push (wasteful, risky)", "support": "partial" }
+      ]
+    },
+    "flask-standard-02": {
+      "findings": [
+        { "id": "S2-F1", "claim": "context merge breaks g/teardown/signals semantics in nested patterns", "support": "supported" },
+        { "id": "S2-F2", "claim": "shim fragile, order-dependent, globally mutating, untested", "support": "supported" },
+        { "id": "S2-F3", "claim": "ctx-first dispatch is a public-API break for subclassing", "support": "supported" },
+        { "id": "S2-F4", "claim": "session-open error path moved to finalize/process_response", "support": "partial" },
+        { "id": "S2-F5", "claim": "free-threaded CI added without setup-phase concurrency audit (_got_first_request race)", "support": "supported" },
+        { "id": "S2-F6", "claim": "AppContext.pop: _request.close() inside try; skipped when teardown raises (3.1 had finally)", "support": "supported" },
+        { "id": "S2-F7", "claim": "docs inconsistencies: shell.rst RequestContext, api.rst app_ctx, requet/interanlly typos, after_this_request 'cleared' claim", "support": "supported" },
+        { "id": "S2-F8", "claim": "no tests for shim, aliases, per-request signal semantics", "support": "supported" },
+        { "id": "S2-F9", "claim": "stream_template now always wraps with stream_with_context (behavior changed subtly)", "support": "partial" },
+        { "id": "S2-F10", "claim": "docs claim after_this_request functions are cleared; list is never cleared", "support": "partial" }
+      ]
+    },
+    "flask-standard-03": {
+      "findings": [
+        { "id": "S3-F1", "claim": "shim misdetects new-style overrides (string-union annotations, renamed params) -> runtime TypeError", "support": "supported" },
+        { "id": "S3-F2", "claim": "shim global mutation + import-time warning hard-fails -W error CI", "support": "supported" },
+        { "id": "S3-F3", "claim": "shim zero test coverage", "support": "supported" },
+        { "id": "S3-F4", "claim": "context merge: signals/teardown per request, g isolation, lazy session", "support": "supported" },
+        { "id": "S3-F5", "claim": "docs/shell.rst broken by new signatures", "support": "supported" },
+        { "id": "S3-F6", "claim": "request-cycle cleanup regression: 3.1.2 cleared environ['werkzeug.request'], T0 pop() only calls _request.close()", "support": "supported" },
+        { "id": "S3-F7", "claim": "flask.__version__ removal is the most likely ecosystem breakage point", "support": "supported" },
+        { "id": "S3-F8", "claim": "ctx.py:456 dead re-check; pop() error type changed AssertionError->RuntimeError", "support": "supported" },
+        { "id": "S3-F9", "claim": "make_response still reads request.endpoint via proxy (refactor inconsistency)", "support": "partial" }
+      ]
+    },
+    "flask-plan-01": {
+      "findings": [
+        { "id": "P1-F1", "claim": "shim global base-class mutation, order-dependent", "support": "supported" },
+        { "id": "P1-F2", "claim": "double-wrapping accumulation with multiple old-style subclasses", "support": "supported" },
+        { "id": "P1-F3", "claim": "shim detection heuristics fragile (name/annotation only)", "support": "supported" },
+        { "id": "P1-F4", "claim": "add_ctx requires active context; direct old-style calls raise RuntimeError after patch", "support": "partial" },
+        { "id": "P1-F5", "claim": "kwargs bypass the shim (positional-only strip/prepend)", "support": "supported" },
+        { "id": "P1-F6", "claim": "update_template_context changed to ctx-first but NOT in the shim list", "support": "supported" },
+        { "id": "P1-F7", "claim": "zero tests for remove_ctx/add_ctx/aliases; filterwarnings=error masks", "support": "supported" },
+        { "id": "P1-F8", "claim": "g isolation + per-request teardown/signals = biggest ecosystem risk", "support": "supported" },
+        { "id": "P1-F9", "claim": "lazy session changes when open_session runs", "support": "supported" },
+        { "id": "P1-F10", "claim": "AppContext.pop lost _sentinel exception auto-detection", "support": "partial" },
+        { "id": "P1-F11", "claim": "error message changed to 'There is no request in this context.'", "support": "supported" },
+        { "id": "P1-F12", "claim": "AppContext.copy() now shares the same Request object", "support": "partial" },
+        { "id": "P1-F13", "claim": "docs/shell.rst + testing.rst broken; ctx.py 'will available' docstring typo", "support": "supported" }
+      ]
+    },
+    "flask-plan-02": {
+      "findings": [
+        { "id": "P2-F1", "claim": "per-request app context: g/teardown/signals semantics break", "support": "supported" },
+        { "id": "P2-F2", "claim": "preserve_context now preserves the merged app context; teardown deferred (untested, undocumented)", "support": "supported" },
+        { "id": "P2-F3", "claim": "copy_current_request_context widened to bare app contexts (docstring stale)", "support": "partial" },
+        { "id": "P2-F4", "claim": "session_transaction pops now run teardown_appcontext (new)", "support": "partial" },
+        { "id": "P2-F5", "claim": "deprecated aliases have zero test coverage", "support": "supported" },
+        { "id": "P2-F6", "claim": "shim: global mutation, double-wrap, signature degradation for introspection", "support": "supported" },
+        { "id": "P2-F7", "claim": "shim heuristics misclassify *args/partial/decorated overrides", "support": "supported" },
+        { "id": "P2-F8", "claim": "external direct calls (e.g. Sentry) break with TypeError unless patch triggered", "support": "partial" },
+        { "id": "P2-F9", "claim": "Quart-style async overrides cannot be handled by sync wrappers", "support": "partial" },
+        { "id": "P2-F10", "claim": "docs regressions (shell.rst/testing.rst/appcontext.rst typo)", "support": "supported" },
+        { "id": "P2-F11", "claim": "CHANGES.rst missing the subtle deltas (signals, preserve_context, copy widening)", "support": "supported" }
+      ]
+    },
+    "flask-plan-03": {
+      "findings": [
+        { "id": "P3-F1", "claim": "shim global mutation of Flask base class", "support": "supported" },
+        { "id": "P3-F2", "claim": "spurious DeprecationWarnings cascade down subclass hierarchies (inheriting classes re-warn)", "support": "supported" },
+        { "id": "P3-F3", "claim": "repeated re-wrapping add_ctx(add_ctx(...)) grows call chain", "support": "supported" },
+        { "id": "P3-F4", "claim": "shim old-signature path zero test coverage", "support": "supported" },
+        { "id": "P3-F5", "claim": "docs drift: shell.rst old signatures + RequestContext; api.rst:304; appcontext.rst:84-89 error-message mismatch", "support": "supported" },
+        { "id": "P3-F6", "claim": "docstring typos app.py:1475/1490 (:data:`g:,)", "support": "supported" },
+        { "id": "P3-F7", "claim": "CHANGES gaps: lazy session, per-request teardown, pop() no sys.exc_info fallback", "support": "partial" },
+        { "id": "P3-F8", "claim": "ctx.py dead _cv_token check; push() ordering; match_request None-adapter crash; cross-thread miscount", "support": "supported" }
+      ]
+    },
+    "flask-quick-01": {
+      "findings": [
+        { "id": "Q1-F1", "claim": "shim: heuristic detection, global base-class mutation, zero tests", "support": "supported" },
+        { "id": "Q1-F2", "claim": "AppContext.pop: raising teardown_appcontext skips _cv_app.reset + appcontext_popped", "support": "supported" },
+        { "id": "Q1-F3", "claim": "ecosystem impact unvalidated; per-request signals + double teardown + RequestContext(app, environ) TypeError", "support": "supported" },
+        { "id": "Q1-F4", "claim": "docs/shell.rst stale RequestContext teaching", "support": "supported" },
+        { "id": "Q1-F5", "claim": "lazy session timing shift; open_session docstring stale", "support": "supported" },
+        { "id": "Q1-F6", "claim": "flask-sqlalchemy #508 precedent for the failure class", "support": "partial" },
+        { "id": "Q1-F7", "claim": "CRLF tree = snapshot artifact, correctly classified (not a project problem)", "support": "supported" }
+      ]
+    },
+    "flask-quick-02": {
+      "findings": [
+        { "id": "Q2-F1", "claim": "CRLF tree identified as artifact; recommended workspace normalization as BUILD item", "support": "partial" },
+        { "id": "Q2-F2", "claim": "context-reuse semantic change = silent ecosystem break", "support": "supported" },
+        { "id": "Q2-F3", "claim": "shim untested + fragile + global mutation", "support": "supported" },
+        { "id": "Q2-F4", "claim": "inspect.signature unguarded -> subclass definition can crash at import", "support": "supported" },
+        { "id": "Q2-F5", "claim": "docs/shell.rst examples broken; appcontext.rst typo", "support": "supported" },
+        { "id": "Q2-F6", "claim": "signal docstrings removed; request_started/request_tearing_down re-anchored", "support": "supported" },
+        { "id": "Q2-F7", "claim": "lazy session + stale sessions.py docstring + test comment", "support": "supported" }
+      ]
+    },
+    "flask-quick-03": {
+      "findings": [
+        { "id": "Q3-F1", "claim": "shim: wrapper stacking, heuristic misfires, -W error inversion, out-of-context super() RuntimeError", "support": "supported" },
+        { "id": "Q3-F2", "claim": "context-not-reused semantic change under-tested and under-documented", "support": "supported" },
+        { "id": "Q3-F3", "claim": "CRLF tree = snapshot artifact explicitly labeled; normalize-workspace action", "support": "partial" },
+        { "id": "Q3-F4", "claim": "release risk concentration (one refactor, one maintainer, untested compat)", "support": "supported" },
+        { "id": "Q3-F5", "claim": "stale docs: sessions.py open_session docstring, test_session_interface.py comment", "support": "supported" },
+        { "id": "Q3-F6", "claim": "lazy session loading shift", "support": "supported" }
+      ]
+    },
+    "flask-deep-01": {
+      "findings": [
+        { "id": "D1-F1", "claim": "shim has zero test coverage", "support": "supported" },
+        { "id": "D1-F2", "claim": "shim mutates base class + remove_ctx/add_ctx wrap", "support": "supported" },
+        { "id": "D1-F3", "claim": "g isolation between outer context and request untested", "support": "supported" },
+        { "id": "D1-F4", "claim": "lazy session loading untested; timing paths silent", "support": "supported" },
+        { "id": "D1-F5", "claim": "deprecation aliases untested", "support": "supported" },
+        { "id": "D1-F6", "claim": "per-request appcontext signals behavior change untested", "support": "supported" },
+        { "id": "D1-F7", "claim": "docs breakage: shell.rst/testing.rst/api.rst stale vs new signatures", "support": "supported" },
+        { "id": "D1-F8", "claim": "error message change undocumented ('There is no request in this context.')", "support": "supported" },
+        { "id": "D1-F9", "claim": "app.py _make_timedelta dead duplicate of sansio/app.py", "support": "supported" },
+        { "id": "D1-F10", "claim": "RST role typos app.py:1475/1490 break docs build with -W", "support": "supported" },
+        { "id": "D1-F11", "claim": "update_template_context not in shim list", "support": "supported" },
+        { "id": "D1-F12", "claim": "classification/mitigation recommendations", "support": "partial" }
+      ]
+    },
+    "flask-deep-02": {
+      "findings": [
+        { "id": "D2-F1", "claim": "CVE-2026-27205: iteration-style session reads skip accessed-tracking -> no Vary: Cookie; fix absent at snapshot (shipped in 3.1.3)", "support": "supported" },
+        { "id": "D2-F2", "claim": "locked werkzeug 3.1.3 affected by multiple CVEs (CVE-2025-66221 etc.)", "support": "partial" },
+        { "id": "D2-F3", "claim": "shim annotation heuristics fragile (unions, t.Any, keyword-only)", "support": "supported" },
+        { "id": "D2-F4", "claim": "shim warning/wrapping path untested", "support": "supported" },
+        { "id": "D2-F5", "claim": "context merge: fresh context per request, g isolation, per-request teardown", "support": "supported" },
+        { "id": "D2-F6", "claim": "lazy session; open_session docstring stale", "support": "supported" },
+        { "id": "D2-F7", "claim": "docs lag code for 3.2 (appcontext.rst legacy model + requet typo)", "support": "supported" },
+        { "id": "D2-F8", "claim": "View.decorators shared mutable ClassVar leaks across subclasses", "support": "supported" },
+        { "id": "D2-F9", "claim": "MethodView.dispatch_request asserts instead of 405", "support": "supported" },
+        { "id": "D2-F10", "claim": "Blueprint.register mutates state before deferred registrations (atomicity)", "support": "supported" },
+        { "id": "D2-F11", "claim": "add_url_rule adds rule before endpoint-collision check (orphan rule)", "support": "supported" },
+        { "id": "D2-F12", "claim": "sansio purity contract violated in 4 places", "support": "supported" },
+        { "id": "D2-F13", "claim": "streaming signal asymmetry (before_render_template eager, template_rendered lazy)", "support": "partial" },
+        { "id": "D2-F14", "claim": "get_debug_flag: FLASK_DEBUG=off enables debug (truthiness bug)", "support": "supported" },
+        { "id": "D2-F15", "claim": "SESSION_COOKIE_PARTITIONED docs promise Secure-coupling that code lacks", "support": "supported" },
+        { "id": "D2-F16", "claim": "from_prefixed_env crashes on leaf/parent env conflicts", "support": "partial" },
+        { "id": "D2-F17", "claim": "manual ctx.pop() loses active exception for teardown", "support": "partial" },
+        { "id": "D2-F18", "claim": "RequestContext alias breaks old positional construction", "support": "supported" },
+        { "id": "D2-F19", "claim": "pre-commit.yaml no permissions; depends on default token scope", "support": "supported" },
+        { "id": "D2-F20", "claim": "stream_with_context thread-sensitivity / context-consumed edge", "support": "partial" }
+      ]
+    },
+    "flask-deep-03": {
+      "findings": [
+        { "id": "D3-F1", "claim": "shim: update_template_context gap + global mutation + heuristic risks", "support": "supported" },
+        { "id": "D3-F2", "claim": "lazy session + stale sessions.py docstring", "support": "supported" },
+        { "id": "D3-F3", "claim": "context-not-reused behavior change (per-request push, double teardown)", "support": "supported" },
+        { "id": "D3-F4", "claim": "no _cv_request/_app_ctx_stack remain; aliases only", "support": "supported" },
+        { "id": "D3-F5", "claim": "CRLF tree flagged; B5 BUILD normalize workspace (artifact as action)", "support": "partial" },
+        { "id": "D3-F6", "claim": "upstream released 3.1.3 after snapshot (timing inference)", "support": "partial" },
+        { "id": "D3-F7", "claim": "PYSEC-2026-1377 advisory existence (Unknown, disclosed)", "support": "partial" },
+        { "id": "D3-F8", "claim": "compat/deprecation layer entirely untested", "support": "supported" },
+        { "id": "D3-F9", "claim": "free-threading CI enabled only day before snapshot", "support": "supported" },
+        { "id": "D3-F10", "claim": "devcontainer broken: installs nonexistent requirements/dev.txt", "support": "supported" },
+        { "id": "D3-F11", "claim": "no docs build job in GitHub Actions", "support": "supported" },
+        { "id": "D3-F12", "claim": "stale RequestContext references in docs/tests", "support": "supported" }
+      ]
+    }
+  }
+}

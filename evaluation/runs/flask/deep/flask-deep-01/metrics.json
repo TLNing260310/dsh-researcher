@@ -1,0 +1,36 @@
+{
+  "schema": "dsh-researcher/run-metrics/v1",
+  "run_id": "flask-deep-01",
+  "preset": "researcher-deep",
+  "plan_mode": false,
+  "duration_ms": 790306,
+  "tokens_total": 19316862,
+  "tokens_input": 260554,
+  "tokens_output": 164532,
+  "tokens_cache_read": 18891776,
+  "tokens_reasoning": 108520,
+  "tool_calls": 120,
+  "tool_breakdown": {
+    "research_doctor": 1,
+    "glob": 1,
+    "git_read": 23,
+    "read": 44,
+    "subagent": 3,
+    "grep": 17,
+    "job_output": 1,
+    "list_agents": 10,
+    "research_checkpoint": 10,
+    "web_search": 6,
+    "web_fetch": 2,
+    "skill": 2
+  },
+  "claims": 10,
+  "doctor_calls": 1,
+  "write_attempts": 0,
+  "certificate_overall": "SAFE",
+  "final_text_chars": 2413,
+  "exit": 0,
+  "final_reason": {
+    "kind": "completed"
+  }
+}

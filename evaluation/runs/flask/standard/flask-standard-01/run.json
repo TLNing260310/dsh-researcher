@@ -1,0 +1,20 @@
+{
+  "schema": "dsh-researcher/eval-run/v1",
+  "run_id": "flask-standard-01",
+  "preset": "standard",
+  "plan_mode": false,
+  "task": "Analyze this repository at the current snapshot. Identify the most important problems, risks, architectural concerns, and recommended next actions.",
+  "session_id": "session-b94d838f-38bd-4c28-b30a-59cb67af5c74",
+  "model": {
+    "provider": "deepseek-official",
+    "model": "deepseek-v4-flash"
+  },
+  "started_at": "2026-08-21T13:17:42.004Z",
+  "finished_at": "2026-08-21T13:21:18.587Z",
+  "duration_ms": 216576,
+  "tool_calls": 51,
+  "final_reason": {
+    "kind": "completed"
+  },
+  "exit": 0
+}
