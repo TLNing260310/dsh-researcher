@@ -1,0 +1,26 @@
+{
+  "schema": "dsh-researcher/eval-lock/v1",
+  "generated_at": "2026-08-21T19:19:57.580Z",
+  "hashes": {
+    "protocol": "07200375c34df32979d8bdf63cd7b3fd2e9a99baa5209527262e3c5a792455a9",
+    "adjudication_schema": "459e131c69be265ca8f069859c9cb3ab56aa5d07752c23f8d62a9d1501493a16",
+    "scoring_schema": "b74cd929ef53e0c0da3d0800565514a7aa931a9f6a9baf3a49a09dff685eb1cc",
+    "selection_result": "63cfbce20ce3a2babb4cc77cb14a880374e9c81b009f25d5eb69b5b821983860",
+    "deviations": "13728e0ab0135ae625d4d0a9b53ac91cefdca1fea1d18949657ee5d566c1b232",
+    "runtime_manifest": "424887366068c8c64e024be9969f28d4c51ed0386648bc111d6757dbf5fc7d67",
+    "prompts": "4405c9a1729f43dac0b86d218c0acb4bddb146290f47f3baf02a7d96957a3d6b",
+    "eval_presets": "2ba9470f93453fda69f9d7dc2a92798ee9bc7db2dceb292187b28674f312ccd9",
+    "eval_runtime": "6a9b24e5ff03c4a2e63bb1c0efb0be2c7b98c3cd4252b75b4d50fb9c8f47ad60",
+    "gt": "19118a0d5d06e36a2280d88a6bbaf80c1c18b76d7f6c8762875dd6c5e710d8f3",
+    "coverage": "816f5349dbe31ca102efa9b3cfa5d1cc7e37b16fdaecf7b4687bd82be8dc7025",
+    "ground_truth": "ad05f760e879705065f9646c485807e98d42a72b7520a8bd34869de0659b1a3e",
+    "snapshot": "a6730de88229f68a1a5339cae22ac6e40dde042161a74e1d048936802fa2a582",
+    "prompt": "fdb7cff2c0dd7f9efad5c9e6dc8366e7b11a20f3b1e20e0837da597ba4e75577",
+    "preset": "10e7ec1adc70ed498ddf9b53592ac07ed2cb3d02709bd2a81dd0978662410d01"
+  },
+  "config": {
+    "model": "deepseek-official/deepseek-v4-flash",
+    "reasoning": "max",
+    "token_budget": "500000"
+  }
+}

@@ -34,5 +34,11 @@
     "researcher_output_used": false,
     "timeline_note": "A NON-SCORED PCR pilot (commander-pcr-pilot-01, output-shape validation only) ran BEFORE GT compilation. The evaluator prompts explicitly forbade reading it or any other model output; calibration clustering and refinement used only the two evaluator files and the pre-registered A/B/C judgment rules. Every GT entry's evidence is a snapshot file:line anchor, independently verifiable. This timeline is disclosed so third parties can audit the blindness chain.",
     "audit": "evaluation/cases/commander.js/gt-calibration/gt-freeze-audit.md"
+  },
+  "evaluation_integrity": {
+    "prompt_tuning_after_gt_lock": false,
+    "gt_created_before_scored_runs": true,
+    "scored_researcher_outputs_not_seen_by_gt_authors": true,
+    "note": "Anti-pollution declarations for third-party audit. The only model output that predates GT compilation is a NON-SCORED PCR pilot (output-shape validation); evaluator prompts forbade reading it; every GT entry is snapshot file:line anchored."
   }
 }

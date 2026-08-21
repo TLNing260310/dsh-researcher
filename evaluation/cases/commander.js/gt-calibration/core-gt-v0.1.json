@@ -26,6 +26,14 @@
         "A": "high",
         "B": "high",
         "note": "essence: declarative spec->behavior mapping; any API/behavior change must honor it"
+      },
+      "source": {
+        "A": [
+          "A-01"
+        ],
+        "B": [
+          "B-01"
+        ]
       }
     },
     {
@@ -46,6 +54,15 @@
         "A": "high",
         "B": "high",
         "note": "identity constraint; dependency-adding changes are near-blocked"
+      },
+      "source": {
+        "A": [
+          "A-07",
+          "A-30"
+        ],
+        "B": [
+          "B-03"
+        ]
       }
     },
     {
@@ -65,6 +82,16 @@
         "A": "high",
         "B": "high",
         "note": "strict-by-default + major ratchet governs all behavior changes"
+      },
+      "source": {
+        "A": [
+          "A-03",
+          "A-04",
+          "A-37"
+        ],
+        "B": [
+          "B-05"
+        ]
       }
     },
     {
@@ -84,6 +111,14 @@
         "A": "high",
         "B": "high",
         "note": "semver/major timing constrains when breaking changes are allowed"
+      },
+      "source": {
+        "A": [
+          "A-05"
+        ],
+        "B": [
+          "B-06"
+        ]
       }
     },
     {
@@ -102,6 +137,14 @@
         "A": "high",
         "B": "high",
         "note": "recursive descent is the core parse flow; every arg lands somewhere along it"
+      },
+      "source": {
+        "A": [
+          "A-08"
+        ],
+        "B": [
+          "B-10"
+        ]
       }
     },
     {
@@ -120,6 +163,15 @@
         "A": "high",
         "B": "high",
         "note": "cli>env>implied + source tagging; env/implied semantics changes ripple"
+      },
+      "source": {
+        "A": [
+          "A-09",
+          "A-10"
+        ],
+        "B": [
+          "B-08"
+        ]
       }
     },
     {
@@ -138,6 +190,15 @@
         "A": "high",
         "B": "medium",
         "note": "non-obvious help/version channels; help-flag edge cases"
+      },
+      "source": {
+        "A": [
+          "A-11",
+          "A-12"
+        ],
+        "B": [
+          "B-11"
+        ]
       }
     },
     {
@@ -156,6 +217,14 @@
         "A": "high",
         "B": "high",
         "note": "unknown funnel is the key to cross-level option placement"
+      },
+      "source": {
+        "A": [
+          "A-13"
+        ],
+        "B": [
+          "B-19"
+        ]
       }
     },
     {
@@ -174,6 +243,14 @@
         "A": "high",
         "B": "high",
         "note": "dispatch/error precedence encodes user-visible behavior"
+      },
+      "source": {
+        "A": [
+          "A-14"
+        ],
+        "B": [
+          "B-15"
+        ]
       }
     },
     {
@@ -192,6 +269,14 @@
         "A": "high",
         "B": "medium",
         "note": "hook order + reversal; extension authors depend on it"
+      },
+      "source": {
+        "A": [
+          "A-15"
+        ],
+        "B": [
+          "B-14"
+        ]
       }
     },
     {
@@ -210,6 +295,14 @@
         "A": "high",
         "B": "high",
         "note": "public callback protocol; adding args changes handler signatures"
+      },
+      "source": {
+        "A": [
+          "A-16"
+        ],
+        "B": [
+          "B-31"
+        ]
       }
     },
     {
@@ -228,6 +321,15 @@
         "A": "high",
         "B": "high",
         "note": "executable externalization: naming/filesystem/spawn conventions constrain new subcommands"
+      },
+      "source": {
+        "A": [
+          "A-17",
+          "A-18"
+        ],
+        "B": [
+          "B-13"
+        ]
       }
     },
     {
@@ -246,6 +348,14 @@
         "A": "high",
         "B": "high",
         "note": "counter-intuitive global-wins merge; change = breaking"
+      },
+      "source": {
+        "A": [
+          "A-20"
+        ],
+        "B": [
+          "B-17"
+        ]
       }
     },
     {
@@ -265,6 +375,15 @@
         "A": "high",
         "B": "high",
         "note": "dual-option value deduction drives implies/conflict semantics"
+      },
+      "source": {
+        "A": [
+          "A-21",
+          "A-43"
+        ],
+        "B": [
+          "B-09"
+        ]
       }
     },
     {
@@ -284,6 +403,14 @@
         "A": "high",
         "B": "medium",
         "note": "help render pipeline with two customization seams"
+      },
+      "source": {
+        "A": [
+          "A-22"
+        ],
+        "B": [
+          "B-18"
+        ]
       }
     },
     {
@@ -303,6 +430,14 @@
         "A": "high",
         "B": "high",
         "note": "single CJS implementation + ESM wrapper; export additions need multi-file sync"
+      },
+      "source": {
+        "A": [
+          "A-31"
+        ],
+        "B": [
+          "B-20"
+        ]
       }
     },
     {
@@ -322,6 +457,14 @@
         "A": "high",
         "B": "high",
         "note": "command.js hub: change-risk concentration"
+      },
+      "source": {
+        "A": [
+          "A-23"
+        ],
+        "B": [
+          "B-21"
+        ]
       }
     },
     {
@@ -341,6 +484,15 @@
         "A": "high",
         "B": "high",
         "note": "parseOptions semantic density; the sharpest edge"
+      },
+      "source": {
+        "A": [
+          "A-24",
+          "A-41"
+        ],
+        "B": [
+          "B-25"
+        ]
       }
     },
     {
@@ -360,6 +512,14 @@
         "A": "high",
         "B": "high",
         "note": "value pipeline choke point; option semantics regress together"
+      },
+      "source": {
+        "A": [
+          "A-28"
+        ],
+        "B": [
+          "B-22"
+        ]
       }
     },
     {
@@ -380,6 +540,15 @@
         "A": "high",
         "B": "high",
         "note": "typings mirror: API changes need three-way sync"
+      },
+      "source": {
+        "A": [
+          "A-39"
+        ],
+        "B": [
+          "B-24",
+          "B-33"
+        ]
       }
     },
     {
@@ -398,6 +567,16 @@
         "A": "high",
         "B": "high",
         "note": "deprecated catalog constrains refactors and removal timing"
+      },
+      "source": {
+        "A": [
+          "A-32",
+          "A-38"
+        ],
+        "B": [
+          "B-29",
+          "B-34"
+        ]
       }
     },
     {
@@ -417,6 +596,16 @@
         "A": "high",
         "B": "high",
         "note": "error codes are a stability contract consumers match on"
+      },
+      "source": {
+        "A": [
+          "A-27",
+          "A-36"
+        ],
+        "B": [
+          "B-15"
+        ],
+        "note": "B-15 covers error-check ordering (partial consensus); primary sources A-27/A-36"
       }
     },
     {
@@ -435,6 +624,12 @@
         "A": "medium",
         "B": "high",
         "note": "dual-option pairing re-derived in 3 sites; change must touch all"
+      },
+      "source": {
+        "A": [
+          "A-26"
+        ],
+        "B": []
       }
     },
     {
@@ -455,6 +650,12 @@
         "A": "medium",
         "B": "high",
         "note": "ESM manual enumeration: adding exports touches 5 surfaces"
+      },
+      "source": {
+        "A": [
+          "A-40"
+        ],
+        "B": []
       }
     },
     {
@@ -473,6 +674,12 @@
         "A": "medium",
         "B": "high",
         "note": "passThrough/positional parent-child invariant enforced at registration"
+      },
+      "source": {
+        "A": [],
+        "B": [
+          "B-30"
+        ]
       }
     }
   ]

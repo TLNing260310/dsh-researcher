@@ -178,3 +178,17 @@
 6. **版本节奏**：v0.7.0 = 定位一致化（README / persona / report template / evaluation 文档，零核心代码改动）；**v0.7.1 = Cognition Benchmark（验证认知层真实存在：GUS / Impact / Risk / Drift 四组实验，取代原"Risk Map 深化"——Risk Map 已存在，缺的是价值证明）**；v0.8 = Structural Evidence；v0.9 = Project Intelligence Capsule / Risk Memory（吸收 Risk Map 深化）。
 7. **最应避免**：① 急着加 Agent 能力（问题不是"不够聪明"而是"价值未被正确测量与呈现"）；② 与 DeepSeek/Codex 比写代码；③ 宣传 AI Architect。
 8. **执行形态**：v0.7.0 是 Product Alignment 而非 Feature Development——统一定位、输出、评价体系；任何核心运行逻辑修改暂缓。
+
+---
+
+## 附录 B — 架构红线（2026-08-21 架构健康度评审后固化）
+
+**三条红线（任何版本迭代不得跨越）**：
+
+1. **Researcher 不修改代码** —— 只读零写契约是产品存在性的根（tool-restrict / doctor / git-read 防线不动）。
+2. **Researcher 不决定架构方案** —— 它维护认知（architectural memory），不承担架构权威（architectural authority）：Researcher 输出"为什么现在这样"→ Plan 输出"应该怎么改"→ Human 决定"是否采用"。
+3. **Researcher 不预测具体 Bug，只识别风险区域** —— "Risk: 高 / Evidence: xxx / Recommendation: Investigate / Build: No"是合法完整输出；"不知道"也是结果。发现风险 ≠ 自动提出修复 ≠ 自动改代码。
+
+**架构健康度自评（评审时点）**：核心使命一致性 9/10 · 架构连续性 9/10 · 定位清晰度 8.5/10 · 差异化 8/10 · 过度宣传风险 6.5/10（持续压降：营销话术只到"架构师级别理解"，不到"AI 架构师"）· 未来扩展风险 7/10（主要分叉点 = v0.9 Capsule/Memory Bridge：合理方向是"上一次认知 + 当前快照 → 发现认知变化"；危险方向是"长期记忆人格化 Agent / 项目私人顾问"，后者削弱可验证性，不得进入）。
+
+**架构判定**：v0.6→v0.7 的调整属于抽象层提升（研究项目 → 维护 AI 对项目的正确认知），不是架构偏移。三类变更必须持续区分：① 产品定位调整（允许）② 核心架构变化（须协议级论证）③ 能力边界变化（须评测级验证）。当前主要发生第 1 类。

@@ -41,7 +41,7 @@ const compute = () => ({
   schema: 'dsh-researcher/eval-lock/v1',
   generated_at: new Date().toISOString(),
   hashes: {
-    protocol: sha256(path.join(root, 'docs', 'evaluation-protocol-v1.md')),
+    protocol: sha256(flag('protocol') || path.join(root, 'docs', 'evaluation-protocol-v1.md')),
     adjudication_schema: sha256(path.join(root, 'evaluation', 'adjudication-schema.json')),
     scoring_schema: fs.existsSync(path.join(root, 'evaluation', 'scoring-schema.json')) ? sha256(path.join(root, 'evaluation', 'scoring-schema.json')) : null,
     selection_result: sha256(path.join(root, 'evaluation', 'selection_result.json')),
@@ -54,6 +54,10 @@ const compute = () => ({
     // Phase A run infrastructure (driver, profile patches, frozen eval
     // settings): the mechanism that pins model/permission for every run.
     eval_runtime: fs.existsSync(path.join(root, 'evaluation', 'runtime')) ? sha256Dir(path.join(root, 'evaluation', 'runtime')) : null,
+    // v1.1 cognition-GT inputs (optional; null when absent, so v1.0 locks
+    // remain comparable).
+    gt: flag('gt') ? sha256(flag('gt')) : null,
+    coverage: flag('coverage') ? sha256(flag('coverage')) : null,
     ground_truth: sha256(path.join(snapshotDir, 'ground-truth', 'future.json')),
     snapshot: sha256(path.join(snapshotDir, 'snapshot.json')),
     prompt: flag('prompt') ? sha256(flag('prompt')) : null,

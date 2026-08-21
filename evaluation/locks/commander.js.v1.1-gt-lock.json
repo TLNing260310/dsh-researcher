@@ -1,0 +1,10 @@
+{
+  "case": "commander.js",
+  "snapshot": "bf35c5f99c20",
+  "gt_hash": "19118a0d5d06e36a2280d88a6bbaf80c1c18b76d7f6c8762875dd6c5e710d8f3",
+  "coverage_hash": "816f5349dbe31ca102efa9b3cfa5d1cc7e37b16fdaecf7b4687bd82be8dc7025",
+  "manifest_hash": "53ef5f03f33ee0a293b2086a87353a31b1970f819b8e98459715df4d765d599e",
+  "protocol": "v1.1",
+  "locked_at": "2026-08-21T19:19:50.420Z",
+  "status": "frozen"
+}
