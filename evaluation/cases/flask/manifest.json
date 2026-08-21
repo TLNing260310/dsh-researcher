@@ -20,7 +20,8 @@
   "future_window": { "start": "2025-11-17T18:05:51Z", "end": "2026-03-17T18:05:51Z" },
   "future_window_note": "protocol §5b fixed observation window T0 -> T0+120d (issues/PRs/commits/release notes only).",
   "snapshot_dir": "D:/AI_work_project/phase-a-snapshots/flask",
-  "status": "GT v0.1 compiled and locked (5 GT: teardown chain, automatic_options, should_ignore_error, tutorial instance folder, request.json docs drift); blind-doctor PASS 6/6; eval lock created and verified (LOCK OK); ready for 12 runs (Standard/Plan/Quick/Deep x3)",
+  "status": "GT v0.1 locked; eval harness validated by smoke tests (standard/plan/researcher-quick: certificate 7/7 SAFE, no shell leak, single runner, event trace archived); infra bugs fixed (doctor v0.5.2 session-scope + makeState export regressions, N-01); ready for the 12-run matrix",
+  "infra_notes": "evaluation/cases/flask/notes.md (N-01..N-03)",
   "ground_truth": {
     "file": "ground-truth/future.json",
     "sha256_12": "e5b3825be560",
