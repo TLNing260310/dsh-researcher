@@ -1,0 +1,62 @@
+﻿[
+    {
+        "sha":  "709f83f6a32da8cdaec196d7b785ab6827322008",
+        "author_date":  "2025-11-05T17:13:26Z",
+        "committer_date":  "2026-01-25T02:53:30Z",
+        "message":  "pre-commit: Add codespell"
+    },
+    {
+        "sha":  "70d04b5a2620705011e65f79ccfd52caa86f5d6a",
+        "author_date":  "2025-11-17T16:49:53Z",
+        "committer_date":  "2025-11-17T16:49:53Z",
+        "message":  "pass context through dispatch methods (#5818)"
+    },
+    {
+        "sha":  "da6d075dfde71b2e2a64f39b29ba957d5ffb00b0",
+        "author_date":  "2025-11-17T17:43:40Z",
+        "committer_date":  "2025-11-17T17:43:40Z",
+        "message":  "update dev dependencies"
+    },
+    {
+        "sha":  "96a01e420b741c59af59301f15612fde39bfb39d",
+        "author_date":  "2025-11-17T17:45:56Z",
+        "committer_date":  "2025-11-17T17:45:56Z",
+        "message":  "Merge branch \u0027stable\u0027"
+    },
+    {
+        "sha":  "917000097fc17875104176e2c71318ab25c508c3",
+        "author_date":  "2025-11-17T18:02:53Z",
+        "committer_date":  "2025-11-17T18:02:53Z",
+        "message":  "test py3.14"
+    },
+    {
+        "sha":  "218880c7fdedee139ac09caaf93da469b4dba14c",
+        "author_date":  "2025-11-17T18:03:42Z",
+        "committer_date":  "2025-11-17T18:03:42Z",
+        "message":  "Merge branch \u0027stable\u0027"
+    },
+    {
+        "sha":  "607d1948b8747776f4a45d5b7c7eaeb57b6b9f80",
+        "author_date":  "2025-11-17T18:05:39Z",
+        "committer_date":  "2025-11-17T18:05:39Z",
+        "message":  "split free threading envs"
+    },
+    {
+        "sha":  "2579ce9f18e67ec3213c6eceb5240310ccd46af8",
+        "author_date":  "2025-11-17T18:05:51Z",
+        "committer_date":  "2025-11-17T18:05:51Z",
+        "message":  "Merge branch \u0027stable\u0027"
+    },
+    {
+        "sha":  "ad68a12645d96fe51558da13e18544ba458d7af0",
+        "author_date":  "2025-11-28T19:05:47Z",
+        "committer_date":  "2025-11-28T19:05:52Z",
+        "message":  "drop experimental 3.13t test env"
+    },
+    {
+        "sha":  "fe3b215d3ade4db68262dae1a3cdc464a1fc524f",
+        "author_date":  "2025-12-17T14:44:15Z",
+        "committer_date":  "2026-01-25T03:02:37Z",
+        "message":  "Increase required flit_core version to 3.11"
+    }
+]
