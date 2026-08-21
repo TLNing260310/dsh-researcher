@@ -51,6 +51,9 @@ const compute = () => ({
     runtime_manifest: fs.existsSync(path.join(root, 'evaluation', 'runtime-manifest.json')) ? sha256(path.join(root, 'evaluation', 'runtime-manifest.json')) : null,
     prompts: fs.existsSync(path.join(root, 'evaluation', 'prompts')) ? sha256Dir(path.join(root, 'evaluation', 'prompts')) : null,
     eval_presets: fs.existsSync(path.join(root, 'evaluation', 'presets')) ? sha256Dir(path.join(root, 'evaluation', 'presets')) : null,
+    // Phase A run infrastructure (driver, profile patches, frozen eval
+    // settings): the mechanism that pins model/permission for every run.
+    eval_runtime: fs.existsSync(path.join(root, 'evaluation', 'runtime')) ? sha256Dir(path.join(root, 'evaluation', 'runtime')) : null,
     ground_truth: sha256(path.join(snapshotDir, 'ground-truth', 'future.json')),
     snapshot: sha256(path.join(snapshotDir, 'snapshot.json')),
     prompt: flag('prompt') ? sha256(flag('prompt')) : null,

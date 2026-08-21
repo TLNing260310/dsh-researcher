@@ -1,0 +1,23 @@
+# Phase A evaluation settings — the ONLY settings document eval runs boot with.
+#
+# Booted via the eval patch (settings row -> config.path). Everything the eval
+# needs is explicit here so no host settings.yaml value can leak into a run:
+#   - permission.defaultPreset: eval-read-only pins every fresh session to
+#     sandbox read-only + approval never (uniform eval condition; matches the
+#     eval-read-only preset defined in headless-eval.patch.yml);
+#   - agent-presets.default: standard (fallback; the eval runner always passes
+#     an explicit preset id);
+#   - agent-default-model: the frozen Phase A model configuration
+#     (deepseek-official / deepseek-v4-pro / reasoning max) — hash-covered by
+#     the eval lock via evaluation/runtime/.
+
+permission:
+  defaultPreset: eval-read-only
+
+agent-presets:
+  default: standard
+
+agent-default-model:
+  provider: deepseek-official
+  model: deepseek-v4-pro
+  reasoningEffort: max

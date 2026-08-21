@@ -7,20 +7,47 @@
 #
 # Effects:
 #   - replaces the shipped headless-runner with the eval runner;
+#   - boots the frozen eval settings document (model/permission/preset default);
 #   - mounts the agent-presets roster (shipped root + user root);
-#   - pins the approval policy to never for every mode (uniform eval condition;
-#     the researcher preset additionally self-pins to read-only + never).
+#   - defines the eval-read-only permission preset (sandbox read-only +
+#     approval never) and makes it the default, so every fresh session is
+#     pinned to read-only + never (uniform condition for all four modes);
+#   - pins the approval policy to never (belt for the permission pin).
 #
-# Sandbox mode comes from DSH_PERMISSION_MODE=read-only (base sandbox-policy
-# row reads that env var); workspaceRoot = process.cwd() = the snapshot
-# workspace the run is launched from.
+# Sandbox mode also comes from DSH_PERMISSION_MODE=read-only (base
+# sandbox-policy row reads that env var); workspaceRoot = process.cwd() = the
+# snapshot workspace the run is launched from.
 
 - disable: headless-runner
+
+- id: settings
+  name: '@deepseek-ai/dsh-settings-file'
+  config:
+    path: 'C:/Users/jxgm/.dsh/profiles/headless/eval-settings.yaml'
+    watch: false
 
 - id: approval
   name: '@deepseek-ai/dsh-user-approval'
   config:
     policy: never
+
+- id: permission
+  name: '@deepseek-ai/dsh-permission-presets'
+  config:
+    defaultPreset: eval-read-only
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+      eval-read-only:
+        sandbox: read-only
+        approval: never
 
 - insert:
     - id: agent-presets
