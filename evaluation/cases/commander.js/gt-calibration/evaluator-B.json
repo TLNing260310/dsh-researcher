@@ -1,0 +1,363 @@
+[
+  {
+    "id": "B-01",
+    "category": "identity",
+    "claim": "Commander's core value mechanism is declarative: the author describes the CLI (options, arguments, subcommands) and Commander derives parsing, usage errors, and the entire help text from that description rather than from hand-written glue.",
+    "evidence": "Readme.md:69-71 ('You write code to describe your command line interface. Commander looks after parsing the arguments into options and command-arguments, displays usage errors for problems, and implements a help system.'); Readme.md:754-756 (help is 'auto-generated based on the information commander already knows')",
+    "relation": "declarations (Command/Option/Argument objects) -> parser + validation + generated help",
+    "understanding_value": "An agent that knows only that Commander 'parses argv' misses the defining contract that help and errors are derived artifacts, which explains why nearly every API surface (descriptions, usage, summary) exists at all.",
+    "confidence": "high",
+    "note": "Directly stated in README; no inference."
+  },
+  {
+    "id": "B-02",
+    "category": "identity",
+    "claim": "Commander is a general-purpose library for Node.js CLI-tool authors, not an application: package.json describes it as 'the complete solution for node.js command-line programs' and requires node >= 20, so it positions itself as the single dependency a CLI author needs.",
+    "evidence": "package.json:3-4 (description), 78-80 (engines 'node': '>=20'); Readme.md:8",
+    "relation": "library positioning (complete solution, zero-config entry) <-> supported Node floor",
+    "understanding_value": "Knowing the intended consumer (CLI tool authors across the ecosystem) explains strict-by-default behavior and the promise that help 'just works' without configuration.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-03",
+    "category": "identity",
+    "claim": "The project deliberately ships zero production dependencies, and this is an enforced value: CONTRIBUTING states requests that add a dependency are 'much less likely to be accepted' and asks for alternatives.",
+    "evidence": "CONTRIBUTING.md:40-43; package.json:62-76 (only devDependencies exist; no dependencies key)",
+    "relation": "zero-dependency design constraint <-> contribution review policy <-> runtime relying solely on node: core modules (command.js:1-5)",
+    "understanding_value": "An agent asked to add a feature must know the zero-dep constraint is a project identity, not an accident, or it will propose solutions the maintainers will reject.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-04",
+    "category": "identity",
+    "claim": "Commander serves two usage modes with the same machinery: a convenience global singleton (program) for quick scripts, and a class/factory API (new Command(), createCommand) that the docs explicitly recommend for larger programs and unit testing.",
+    "evidence": "index.js:7-11 (exports.program singleton plus createCommand/createOption/createArgument); Readme.md:147-163 ('For larger programs which may use commander in multiple ways, including unit testing, it is better to create a local Command object')",
+    "relation": "singleton entry point <-> class-based entry point; both funnel into the same Command implementation",
+    "understanding_value": "Explains why the same functionality has two entry points and why 'program' is a shared mutable instance — a design fact that shapes how agents should write tests against the library.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-05",
+    "category": "identity",
+    "claim": "Strictness is Commander's deliberate default stance — unrecognized options and (since v13) excess command-arguments are errors — with lenience offered only as explicit opt-outs (allowUnknownOption, allowExcessArguments).",
+    "evidence": "Readme.md:73 ('Commander is strict and displays an error for unrecognised options'); Readme.md:1018-1021; CHANGELOG.md:82 (13.0.0 breaking: excess arguments error by default)",
+    "relation": "strict-by-default posture <-> opt-out switches on Command",
+    "understanding_value": "Measures whether the agent understands the project's stance and where flexibility is deliberately exposed, rather than just listing the two allow* methods.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-06",
+    "category": "identity",
+    "claim": "Commander is a long-lived, semver-disciplined ecosystem library whose release policy couples major versions to Node LTS end-of-life, with roughly six-month majors and 12 months of security support for older lines.",
+    "evidence": "docs/release-policy.md:3-15 (semver; majors about every six months; min node bumped when LTS EOL; 12.x maintenance until 2026-05-18); Readme.md:1166-1168",
+    "relation": "release cadence <-> Node LTS lifecycle <-> compat/maintenance commitments to consumers",
+    "understanding_value": "An agent modifying behavior must know breaking changes are confined to majors and that the maintainers budget for sustained old-line support — context that shapes acceptable changes.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-07",
+    "category": "architecture_relation",
+    "claim": "Option parsing is event-driven: parseOptions recognizes flags and emits option:<name> events, while addOption registered the listeners that convert each emitted value into a stored option value, so every value-shaping rule (preset, parseArg, variadic, negate fill-in) lives in one handler shared by cli and env.",
+    "evidence": "lib/command.js:720-723 (this.on('option:' + oname, ...) wiring), 670-733 (handleOptionValue closure), 1799/1809/1812 (emits in parseOptions)",
+    "relation": "parseOptions scanner -> EventEmitter -> addOption handler -> _optionValues/_optionValueSources",
+    "understanding_value": "Explains why Command extends EventEmitter and why user listeners on 'option:verbose' work; a retrieval-level agent would say 'events exist' without seeing that parsing is routed through them.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-08",
+    "category": "architecture_relation",
+    "claim": "Option value resolution is ordered cli > env > default, and environment values are applied only when the current value is undefined or its recorded source is default/config/env, so a value set by client code (unspecified source) is never overwritten by the environment.",
+    "evidence": "lib/command.js:1966-1989 (_parseOptionsEnv, comment at 1970 'Priority check. Do not overwrite cli or options from unknown source (client-code).'); tests/options.env.test.js:32-50 (config source overwritten, unspecified source kept)",
+    "relation": "source provenance (_optionValueSources) <-> env application order <-> client-code values",
+    "understanding_value": "The precedence rule is only safe because every write is source-tagged; understanding that provenance dimension, not just ordering, is what separates comprehension from retrieval.",
+    "confidence": "high",
+    "note": "Behavior verified against both code and tests."
+  },
+  {
+    "id": "B-09",
+    "category": "architecture_relation",
+    "claim": "Implied option values are applied only when the triggering option's value came from cli/env/config (not default or another implies), which is why a DualOptions helper must guess, from the shared value, whether a positive or negative dual option actually set it.",
+    "evidence": "lib/command.js:1996-2025 (_parseOptionsImplied, hasCustomOptionValue); lib/option.js:262-306 (DualOptions.valueFromOption deduces source from value; comment 262-267 'tricky for others')",
+    "relation": "option value source <-> implies applicability <-> DualOptions value-based deduction for --foo/--no-foo pairs",
+    "understanding_value": "The subtle 'did this value really come from this option' reasoning for dual options is exactly the flow-level understanding a retrieval agent will not have.",
+    "confidence": "medium",
+    "note": "The DualOptions heuristic is described in-code as an educated guess; verified structurally, behavior inferred from code and option.js tests (tests/options.dual-options.test.js)."
+  },
+  {
+    "id": "B-10",
+    "category": "architecture_relation",
+    "claim": "Dispatch is delegated top-down through the same pipeline at every level: each command parses its own options, and if the first operand names a subcommand it runs preSubcommand hooks and either spawns the executable handler or recurses into the subcommand's _parseCommand with the remaining operands/unknown args.",
+    "evidence": "lib/command.js:1550-1560 (operands[0] -> _dispatchSubcommand), 1352-1371 (hook then spawn-or-recurse); docs/parsing-and-hooks.md:3-14",
+    "relation": "parent parse -> _dispatchSubcommand -> (executable spawn | subcommand._parseCommand) -> leaf action",
+    "understanding_value": "The 'each level strips its options and passes the rest down' flow is the core relational model of the whole parser; understanding it explains why option names can repeat across levels.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-11",
+    "category": "architecture_relation",
+    "claim": "The implicit help command and the help option are both lazy and conditional: a help command exists only when the command has subcommands, has no action handler, and no explicit 'help' command was registered, and the help option is created on first demand unless disabled.",
+    "evidence": "lib/command.js:463-477 (_getHelpCommand condition), 2592-2598 (_getHelpOption lazy creation), 1561-1566 (parse branches on help command name)",
+    "relation": "commands.length / _actionHandler presence <-> implicit help command <-> help option laziness <-> parse dispatch branches",
+    "understanding_value": "Explains why help does not always appear and why toggles like helpCommand(false) change parse behavior — conditional presence, not a constant feature.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-12",
+    "category": "architecture_relation",
+    "claim": "The help command for an executable subcommand (e.g. 'help install') cannot be generated by the parent, so _dispatchHelpCommand falls back to dispatching that subcommand with the help flag, letting the child process produce its own help.",
+    "evidence": "lib/command.js:1380-1395 (comment at 1389 'Fallback to parsing the help flag to invoke the help', passing ['--help'] as unknown)",
+    "relation": "executable-handler boundary <-> help command dispatch <-> child-process help generation",
+    "understanding_value": "Captures a real flow constraint: the parent lacks the child's declared options, so help must be externalized — relational reasoning about why the fallback exists.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-13",
+    "category": "architecture_relation",
+    "claim": "Executable subcommands are externalized through a naming + filesystem + spawn strategy: default file name <parent>-<subcommand> searched relative to the script's real path (with a legacy basename-prefix fallback), source extensions launched via node so permissions don't matter, and Windows always spawning through node with inspector ports incremented.",
+    "evidence": "lib/command.js:1229-1262 (name derivation and legacy fallback), 1265-1287 (launchWithNode vs direct spawn, Windows branch), 2705-2746 (incrementNodeInspectorPort); Readme.md:700-723",
+    "relation": "CLI command tree <-> filesystem file naming convention <-> spawn strategy per platform",
+    "understanding_value": "The default file-name convention connects CLI design to repository layout and platform behavior — a relational fact, not a file location.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-14",
+    "category": "architecture_relation",
+    "claim": "Life-cycle hooks execute in call-stack order — preAction runs root-to-leaf and postAction leaf-to-root across ancestors, preSubcommand runs on the dispatching parent before the child parses — and any async hook escalates the whole chain into a promise chain via _chainOrCall.",
+    "evidence": "lib/command.js:1499-1520 (ancestors reversed for preAction, re-reversed for postAction), 1531-1541 (preSubcommand), 1481-1489 (_chainOrCall); tests/command.hook.test.js:39-100 (FIFO preAction, LIFO postAction, nested order pb1 pb2 sb action sa pa2 pa1)",
+    "relation": "ancestor walk order <-> hook event <-> sync-to-async promise escalation",
+    "understanding_value": "The reversed postAction ordering and the promise escalation are exactly the kind of flow semantics that distinguish understanding from retrieval.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-15",
+    "category": "architecture_relation",
+    "claim": "_parseCommand orders its checks so the 'better' error wins: help flags are honored before mandatory/conflict checks, the unknown-option check is skipped when a subcommand or a legacy '*' / 'command:*' listener will consume the operands, and the parent's legacy command:<name> event fires after the action handler.",
+    "evidence": "lib/command.js:1585-1640 (order of checks; comment at 1589 'We do not always call this check to avoid masking a \"better\" error, like unknown command'), 1596-1617 (command event emission)",
+    "relation": "error-check precedence <-> dispatch fallbacks (*, command:*, unknownCommand) <-> legacy event emission",
+    "understanding_value": "Prioritizing which error to surface is a design-level flow decision; the in-code rationale ('don't mask a better error') is the kind of reasoning an agent must reconstruct.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-16",
+    "category": "architecture_relation",
+    "claim": "Mandatory-option and conflicting-option validation walk the full ancestor chain, so a leaf subcommand's parse enforces the program's global required and conflicting options — which is why these checks are deferred to the leaf instead of run at each level.",
+    "evidence": "lib/command.js:1675-1687 (_checkForMissingMandatoryOptions walks _getCommandAndAncestors), 1723-1728 (_checkForConflictingOptions same walk); docs/parsing-and-hooks.md:16-17 (checks listed at leaf)",
+    "relation": "leaf parse -> ancestor command chain -> global option enforcement",
+    "understanding_value": "The upward walk explains how global required options are enforced at subcommand time and why the docs place these checks at the leaf — a dependency-direction insight.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-17",
+    "category": "architecture_relation",
+    "claim": "Both optsWithGlobals and getOptionValueSourceWithGlobals walk from the calling command up to the root, and in both the more global (root-ward) value wins, so 'global overwrites local' holds for merged values and for source lookup alike.",
+    "evidence": "lib/command.js:1924-1930 (reduce assigns each ancestor's opts in this->root order, root last), 983-992 (source overwritten while walking this->root)",
+    "relation": "ancestor walk order <-> merge direction (global overwrites local) <-> source lookup",
+    "understanding_value": "The same walk serves two APIs with a shared winner-takes-root semantics; seeing that both obey one direction is relational understanding.",
+    "confidence": "high",
+    "note": "Direction verified by tracing _getCommandAndAncestors (command.js:121-128 returns this..root)."
+  },
+  {
+    "id": "B-18",
+    "category": "architecture_relation",
+    "claim": "Help generation is a two-phase pipeline: helpInformation builds a fresh Help instance (merging configureHelp overrides), prepares it with the resolved width/color context from the command's output configuration, then formatHelp renders every section through style methods, and ANSI codes are stripped afterward when the output has no colors.",
+    "evidence": "lib/command.js:2450-2461 (createHelp + prepareContext + stripColor-if-needed), 2475-2495 (_getOutputContext); lib/help.js:29-31 (prepareContext), 443-527 (formatHelp); docs/help-in-depth.md:55 ('style routines always get called and color is stripped afterwards')",
+    "relation": "command output configuration -> Help instance -> style/stringify -> stripColor decision",
+    "understanding_value": "The 'always style, strip if needed' design decouples styling from color detection — a deliberate pipeline choice that agents must grasp to reason about custom help.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-19",
+    "category": "architecture_relation",
+    "claim": "parseOptions is a single in-place scan whose state machine decides classification: the first unknown option flips the rest into the unknown bucket so subcommands can reprocess them, '--' terminates option processing literally, and negative numbers are exempt from option detection unless a digit short option exists somewhere in the hierarchy.",
+    "evidence": "lib/command.js:1748-1895 (dest flip at 1852-1860 with comment 'An unknown option means further arguments also classified as unknown'), 1777-1781 ('--' literal), 1757-1766 (negativeNumberArg); Readme.md:201, 336-338",
+    "relation": "classification rule <-> unknown-arg propagation <-> '--' escape <-> negative-number exception",
+    "understanding_value": "The dest-flip rule is what makes nested parsing work, and the negative-number carve-out is a sharp edge added in v14 (#2339) — flow semantics, not locations.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-20",
+    "category": "architecture_relation",
+    "claim": "The package ships one CommonJS implementation with a thin ESM shim: esm.mjs re-exports the CJS exports as named ESM exports and the package.json exports map routes import to esm.mjs/esm.d.mts and require to index.js/index.d.ts, so ESM named imports are a wrapper over a single codebase, not a parallel build.",
+    "evidence": "esm.mjs:1-16; package.json:45-61 (conditional exports); typings/esm.d.mts:1-3 ('Just reexport the types from cjs')",
+    "relation": "CJS core <-> ESM wrapper <-> conditional exports <-> dual typing entry points",
+    "understanding_value": "Knowing there is one implementation, not two, explains why behavior is identical across module systems and why changes are made once in lib/.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-21",
+    "category": "critical_component",
+    "claim": "lib/command.js (~2777 lines) is the maintenance hotspot: it concentrates the Command class, the parse state machine, error handling, help invocation, and subprocess spawning in one module, and the recent history shows it as the file of most churn (parseOptions in-place rewrite #2409, variadic _collectValue #2410, optional-chaining/spread readability refactors).",
+    "evidence": "lib/command.js (whole file, 2777 lines); CHANGELOG.md:38-42 (14.0.1 refactors); git log -- lib/command.js (ff1d2ce, c635fad, 201d932, 138b1a3, 9d3cfb6, c324ea3)",
+    "relation": "responsibility concentration (parse+dispatch+error+help+spawn) <-> change frequency <-> regression risk",
+    "understanding_value": "Identifying where change risk concentrates and why (many responsibilities in one module) is architectural judgment, not a location fact.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-22",
+    "category": "critical_component",
+    "claim": "The option-value pipeline in addOption is the coupling point of the library: every value-shaping feature — preset substitution, parseArg wrapping via _callParseArg, variadic collection, negate/boolean fill-in, source tagging — funnels through one handler closure wired to both cli and env events.",
+    "evidence": "lib/command.js:670-733 (handleOptionValue), 599-609 (_callParseArg error wrapping)",
+    "relation": "feature matrix (preset/parseArg/variadic/negate/source) -> single handler -> both event sources (option:, optionEnv:)",
+    "understanding_value": "Any new option behavior or env-priority change touches this single path; recognizing the choke point explains why option semantics regress together.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-23",
+    "category": "critical_component",
+    "claim": "The Help class is a growing risk surface by design: it exposes dozens of override points (stringify, style, layout, sorting, grouping) as public API, and the last two majors refactored it heavily (13.0.0 wrap() -> formatItem/boxWrap, 14.0.0 adding groupItems/formatItemList), so downstream Help subclasses break at each refactor.",
+    "evidence": "lib/help.js:11-730 (public methods for subclassing; comment at 11 'methods are static in style to allow override using subclass or just functions'); CHANGELOG.md:61 (14.0.0 refactor), 90 (13.0.0 deleted Help.wrap())",
+    "relation": "public extensibility surface <-> major-version refactor churn <-> downstream subclass compat",
+    "understanding_value": "Help is a hotspot because its extensibility is itself a compat contract; the coupling between internal refactors and external subclasses is the reasoning that matters.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-24",
+    "category": "critical_component",
+    "claim": "typings/index.d.ts (~1100 lines) is a hand-maintained mirror of the JSDoc-annotated implementation, and the changelog shows a steady stream of typing-only fixes across minor releases, making it a constant drift risk between declared and actual API.",
+    "evidence": "typings/index.d.ts (whole file); CHANGELOG.md:237-248 (11.1.0 typing fixes), 305-307 (9.4.1 typing fixes), 51 (14.0.0 parseArg on Argument)",
+    "relation": "implementation JSDoc <-> hand-written .d.ts <-> tsd type tests (typings/index.test-d.ts)",
+    "understanding_value": "The typing layer is effectively a second implementation that must stay in sync; recognizing that is understanding maintenance load, not quoting a file.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-25",
+    "category": "critical_component",
+    "claim": "parseOptions is the highest-semantic-density routine in the library: it encodes all the ambiguous grammar decisions (greedy vs non-greedy option-arguments, combined short groups, --foo=bar, variadic consumption, '--', negative numbers, positional/pass-through cutoffs), it was rewritten in place as recently as 14.0.1, and it is the subject of the project's own ambiguity documentation.",
+    "evidence": "lib/command.js:1748-1895; CHANGELOG.md:41 (14.0.1 'refactor .parseOptions() to process args array in-place (#2409)'); docs/options-in-depth.md:30-67 (parsing ambiguity)",
+    "relation": "large grammar surface <-> one scanner function <-> documented user-facing ambiguity",
+    "understanding_value": "The risk concentration is that one function silently encodes dozens of conventions; a change to it shifts user-visible parsing everywhere, which is why it merits its own doc.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-26",
+    "category": "critical_component",
+    "claim": "The executable-subcommand machinery is the most environment-coupled code in the library and is protected by a dedicated test cluster (search, lookup, signals, mock, inspect): it depends on filesystem naming conventions, realpath resolution, per-OS spawn semantics, signal forwarding, and inspector port incrementation.",
+    "evidence": "lib/command.js:1202-1346 (_executeSubCommand), 2705-2746 (incrementNodeInspectorPort); tests/command.executableSubcommand.{search,lookup,signals,mock,inspect}.test.js (5 dedicated files)",
+    "relation": "filesystem + platform behaviors -> child-process boundary -> unusually wide dedicated test surface",
+    "understanding_value": "The five-file test cluster is load-bearing evidence of where the project itself expects failures — a risk concentration claim, not a file list.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-27",
+    "category": "design_decision",
+    "claim": "Since v7, parsed option values are stored in a separate _optionValues object rather than as properties on the Command, to avoid clashing with existing Command properties, and the legacy behavior is preserved only behind storeOptionsAsProperties(), which is now forbidden after options exist or before a second parse.",
+    "evidence": "CHANGELOG.md:577-579 (v7 breaking change and motivation); lib/command.js:905-916 (storeOptionsAsProperties guards), 1158-1161 (restoreStateBeforeParse throws for property storage); Readme.md:1023-1040",
+    "relation": "storage model (property vs separate object) <-> property-clash motivation <-> legacy compat escape hatch with new constraints",
+    "understanding_value": "The observable constraints (errors on late opt-in and on re-parse) are consequences of the decision; explaining them shows understanding of the state model, not just the method name.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-28",
+    "category": "design_decision",
+    "claim": "'--' is the universal user-facing escape hatch: parseOptions treats it as a literal end of option processing and the docs explicitly teach it as the way to resolve ambiguity between optional option-arguments and command-arguments.",
+    "evidence": "lib/command.js:1777-1781; docs/options-in-depth.md:69-75 ('The explicit way to resolve this is use --'); Readme.md:201",
+    "relation": "grammar ambiguity (0-or-1-arg options) <-> '--' disambiguation contract with users",
+    "understanding_value": "Linking the parser rule to the documented UX contract shows the agent understands the library's grammar trade-offs rather than the token.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-29",
+    "category": "design_decision",
+    "claim": "The project follows a deprecate-then-remove lifecycle across majors: features documented as deprecated in docs/deprecated.md remain fully supported for backwards compatibility until a later major removes them, sustaining a long-tail compat surface (e.g., command('*') deprecated in 8.3, addHelpCommand string form deprecated in 12).",
+    "evidence": "docs/deprecated.md:1-258 (entire catalog with version markers); CHANGELOG.md:200-206 (addHelpCommand deprecation), 116 (command('*') deprecation)",
+    "relation": "deprecation policy <-> sustained compat surface <-> major-version removal timing",
+    "understanding_value": "Shows the project trades innovation speed for stability; new features must respect the deprecation pipeline, which is a design posture agents need to internalize.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-30",
+    "category": "design_decision",
+    "claim": "Option parsing is non-positional by default (GNU-like intermingling of options and operands), and the positional/pass-through modes are deliberate opt-ins with a hard invariant: passThroughOptions on a subcommand requires enablePositionalOptions on its parent, enforced with a throw at registration time.",
+    "evidence": "Readme.md:203 (default non-positional), 988-1016; lib/command.js:861-895 (_checkForBrokenPassThrough throws for parent without positional)",
+    "relation": "default intermingling convention <-> opt-in positional modes <-> parent-child invariant enforced at registration",
+    "understanding_value": "The cross-level invariant between parent and child settings is a relational constraint visible only by following the flow; it also explains addCommand's extra check.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-31",
+    "category": "design_decision",
+    "claim": "The action-handler signature is a designed protocol: declared command-arguments first, then the parsed options object, then the command object, with this bound to the command for function expressions — and in legacy storeOptionsAsProperties mode the options slot is replaced by the command itself for backward compatibility.",
+    "evidence": "lib/command.js:556-572 (action() builds actionArgs: args, then opts-or-this, then this); CHANGELOG.md:580 (v7 'action handlers are passed options and command separately')",
+    "relation": "argument declaration order <-> callback parameter protocol <-> legacy property-storage branch",
+    "understanding_value": "The dual-mode signature with its legacy branch is a subtle contract; agents who only know '(args, options, command)' will misread legacy programs.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-32",
+    "category": "design_decision",
+    "claim": "The library supports repeated calls to .parse() (since 13.0.0) by snapshotting and restoring command state before each parse, but deliberately refuses that re-entrancy when storeOptionsAsProperties is on — a trade-off between repeatability and the legacy property model.",
+    "evidence": "lib/command.js:1127-1174 (saveStateBeforeParse/restoreStateBeforeParse, throw at 1159-1161); CHANGELOG.md:73-75 (13.0.0 added), 85 (breaking throw for property storage)",
+    "relation": "parse re-entrancy <-> saved-state snapshot (name, option values, sources) <-> legacy-property incompatibility",
+    "understanding_value": "Understanding why the two features conflict shows grasp of the state model; the constraint is a designed consequence, not a bug.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-33",
+    "category": "risk_surface",
+    "claim": "Type drift is a standing risk because three typing layers must stay aligned — the JSDoc-annotated JavaScript, the hand-written typings/index.d.ts, and the separate @commander-js/extra-typings inference project — and the changelog already records repeated minor-release typing fixes for both runtime and declaration mismatches.",
+    "evidence": "typings/index.d.ts (whole); CHANGELOG.md:237-248, 305-307; Readme.md:1044-1050 (extra-typings project)",
+    "relation": "three typing layers <-> implementation drift <-> minor-release fix churn",
+    "understanding_value": "Identifies a likely-future failure area (type/runtime divergence) with structural evidence, without predicting a specific bug.",
+    "confidence": "medium",
+    "note": "Drift likelihood is my inference from structure and changelog history."
+  },
+  {
+    "id": "B-34",
+    "category": "risk_surface",
+    "claim": "Backwards-compatibility burden is structural: a long catalog of deprecated APIs remains live (RegExp option parameter, noHelp, command('*'), on('command:*'), .on('--help'), help/outputHelp callbacks, description argDescriptions, InvalidOptionArgumentError, commander/esm.mjs import, _args, string/boolean addHelpCommand), and each one pins down the code paths that still service it.",
+    "evidence": "docs/deprecated.md:22-225; lib/command.js:171 (noHelp), 2520-2538 (legacy --help event), 251-260 (legacy * dispatch)",
+    "relation": "deprecated surface <-> active support code <-> removal timing constrained to majors",
+    "understanding_value": "Agents should recognize the compat surface as a drag on internal redesign — a forward-looking risk judgment, not a bug list.",
+    "confidence": "high"
+  },
+  {
+    "id": "B-35",
+    "category": "risk_surface",
+    "claim": "The public EventEmitter surface (option:*, command:*, command:<name>, the deprecated '--help' event, and help-text events) is observable and only loosely typed (on(event: string | symbol)), so because parsing is driven by emitted events, internal emit-sequence changes can silently change behavior of user listeners without any type error.",
+    "evidence": "lib/command.js:720-723, 1596-1625, 2537-2539; Readme.md:956-964 (documented custom event listeners); typings/index.d.ts:1091 (on(event: string | symbol, ...))",
+    "relation": "event-driven internals <-> public listener contract <-> weak typing <-> refactor risk",
+    "understanding_value": "The coupling of internal flow to a public, weakly-typed event API is a forward drift area; naming the mechanism shows understanding of why it is risky.",
+    "confidence": "medium",
+    "note": "Risk inference is mine; the mechanism and its weak typing are verified."
+  },
+  {
+    "id": "B-36",
+    "category": "risk_surface",
+    "claim": "Staying dependency-free pushes convention drift into hand-maintained code: color detection re-implements ecosystem conventions (NO_COLOR, FORCE_COLOR, CLICOLOR_FORCE) with in-code notes that the observed behavior intentionally differs from what Chalk and node:util do.",
+    "evidence": "lib/command.js:2752-2774 (useColor; comment noting 'we do test NO_COLOR, but Chalk does not' and the reverse for NODE_DISABLE_COLORS); CONTRIBUTING.md:40 (zero-dependency policy)",
+    "relation": "zero-dependency policy <-> hand-rolled env conventions <-> ecosystem drift",
+    "understanding_value": "Recognizes that the zero-dep identity has a maintenance cost concentrated in convention-handling code that can drift as the ecosystem changes.",
+    "confidence": "medium",
+    "note": "Future drift is my inference; the differing-conventions observation is in-code."
+  },
+  {
+    "id": "B-37",
+    "category": "risk_surface",
+    "claim": "The subcommand-dispatch decision tree (implicit help command vs default command vs legacy '*' vs 'command:*' listener vs unknownCommand vs no-handler help) is a dense conditional area that has already produced a regression class in v7.1.0, so new dispatch features are likely to re-introduce edge-case regressions there.",
+    "evidence": "lib/command.js:1550-1641; CHANGELOG.md:546-548 (7.1.0 regressions for command('*') and on('command:*') with options, and 'display best error for combination of unknown command and unknown option')",
+    "relation": "branch density (six competing dispatch outcomes) <-> historical regression class <-> future change risk",
+    "understanding_value": "Connects a documented historical bug pattern to the current structure as a risk area — evidence-based risk reasoning, not a bug prediction.",
+    "confidence": "medium",
+    "note": "Likelihood of future regressions is my judgment; the fragility evidence (dense branches + past regressions) is verified."
+  },
+  {
+    "id": "B-38",
+    "category": "risk_surface",
+    "claim": "The exported program singleton is a statefulness hazard for consumers: it accumulates options and commands across module loads in long-running processes, and the project's own docs steer test authors to new Command() precisely to avoid that shared state.",
+    "evidence": "index.js:7 (exports.program = new Command()); Readme.md:157-163 (recommendation for unit testing)",
+    "relation": "singleton export <-> shared mutable state across requires <-> documented testing guidance",
+    "understanding_value": "Understanding that the recommended pattern exists because of the singleton's hazards shows appreciation of the library's integration surface.",
+    "confidence": "medium",
+    "note": "The hazard mechanism is verified; its frequency of causing real issues is inferred from the docs' own guidance."
+  },
+  {
+    "id": "B-39",
+    "category": "risk_surface",
+    "claim": "Help output is environment-dependent by design — width comes from TTY columns, color from TTY plus convention env vars, wrapping from minWidthToWrap — so generated help is inherently non-deterministic across environments, a drift area for snapshot-based tooling and tests.",
+    "evidence": "lib/command.js:61-74 (output configuration defaults reading isTTY/columns/hasColors), 2475-2495 (_getOutputContext); lib/help.js:15 (minWidthToWrap = 40), 695-729 (boxWrap); docs/help-in-depth.md:24-25 (helpWidth 'useful for unit tests')",
+    "relation": "TTY-dependent width/color resolution <-> generated help text <-> cross-environment variance",
+    "understanding_value": "Recognizing that determinism is deliberately sacrificed to terminal adaptation marks the area where downstream tooling will drift.",
+    "confidence": "medium",
+    "note": "Risk framing is mine; the environment coupling is verified in code and docs."
+  }
+]
