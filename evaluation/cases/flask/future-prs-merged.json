@@ -1,0 +1,74 @@
+﻿[
+    {
+        "number":  5898,
+        "title":  "redirect defaults to 303",
+        "merged_at":  "2026-01-25T01:18:35Z",
+        "body":  "closes #5895 "
+    },
+    {
+        "number":  5808,
+        "title":  "fix annotation for select_jinja_autoescape",
+        "merged_at":  "2026-01-25T02:25:31Z",
+        "body":  "Inside the code of the method the filename is checked against a None value and returns True, but the static annotated type is a str. I have changed the static annotation type to `str` to `str | None`."
+    },
+    {
+        "number":  5827,
+        "title":  "clarify 415 vs 400 errors for request.json",
+        "merged_at":  "2026-01-25T02:46:57Z",
+        "body":  "## Description\r\nClarifies the distinction between 415 and 400 error codes when using `request.json`, aligning the JavaScript patterns documentation with the API reference.\r\n\r\n## Changes\r\n- Updated \"Receiving JSON in Views\" section to specify:\r\n  - 400 Bad Request: for invalid JSON body\r\n  - 415 Unsupported Media Type: for missing/incorrect Content-Type header\r\n- Updated \"Making a Request with fetch\" section for consistency\r\n\r\n## Fixes\r\nFixes #5825\r\n\r\n## Checklist\r\n- [x] Documentation updated\r\n- [x] Changes align with existing API documentation"
+    },
+    {
+        "number":  5844,
+        "title":  "pre-commit: Add codespell",
+        "merged_at":  "2026-01-25T03:00:24Z",
+        "body":  "* #5833 on the `stable` branch.\r\n\r\nThe `stable` branch contains no codespell discoverable typos, but the default branch contains:\r\n```\r\n./docs/appcontext.rst:122: requet ==\u003e request\r\n./docs/quickstart.rst:465: interanlly ==\u003e internally\r\n./docs/templating.rst:186: avaialble ==\u003e available\r\n```\r\n\r\n\u003c!--\r\nBefore opening a PR, open a ticket describing the issue or feature the\r\nPR will address. An issue is not required for fixing typos in\r\ndocumentation, or other simple non-code changes.\r\n\r\nReplace this comment with a description of the change. Describe how it\r\naddresses the linked ticket.\r\n--\u003e\r\n\r\n\u003c!--\r\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\r\nautomatically close an issue.\r\n\r\nfixes #\u003cissue number\u003e\r\n--\u003e\r\n\r\n\u003c!--\r\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\r\n\r\n- Add tests that demonstrate the correct behavior of the change. Tests\r\n  should fail without the change.\r\n- Add or update relevant docs, in the docs folder and in code.\r\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\r\n- Add `.. versionchanged::` entries in any relevant code docs.\r\n--\u003e\r\n"
+    },
+    {
+        "number":  5865,
+        "title":  "Increase required flit_core version to 3.11",
+        "merged_at":  "2026-01-25T03:04:07Z",
+        "body":  "Needed since Flask 3.1.1 after having set the \"license\" keyword to an SPDX license expression. Avoids this possible build error:\r\n\r\n  flit_core.config.ConfigError: license field should be \u003cclass \u0027dict\u0027\u003e, not \u003cclass \u0027str\u0027\u003e\r\n\r\nFixes: 0109e496f (\"use uv\").\r\n\r\n\u003c!--\r\nBefore opening a PR, open a ticket describing the issue or feature the\r\nPR will address. An issue is not required for fixing typos in\r\ndocumentation, or other simple non-code changes.\r\n\r\nReplace this comment with a description of the change. Describe how it\r\naddresses the linked ticket.\r\n--\u003e\r\n\r\n\u003c!--\r\nLink to relevant issues or previous PRs, one per line. Use \"fixes\" to\r\nautomatically close an issue.\r\n\r\nfixes #\u003cissue number\u003e\r\n--\u003e\r\n\r\n\u003c!--\r\nEnsure each step in CONTRIBUTING.rst is complete, especially the following:\r\n\r\n- Add tests that demonstrate the correct behavior of the change. Tests\r\n  should fail without the change.\r\n- Add or update relevant docs, in the docs folder and in code.\r\n- Add an entry in CHANGES.rst summarizing the change and linking to the issue.\r\n- Add `.. versionchanged::` entries in any relevant code docs.\r\n--\u003e\r\n"
+    },
+    {
+        "number":  5899,
+        "title":  "deprecate `should_ignore_error`",
+        "merged_at":  "2026-01-25T03:53:12Z",
+        "body":  "closes #5816 "
+    },
+    {
+        "number":  5900,
+        "title":  "document using gevent for async",
+        "merged_at":  "2026-01-25T18:35:12Z",
+        "body":  "closes #5881 \r\n\r\nAdds a separate page about gevent. Shows examples of using asyncio and libuv. Removes mentions of eventlet, since the maintainers have indicated it is no longer recommended."
+    },
+    {
+        "number":  5903,
+        "title":  "Abort if the instance folder cannot be created",
+        "merged_at":  "2026-01-28T15:43:01Z",
+        "body":  "According to the comment, the instance folder should exist in any case. But a PermissionError was ignored silently.\r\n\r\nSince Python 3.9 is the minimum required version, it is safe to use \"exist_ok\" added in Python 3.2 and avoid exception handling."
+    },
+    {
+        "number":  5917,
+        "title":  "fix provide_automatic_options override",
+        "merged_at":  "2026-02-12T21:07:51Z",
+        "body":  "`OPTIONS` is added correctly whenever `provide_automatic_options` is set. Previously, it was only added if the argument was not passed and was not set as an attribute; it could only be disabled, not enabled.\r\n\r\nAlso cleans up the tests about options. Fixes some other tests that were inadvertently adding duplicate routes.\r\n\r\nfixes #5916 "
+    },
+    {
+        "number":  5924,
+        "title":  "release version 3.1.3",
+        "merged_at":  "2026-02-19T05:01:53Z",
+        "body":  null
+    },
+    {
+        "number":  5928,
+        "title":  "all teardown callbacks are called despite errors",
+        "merged_at":  "2026-02-20T04:00:34Z",
+        "body":  "Previously, Flask documented that teardown callbacks must not fail. Now, all callbacks will be called, and any errors are collected to be raised at the end. This applies to app and request teardown callbacks and signals. On Python \u003e= 3.11, this will result in an `ExceptionGroup` each for app and request teardown, collected in an `ExceptionGroup` for overall teardown. On 3.10, the first collected error is raise, which basically matches what happens now.\r\n\r\nAlso adjusts a bunch of tests to clean up any resources. None were failing with `ResourceWarning`, but this ensures they don\u0027t even if they fail for some other reason."
+    },
+    {
+        "number":  5945,
+        "title":  "add zizmor to scan workflows",
+        "merged_at":  "2026-03-08T23:15:00Z",
+        "body":  "https://docs.zizmor.sh/\r\n\r\nAmong the findings:\r\n\r\n- apply empty permissions with `permissions: {}`, although we have read only defaults set at the organization level\r\n- use concurrency group for each workflow\r\n- disable credentials for checkout\r\n- remove some template variables in favor of env vars"
+    }
+]

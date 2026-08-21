@@ -20,6 +20,17 @@
   "future_window": { "start": "2025-11-17T18:05:51Z", "end": "2026-03-17T18:05:51Z" },
   "future_window_note": "protocol §5b fixed observation window T0 -> T0+120d (issues/PRs/commits/release notes only).",
   "snapshot_dir": "D:/AI_work_project/phase-a-snapshots/flask",
-  "status": "T0 selected; snapshot creation pending",
-  "created_at": "2026-08-21T12:54:42Z"
+  "status": "GT v0.1 compiled and locked (5 GT: teardown chain, automatic_options, should_ignore_error, tutorial instance folder, request.json docs drift); blind-doctor PASS 6/6; eval lock created and verified (LOCK OK); ready for 12 runs (Standard/Plan/Quick/Deep x3)",
+  "ground_truth": {
+    "file": "ground-truth/future.json",
+    "sha256_12": "e5b3825be560",
+    "included": 5,
+    "ambiguous": 1,
+    "excluded": 9,
+    "reject": 4,
+    "candidates_file": "evaluation/cases/flask/future_candidates.json"
+  },
+  "lock": "evaluation/locks/flask.protocol-v1.lock",
+  "created_at": "2026-08-21T12:54:42Z",
+  "gt_locked_at": "2026-08-21T05:12:20Z"
 }
