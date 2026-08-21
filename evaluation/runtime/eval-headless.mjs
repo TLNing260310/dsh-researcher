@@ -25,7 +25,7 @@
 // read-only via DSH_PERMISSION_MODE=read-only.
 
 import { randomUUID } from "node:crypto";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { installModelSelection } from "@deepseek-ai/dsh-agent";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
@@ -131,7 +131,12 @@ async function run(ctx, io) {
     final_reason: outcome.reason,
     exit: outcome.reason?.kind === "completed" ? 0 : 1,
   };
+  await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, "run.json"), JSON.stringify(record, null, 2));
+  // Complete event trace (tool calls, results, messages, turn outcomes) —
+  // archived independently of the harness session-persistence backend, so the
+  // evaluation owns its evidence even if the backend flush is incomplete.
+  await writeFile(join(outDir, "session.events.json"), JSON.stringify(agent.session.events, null, 2));
 
   io.stdout.write(outcome.text + "\n");
   if (outcome.reason?.kind === "error") {
