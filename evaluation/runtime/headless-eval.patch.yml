@@ -1,0 +1,35 @@
+# Phase A eval patch — shared overlay for the headless profile.
+#
+# Applied AFTER the headless profile's own layers (bundles + cordis.patch.yml)
+# via `dsh --profile headless --patch <this-file>`. Installed together with
+# eval-headless.js into the profile directory so './eval-headless.js' resolves
+# against the same base either way the loader resolves it.
+#
+# Effects:
+#   - replaces the shipped headless-runner with the eval runner;
+#   - mounts the agent-presets roster (shipped root + user root);
+#   - pins the approval policy to never for every mode (uniform eval condition;
+#     the researcher preset additionally self-pins to read-only + never).
+#
+# Sandbox mode comes from DSH_PERMISSION_MODE=read-only (base sandbox-policy
+# row reads that env var); workspaceRoot = process.cwd() = the snapshot
+# workspace the run is launched from.
+
+- disable: headless-runner
+
+- id: approval
+  name: '@deepseek-ai/dsh-user-approval'
+  config:
+    policy: never
+
+- insert:
+    - id: agent-presets
+      name: '@deepseek-ai/dsh-agent-presets'
+      config:
+        default: standard
+        roots:
+          - path: 'C:/Users/jxgm/AppData/Roaming/npm/node_modules/@deepseek-ai/dsh/config/agent-presets'
+            trust: system
+
+    - id: eval-runner
+      name: './eval-headless.js'
