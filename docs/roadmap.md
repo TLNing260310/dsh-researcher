@@ -35,10 +35,13 @@
 - 文档：README / preset.yml / persona 定位段 / report template / docs/evaluation.md（见 docs/repositioning-v0.7.md）。
 - 治理：persona/模板变更后 Flask lock 的 `--check` 按预期失败（历史冻结），新实验需 protocol v1.1 bump + 重锁。
 
-## v0.7.1 — Risk Map 深化
+## v0.7.1 — Cognition Benchmark（验证认知层是否真实存在，不做功能开发）
 
-- 最容易证明价值的一步：把 Risk Map（PCR §5）从"诊断的自然产物"升级为正式输出契约——每条风险 = 问题链 + 严重性 + 证据 + 反证 + 置信度，并接入 B2（ARD）评测。
-- 范围：methodology skill 的 Risk Map 指令 + 输出 schema 校验，不新增工具。
+版本目标：**证明 Project Cognition Layer 不是包装，而是真能力。** Flask 实验的问题不是模型，而是指标错位（Issue Recall 测错了对象）；v1.1 换四组可测认知属性：GUS（陌生项目理解）/ Impact（修改影响判断）/ Risk（架构风险发现，非未来 bug）/ Drift（跨时间认知一致性）。协议见 docs/evaluation-protocol-v1.1.md。
+
+- 三个实验：A 陌生项目理解（commander.js / cheerio，专家打分，GUS）；B 修改影响范围（给定变更请求，Impact Recall/Precision/Critical Edge）；C 认知漂移（T0 vs T0+n 双快照，Drift Recall + Stale-Claim Invalidation）。
+- 顺序：commander.js 先跑通全链，再复制 cheerio。
+- 原"Risk Map 深化"移入 v0.9（Risk Map 已存在，缺的是价值证明；深化与 Risk Memory 合并）。
 
 ## v0.7 — DSH 生态化
 

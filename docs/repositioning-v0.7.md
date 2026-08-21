@@ -175,6 +175,6 @@
 3. **Bug Discovery → Risk Discovery**：不放弃发现叙事，改为风险叙事（"这里未来容易错" vs "这里错了"）。Flask GT-01 未命中（teardown chain abort）但发现了 cleanup lifecycle risk —— 这属于 Risk Discovery 命中。
 4. **PCR 双层**：用户层 7 节 + AI 内部层（Evidence Ledger / Claims / Confidence / Certificate / Checkpoint State）不删除只摘要——驾驶舱隐喻。
 5. **Researcher Benchmark Suite**：Understanding（GUS）/ Risk（ARD）/ Change Impact（DQ）/ Drift（CDD）四基准；Issue Recall 降为次级，Flask 实验保留。
-6. **版本节奏**：v0.7.0 = 定位一致化（README / persona / report template / evaluation 文档，零核心代码改动）；v0.7.1 = Risk Map 深化（最易证明价值）；v0.8 = Structural Evidence；v0.9 = Project Intelligence Capsule。
+6. **版本节奏**：v0.7.0 = 定位一致化（README / persona / report template / evaluation 文档，零核心代码改动）；**v0.7.1 = Cognition Benchmark（验证认知层真实存在：GUS / Impact / Risk / Drift 四组实验，取代原"Risk Map 深化"——Risk Map 已存在，缺的是价值证明）**；v0.8 = Structural Evidence；v0.9 = Project Intelligence Capsule / Risk Memory（吸收 Risk Map 深化）。
 7. **最应避免**：① 急着加 Agent 能力（问题不是"不够聪明"而是"价值未被正确测量与呈现"）；② 与 DeepSeek/Codex 比写代码；③ 宣传 AI Architect。
 8. **执行形态**：v0.7.0 是 Product Alignment 而非 Feature Development——统一定位、输出、评价体系；任何核心运行逻辑修改暂缓。
