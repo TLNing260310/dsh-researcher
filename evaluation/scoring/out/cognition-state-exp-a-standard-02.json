@@ -1,0 +1,17 @@
+{
+  "schema": "dsh-researcher/cognition-state/v1",
+  "run": "exp-a-standard-02",
+  "project": "commander.js",
+  "claims": [],
+  "dependencies": {
+    "claims": [],
+    "hypotheses": [],
+    "views": []
+  },
+  "freshness": {
+    "generated_at": "2026-08-22T20:11:36.044Z",
+    "snapshot_commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "source_log": "evaluation/runs/commander.js/exp-a/standard/exp-a-standard-02/session.events.json",
+    "fold_replayable": true
+  }
+}

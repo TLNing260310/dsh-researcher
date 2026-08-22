@@ -1,0 +1,586 @@
+{
+  "schema": "dsh-researcher/cognition-state/v1",
+  "run": "exp-a-quick-01",
+  "project": "commander.js",
+  "claims": [
+    {
+      "id": "C01",
+      "statement": "Project identity: commander — 'the complete solution for node.js command-line programs' (README:8, package.json:4); declarative CLI framework: options, arguments, subcommands, automated help, hooks, executable subcommands",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "Readme.md:8",
+          "file": "Readme.md",
+          "line_span": "8",
+          "blob_sha256": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "anchorable": true
+        },
+        {
+          "ref": "package.json:4",
+          "file": "package.json",
+          "line_span": "4",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js full read",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "lib/option.js, lib/argument.js, lib/help.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "statement": "Snapshot: v14.0.3 at HEAD bf35c5f (2026-02-02), clean tree; release commit 8247364 '14.0.3' 2026-01-31; top 2 commits are dependabot devDep bumps touching only package-lock.json",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.99,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git status (empty)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git log HEAD~3",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git show bf35c5f (package-lock only)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package.json:3",
+          "file": "package.json",
+          "line_span": "3",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "statement": "Zero runtime dependencies; lib/ uses only Node builtins (events, child_process, path, fs, process) and internal modules",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.98,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json: no 'dependencies' key",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "grep require( in lib/ (13 matches, all builtins/internal)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "statement": "Node >=20 required (engines); CI matrix node 20/22/24 x ubuntu/windows/macos; jest with coverage + eslint/prettier/tsd/tsc checks; CodeQL workflow",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:79",
+          "file": "package.json",
+          "line_span": "79",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": ".github/workflows/tests.yml",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": ".github/workflows/codeql-analysis.yml",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "jest.config.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "statement": "Strict-by-default parsing: unknown option error + suggestion, excess arguments error (v13 breaking), negative numbers accepted when unambiguous (v14), opt-outs allowUnknownOption/allowExcessArguments",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js unknownOption/_excessArguments/negativeNumberArg",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "CHANGELOG.md 13.0.0, 14.0.0",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "tests/command.unknownOption.test.js, command.allowExcessArguments.test.js, negatives.test.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "statement": "Parse architecture: Command extends EventEmitter; options handled via option:/optionEnv: events; option values stored with source tracking (default/env/cli/implied/config); parseOptions() single-pass state machine splitting operands/unknown; recursive _parseCommand dispatch; promise-chained hooks",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js:1-13",
+          "file": "lib/command.js",
+          "line_span": "1-13",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/option.js DualOptions",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "statement": "Help system fully extensible: Help class style*/format* methods, configureHelp/configureOutput, help groups (14.0.0), color conventions (NO_COLOR/FORCE_COLOR/CLICOLOR_FORCE), stripColor; color off by default (style methods identity)",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/help.js full read (747 lines)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "lib/command.js useColor() 2752-2774",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "CHANGELOG.md 14.0.0",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "statement": "Executable subcommands: child_process.spawn, extension probing (.js/.ts/.tsx/.mjs/.cjs), legacy name fallback, inspector port increment, signal forwarding, Windows ENOENT/EACCES handling",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js _executeSubCommand 1202-1346",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "tests/command.executableSubcommand*.test.js (6 files)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "tests/fixtures-extensions/*",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "statement": "Typings: hand-maintained typings/index.d.ts (1113 lines) + esm.d.mts; JSDoc-based JS type checking (tsconfig.js.json); tsd type tests; TS import tests; ESM wrapper esm.mjs with exports map",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:45-61",
+          "file": "package.json",
+          "line_span": "45-61",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "typings/index.d.ts",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "typings/index.test-d.ts",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "tests/ts-imports.test.ts",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "tests/esm-imports-test.mjs",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C10a",
+      "statement": "Test suite exists and is extensive: ~91 test files covering parse/options/args/help/arguments/hooks/subcommands/executables/typings; fixtures with extension matrix",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "glob tree listing (tests/)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "samples: tests/command.parse.test.js, tests/options.variadic.test.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C10b",
+      "statement": "Test suite passes on HEAD",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "confidence": 0.7,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "CI config .github/workflows/tests.yml runs npm test + npm run check",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "statement": "Release policy: semver; majors ~every 6 months; node minimum raised at LTS EOL; current line gets all updates, previous major gets security-only 12 months; 13.x EOL 2026-05-18",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/release-policy.md",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "CHANGELOG.md",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git log cadence (12.1 2024-05, 13.0 2024-12, 14.0 2025-05)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "statement": "Maintainers: John Gee (shadowspawn) and Abe Tomoaki (abetomo); sponsorship links in package-support.json; Tidelift security contact",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package-support.json",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git log author names",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "SECURITY.md",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "statement": "Ecosystem scale (downloads/dependents/advisories): web verification unavailable this session; search snippet places commander among packages with >10M weekly downloads",
+      "tier": "C3",
+      "verdict": "Likely",
+      "confidence": 0.6,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "web_search snippet (dev.to risk-map audit listing commander)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "README npm badges (unverifiable this session)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "statement": "Backward-compat debt: 10+ documented deprecations (docs/deprecated.md), some held since v7; removal happens at majors; v13 removed multi-char short flags + default export, v12 removed CJS default import",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/deprecated.md (258 lines)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "CHANGELOG.md 13.0.0, 12.0.0",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C15",
+      "statement": "No corrosion found: ESM wrapper (avoids dual-package hazard), EventEmitter design (public custom-listener API), process.exit control flow (documented, exitOverride escape hatch), color-by-hooks (zero-dep constraint) are deliberate evolutions/constraints, not corrosion",
+      "tier": "C1",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js exitOverride/_exit",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "docs/deprecated.md",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "README custom event listeners",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "lib/command.js useColor comments (references no-color.org etc.)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "claims": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C05",
+      "C06",
+      "C07",
+      "C08",
+      "C09",
+      "C10a",
+      "C10b",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15"
+    ],
+    "hypotheses": [
+      {
+        "id": "H1",
+        "status": "active",
+        "dependsOn": [
+          "C01",
+          "C02",
+          "C03",
+          "C10a"
+        ],
+        "revision": 1
+      },
+      {
+        "id": "H2",
+        "status": "active",
+        "dependsOn": [
+          "C03",
+          "C05",
+          "C09",
+          "C11",
+          "C13",
+          "C14"
+        ],
+        "revision": 1
+      }
+    ],
+    "views": [
+      {
+        "name": "classification",
+        "dependsOn": [
+          "diagnosis"
+        ],
+        "revision": 1
+      },
+      {
+        "name": "diagnosis",
+        "dependsOn": [
+          "C10b",
+          "C13",
+          "C15",
+          "project_model"
+        ],
+        "revision": 1
+      },
+      {
+        "name": "project_model",
+        "dependsOn": [
+          "C01",
+          "C02",
+          "C03",
+          "C04",
+          "C05",
+          "C06",
+          "C07",
+          "C08",
+          "C09",
+          "C10a",
+          "C11",
+          "C12",
+          "C14"
+        ],
+        "revision": 1
+      }
+    ]
+  },
+  "freshness": {
+    "generated_at": "2026-08-22T20:11:35.551Z",
+    "snapshot_commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "source_log": "evaluation/runs/commander.js/exp-a/quick/exp-a-quick-01/session.events.json",
+    "fold_replayable": true
+  }
+}

@@ -1,0 +1,404 @@
+{
+  "schema": "dsh-researcher/cognition-state/v1",
+  "run": "exp-a-quick-02",
+  "project": "commander.js",
+  "claims": [
+    {
+      "id": "C1",
+      "statement": "package is commander v14.0.3, MIT, 'complete solution for node.js command-line programs', CJS with ESM wrapper, Node >=20, zero runtime dependencies",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.98,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:2-80",
+          "file": "package.json",
+          "line_span": "2-80",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "index.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "esm.mjs",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "CHANGELOG.md:11",
+          "file": "CHANGELOG.md",
+          "line_span": "11",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "statement": "Manual hand-written typings (1113-line index.d.ts + esm.d.mts) kept in sync via tsd tests, tsc checkJS, and ts-imports tests",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.92,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "typings/index.d.ts",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "typings/index.test-d.ts",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package.json:22-33",
+          "file": "package.json",
+          "line_span": "22-33",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C2",
+      "statement": "Core architecture: Command extends EventEmitter (parser + tree + lifecycle hooks); Option/Argument data classes with parseArg/choices/conflicts/implies/env/preset; DualOptions for negated pairs; Help class with style hooks; CommanderError taxonomy; process.exit default with exitOverride",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js:13-2777",
+          "file": "lib/command.js",
+          "line_span": "13-2777",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/option.js:3-380",
+          "file": "lib/option.js",
+          "line_span": "3-380",
+          "blob_sha256": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/help.js:12-747",
+          "file": "lib/help.js",
+          "line_span": "12-747",
+          "blob_sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/error.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "lib/argument.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C3",
+      "statement": "Option values flow via EventEmitter events 'option:<name>' with source tracking (default/config/env/cli/implied) enabling layered env/config precedence",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js:692-732",
+          "file": "lib/command.js",
+          "line_span": "692-732",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:1966-2025",
+          "file": "lib/command.js",
+          "line_span": "1966-2025",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:953-993",
+          "file": "lib/command.js",
+          "line_span": "953-993",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C4",
+      "statement": "Strict-by-default posture, increasing: unknown options error, excess args error (13.0.0), flag-format errors (13.0.0), duplicate option/command registration errors",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.97,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "CHANGELOG.md:69-150",
+          "file": "CHANGELOG.md",
+          "line_span": "69-150",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:619-662",
+          "file": "lib/command.js",
+          "line_span": "619-662",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/option.js:350-374",
+          "file": "lib/option.js",
+          "line_span": "350-374",
+          "blob_sha256": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C5",
+      "statement": "Test surface: ~109 jest suites + tsd type tests + ESM import test + executable-subcommand fixtures; CI matrix node 20/22/24 x 3 OS; CodeQL; coverage collected without threshold",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "glob tests/*.test.js (109)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "jest.config.js",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": ".github/workflows/tests.yml",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": ".github/workflows/codeql-analysis.yml",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C6",
+      "statement": "Active maintainers are John Gee (shadowspawn) and Abe Tomoaki (abetomo); recent history dominated by dependabot churn; last feature work 14.0.0 (2025-05-18); release cadence ~6-month majors, 12-month security window for old majors",
+      "tier": "C3",
+      "verdict": "Likely",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git log 500 commits",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "CHANGELOG.md:11-62",
+          "file": "CHANGELOG.md",
+          "line_span": "11-62",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        },
+        {
+          "ref": "docs/release-policy.md",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package-support.json",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C7",
+      "statement": "Adoption: commander is in the >10M weekly-download tier on npm and among top packages by dependents",
+      "tier": "C4",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "dev.to audit of >10M weekly download packages",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "depfixer/pkgpulse comparisons",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C8",
+      "statement": "No CVEs for commander itself; malicious typosquat 'commmander' exists on npm (MAL-2025-192687, MAL-2025-17423)",
+      "tier": "C4",
+      "verdict": "Known",
+      "confidence": 0.8,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "osv.dev/vulnerability/MAL-2025-192687",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "vulert.com/vuln-db/npm-commmander-205709",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C9",
+      "statement": "Deprecation surface of ~10 legacy features still implemented (RegExp option arg, noHelp, help callbacks, '--help' events, command:'*', _args, addHelpCommand legacy forms)",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/deprecated.md:1-258",
+          "file": "docs/deprecated.md",
+          "line_span": "1-258",
+          "blob_sha256": "0388b904dd7b7439cc12a4fc3856d45a166ff1dc5b807a59d2b08f2c71057915",
+          "anchorable": true
+        },
+        {
+          "ref": "index.js:24",
+          "file": "index.js",
+          "line_span": "24",
+          "blob_sha256": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:1606-1625",
+          "file": "lib/command.js",
+          "line_span": "1606-1625",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "claims": [
+      "C1",
+      "C10",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9"
+    ],
+    "hypotheses": [
+      {
+        "id": "H1",
+        "status": "active",
+        "dependsOn": [
+          "C1",
+          "C2",
+          "C5",
+          "C6",
+          "C8"
+        ],
+        "revision": 1
+      }
+    ],
+    "views": [
+      {
+        "name": "decision_memo",
+        "dependsOn": [
+          "project_model",
+          "risk_map"
+        ],
+        "revision": 1
+      },
+      {
+        "name": "project_model",
+        "dependsOn": [
+          "C1",
+          "C2",
+          "C3",
+          "C4"
+        ],
+        "revision": 1
+      },
+      {
+        "name": "risk_map",
+        "dependsOn": [
+          "C10",
+          "C5",
+          "C6",
+          "C7",
+          "C8",
+          "C9"
+        ],
+        "revision": 1
+      }
+    ]
+  },
+  "freshness": {
+    "generated_at": "2026-08-22T20:11:35.675Z",
+    "snapshot_commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "source_log": "evaluation/runs/commander.js/exp-a/quick/exp-a-quick-02/session.events.json",
+    "fold_replayable": true
+  }
+}

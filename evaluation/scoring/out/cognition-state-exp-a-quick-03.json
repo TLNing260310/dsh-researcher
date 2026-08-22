@@ -1,0 +1,396 @@
+{
+  "schema": "dsh-researcher/cognition-state/v1",
+  "run": "exp-a-quick-03",
+  "project": "commander.js",
+  "claims": [
+    {
+      "id": "C01",
+      "statement": "Snapshot is commander.js v14.0.3, MIT, by TJ Holowaychuk — the node.js CLI framework",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:2-3",
+          "file": "package.json",
+          "line_span": "2-3",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "Readme.md:8",
+          "file": "Readme.md",
+          "line_span": "8",
+          "blob_sha256": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "statement": "Snapshot is faithful upstream HEAD (bf35c5f, 2026-02-02), clean tree, no local modifications",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git status empty",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git log: bf35c5f dependabot bump post-14.0.3",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git rev-parse HEAD bf35c5f",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "statement": "Zero runtime dependencies; dev-only toolchain (jest, eslint, prettier, tsd, typescript)",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:62-76",
+          "file": "package.json",
+          "line_span": "62-76",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "package-lock.json:7-29",
+          "file": "package-lock.json",
+          "line_span": "7-29",
+          "blob_sha256": "13086b43c4cea1d3df7eb0994c26f64af0e28f5464b707f009c3794609e66af1",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "statement": "Core: Command extends EventEmitter; parsing is an event-driven two-stage pipeline (parseOptions loop then _parseCommand dispatch)",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js:13",
+          "file": "lib/command.js",
+          "line_span": "13",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "statement": "Help system is a separate class with full styling/formatting extension points",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/help.js:12",
+          "file": "lib/help.js",
+          "line_span": "12",
+          "blob_sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "statement": "109 jest test files, coverage collected but no enforced threshold; CI matrix node 20/22/24 x 3 OS",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "glob tests/*.test.js (109)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "jest.config.js (collectCoverage, no threshold)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "github/workflows/tests.yml:14-16",
+          "file": "github/workflows/tests.yml",
+          "line_span": "14-16",
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "statement": "Types: hand-maintained typings/index.d.ts (1113 lines), JS type-checked with checkJs, tsd + tsc tests",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "typings/index.d.ts (1113 lines)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "tsconfig.js.json",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package.json:26-27",
+          "file": "package.json",
+          "line_span": "26-27",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "statement": "Release policy: semver, major ~every 6 months aligned with Node LTS EOL, 12-month security support for old majors",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/release-policy.md:3-15",
+          "file": "docs/release-policy.md",
+          "line_span": "3-15",
+          "blob_sha256": "f1862787e9b09cd92af1787f47683ea02dc093a29ca5c9931fe50de2a1b3524c",
+          "anchorable": true
+        },
+        {
+          "ref": "CHANGELOG.md:11-21",
+          "file": "CHANGELOG.md",
+          "line_span": "11-21",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "statement": "Widely adopted: commander is in the >10M weekly downloads npm tier",
+      "tier": "C1",
+      "verdict": "Likely",
+      "confidence": 0.8,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "dev.to audit of >10M weekly-download packages lists commander",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "pkgpulse.com/packages/commander",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "statement": "Deliberate deprecated/legacy surface still shipped (9 deprecated features documented)",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/deprecated.md:1-21",
+          "file": "docs/deprecated.md",
+          "line_span": "1-21",
+          "blob_sha256": "0388b904dd7b7439cc12a4fc3856d45a166ff1dc5b807a59d2b08f2c71057915",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "statement": "Maintainership concentrated: recent commits mostly dependabot + John Gee (shadowspawn); sponsorship via 2 GitHub sponsors; Tidelift security contact",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git log",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package-support.json:12-15",
+          "file": "package-support.json",
+          "line_span": "12-15",
+          "blob_sha256": "fdce1022e389b2774b706b3f4851c7938a52d099ee39153fc1d965ab7b5b7f81",
+          "anchorable": true
+        },
+        {
+          "ref": "SECURITY.md:3-5",
+          "file": "SECURITY.md",
+          "line_span": "3-5",
+          "blob_sha256": "9c1a9121ac9c5a6dd54ad1d9997fe5a75dc7812082fca9732ff73d3ae1efba3b",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "statement": "14.0.3 release contains only docs and typing changes; 14.x added help groups, unescaped negative numbers, Node>=20",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "CHANGELOG.md:11-21",
+          "file": "CHANGELOG.md",
+          "line_span": "11-21",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "statement": "No TODO/FIXME markers; only 11 targeted ts-ignore/eslint-disable escapes in lib; no coverage gate",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 1,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "grep lib TODO|FIXME (none)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "grep lib @ts-ignore (11)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "grep coverageThreshold (none)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "claims": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C05",
+      "C06",
+      "C07",
+      "C08",
+      "C09",
+      "C10",
+      "C11",
+      "C12",
+      "C13"
+    ],
+    "hypotheses": [
+      {
+        "id": "H1",
+        "status": "active",
+        "dependsOn": [
+          "C01",
+          "C02",
+          "C03"
+        ],
+        "revision": 1
+      }
+    ],
+    "views": [
+      {
+        "name": "change_impact",
+        "dependsOn": [
+          "C04",
+          "C05",
+          "C10"
+        ],
+        "revision": 1
+      },
+      {
+        "name": "project_model",
+        "dependsOn": [
+          "C01",
+          "C02",
+          "C03",
+          "C04",
+          "C05",
+          "C09"
+        ],
+        "revision": 1
+      },
+      {
+        "name": "risk_map",
+        "dependsOn": [
+          "C06",
+          "C07",
+          "C08",
+          "C10",
+          "C11",
+          "C13"
+        ],
+        "revision": 1
+      }
+    ]
+  },
+  "freshness": {
+    "generated_at": "2026-08-22T20:11:35.814Z",
+    "snapshot_commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "source_log": "evaluation/runs/commander.js/exp-a/quick/exp-a-quick-03/session.events.json",
+    "fold_replayable": true
+  }
+}

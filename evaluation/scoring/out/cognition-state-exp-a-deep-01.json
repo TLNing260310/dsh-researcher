@@ -1,0 +1,927 @@
+{
+  "schema": "dsh-researcher/cognition-state/v1",
+  "run": "exp-a-deep-01",
+  "project": "commander.js",
+  "claims": [
+    {
+      "id": "C01",
+      "statement": "Snapshot is commander.js v14.0.3, HEAD bf35c5f (2026-02-02), clean working tree; repo has 500+ commits in recent window, history predates 2023",
+      "tier": "C4",
+      "verdict": "Known",
+      "confidence": 0.99,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git log HEAD (bf35c5f 2026-02-02)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git status clean",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package.json version 14.0.3",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "statement": "commander has zero runtime dependencies (all deps are devDependencies)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.98,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:62-76",
+          "file": "package.json",
+          "line_span": "62-76",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "CONTRIBUTING.md:40",
+          "file": "CONTRIBUTING.md",
+          "line_span": "40",
+          "blob_sha256": "6936a9e828bc99ce4ca7ba6a1fb669295594f4db0d89eda049f50c2b27a179c5",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "statement": "Self-description: 'the complete solution for node.js command-line programs'",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:4",
+          "file": "package.json",
+          "line_span": "4",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "statement": "Requires Node.js >= 20 (v14 breaking change)",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "package.json:78-80",
+          "file": "package.json",
+          "line_span": "78-80",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "CHANGELOG.md:60",
+          "file": "CHANGELOG.md",
+          "line_span": "60",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "statement": "Behavior is strict by default: unknown options error, excess arguments error since 13.0.0, option/command clash errors since 12.0.0",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "CHANGELOG.md:82-85",
+          "file": "CHANGELOG.md",
+          "line_span": "82-85",
+          "blob_sha256": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "anchorable": true
+        },
+        {
+          "ref": "Readme.md:73",
+          "file": "Readme.md",
+          "line_span": "73",
+          "blob_sha256": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "statement": "Release policy: semver, major ~every 6 months with Node LTS bump, current major gets all updates, previous major gets 12 months security",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/release-policy.md:3-15",
+          "file": "docs/release-policy.md",
+          "line_span": "3-15",
+          "blob_sha256": "f1862787e9b09cd92af1787f47683ea02dc093a29ca5c9931fe50de2a1b3524c",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "statement": "Maintainer model: John Gee (shadowspawn) primary maintainer, abetomo does release/CI commits; funded via GitHub sponsors + Tidelift",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git log (John Gee feature commits, abetomo release commits)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package-support.json:12-15",
+          "file": "package-support.json",
+          "line_span": "12-15",
+          "blob_sha256": "fdce1022e389b2774b706b3f4851c7938a52d099ee39153fc1d965ab7b5b7f81",
+          "anchorable": true
+        },
+        {
+          "ref": "Readme.md:1172-1176",
+          "file": "Readme.md",
+          "line_span": "1172-1176",
+          "blob_sha256": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "statement": "Contribution process: PRs against develop branch; contributors must not update CHANGELOG/version; zero-dep policy is a soft constraint",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "CONTRIBUTING.md:15",
+          "file": "CONTRIBUTING.md",
+          "line_span": "15",
+          "blob_sha256": "6936a9e828bc99ce4ca7ba6a1fb669295594f4db0d89eda049f50c2b27a179c5",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "statement": "CI: tests.yml runs node 20/22/24 x ubuntu/windows/macos with npm test + npm run check; CodeQL analysis workflow exists",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "github/workflows/tests.yml:15-16",
+          "file": "github/workflows/tests.yml",
+          "line_span": "15-16",
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": ".github/workflows/codeql-analysis.yml",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "statement": "Typings are hand-maintained (typings/index.d.ts, 1113 lines) with tsd tests and tsc type-checks in CI",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "typings/index.d.ts (1113 lines)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "package.json:26",
+          "file": "package.json",
+          "line_span": "26",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        },
+        {
+          "ref": "tests/ts-imports.test.ts",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "statement": "Recent git history dominated by dependabot dependency bumps (~60-70% of commits since 2023)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "git log 500 entries: majority dependabot[bot]",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "statement": "No TODO/FIXME/HACK markers in lib/",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "grep TODO|FIXME|XXX|HACK in lib/ -> no matches",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "statement": "11 deprecated features documented and still supported for backwards compatibility",
+      "tier": "C2",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "docs/deprecated.md headings",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "statement": "External: commander is among the most-downloaded npm packages; no known CVE in commander itself; typosquat lookalikes exist (commmander, commander-stable)",
+      "tier": "C2",
+      "verdict": "Likely",
+      "confidence": 0.7,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "web_search: osv.dev MAL-2025-192687 for commmander/commander-stable (NOT real commander)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "Snyk package page exists",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C15",
+      "statement": "Test suite: ~132 jest test files + esm-imports-test.mjs + ts-imports.test.ts + tsd typings tests; jest collects coverage",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "glob tests/*.test.js (134 files incl. special)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "jest.config.js collectCoverage: true",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C16",
+      "statement": "Current Command class architecture dates to the v8-era rewrite (2021-05-25) by John Gee; evolved by layering features (help option refactor 2024-01, colors 2024-11, help groups 2025-05, save/restore 2024-12)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.97,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "blame lib/command.js: core skeleton from 08245cc7 (2021-05-25, v8-era rewrite)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "git log shows surgical feature layering 2021-2026",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C17",
+      "statement": "Option/argument parsing is hand-rolled imperative code: single-pass scanner with negative-number heuristic, combined short flags, --foo=bar, variadic continuation; parseOptions is PUBLIC API (typings/index.d.ts:873); 'eval' parseOptions.from mode exists but is undocumented (command.js:1020)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "typings/index.d.ts:873",
+          "file": "typings/index.d.ts",
+          "line_span": "873",
+          "blob_sha256": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "anchorable": true
+        },
+        {
+          "ref": "command.js:1020",
+          "file": "lib/command.js",
+          "line_span": "1020",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "command.js:2118-2133",
+          "file": "lib/command.js",
+          "line_span": "2118-2133",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C18",
+      "statement": "Help system is a subclassable/overridable class with 40+ small methods; refactored in 13.x (formatItem/boxWrap, style routines, groups)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.95,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/help.js:41",
+          "file": "lib/help.js",
+          "line_span": "41",
+          "blob_sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/help.js:11",
+          "file": "lib/help.js",
+          "line_span": "11",
+          "blob_sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C19",
+      "statement": "Error model: CommanderError(exitCode, code, message) thrown/caught or process.exit via _exit; exitOverride() replaces exit with throw; executable subcommands exit with child code",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/error.js:4-36",
+          "file": "lib/error.js",
+          "line_span": "4-36",
+          "blob_sha256": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:533-539",
+          "file": "lib/command.js",
+          "line_span": "533-539",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:1303-1342",
+          "file": "lib/command.js",
+          "line_span": "1303-1342",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C20",
+      "statement": "Type discipline: tsc checkJs over lib with JSDoc; hand-written typings validated with skipLibCheck:false and tsd tests; TS files strict",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "tsconfig.json:28",
+          "file": "tsconfig.json",
+          "line_span": "28",
+          "blob_sha256": "f813a206ec2fb1ac26cabbbc4082410c1c4e0fa1557258bc24145769b3b71734",
+          "anchorable": true
+        },
+        {
+          "ref": "package.json:26-27",
+          "file": "package.json",
+          "line_span": "26-27",
+          "blob_sha256": "abcadf3d5575510b0ebcc9c04d39a838b01a5932861cf2454beb985eae4b4ea3",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C21",
+      "statement": "Test suite: 109 jest files, ~1,250-1,300 executed cases (1,071 static + ~180-230 parametrized); tsd ~290 expectType + @ts-expect-error negatives; ESM smoke test NOT jest-run (npm run test-esm)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "full subagent report: 1,071 static test()/it() + 30 each-blocks; negatives.test.js 7x17, argumentVariations 8x4, action 6x3",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "jest.config.js excludes .mjs from default patterns",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C22",
+      "statement": "Tests lock verbatim error messages/codes (unknown option/command, missing option/argument, excess args, invalid choices), help layout (single golden string), exit codes, action binding, variadic, env precedence cli>env>default, hook ordering, -- literal, duplicate-registration throws, state reset between parses; no snapshot framework",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "full subagent report invariant list with citations",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "command.help.test.js:9-25",
+          "file": "tests/command.help.test.js",
+          "line_span": "9-25",
+          "blob_sha256": "aefae55a36f415579394f4b1389a96ccef096a00b7c70f4878e677933224e743",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C23",
+      "statement": "Thin coverage: Help.commandDescription/prepareContext/formatItemList/default displayWidth and Option.is/isBoolean have no direct unit tests; ESM runtime behavior is smoke-level only (constructor names) and not jest-run; deprecated RegExp path 3 tests; Windows-only behavior skipped; no shared test harness (boilerplate duplicated across ~100 files)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "full subagent report gaps: Help.commandDescription/prepareContext/formatItemList/displayWidth, Option.is/isBoolean no direct tests",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "esm-imports-test.mjs is smoke-only, not jest-run",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "deprecated.test.js 3 tests; Windows describes skipped",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C24",
+      "statement": "Support classes contain permissive/fragile parsing spots (variadic regex over whole flags string; two-long-flags stored in short field leaking into help sort keys; camelcase('') crash via '--no-'; DualOptions strict-=== heuristic; Argument bracket switch silently truncating malformed names) AND code duplication: identical _collectValue in Option+Argument, findBestOptionFromValue (command.js:2073-2091) reimplementing the DualOptions heuristic, styleUsage ~ styleSubcommandTerm",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "full subagent report: _collectValue duplicated identically in Option (165-172) and Argument (56-63)",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "command.js:2073-2091",
+          "file": "lib/command.js",
+          "line_span": "2073-2091",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "help.js styleUsage ~ styleSubcommandTerm",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C25",
+      "statement": "Help class couples to Command underscore-privates (6+ members), self-flagged dubious help-flag auto-hide behavior, and a documented side effect mutating argument.description",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "subagent report",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "lib/help.js:84",
+          "file": "lib/help.js",
+          "line_span": "84",
+          "blob_sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/help.js:139-153",
+          "file": "lib/help.js",
+          "line_span": "139-153",
+          "blob_sha256": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C26",
+      "statement": "Typings drifts: nestedError declared string but assigned Error (command.js:1339); HelpContext type declares only error:boolean vs 4 runtime fields; configureHelp/output getters typed non-optional though they may return undefined; Option d.ts omits conflictsWith/implied; stripColor is exported from help.js but not part of the public package surface",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "command.js:2475-2495",
+          "file": "lib/command.js",
+          "line_span": "2475-2495",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "typings/index.d.ts:20",
+          "file": "typings/index.d.ts",
+          "line_span": "20",
+          "blob_sha256": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "anchorable": true
+        },
+        {
+          "ref": "stripColor exported from help.js but absent from index.js/esm.mjs",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C27",
+      "statement": "Signal forwarding in _executeSubCommand registers 5 process.on listeners per spawn never removed; repeated executable-subcommand dispatch in one long-lived process accumulates listeners; 'close' handler exits with code ?? 1 (signal-terminated child => 1); runningCommand published at command.js:1345",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "full subagent report sections 5-7 with citations",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "command.js:1290-1301",
+          "file": "lib/command.js",
+          "line_span": "1290-1301",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C28",
+      "statement": "API-level quirks: opts() returns internal state by reference; help() reads global process.exitCode; error() cannot emit exit code 0",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.85,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js:1916",
+          "file": "lib/command.js",
+          "line_span": "1916",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:2623",
+          "file": "lib/command.js",
+          "line_span": "2623",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/command.js:1955",
+          "file": "lib/command.js",
+          "line_span": "1955",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C29",
+      "statement": "copyInheritedSettings copies 11 settings but deliberately not _allowUnknownOption, _passThroughOptions, _executableDir, help-group headings; legacy dispatch paths (command: events, '*' command, command:* event) are interleaved in the modern dispatch ladder; several regex/string parsing spots lack null/edge validation (command.js:163,420,679)",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 2,
+      "evidence_anchors": [
+        {
+          "ref": "full subagent report: copyInheritedSettings list + not-copied list",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "command.js:99-114",
+          "file": "lib/command.js",
+          "line_span": "99-114",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C30",
+      "statement": "Two author-error crash paths: .command('') / .helpCommand('') destructure null; .option('--no-') reaches camelcase('') TypeError at attributeName",
+      "tier": "C3",
+      "verdict": "Known",
+      "confidence": 0.9,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "lib/command.js:163",
+          "file": "lib/command.js",
+          "line_span": "163",
+          "blob_sha256": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "anchorable": true
+        },
+        {
+          "ref": "lib/option.js:316-320",
+          "file": "lib/option.js",
+          "line_span": "316-320",
+          "blob_sha256": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "anchorable": true
+        }
+      ]
+    },
+    {
+      "id": "C31",
+      "statement": "External: commander v15.0.0 (and v15.0.0-0 prerelease) exists upstream after this snapshot; this v14.0.3 snapshot (2026-02-02) is superseded by one major version; v15 details not fetchable (no web provider) - unknown breaking changes",
+      "tier": "C2",
+      "verdict": "Likely",
+      "confidence": 0.75,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "web_search: github.com/tj/commander.js/releases/tag/v15.0.0",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "dependabot bumps 14.0.3 -> 15.0.0 in multiple repos",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    },
+    {
+      "id": "C32",
+      "statement": "External: no known CVE/advisory found for the real commander package; typosquat lookalikes (commmander, commander-stable) are an ecosystem risk; adoption scale is top-tier npm (exact weekly downloads unverifiable in this session)",
+      "tier": "C2",
+      "verdict": "Likely",
+      "confidence": 0.7,
+      "revision": 1,
+      "evidence_anchors": [
+        {
+          "ref": "web_search: snyk page, osv MAL-2025-192687 for typosquats",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        },
+        {
+          "ref": "no CVE for real commander found",
+          "file": null,
+          "line_span": null,
+          "blob_sha256": null,
+          "anchorable": false
+        }
+      ]
+    }
+  ],
+  "dependencies": {
+    "claims": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C05",
+      "C06",
+      "C07",
+      "C08",
+      "C09",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C17",
+      "C18",
+      "C19",
+      "C20",
+      "C21",
+      "C22",
+      "C23",
+      "C24",
+      "C25",
+      "C26",
+      "C27",
+      "C28",
+      "C29",
+      "C30",
+      "C31",
+      "C32"
+    ],
+    "hypotheses": [
+      {
+        "id": "H1",
+        "status": "active",
+        "dependsOn": [
+          "C01",
+          "C02",
+          "C03",
+          "C08",
+          "C11",
+          "C16",
+          "C17",
+          "C24",
+          "C25",
+          "C26"
+        ],
+        "revision": 6
+      },
+      {
+        "id": "H2",
+        "status": "invalidated",
+        "dependsOn": [
+          "C01"
+        ],
+        "revision": 1
+      }
+    ],
+    "views": [
+      {
+        "name": "architecture_map",
+        "dependsOn": [
+          "C16",
+          "C17",
+          "C18",
+          "C19",
+          "C20"
+        ],
+        "revision": 3
+      },
+      {
+        "name": "diagnosis",
+        "dependsOn": [
+          "C21",
+          "C22",
+          "C23",
+          "C24",
+          "C25",
+          "C26",
+          "C27",
+          "C28",
+          "C29",
+          "C30"
+        ],
+        "revision": 4
+      },
+      {
+        "name": "evidence_map",
+        "dependsOn": [
+          "C21",
+          "C22",
+          "C23"
+        ],
+        "revision": 3
+      },
+      {
+        "name": "project_model",
+        "dependsOn": [
+          "C31",
+          "C32"
+        ],
+        "revision": 4
+      },
+      {
+        "name": "risk_map",
+        "dependsOn": [
+          "C24",
+          "C25",
+          "C26"
+        ],
+        "revision": 4
+      }
+    ]
+  },
+  "freshness": {
+    "generated_at": "2026-08-22T20:11:34.653Z",
+    "snapshot_commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "source_log": "evaluation/runs/commander.js/exp-a/deep/exp-a-deep-01/session.events.json",
+    "fold_replayable": true
+  }
+}
