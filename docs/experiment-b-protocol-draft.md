@@ -1,16 +1,16 @@
 # Experiment B Protocol Draft — Change Impact Cognition
 
 > 状态:**DRAFT — 未冻结**。本文件是 Experiment A 之后的新增协议草案,继承 `evaluation-protocol-v1.1.md` 的纪律与基建,但不修改 v1.1 本身(protocol、GT、scoring、prompt 均保持冻结)。
-> 定位:验证 **H2 — Researcher 是否更适合分析修改影响**(change → dependency → behavior → contract 传播链理解)。
+> 定位:验证 **H1 — Researcher 是否提升 Change Impact Understanding**(change → dependency → behavior → contract 传播链理解)。
 > 硬约束(与 v1.1 相同):不修改 Researcher 核心逻辑;不添加 Agent 能力;不修改 prompt 以追求结果;不根据结果调整评分规则;失败结果全部保留;尝试证伪。
 
 ## 0. 动机(为什么在 Experiment A 之后做 B)
 
-Experiment A(post-a-analysis.md F1)削弱了 Single Snapshot Understanding:在清单核对型任务上,Plan ≥ Standard ≥ Quick ≥ Deep。但 A 的 PCR §6(Change Impact Analysis)没有真实变更请求、没有 Impact GT,因此"修改影响理解"从未被测量。B 的假设是:**影响分析需要"链路推理"(A 改 → B 依赖 → C 行为 → D 契约),而链路推理是深度探索模式(Researcher)可能相对基线有优势的维度** —— 也可能没有。B 就是来检验的,不预设成立。
+Experiment A(post-a-analysis.md F1)削弱了 Single Snapshot Understanding:在清单核对型任务上,Plan ≥ Standard ≥ Quick ≥ Deep。但 A 的 PCR §6(Change Impact Analysis)没有真实变更请求、没有 Impact GT,因此"修改影响理解"从未被测量。B 验证 **H1(Change Impact Understanding)**:影响分析需要"链路推理"(A 改 → B 依赖 → C 行为 → D 契约),而链路推理是深度探索模式(Researcher)可能相对基线有优势的维度 —— 也可能没有。B 就是来检验的,不预设成立。
 
 ## 1. 实验问题(预注册)
 
-> On the frozen commander.js snapshot, do Researcher modes (Quick/Deep) recover the pre-registered impact chain of a proposed engineering change (change → dependency → behavior → contract) better than Plan/Standard, at comparable cost? Measured by Impact Recall / Impact Precision / Critical Edge Detection, chain-correctness weighted, file-count NOT scored.
+> On the frozen commander.js snapshot, do Researcher modes (Quick/Deep) recover the pre-registered impact chain of a proposed engineering change (change → dependency → behavior → contract) better than Plan/Standard, at comparable cost? Measured by Impact Recall / Impact Precision / Critical Edge Detection / Cost-Normalized Score, chain-correctness weighted, file-count NOT scored.
 
 **这不是**:谁列出更多受影响文件(dependency grep)。
 **这是**:谁理解"改 X 会经过 Y 到达 Z"的传播关系,并识别出最高危的传播边。
@@ -71,15 +71,25 @@ Experiment A(post-a-analysis.md F1)削弱了 Single Snapshot Understanding:在�
 - **Critical Edge 占总 Impact 分 30%**,Recall/Precision 共占 70%(各 35%)。总 Impact Score = 0.35×Recall + 0.35×Precision + 0.30×CriticalEdge。
 - 理由:防止"低风险边全覆盖"的分数虚高(protocol v1.1 §5.3 同构,此处正式化权重)。
 
-### 5.4 附项(报告不遮丑)
+### 5.4 Cost-Normalized Score(正式指标,防"成本空转")
+
+Experiment A 的核心教训是成本与收益分离(Deep 以 2.3× tokens / 4.2× 时长取得最低 GUS)。因此 B 把成本归一化升格为**正式指标**,而非附注:
+
+- **Cost-Normalized Score(CNS)= 总 Impact Score / billed tokens(单位:每 100k billed tokens 的 Impact Score)**。
+- billed tokens = input + output + reasoning(cache reads 单列,与 v1.1 §5.5 一致)。
+- CNS 的解读:**同一 Impact Score 下成本更低的模式 CNS 更高**;它回答"每单位成本买到了多少正确的链路理解",是价值边界判断的主视角之一。
+- 报告:mean + range;与原始 Impact Score 并排报告(两者缺一不可 —— 原始分回答"上限",CNS 回答"效率")。
+- 防误导规则:若某模式 Impact Score 与基线差距 ≤0.05(采样误差带)而成本 ≥1.5×,则 CNS 判定为"成本劣势无收益补偿",如实报告,不调整任何分数。
+
+### 5.5 附项(报告不遮丑)
 
 - **Decision Quality**:run 是否区分"直接破坏 / 需重测 / 文档契约"三级,且分级与 GT 一致(partial 档)。
 - **链路正确性负例**:run 声称的传播链中,方向错误(说 A 依赖 B,实际 B 依赖 A)或机制错误(说经过 parseOptions,实际不经过)的条目 —— 单独计数并报告(不并入 Precision,单独列"Chain Errors")。
 - **越界检查**:任何"实现建议"(写了代码方案)按协议记违规;bug 级预测单独计数,不进 Impact 分。
 
-### 5.5 成本与纪律
+### 5.6 成本与纪律
 
-- token / duration / tool calls / claims 数(同 v1.1 §5.5);cost-adjusted = Impact Score / 1M billed tokens。
+- token / duration / tool calls / claims 数(同 v1.1 §5.5);CNS 计算用 §5.4 定义。
 - 运行前 lock 检查(exp-b 独立锁,含 mutation manifest 哈希)、运行后金丝雀;任何 FAIL → run INVALID 丢弃(保留记录)。
 
 ## 6. 工件清单(新增,不触碰 v1.1 冻结物)
@@ -91,7 +101,7 @@ Experiment A(post-a-analysis.md F1)削弱了 Single Snapshot Understanding:在�
 | Impact GT(校准后) | `evaluation/cases/commander.js/mutations/impact-gt-frozen.json` | 待生成 |
 | 任务模板 | `evaluation/prompts/exp-b-pcr.txt`(统一前缀 + 变更请求占位) | 待生成 |
 | 运行 manifest | `evaluation/runs/commander.js/exp-b/exp-b-runs-manifest.json` | 待生成 |
-| 评分器 | `evaluation/scoring/score-exp-b.js`(链式 Recall/Precision + Critical Edge 30%) | 待实现 |
+| 评分器 | `evaluation/scoring/score-exp-b.js`(链式 Recall/Precision + Critical Edge 30% + CNS 成本归一化) | 待实现 |
 | exp-b 锁 | `evaluation/locks/commander.js.exp-b.protocol-draft.lock` | 待冻结 |
 | 结果 | `evaluation/results/experiment-b/` | 待生成 |
 
@@ -99,9 +109,11 @@ Experiment A(post-a-analysis.md F1)削弱了 Single Snapshot Understanding:在�
 
 ## 7. 预期与反预期(结果解读预设,防事后挑选)
 
-- **Researcher(Quick/Deep)Impact Score > Plan/Standard**:支持 H2("深度探索模式更适合链路推理")。
-- **Researcher ≈ 基线**:H2 未获支持 —— 影响分析不依赖深度探索,报告如实呈现。
+- **Researcher(Quick/Deep)Impact Score > Plan/Standard**:支持 H1("深度探索模式更适合链路推理")。
+- **Researcher ≈ 基线**:H1 未获支持 —— 影响分析不依赖深度探索,报告如实呈现。
 - **Deep 成本高但 Critical Edge 好**:部分支持 —— 深度买了"高危边识别",但链路覆盖无增益。
+- **CNS 反超**:某模式原始 Impact Score 略低但 CNS 显著更高(成本低一个量级)—— 价值边界在效率侧,报告如实呈现。
+- **CNS 全面落后**:成本劣势无收益补偿 —— 与 Experiment A 同构,支持"深度探索在影响分析上同样不划算"。
 - **所有模式 Precision 低、Chain Errors 高**:任务过难或 GT 错位 —— 报告如实呈现,不调整 GT。
 - **任何模式 Critical Edge = 0**:critical_edges 预注册过严或任务不可解 —— 报告如实呈现。
 

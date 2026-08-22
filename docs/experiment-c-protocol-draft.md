@@ -1,15 +1,15 @@
 # Experiment C Protocol Draft — Synthetic Drift & Claim Invalidation
 
 > 状态:**DRAFT — 未冻结**。继承 `evaluation-protocol-v1.1.md` 的纪律与基建,不修改 v1.1 本身(protocol、GT、scoring、prompt 均保持冻结)。
-> 定位:验证 **H1(跨时间项目认知)与 H3(认知漂移检测)的合成形态** —— Researcher 是否能在项目状态变化后,发现"旧认知失效"并纠正(claim invalidation),而不是预测 bug。
+> 定位:验证 **H2(Longitudinal Cognition Maintenance)与 H3(Stale Claim Detection)的合成形态** —— Researcher 是否能在项目状态变化后,维持跨时间认知并发现"旧认知失效"(claim invalidation),而不是预测 bug。
 > 硬约束(与 v1.1 相同):不修改 Researcher 核心逻辑;不添加 Agent 能力;不修改 prompt 以追求结果;不根据结果调整评分规则;失败结果全部保留;尝试证伪。
 
 ## 0. 动机
 
 Experiment A 削弱了单快照理解假设(post-a-analysis.md F1)。但 A 的两个未被测维度正是 Researcher 机制(checkpoint 状态、claims、证据链)唯一可能显形之处:
 
-1. **跨时间认知一致性(H1)**:认知层声称的"长期正确理解"只有在**时间流逝后**才能验证。真实时间窗口(T0→T0+90–120 天)是 v0.9+ 的后续验证;本实验用合成漂移做主路径(protocol v1.1 §4.3 已预注册)。
-2. **认知漂移检测(H3)**:项目状态改变后,AI 能否发现**旧认知的哪些部分不再成立**(claim invalidation),而不是预测新 bug。
+1. **跨时间认知维护(H2)**:认知层声称的"长期正确理解"只有在**时间流逝后**才能验证。真实时间窗口(T0→T0+90–120 天)是 v0.9+ 的后续验证;本实验用合成漂移做主路径(protocol v1.1 §4.3 已预注册)。
+2. **陈旧声明检测(H3)**:项目状态改变后,AI 能否发现**旧认知的哪些部分不再成立**(claim invalidation),而不是预测新 bug。
 
 关键差异(与 Experiment A 的本质区别):A 是**单快照静态理解**;C 是**双快照对比认知** —— run-1 建立 T0 认知(run-1 capsule 即 checkpoint 导出),run-2 在 T1(注入变化的快照)上重建认知,并与 run-1 的 claim 对比。**只有 Researcher 模式有 checkpoint/claims 机制**(A 中基线 claims=0、certificate=null),因此 C 是四种模式机制不对称最明显、Researcher 最可能显形(或显形为负)的实验。
 
@@ -102,10 +102,10 @@ Experiment A 削弱了单快照理解假设(post-a-analysis.md F1)。但 A 的�
 
 ## 6. 预期与反预期(结果解读预设,防事后挑选)
 
-- **Researcher Stale-Claim Invalidation > 基线替代指标**:支持 H1/H3("认知层能在状态变化后显式失效旧认知")。
-- **Researcher 检出注入但 invalidation 低**:支持"能发现变化、不能关联到旧 claim" —— H1 部分支持,H3 不支持。
+- **Researcher Stale-Claim Invalidation > 基线替代指标**:支持 H2/H3("认知层能在状态变化后显式失效旧认知")。
+- **Researcher 检出注入但 invalidation 低**:支持"能发现变化、不能关联到旧 claim" —— H2 部分支持,H3 不支持。
 - **Researcher Mutation Recall < 基线**:探索型模式反而不如清单核对 —— H3 不支持,报告如实呈现。
-- **基线模式的"矛盾修正"率 ≥ Researcher invalidation 率**:说明显式 claim 机制无增益 —— H1 不支持。
+- **基线模式的"矛盾修正"率 ≥ Researcher invalidation 率**:说明显式 claim 机制无增益 —— H2 不支持。
 - **高 False Invalidation**:run-2 过度宣称"旧假设失效"(未变区域被误报) —— 报告如实呈现,不调整 GT。
 - **任何模式 Mutation Recall = 0**:注入不可见或任务不可解 —— 报告如实呈现,不调整 GT。
 
