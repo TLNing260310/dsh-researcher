@@ -1,0 +1,102 @@
+{
+  "schema": "dsh-researcher/cplus-exec-config/v1",
+  "t1_base_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1",
+  "runs": [
+    {
+      "run_id": "exp-cplus-mut01-b",
+      "mutation": "MUT-01",
+      "condition": "B",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-01/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut01-b.txt",
+      "state_source": "exp-a-quick-01"
+    },
+    {
+      "run_id": "exp-cplus-mut04-b",
+      "mutation": "MUT-04",
+      "condition": "B",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-04/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut04-b.txt",
+      "state_source": "exp-a-deep-01"
+    },
+    {
+      "run_id": "exp-cplus-mut02-b",
+      "mutation": "MUT-02",
+      "condition": "B",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-02/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut02-b.txt",
+      "state_source": "exp-a-quick-02"
+    },
+    {
+      "run_id": "exp-cplus-mut05-b",
+      "mutation": "MUT-05",
+      "condition": "B",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-05/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut05-b.txt",
+      "state_source": "exp-a-quick-03"
+    },
+    {
+      "run_id": "exp-cplus-mut02-a",
+      "mutation": "MUT-02",
+      "condition": "A",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-02/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt",
+      "state_source": null
+    },
+    {
+      "run_id": "exp-cplus-mut03-a",
+      "mutation": "MUT-03",
+      "condition": "A",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-03/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt",
+      "state_source": null
+    },
+    {
+      "run_id": "exp-cplus-mut06-a",
+      "mutation": "MUT-06",
+      "condition": "A",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-06/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt",
+      "state_source": null
+    },
+    {
+      "run_id": "exp-cplus-mut01-a",
+      "mutation": "MUT-01",
+      "condition": "A",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-01/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt",
+      "state_source": null
+    },
+    {
+      "run_id": "exp-cplus-mut03-b",
+      "mutation": "MUT-03",
+      "condition": "B",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-03/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut03-b.txt",
+      "state_source": "exp-a-deep-02"
+    },
+    {
+      "run_id": "exp-cplus-mut05-a",
+      "mutation": "MUT-05",
+      "condition": "A",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-05/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt",
+      "state_source": null
+    },
+    {
+      "run_id": "exp-cplus-mut04-a",
+      "mutation": "MUT-04",
+      "condition": "A",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-04/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt",
+      "state_source": null
+    },
+    {
+      "run_id": "exp-cplus-mut06-b",
+      "mutation": "MUT-06",
+      "condition": "B",
+      "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js-cplus-t1/MUT-06/workspace",
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut06-b.txt",
+      "state_source": "exp-a-deep-03"
+    }
+  ]
+}

@@ -7,7 +7,7 @@
     "inject_selection": "606f42efc122844c584a511c3f9a6cfd0a3f7985c1e4913c6a9a7fb74bc792e0",
     "prompt_A": "9c1d4fb80710e306697c0cb8bd111ee8c32c799df600fedfaae6b85247f5b8da",
     "prompt_B": "7a3c7c16cd07729acf3de4c98a916c7ec1dc44d907b9dcd776fc52ea1ee0c0cd",
-    "manifest": "43ec656beee4a3d9cb8885c2a225a23b2998c8af9d19b85d2fe6c82e42c0fc79",
+    "manifest": "d3be9743edac8b168ef4716ec6804816e5e3a2f212298ce009ed94ef38d12113",
     "converter": "383f85ae52fa0b509d6af491b109be53adb392c2745e0e1ada8eeb3f9344bfd9",
     "exporter": "c4b49fd1350b2daea840cac5e7dc6e28100d3d1123a9e0991e47fdc904cd90e4",
     "diff": "743fee0ca4263e1e9ec62e8284febb1af4b90a94f198e6c3cb612c57bc6981ab",
@@ -28,5 +28,7 @@
     "model": "deepseek-official/deepseek-v4-flash",
     "reasoning": "max",
     "token_budget": "500000"
-  }
+  },
+  "manifest_frozen_at": "2026-08-22T21:27:00.415Z",
+  "note": " manifest hash refreshed at execution freeze (task_file paths finalized); protocol text unchanged. "
 }
