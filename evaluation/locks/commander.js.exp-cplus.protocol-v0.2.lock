@@ -1,0 +1,32 @@
+{
+  "schema": "dsh-researcher/cplus-protocol-lock/v0.2",
+  "generated_at": "2026-08-22T21:04:58.279Z",
+  "status": "FREEZE CANDIDATE",
+  "hashes": {
+    "protocol": "a449c7503fcef68e009a25bfcdb0a550ec03c65db943adc9a6f8be58d887651a",
+    "inject_selection": "606f42efc122844c584a511c3f9a6cfd0a3f7985c1e4913c6a9a7fb74bc792e0",
+    "prompt_A": "9c1d4fb80710e306697c0cb8bd111ee8c32c799df600fedfaae6b85247f5b8da",
+    "prompt_B": "7a3c7c16cd07729acf3de4c98a916c7ec1dc44d907b9dcd776fc52ea1ee0c0cd",
+    "manifest": "43ec656beee4a3d9cb8885c2a225a23b2998c8af9d19b85d2fe6c82e42c0fc79",
+    "converter": "383f85ae52fa0b509d6af491b109be53adb392c2745e0e1ada8eeb3f9344bfd9",
+    "exporter": "c4b49fd1350b2daea840cac5e7dc6e28100d3d1123a9e0991e47fdc904cd90e4",
+    "diff": "743fee0ca4263e1e9ec62e8284febb1af4b90a94f198e6c3cb612c57bc6981ab",
+    "task_exp-cplus-mut01-b": "876cdd9bb8a731cf5bfc4e516189d91bd4ab602a65fc02f12b66db9fabbd2508",
+    "task_exp-cplus-mut02-b": "89e01e99be4d8b0f78ce4ebc2877f2e0a4042d9eef70c3e7cf74ce03075f9b86",
+    "task_exp-cplus-mut03-b": "2f34621b663acdf52d22f1aadf4074ab2d72b4a7af8f77bc910227f5d7d6d089",
+    "task_exp-cplus-mut04-b": "84db21cca64cfaa1c1ce5a2c500c733c07e232b2050e5a88162033c37d489e6b",
+    "task_exp-cplus-mut05-b": "1325716b56fb1857b44a41627b159f40365f115de8783f783dc4e0d586ea32ca",
+    "task_exp-cplus-mut06-b": "79b850e2f5922bb3de4bd9c63cddc624d3ed113c418e6b0e916e28814f3da4dd",
+    "payload_exp-a-deep-01": "b14e435cd79eab83abcbc2171bccb882c236eeb06e03991ab76a2a6cd27938ba",
+    "payload_exp-a-deep-02": "d2aeffbf589ec7011898984479e3d2be77272ab928deb4f7d30c3cdeec851906",
+    "payload_exp-a-deep-03": "fe83ee41084f6e124fa155d06c12c5354677f5603de28443ccee362b6d6e8a65",
+    "payload_exp-a-quick-01": "90bf550336eed09ad796fdb0b7a2b5e480754ecd968f3e1b9314bd6104887c6a",
+    "payload_exp-a-quick-02": "fa6fc2d9178fe42f6407eca76a4c844153d00c5e2d96be9c112a8aed5a07b6c2",
+    "payload_exp-a-quick-03": "cfd9de3d8c6a29e047d503e82f3cc58a8965e23e29cd77059c472d7cb49b11e0"
+  },
+  "config": {
+    "model": "deepseek-official/deepseek-v4-flash",
+    "reasoning": "max",
+    "token_budget": "500000"
+  }
+}

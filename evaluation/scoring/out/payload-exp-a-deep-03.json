@@ -1,0 +1,349 @@
+{
+  "schemaVersion": 1,
+  "phase": "EXTERNAL_RESEARCH",
+  "claims": [
+    {
+      "id": "C0-001",
+      "statement": "package 'commander' v14.0.3, MIT, Node >=20, ZERO runtime dependencies (dev-only toolchain)",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:62-76 (devDependencies only)",
+        "package-lock.json:7-29 root has devDependencies only"
+      ],
+      "confidence": 0.99,
+      "revision": 2
+    },
+    {
+      "id": "C0-002",
+      "statement": "HEAD is bf35c5f (2026-02-02), clean working tree; last release commit 8247364 '14.0.3' 2026-01-31",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "git log output",
+        "git status empty"
+      ],
+      "confidence": 0.98,
+      "revision": 1
+    },
+    {
+      "id": "C0-003",
+      "statement": "Library surface: Command, Option, Argument, Help, CommanderError, InvalidArgumentError classes plus program singleton and create* factories; CJS main with ESM wrapper esm.mjs",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "index.js:1-24",
+        "package.json exports 45-61"
+      ],
+      "confidence": 0.97,
+      "revision": 1
+    },
+    {
+      "id": "C2-004",
+      "statement": "Maintenance model: ~2 active maintainers, dependabot-driven dev-dep churn, ~6-month major release cadence aligned to Node LTS EOL",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "git log 500 commits: maintainers John Gee (shadowspawn) + abetomo + dependabot; feature commits rare, mostly John Gee"
+      ],
+      "confidence": 0.97,
+      "revision": 1
+    },
+    {
+      "id": "C2-005",
+      "statement": "Release discipline: semver, majors ~every 6 months, old majors get security-only updates for 12 months; strictness increased over time (unknown options and excess args error by default)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "docs/release-policy.md:3-15",
+        "CHANGELOG.md:11-61 (14.0.0 breaking: Node>=20)",
+        "CHANGELOG.md:82 (13.0.0 excess args error)"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C2-006",
+      "statement": "Test estate: 109 jest test files, CI matrix Node 20/22/24 x 3 OS, CodeQL; coverage collected but no threshold gate",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "tests/ 109 jest files + tsd + esm-import tests",
+        "jest.config.js collectCoverage true, no threshold",
+        ".github/workflows/tests.yml Node 20/22/24 x 3 OS"
+      ],
+      "confidence": 0.98,
+      "revision": 1
+    },
+    {
+      "id": "C2-007",
+      "statement": "Architecture: Command extends EventEmitter; option values flow through 'option:<name>' events emitted by parseOptions and handled by listeners registered in addOption",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:13 (extends EventEmitter)",
+        "lib/command.js:720-730 (option:xxx event listeners)",
+        "lib/command.js:1748-1895 parseOptions emits events"
+      ],
+      "confidence": 0.97,
+      "revision": 1
+    },
+    {
+      "id": "C2-008",
+      "statement": "Default error handling terminates the process via process.exit (exitOverride is the escape hatch)",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:533-539 _exit uses process.exit",
+        "lib/command.js:1940-1958 error() -> _exit",
+        "lib/command.js:508-521 exitOverride"
+      ],
+      "confidence": 0.98,
+      "revision": 1
+    },
+    {
+      "id": "C2-009",
+      "statement": "Legacy/deprecation tail: ~10 deprecated APIs still live (storeOptionsAsProperties, .command('*'), on('command:*'), RegExp option param, outputHelp callback, InvalidOptionArgumentError, _args, noHelp, addHelpCommand string form); each adds branches to hot paths",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:40,905-916,925-961 storeOptionsAsProperties branches",
+        "docs/deprecated.md:1-18 ten deprecated features still supported",
+        "lib/command.js deprecated sites: 31,171,443-455,752,1608-1620,2506-2538"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C2-010",
+      "statement": "TypeScript typings hand-maintained with tsd + tsc CI gates",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "typings/index.d.ts 1113 lines hand-written",
+        "typings/index.test-d.ts tsd tests",
+        "package.json check:type scripts"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C2-011",
+      "statement": "Support is best-effort ('time-permitting'), security via Tidelift, funded by sponsors",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "package-support.json: response 'time-permitting', sponsors shadowspawn+abetomo",
+        "SECURITY.md Tidelift contact"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C0-D1",
+      "statement": "Doc claim: 'Commander is strict and displays an error for unrecognised options'",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "Readme.md:73 strict unknown options error",
+        "lib/command.js:27 _allowUnknownOption=false",
+        "lib/command.js:2114-2137 unknownOption()"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C0-D2",
+      "statement": "Doc claims: core parsing semantics (combined flags, -- literal, variadic, negated options, defaults, custom processing, action handler params, parseAsync, hooks, help command/option, showHelpAfterError, exitOverride, configureOutput) — majority directly verified in code",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "Readme.md:192,201,246-247,364-367,529,589-592,683,743-750,774,818-825,832-838,970-976,1112-1120,1133-1134",
+        "verified against lib/command.js parseOptions/action/hook/help code"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C0-D3",
+      "statement": "Doc claim: zero production dependencies is a soft policy, not hard requirement",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "CONTRIBUTING.md:40 zero production dependencies 'not a hard requirement'",
+        "package.json no dependencies"
+      ],
+      "confidence": 0.8,
+      "revision": 1
+    },
+    {
+      "id": "C0-D4",
+      "statement": "Doc claim: optional 'extra-typings' companion project provides stronger inferred types",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "evidence": [
+        "Readme.md:1044-1046 extra-typings companion project exists"
+      ],
+      "confidence": 0.7,
+      "revision": 1
+    },
+    {
+      "id": "C0-D5",
+      "statement": "Doc claims: current major fully supported on Node LTS >=20; old majors security updates 12 months; community support via GitHub Issues; commercial via Tidelift",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "Readme.md:1166-1168,1170,1174-1176 support claims",
+        "docs/release-policy.md:10-15",
+        "package-support.json"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C2-012",
+      "statement": "Test style: in-process unit tests via exitOverride + configureOutput(jest.fn) + jest-spied spawn; behavior-focused, regex text checks; no golden-output files",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "tests/command.parse.test.js:14-17,82-95",
+        "tests/options.variadic.test.js:6-13,20-21",
+        "tests/command.executableSubcommand.mock.test.js:26-38",
+        "tests/helpGroup.test.js:10-11"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C2-013",
+      "statement": "Test hygiene gaps: manual env cleanup (leak risk), ESM smoke test outside jest runner, thin direct coverage of executable-subcommand success path in sampled files",
+      "tier": "C2",
+      "verdict": "Likely",
+      "evidence": [
+        "tests/options.env.test.js:16-20,44-48 manual env cleanup",
+        "tests/esm-imports-test.mjs:16-24 standalone script outside jest",
+        "tests/command.executableSubcommand.test.js single test (spawn success path lives in lookup/search/signals suites)"
+      ],
+      "confidence": 0.75,
+      "revision": 1
+    },
+    {
+      "id": "C3-001",
+      "statement": "Upstream has since released commander v15.0.0 (with a v15.0.0-0 prerelease); this snapshot (v14.0.3, 2026-01-31) is the last of the 14.x line and sits at a major-version boundary",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "https://github.com/tj/commander.js/releases/tag/v15.0.0 (search result)",
+        "https://newreleases.io/project/npm/commander/release/15.0.0-0",
+        "multiple dependabot/renovate PRs bumping 14.0.3 -> 15.0.0 (PaloAltoNetworks/docusaurus-openapi-docs #1532, bitwarden/directory-connector #1134, zazuko/trifid #990)"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C3-002",
+      "statement": "No CVE/malicious finding found for the real 'commander' package; the malicious-package ecosystem around it is typosquats (commander-stable, commmander, comander) — absence-of-evidence claim, not proof of absence",
+      "tier": "C3",
+      "verdict": "Likely",
+      "evidence": [
+        "https://osv.dev/vulnerability/MAL-2025-192687 (commander-stable typosquat)",
+        "https://deps.dev/advisory/osv/MAL-2025-192687",
+        "https://www.cloudsek.com/blog/bridgehead-npm-typosquatting-wsl-windows-crypto-wallet-stealer"
+      ],
+      "confidence": 0.75,
+      "revision": 1
+    },
+    {
+      "id": "C3-003",
+      "statement": "commander is in the top tier of npm packages (>10M weekly downloads; exact figure unverified in this session — web_fetch provider unavailable)",
+      "tier": "C3",
+      "verdict": "Likely",
+      "evidence": [
+        "https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0 (commander in >10M weekly downloads tier)",
+        "https://www.pkgpulse.com/blog/commander-vs-yargs-2026"
+      ],
+      "confidence": 0.7,
+      "revision": 1
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "This snapshot is commander.js at v14.0.3: a mature, zero-runtime-dependency CLI parsing library for Node.js >=20, whose value is API stability and correctness of parsing semantics, not feature growth.",
+      "status": "invalidated",
+      "dependsOn": [
+        "C0-001",
+        "C0-002",
+        "C0-003",
+        "C2-004",
+        "C2-005",
+        "C2-006",
+        "C2-007",
+        "C2-008",
+        "C2-009",
+        "C2-010",
+        "C2-011",
+        "C0-D1",
+        "C0-D2",
+        "C0-D3",
+        "C0-D5"
+      ],
+      "revision": 4
+    },
+    {
+      "id": "H2",
+      "statement": "REVISED: commander.js v14.0.3 is a deliberately slow-moving infrastructure library: zero runtime deps, strict-by-default parsing, semver-disciplined ~6-month majors aligned to Node LTS EOL, extensive behavior-locked test estate (109 jest files), 2 active maintainers, long deprecated-API compat tail. Value = ubiquity + stability + predictability; any change must clear the bar of no new dependencies and no contract breakage. Feature growth is real but low-volume and maintainer-driven.",
+      "status": "active",
+      "dependsOn": [
+        "H1"
+      ],
+      "revision": 1
+    }
+  ],
+  "views": [
+    {
+      "name": "project_model",
+      "dependsOn": [
+        "C0-001",
+        "C0-002",
+        "C0-003"
+      ],
+      "revision": 1
+    },
+    {
+      "name": "evidence_map",
+      "dependsOn": [
+        "C0-001",
+        "C0-002",
+        "C0-003"
+      ],
+      "revision": 1
+    },
+    {
+      "name": "report",
+      "dependsOn": [
+        "C0-001",
+        "C0-002",
+        "C0-003",
+        "C2-004",
+        "C2-005",
+        "C2-006",
+        "C2-007",
+        "C2-008",
+        "C2-009",
+        "C2-010",
+        "C2-011",
+        "C0-D1",
+        "C0-D2",
+        "C0-D3",
+        "C0-D4",
+        "C0-D5",
+        "C2-012",
+        "C2-013",
+        "H2"
+      ],
+      "revision": 1
+    }
+  ],
+  "dirty": []
+}

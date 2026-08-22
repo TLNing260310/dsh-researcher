@@ -1,0 +1,38 @@
+{
+  "schema": "dsh-researcher/cplus-inject-selection/v1",
+  "mutations": [
+    {
+      "id": "MUT-01",
+      "candidate": "restoreStateBeforeParse",
+      "kind": "api_contract"
+    },
+    {
+      "id": "MUT-02",
+      "candidate": "configureHelp",
+      "kind": "api_contract"
+    },
+    {
+      "id": "MUT-03",
+      "candidate": "_executeSubCommand",
+      "kind": "internal_architecture"
+    },
+    {
+      "id": "MUT-04",
+      "candidate": "_excessArguments",
+      "kind": "internal_architecture"
+    },
+    {
+      "id": "MUT-05",
+      "candidate": "error code: commander.invalidArgument",
+      "kind": "compatibility_constraint"
+    },
+    {
+      "id": "MUT-06",
+      "candidate": "error code: commander.missingMandatoryOptionValue",
+      "kind": "compatibility_constraint"
+    }
+  ],
+  "seed": "dsh-researcher-v0.6-phase-a:commander.js:exp-cplus-inject",
+  "rule": "all 6 manifest mutations used (no selection bias)",
+  "snapshot": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c"
+}

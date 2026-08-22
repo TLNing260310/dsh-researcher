@@ -1,0 +1,491 @@
+Analyze this repository at the current snapshot. Produce a Project Cognition Report with exactly these sections: (1) Project Identity, (2) Architecture Map, (3) Critical Components, (4) Design Decisions, (5) Risk Map, (6) Change Impact Analysis, (7) Decision Memo.
+
+Note which parts of the project have changed compared with a previous snapshot and which previous assumptions no longer hold.
+
+Before analyzing, import the previous session's cognition state: call `research_checkpoint` with importState set to the provided JSON, then call it again with `export: true` to read the full state. Use it as your prior understanding; verify what still holds in the current snapshot.
+
+Provided cognition state (importState payload):
+{
+  "schemaVersion": 1,
+  "phase": "CHALLENGE",
+  "claims": [
+    {
+      "id": "C1",
+      "statement": "package.json/README describe commander as 'the complete solution for node.js command-line programs'",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "evidence": [
+        "package.json:4",
+        "Readme.md:8"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C2",
+      "statement": "Commander is strict: errors on unrecognised options, missing/excess arguments, missing mandatory options",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:2114 unknownOption",
+        "lib/command.js:1403 _checkNumberOfArguments",
+        "lib/command.js:1675 _checkForMissingMandatoryOptions",
+        "Readme.md:73"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C3",
+      "statement": "Zero production dependencies is a stated, enforced design principle",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:62-76 (devDependencies only)",
+        "CONTRIBUTING.md:40"
+      ],
+      "confidence": 0.97,
+      "revision": 1
+    },
+    {
+      "id": "C4",
+      "statement": "Commander 14 requires Node.js >= 20",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:78-80",
+        "CHANGELOG.md:60",
+        "docs/release-policy.md:14"
+      ],
+      "confidence": 0.98,
+      "revision": 1
+    },
+    {
+      "id": "C5",
+      "statement": "Release policy: major releases ~every 6 months, node minimum bumped at LTS EOL, old majors get security updates for 12 months",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "evidence": [
+        "docs/release-policy.md:5-15"
+      ],
+      "confidence": 0.8,
+      "revision": 1
+    },
+    {
+      "id": "C6",
+      "statement": "CI runs jest + check (type/lint/format) on node 20/22/24 across ubuntu/windows/macos",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        ".github/workflows/tests.yml:15-31"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C7",
+      "statement": "Help option -h,--help is lazy-created per command; implicit help command auto-added when subcommands exist and no action handler",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:463 _getHelpCommand",
+        "lib/command.js:2592 _getHelpOption"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C8",
+      "statement": "Option values stored separately from command properties since v7; storeOptionsAsProperties() is the legacy escape hatch",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:38-40, 905-916",
+        "Readme.md:1023-1040"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C9",
+      "statement": "TypeScript typings are hand-maintained (typings/index.d.ts, 1113 lines) and checked via tsd + tsc on JS (JSDoc) and TS",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "typings/index.d.ts:1-120",
+        "package.json:25-27"
+      ],
+      "confidence": 0.92,
+      "revision": 1
+    },
+    {
+      "id": "C10",
+      "statement": "Action handler receives declared argument values, then options object (or command in legacy mode), then command; async handlers require parseAsync",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:556-572",
+        "Readme.md:648-694"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C11",
+      "statement": "Option parsing dispatches values via EventEmitter events ('option:name', 'optionEnv:name') that are also a documented public API",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:720-730",
+        "Readme.md:956-964"
+      ],
+      "confidence": 0.93,
+      "revision": 1
+    },
+    {
+      "id": "C12",
+      "statement": "Multiple parse() calls supported since 13.0 via saveStateBeforeParse/restoreStateBeforeParse; throws for storeOptionsAsProperties",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1127-1174",
+        "CHANGELOG.md:73-85"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C13",
+      "statement": "Executable subcommands spawn child processes, forward signals, increment inspector port",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1202-1346"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C14",
+      "statement": "Security reports handled via Tidelift, not public issues",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "evidence": [
+        "SECURITY.md:3-6"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C15",
+      "statement": "Deprecated-but-supported features are tracked in docs/deprecated.md (9+ items, some dating from v3/v7/v8)",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "docs/deprecated.md:1-258"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C16",
+      "statement": "Recent git history (2024-10 .. 2026-02) is dominated by dependabot dependency bumps; human commits are John Gee (shadowspawn) and abetomo plus occasional contributors",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "git log 120 entries"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C17",
+      "statement": "Version trajectory: 12.x (2024-03), 13.0 (2024-12-30), 13.1 (2025-01-21), 14.0 (2025-05-18), 14.0.1 (2025-09-12), 14.0.2 (2025-10-25), 14.0.3 (2026-01-31)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "git log tags 8247364, e6f56c8, d6bcb0b",
+        "CHANGELOG.md"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C18",
+      "statement": "Test suite: 109 jest test files, coverage collection enabled but no coverageThreshold in jest.config.js",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "glob tests/*.test.js",
+        "jest.config.js:1-9"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C19",
+      "statement": "Funding/backing: GitHub sponsors for abetomo and shadowspawn; Tidelift subscription for commercial support",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "evidence": [
+        "package-support.json:12-15",
+        "Readme.md:1172-1176",
+        ".github/FUNDING.yml"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C20",
+      "statement": "Parsing handles negative numbers as option-arguments when unambiguous, Electron detection, node --eval detection, '--' literal handling",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1001-1065, 1757-1766",
+        "CHANGELOG.md:50"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C21",
+      "statement": "Each _executeSubCommand call registers 5 persistent process signal listeners (SIGUSR1/2, SIGTERM, SIGINT, SIGHUP) that are never removed",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1290-1301"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C22",
+      "statement": "Help output is generated by the Help class (747 lines) with style/format hooks, grouping (v14), wrapping, color support",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/help.js:1-747",
+        "CHANGELOG.md:49"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C23",
+      "statement": "Jest coverage is collected but no coverageThreshold is configured (no enforcement gate)",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "jest.config.js:3"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C24",
+      "statement": "The internal parse dispatch uses negative-number heuristics and an activeGroup/activeVariadicOption state machine in parseOptions (command.js:1748-1895)",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1748-1895"
+      ],
+      "confidence": 0.92,
+      "revision": 1
+    },
+    {
+      "id": "C25",
+      "statement": "README documents features comprehensively (options, commands, help, hooks, parsing config, TS, support) with examples and a zh-CN translation",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "Readme.md:1-1176",
+        "Readme_zh-CN.md"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C26",
+      "statement": "Typing drift: typings/index.d.ts declares CommanderError.nestedError as string, but runtime assigns an Error (command.js wraps spawn errors in it) and the test suite reads nestedError.code",
+      "tier": "C3",
+      "verdict": "Contradicted",
+      "evidence": [
+        "typings/index.d.ts:20",
+        "lib/command.js:1339",
+        "tests/command.executableSubcommand.mock.test.js:83"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C27",
+      "statement": "_executeSubCommand registers 5 process signal listeners per invocation, never removed; accumulates only in long-lived parents (exitOverride path)",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1290-1301"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C28",
+      "statement": "jest collectCoverage true but no coverageThreshold; coverage can regress without CI failing",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        "jest.config.js:3"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C29",
+      "statement": "Version trajectory (from changelog): 3.0.0 2019-08, 7.0.0 2021-01, 9.0.0 2022-01, 10.0.0 2023-01, 11.0.0 2023-06, 12.0.0 2024-02, 13.0.0 2024-12, 14.0.0 2025-05 — ~2 majors/year recently, consistent with 'major ~every 6 months' policy",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "CHANGELOG.md:11-69"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C30",
+      "statement": "No CVEs/GHSAs found against the commander package itself; the only related 2025 advisory is MAL-2025-192687 for the typosquat package 'commander-stable'",
+      "tier": "C3",
+      "verdict": "Likely",
+      "evidence": [
+        "https://osv.dev/vulnerability/MAL-2025-192687",
+        "https://deps.dev/advisory/osv/MAL-2025-192687"
+      ],
+      "confidence": 0.7,
+      "revision": 1
+    },
+    {
+      "id": "C31",
+      "statement": "Funding: GitHub sponsors shadowspawn (John Gee), abetomo, tj; Tidelift subscription channel",
+      "tier": "C1",
+      "verdict": "Known",
+      "evidence": [
+        ".github/FUNDING.yml:1-2"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C32",
+      "statement": "Upstream has released v15.0.0 (post-snapshot); the snapshot at v14.0.3 (2026-02-02) is one major version behind current upstream",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "https://github.com/tj/commander.js/releases/tag/v15.0.0",
+        "https://github.com/bitwarden/directory-connector/pull/1134",
+        "https://newreleases.io/project/npm/commander/release/15.0.0-0"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C33",
+      "statement": "No security advisories against the commander package itself; known advisories target typosquats ('commander-js' GHSA-2hqf-qqmq-pgpp; 'commander-stable' MAL-2025-192687)",
+      "tier": "C3",
+      "verdict": "Likely",
+      "evidence": [
+        "https://github.com/advisories/GHSA-2hqf-qqmq-pgpp",
+        "https://osv.dev/vulnerability/MAL-2025-192687",
+        "https://deps.dev/advisory/osv/MAL-2025-192687"
+      ],
+      "confidence": 0.8,
+      "revision": 1
+    },
+    {
+      "id": "C34",
+      "statement": "Node 20 LTS reaches end-of-life 2026-04-30; per commander's stated policy the next major (v15) bumps the minimum Node version (snapshot requires >=20)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "https://endoflife.date/nodejs",
+        "https://github.com/NousResearch/hermes-agent/issues/4876"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C35",
+      "statement": "commander is in the >10M weekly downloads category (exact figure not retrievable in this session; web_fetch unavailable)",
+      "tier": "C3",
+      "verdict": "Likely",
+      "evidence": [
+        "https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0"
+      ],
+      "confidence": 0.8,
+      "revision": 1
+    },
+    {
+      "id": "C36",
+      "statement": "Ecosystem: major orgs (GitLab, Keycloak, bitwarden, zendesk) use commander; competitor releases observed (yargs 18.x, meow ~14.x, clipanion 4.0-rc); some migration chatter toward commander, no evidence of mass migration away",
+      "tier": "C3",
+      "verdict": "Likely",
+      "evidence": [
+        "https://depfixer.com/compare/commander-vs-meow-vs-yargs",
+        "https://www.pkgpulse.com/compare/commander-vs-yargs",
+        "https://github.com/threeal/nodejs-starter/issues/735"
+      ],
+      "confidence": 0.75,
+      "revision": 1
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "commander.js is a mature (~13-year) single-purpose CLI-parsing library in steady maintenance mode: slow feature growth, aggressive backward compatibility, zero runtime dependencies, hand-maintained typings, comprehensive tests; primary risks are bus factor, parse-edge-case complexity, and legacy compatibility burden rather than feature gaps.",
+      "status": "invalidated",
+      "dependsOn": [
+        "C1",
+        "C3",
+        "C18",
+        "C19",
+        "C25"
+      ],
+      "revision": 2
+    },
+    {
+      "id": "H2",
+      "statement": "Revised: commander.js is a mature, healthy, deliberately conservative library; the analyzed snapshot (v14.0.3, 2026-02-02) is one major version behind upstream (v15.0.0 released 2026), so any change proposed against this snapshot must first be reconciled with the v15 delta rather than built blind.",
+      "status": "active",
+      "dependsOn": [
+        "C32"
+      ],
+      "revision": 1
+    }
+  ],
+  "views": [
+    {
+      "name": "project-model",
+      "dependsOn": [
+        "C1",
+        "C3",
+        "C4",
+        "C5",
+        "C16",
+        "C17",
+        "C29"
+      ],
+      "revision": 1
+    },
+    {
+      "name": "diagnosis",
+      "dependsOn": [
+        "C21",
+        "C24",
+        "C26",
+        "C27",
+        "C28"
+      ],
+      "revision": 1
+    }
+  ],
+  "dirty": []
+}
+

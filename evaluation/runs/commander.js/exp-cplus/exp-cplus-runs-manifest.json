@@ -1,0 +1,193 @@
+{
+  "schema": "dsh-researcher/cplus-runs-manifest/v1",
+  "case": "commander.js",
+  "experiment": "exp-cplus",
+  "seed": "dsh-researcher-v0.6-phase-a:exp-cplus-runs",
+  "snapshot_dir": "D:/AI_work_project/phase-a-snapshots/commander.js",
+  "workspace_dir": "D:/AI_work_project/phase-a-snapshots/commander.js/workspace",
+  "prompt_A": "evaluation/prompts/exp-cplus-run2-A.txt",
+  "prompt_B": "evaluation/prompts/exp-cplus-run2-B.txt",
+  "state_payload_dir": "evaluation/scoring/out",
+  "runs": [
+    {
+      "run_id": "exp-cplus-mut01-b",
+      "order": 1,
+      "mutation": "MUT-01",
+      "condition": "B",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": "exp-a-quick-01",
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut01-b.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut04-b",
+      "order": 2,
+      "mutation": "MUT-04",
+      "condition": "B",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": "exp-a-deep-01",
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut04-b.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut02-b",
+      "order": 3,
+      "mutation": "MUT-02",
+      "condition": "B",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": "exp-a-quick-02",
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut02-b.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut05-b",
+      "order": 4,
+      "mutation": "MUT-05",
+      "condition": "B",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": "exp-a-quick-03",
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut05-b.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut02-a",
+      "order": 5,
+      "mutation": "MUT-02",
+      "condition": "A",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": null,
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut03-a",
+      "order": 6,
+      "mutation": "MUT-03",
+      "condition": "A",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": null,
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut06-a",
+      "order": 7,
+      "mutation": "MUT-06",
+      "condition": "A",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": null,
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut01-a",
+      "order": 8,
+      "mutation": "MUT-01",
+      "condition": "A",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": null,
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut03-b",
+      "order": 9,
+      "mutation": "MUT-03",
+      "condition": "B",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": "exp-a-deep-02",
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut03-b.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut05-a",
+      "order": 10,
+      "mutation": "MUT-05",
+      "condition": "A",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": null,
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut04-a",
+      "order": 11,
+      "mutation": "MUT-04",
+      "condition": "A",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": null,
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-run2-A.txt"
+    },
+    {
+      "run_id": "exp-cplus-mut06-b",
+      "order": 12,
+      "mutation": "MUT-06",
+      "condition": "B",
+      "preset": "researcher-deep",
+      "plan": false,
+      "patches": [
+        "headless-eval.patch.yml",
+        "headless-eval-researcher.patch.yml"
+      ],
+      "state_source": "exp-a-deep-03",
+      "state_claims": null,
+      "task_file": "evaluation/cases/commander.js/exp-cplus-tasks/exp-cplus-mut06-b.txt"
+    }
+  ]
+}

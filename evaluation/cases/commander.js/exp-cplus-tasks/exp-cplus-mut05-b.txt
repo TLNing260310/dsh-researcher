@@ -1,0 +1,220 @@
+Analyze this repository at the current snapshot. Produce a Project Cognition Report with exactly these sections: (1) Project Identity, (2) Architecture Map, (3) Critical Components, (4) Design Decisions, (5) Risk Map, (6) Change Impact Analysis, (7) Decision Memo.
+
+Note which parts of the project have changed compared with a previous snapshot and which previous assumptions no longer hold.
+
+Before analyzing, import the previous session's cognition state: call `research_checkpoint` with importState set to the provided JSON, then call it again with `export: true` to read the full state. Use it as your prior understanding; verify what still holds in the current snapshot.
+
+Provided cognition state (importState payload):
+{
+  "schemaVersion": 1,
+  "phase": "DECISION",
+  "claims": [
+    {
+      "id": "C01",
+      "statement": "Snapshot is commander.js v14.0.3, MIT, by TJ Holowaychuk — the node.js CLI framework",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:2-3,15-16",
+        "Readme.md:8"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C02",
+      "statement": "Snapshot is faithful upstream HEAD (bf35c5f, 2026-02-02), clean tree, no local modifications",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "git status empty",
+        "git log: bf35c5f dependabot bump post-14.0.3",
+        "git rev-parse HEAD bf35c5f"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C03",
+      "statement": "Zero runtime dependencies; dev-only toolchain (jest, eslint, prettier, tsd, typescript)",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:62-76",
+        "package-lock.json:7-29 root entry has no dependencies key"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C04",
+      "statement": "Core: Command extends EventEmitter; parsing is an event-driven two-stage pipeline (parseOptions loop then _parseCommand dispatch)",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:13, 1550-1641, 1748-1895"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C05",
+      "statement": "Help system is a separate class with full styling/formatting extension points",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "lib/help.js:12, 443-527 formatHelp"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C06",
+      "statement": "109 jest test files, coverage collected but no enforced threshold; CI matrix node 20/22/24 x 3 OS",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "glob tests/*.test.js (109)",
+        "jest.config.js (collectCoverage, no threshold)",
+        ".github/workflows/tests.yml:14-16"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C07",
+      "statement": "Types: hand-maintained typings/index.d.ts (1113 lines), JS type-checked with checkJs, tsd + tsc tests",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "typings/index.d.ts (1113 lines)",
+        "tsconfig.js.json",
+        "package.json:26-27"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C08",
+      "statement": "Release policy: semver, major ~every 6 months aligned with Node LTS EOL, 12-month security support for old majors",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "docs/release-policy.md:3-15",
+        "CHANGELOG.md:11-21 (14.0.3)"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C09",
+      "statement": "Widely adopted: commander is in the >10M weekly downloads npm tier",
+      "tier": "C1",
+      "verdict": "Likely",
+      "evidence": [
+        "dev.to audit of >10M weekly-download packages lists commander",
+        "pkgpulse.com/packages/commander"
+      ],
+      "confidence": 0.8,
+      "revision": 1
+    },
+    {
+      "id": "C10",
+      "statement": "Deliberate deprecated/legacy surface still shipped (9 deprecated features documented)",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "docs/deprecated.md:1-21"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C11",
+      "statement": "Maintainership concentrated: recent commits mostly dependabot + John Gee (shadowspawn); sponsorship via 2 GitHub sponsors; Tidelift security contact",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "git log",
+        "package-support.json:12-15",
+        "SECURITY.md:3-5"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C12",
+      "statement": "14.0.3 release contains only docs and typing changes; 14.x added help groups, unescaped negative numbers, Node>=20",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "CHANGELOG.md:11-21, 45-61"
+      ],
+      "confidence": 1,
+      "revision": 1
+    },
+    {
+      "id": "C13",
+      "statement": "No TODO/FIXME markers; only 11 targeted ts-ignore/eslint-disable escapes in lib; no coverage gate",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "grep lib TODO|FIXME (none)",
+        "grep lib @ts-ignore (11)",
+        "grep coverageThreshold (none)"
+      ],
+      "confidence": 1,
+      "revision": 1
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "Snapshot is upstream commander.js at its current released state — a mature, stable, zero-dependency library in maintenance-plus-incremental-features mode",
+      "status": "active",
+      "dependsOn": [
+        "C01",
+        "C02",
+        "C03"
+      ],
+      "revision": 1
+    }
+  ],
+  "views": [
+    {
+      "name": "project_model",
+      "dependsOn": [
+        "C01",
+        "C02",
+        "C03",
+        "C04",
+        "C05",
+        "C09"
+      ],
+      "revision": 1
+    },
+    {
+      "name": "risk_map",
+      "dependsOn": [
+        "C06",
+        "C07",
+        "C08",
+        "C10",
+        "C11",
+        "C13"
+      ],
+      "revision": 1
+    },
+    {
+      "name": "change_impact",
+      "dependsOn": [
+        "C04",
+        "C05",
+        "C10"
+      ],
+      "revision": 1
+    }
+  ],
+  "dirty": []
+}
+

@@ -1,0 +1,487 @@
+Analyze this repository at the current snapshot. Produce a Project Cognition Report with exactly these sections: (1) Project Identity, (2) Architecture Map, (3) Critical Components, (4) Design Decisions, (5) Risk Map, (6) Change Impact Analysis, (7) Decision Memo.
+
+Note which parts of the project have changed compared with a previous snapshot and which previous assumptions no longer hold.
+
+Before analyzing, import the previous session's cognition state: call `research_checkpoint` with importState set to the provided JSON, then call it again with `export: true` to read the full state. Use it as your prior understanding; verify what still holds in the current snapshot.
+
+Provided cognition state (importState payload):
+{
+  "schemaVersion": 1,
+  "phase": "SELF_EVAL",
+  "claims": [
+    {
+      "id": "C01",
+      "statement": "Snapshot is commander.js v14.0.3, HEAD bf35c5f (2026-02-02), clean working tree; repo has 500+ commits in recent window, history predates 2023",
+      "tier": "C4",
+      "verdict": "Known",
+      "evidence": [
+        "git log HEAD (bf35c5f 2026-02-02)",
+        "git status clean",
+        "package.json version 14.0.3"
+      ],
+      "confidence": 0.99,
+      "revision": 1
+    },
+    {
+      "id": "C02",
+      "statement": "commander has zero runtime dependencies (all deps are devDependencies)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:62-76 devDependencies only, no dependencies field",
+        "CONTRIBUTING.md:40 'zero production dependencies' policy"
+      ],
+      "confidence": 0.98,
+      "revision": 1
+    },
+    {
+      "id": "C03",
+      "statement": "Self-description: 'the complete solution for node.js command-line programs'",
+      "tier": "C0",
+      "verdict": "Claimed",
+      "evidence": [
+        "package.json:4"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C04",
+      "statement": "Requires Node.js >= 20 (v14 breaking change)",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "package.json:78-80 engines",
+        "CHANGELOG.md:60"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C05",
+      "statement": "Behavior is strict by default: unknown options error, excess arguments error since 13.0.0, option/command clash errors since 12.0.0",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "CHANGELOG.md:82-85, 192-193",
+        "Readme.md:73 'Commander is strict and displays an error for unrecognised options'"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C06",
+      "statement": "Release policy: semver, major ~every 6 months with Node LTS bump, current major gets all updates, previous major gets 12 months security",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "docs/release-policy.md:3-15"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C07",
+      "statement": "Maintainer model: John Gee (shadowspawn) primary maintainer, abetomo does release/CI commits; funded via GitHub sponsors + Tidelift",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "git log (John Gee feature commits, abetomo release commits)",
+        "package-support.json:12-15 sponsors",
+        "Readme.md:1172-1176 Tidelift"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C08",
+      "statement": "Contribution process: PRs against develop branch; contributors must not update CHANGELOG/version; zero-dep policy is a soft constraint",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "CONTRIBUTING.md:15, 22, 40"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C09",
+      "statement": "CI: tests.yml runs node 20/22/24 x ubuntu/windows/macos with npm test + npm run check; CodeQL analysis workflow exists",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        ".github/workflows/tests.yml:15-16, 28-31",
+        ".github/workflows/codeql-analysis.yml"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C10",
+      "statement": "Typings are hand-maintained (typings/index.d.ts, 1113 lines) with tsd tests and tsc type-checks in CI",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "typings/index.d.ts (1113 lines)",
+        "package.json:26 check:type",
+        "tests/ts-imports.test.ts"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C11",
+      "statement": "Recent git history dominated by dependabot dependency bumps (~60-70% of commits since 2023)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "git log 500 entries: majority dependabot[bot]"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C12",
+      "statement": "No TODO/FIXME/HACK markers in lib/",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "grep TODO|FIXME|XXX|HACK in lib/ -> no matches"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C13",
+      "statement": "11 deprecated features documented and still supported for backwards compatibility",
+      "tier": "C2",
+      "verdict": "Known",
+      "evidence": [
+        "docs/deprecated.md headings"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C14",
+      "statement": "External: commander is among the most-downloaded npm packages; no known CVE in commander itself; typosquat lookalikes exist (commmander, commander-stable)",
+      "tier": "C2",
+      "verdict": "Likely",
+      "evidence": [
+        "web_search: osv.dev MAL-2025-192687 for commmander/commander-stable (NOT real commander)",
+        "Snyk package page exists"
+      ],
+      "confidence": 0.7,
+      "revision": 1
+    },
+    {
+      "id": "C15",
+      "statement": "Test suite: ~132 jest test files + esm-imports-test.mjs + ts-imports.test.ts + tsd typings tests; jest collects coverage",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "glob tests/*.test.js (134 files incl. special)",
+        "jest.config.js collectCoverage: true"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C16",
+      "statement": "Current Command class architecture dates to the v8-era rewrite (2021-05-25) by John Gee; evolved by layering features (help option refactor 2024-01, colors 2024-11, help groups 2025-05, save/restore 2024-12)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "blame lib/command.js: core skeleton from 08245cc7 (2021-05-25, v8-era rewrite)",
+        "git log shows surgical feature layering 2021-2026"
+      ],
+      "confidence": 0.97,
+      "revision": 1
+    },
+    {
+      "id": "C17",
+      "statement": "Option/argument parsing is hand-rolled imperative code: single-pass scanner with negative-number heuristic, combined short flags, --foo=bar, variadic continuation; parseOptions is PUBLIC API (typings/index.d.ts:873); 'eval' parseOptions.from mode exists but is undocumented (command.js:1020)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report: parseOptions is public API (typings/index.d.ts:873)",
+        "command.js:1020 'eval' from-mode undocumented",
+        "command.js:2118-2133 unknownOption suggestion for '--' flags"
+      ],
+      "confidence": 0.9,
+      "revision": 2
+    },
+    {
+      "id": "C18",
+      "statement": "Help system is a subclassable/overridable class with 40+ small methods; refactored in 13.x (formatItem/boxWrap, style routines, groups)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "lib/help.js:41 methods, formatHelp pipeline at 443-527",
+        "lib/help.js:11 'static in style' class design"
+      ],
+      "confidence": 0.95,
+      "revision": 1
+    },
+    {
+      "id": "C19",
+      "statement": "Error model: CommanderError(exitCode, code, message) thrown/caught or process.exit via _exit; exitOverride() replaces exit with throw; executable subcommands exit with child code",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "lib/error.js:4-36 CommanderError/InvalidArgumentError",
+        "lib/command.js:533-539 _exit with exitOverride callback",
+        "lib/command.js:1303-1342 executable subcommand close/error paths"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C20",
+      "statement": "Type discipline: tsc checkJs over lib with JSDoc; hand-written typings validated with skipLibCheck:false and tsd tests; TS files strict",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "tsconfig.json:28 skipLibCheck false 'we want to check our hand crafted definitions'",
+        "package.json:26-27 check:type js+ts"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C21",
+      "statement": "Test suite: 109 jest files, ~1,250-1,300 executed cases (1,071 static + ~180-230 parametrized); tsd ~290 expectType + @ts-expect-error negatives; ESM smoke test NOT jest-run (npm run test-esm)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report: 1,071 static test()/it() + 30 each-blocks; negatives.test.js 7x17, argumentVariations 8x4, action 6x3",
+        "jest.config.js excludes .mjs from default patterns"
+      ],
+      "confidence": 0.9,
+      "revision": 2
+    },
+    {
+      "id": "C22",
+      "statement": "Tests lock verbatim error messages/codes (unknown option/command, missing option/argument, excess args, invalid choices), help layout (single golden string), exit codes, action binding, variadic, env precedence cli>env>default, hook ordering, -- literal, duplicate-registration throws, state reset between parses; no snapshot framework",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report invariant list with citations",
+        "command.help.test.js:9-25 single golden help string (comment: 'Avoid doing many full format tests')"
+      ],
+      "confidence": 0.9,
+      "revision": 2
+    },
+    {
+      "id": "C23",
+      "statement": "Thin coverage: Help.commandDescription/prepareContext/formatItemList/default displayWidth and Option.is/isBoolean have no direct unit tests; ESM runtime behavior is smoke-level only (constructor names) and not jest-run; deprecated RegExp path 3 tests; Windows-only behavior skipped; no shared test harness (boilerplate duplicated across ~100 files)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report gaps: Help.commandDescription/prepareContext/formatItemList/displayWidth, Option.is/isBoolean no direct tests",
+        "esm-imports-test.mjs is smoke-only, not jest-run",
+        "deprecated.test.js 3 tests; Windows describes skipped"
+      ],
+      "confidence": 0.85,
+      "revision": 2
+    },
+    {
+      "id": "C24",
+      "statement": "Support classes contain permissive/fragile parsing spots (variadic regex over whole flags string; two-long-flags stored in short field leaking into help sort keys; camelcase('') crash via '--no-'; DualOptions strict-=== heuristic; Argument bracket switch silently truncating malformed names) AND code duplication: identical _collectValue in Option+Argument, findBestOptionFromValue (command.js:2073-2091) reimplementing the DualOptions heuristic, styleUsage ~ styleSubcommandTerm",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report: _collectValue duplicated identically in Option (165-172) and Argument (56-63)",
+        "command.js:2073-2091 findBestOptionFromValue reimplements the DualOptions heuristic",
+        "help.js styleUsage ~ styleSubcommandTerm"
+      ],
+      "confidence": 0.85,
+      "revision": 2
+    },
+    {
+      "id": "C25",
+      "statement": "Help class couples to Command underscore-privates (6+ members), self-flagged dubious help-flag auto-hide behavior, and a documented side effect mutating argument.description",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "subagent report",
+        "lib/help.js:84 'dubious' comment",
+        "lib/help.js:139-153 side-effect description mutation"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C26",
+      "statement": "Typings drifts: nestedError declared string but assigned Error (command.js:1339); HelpContext type declares only error:boolean vs 4 runtime fields; configureHelp/output getters typed non-optional though they may return undefined; Option d.ts omits conflictsWith/implied; stripColor is exported from help.js but not part of the public package surface",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report: HelpContext declared {error:boolean} vs runtime {error,write,hasColors,helpWidth} (command.js:2475-2495)",
+        "typings/index.d.ts:20 nestedError: string vs command.js:1339 Error",
+        "stripColor exported from help.js but absent from index.js/esm.mjs"
+      ],
+      "confidence": 0.85,
+      "revision": 2
+    },
+    {
+      "id": "C27",
+      "statement": "Signal forwarding in _executeSubCommand registers 5 process.on listeners per spawn never removed; repeated executable-subcommand dispatch in one long-lived process accumulates listeners; 'close' handler exits with code ?? 1 (signal-terminated child => 1); runningCommand published at command.js:1345",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report sections 5-7 with citations",
+        "command.js:1290-1301 signal listeners never removed"
+      ],
+      "confidence": 0.85,
+      "revision": 2
+    },
+    {
+      "id": "C28",
+      "statement": "API-level quirks: opts() returns internal state by reference; help() reads global process.exitCode; error() cannot emit exit code 0",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:1916 opts() returns _optionValues by reference",
+        "lib/command.js:2623 help() reads process.exitCode",
+        "lib/command.js:1955 error() exitCode || 1 cannot emit 0"
+      ],
+      "confidence": 0.85,
+      "revision": 1
+    },
+    {
+      "id": "C29",
+      "statement": "copyInheritedSettings copies 11 settings but deliberately not _allowUnknownOption, _passThroughOptions, _executableDir, help-group headings; legacy dispatch paths (command: events, '*' command, command:* event) are interleaved in the modern dispatch ladder; several regex/string parsing spots lack null/edge validation (command.js:163,420,679)",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "full subagent report: copyInheritedSettings list + not-copied list",
+        "command.js:99-114"
+      ],
+      "confidence": 0.9,
+      "revision": 2
+    },
+    {
+      "id": "C30",
+      "statement": "Two author-error crash paths: .command('') / .helpCommand('') destructure null; .option('--no-') reaches camelcase('') TypeError at attributeName",
+      "tier": "C3",
+      "verdict": "Known",
+      "evidence": [
+        "lib/command.js:163 empty string -> destructure null TypeError",
+        "lib/option.js:316-320 camelcase('') crash via --no-"
+      ],
+      "confidence": 0.9,
+      "revision": 1
+    },
+    {
+      "id": "C31",
+      "statement": "External: commander v15.0.0 (and v15.0.0-0 prerelease) exists upstream after this snapshot; this v14.0.3 snapshot (2026-02-02) is superseded by one major version; v15 details not fetchable (no web provider) - unknown breaking changes",
+      "tier": "C2",
+      "verdict": "Likely",
+      "evidence": [
+        "web_search: github.com/tj/commander.js/releases/tag/v15.0.0",
+        "dependabot bumps 14.0.3 -> 15.0.0 in multiple repos"
+      ],
+      "confidence": 0.75,
+      "revision": 1
+    },
+    {
+      "id": "C32",
+      "statement": "External: no known CVE/advisory found for the real commander package; typosquat lookalikes (commmander, commander-stable) are an ecosystem risk; adoption scale is top-tier npm (exact weekly downloads unverifiable in this session)",
+      "tier": "C2",
+      "verdict": "Likely",
+      "evidence": [
+        "web_search: snyk page, osv MAL-2025-192687 for typosquats",
+        "no CVE for real commander found"
+      ],
+      "confidence": 0.7,
+      "revision": 1
+    }
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "REVISED: commander.js is a mature, very widely adopted Node.js CLI framework whose value is zero-dependency, batteries-included, strict-by-default parsing; its monolith Command class is a deliberate, compatibility-driven evolution (stable since the 2021 rewrite) whose real risk profile is edge-heuristic fragility (parsing, dual-option attribution), Command<->Help private coupling, hand-maintained typings drift, and maintainer concentration — not acute code defects",
+      "status": "active",
+      "dependsOn": [
+        "C01",
+        "C02",
+        "C03",
+        "C08",
+        "C11",
+        "C16",
+        "C17",
+        "C24",
+        "C25",
+        "C26"
+      ],
+      "revision": 6
+    },
+    {
+      "id": "H2",
+      "statement": "The snapshot contains a critical regression or in-flight feature work requiring intervention",
+      "status": "invalidated",
+      "dependsOn": [
+        "C01"
+      ],
+      "revision": 1
+    }
+  ],
+  "views": [
+    {
+      "name": "project_model",
+      "dependsOn": [
+        "C31",
+        "C32"
+      ],
+      "revision": 4
+    },
+    {
+      "name": "diagnosis",
+      "dependsOn": [
+        "C21",
+        "C22",
+        "C23",
+        "C24",
+        "C25",
+        "C26",
+        "C27",
+        "C28",
+        "C29",
+        "C30"
+      ],
+      "revision": 4
+    },
+    {
+      "name": "architecture_map",
+      "dependsOn": [
+        "C16",
+        "C17",
+        "C18",
+        "C19",
+        "C20"
+      ],
+      "revision": 3
+    },
+    {
+      "name": "risk_map",
+      "dependsOn": [
+        "C24",
+        "C25",
+        "C26"
+      ],
+      "revision": 4
+    },
+    {
+      "name": "evidence_map",
+      "dependsOn": [
+        "C21",
+        "C22",
+        "C23"
+      ],
+      "revision": 3
+    }
+  ],
+  "dirty": []
+}
+
