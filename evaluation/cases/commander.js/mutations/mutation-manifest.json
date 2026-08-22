@@ -1,0 +1,223 @@
+{
+  "schema": "dsh-researcher/mutation-manifest/v1",
+  "case": "commander.js",
+  "snapshot": {
+    "commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+    "date": "2026-02-01T23:20:01Z",
+    "version": "v14.0.3",
+    "dir": "D:/AI_work_project/phase-a-snapshots/commander.js/workspace",
+    "note": "Frozen snapshot reused from Experiment A (protocol v1.1 §1). Mutations are proposed engineering changes ON this snapshot; each carries before/after + impact ground truth."
+  },
+  "selection": {
+    "rule": "mechanical seeded draw from snapshot-derived pools; no cherry-pick (protocol v1.1 §2/§4.3)",
+    "script": "fixtures/blind/mutation-selector.js",
+    "seed": "dsh-researcher-v0.6-phase-a:commander.js:exp-b-mutations",
+    "per_category": 2,
+    "draws": {
+      "api_contract": { "pool_size": 71, "idxs": [59, 23] },
+      "internal_architecture": { "pool_size": 41, "idxs": [14, 13] },
+      "compatibility_constraint": { "pool_size": 28, "idxs": [20, 22] }
+    },
+    "pool_sources": {
+      "api_contract": "index.js exports + esm.mjs named exports + Command prototype public (non-underscore) methods",
+      "internal_architecture": "lib/*.js files + Command underscore-prefixed internal methods + parseOptions",
+      "compatibility_constraint": "docs/deprecated.md headings + package.json engines + commander.* error codes"
+    }
+  },
+  "mutations": [
+    {
+      "id": "MUT-01",
+      "kind": "api_contract",
+      "candidate": "restoreStateBeforeParse",
+      "change_summary": "Proposed: change the contract of saveStateBeforeParse/restoreStateBeforeParse so repeated parse() calls are allowed even when storeOptionsAsProperties is true (currently throws), and the saved state includes the option-description registry snapshot.",
+      "before": {
+        "behavior": "restoreStateBeforeParse() throws when this._storeOptionsAsProperties is true (command.js:1158-1161); otherwise resets _name, _scriptPath, rawArgs, _optionValues, _optionValueSources, args, processedArgs from _savedState (shallow clones). saveStateBeforeParse() snapshots _name, _optionValues, _optionValueSources only (1141-1150). _prepareForParse (1127-1133) calls save on first parse, restore on subsequent parses.",
+        "anchors": ["command.js:1127-1133", "command.js:1141-1150", "command.js:1158-1174"]
+      },
+      "after": {
+        "behavior": "Restore no longer throws under storeOptionsAsProperties; state snapshot is extended (e.g. option registry / command registry); restore path must also clear any state mutated by parseOptions and _processArguments beyond the five fields.",
+        "anchors": ["command.js:1158-1174 (modified)", "lib/command.js entire parse path"]
+      },
+      "ground_truth": {
+        "gt_status": "DRAFT — dual-evaluator calibration pending (protocol v1.1 §4.2), NOT frozen",
+        "impact_chain": [
+          { "component": "command.js saveStateBeforeParse", "kind": "direct", "evidence": "1141-1150; snapshot fields define what restore can reset" },
+          { "component": "command.js restoreStateBeforeParse", "kind": "direct", "evidence": "1158-1174; throw condition is the contract under test" },
+          { "component": "command.js _prepareForParse", "kind": "transitive", "evidence": "1127-1133; save/restore dispatcher" },
+          { "component": "command.js parse()", "kind": "transitive", "evidence": "repeated-parse semantics; _prepareForParse is invoked from parse" },
+          { "component": "tests/command.parse.test.js + storeOptionsAsProperties tests", "kind": "tests", "evidence": "existing tests assert the throw for storeOptionsAsProperties re-parse" },
+          { "component": "Readme.md re-parse guidance", "kind": "docs", "evidence": "documented limitation for storeOptionsAsProperties + parse twice" },
+          { "component": "typings/index.d.ts Command.saveStateBeforeParse", "kind": "api", "evidence": "public method signature; extension-point for subclasses" }
+        ],
+        "critical_edges": [
+          "storeOptionsAsProperties throw → allowed (behavioral contract flip; consumers may depend on the error)",
+          "saved-state field set → restore completeness (new registry fields must be reset or stale across parses)",
+          "parse → _prepareForParse → restore → _processArguments state (args/processedArgs reset order)"
+        ],
+        "gt_note": "Chain semantics: change → dependency (save/restore pair + parse) → behavior (repeat-parse allowed, registry reset) → contract (public method + error contract + typings)."
+      }
+    },
+    {
+      "id": "MUT-02",
+      "kind": "api_contract",
+      "candidate": "configureHelp",
+      "change_summary": "Proposed: configureHelp() gains a second optional parameter 'base' selecting whether the returned Help instance inherits from a user-supplied Help subclass or from the default Help; merging changes from Object.assign to explicit property copy that preserves getters.",
+      "before": {
+        "behavior": "configureHelp(configuration) stores configuration verbatim; getter returns it; createHelp() = Object.assign(new Help(), this.configureHelp()) (command.js:198-204, 215-220). Help customization happens via property assignment; getters in configuration are lost by Object.assign.",
+        "anchors": ["command.js:198-204", "command.js:215-220"]
+      },
+      "after": {
+        "behavior": "configureHelp(configuration, base) accepts a Help base class; createHelp() merges with property descriptors preserved; existing single-arg call sites keep working (backward-compatible default).",
+        "anchors": ["command.js:198-204 (modified)", "command.js:215-220 (modified)"]
+      },
+      "ground_truth": {
+        "gt_status": "DRAFT — dual-evaluator calibration pending (protocol v1.1 §4.2), NOT frozen",
+        "impact_chain": [
+          { "component": "command.js configureHelp", "kind": "direct", "evidence": "215-220; signature change ripples to call sites" },
+          { "component": "command.js createHelp", "kind": "direct", "evidence": "198-204; merge strategy is the customization seam" },
+          { "component": "lib/help.js Help class", "kind": "transitive", "evidence": "Help instances produced by createHelp; property-based customization surface" },
+          { "component": "command.js helpInformation/outputHelp/_outputHelpIfRequested", "kind": "transitive", "evidence": "all help rendering flows through createHelp" },
+          { "component": "docs/help-in-depth.md", "kind": "docs", "evidence": "documents configureHelp() customization" },
+          { "component": "tests/command.help.test.js / help.customization tests", "kind": "tests", "evidence": "configureHelp tests assert merge behavior" },
+          { "component": "typings/index.d.ts configureHelp", "kind": "api", "evidence": "public API typing; new parameter must be typed" }
+        ],
+        "critical_edges": [
+          "configureHelp → createHelp merge (Object.assign vs descriptor-preserving copy; getters currently dropped — behavior change)",
+          "createHelp → helpInformation → outputHelp (every help render path)",
+          "Help subclass base → visible*/stringify overrides (docs/help-in-depth customization contract)"
+        ],
+        "gt_note": "Chain semantics: change → dependency (createHelp merge + Help class) → behavior (render pipeline output) → contract (public configureHelp signature + typings)."
+      }
+    },
+    {
+      "id": "MUT-03",
+      "kind": "internal_architecture",
+      "candidate": "_executeSubCommand",
+      "change_summary": "Proposed: extract the executable-file resolution (findFile + extension probing + realpath) from _executeSubCommand into a standalone module lib/resolveExecutable.js, and switch default extension probing order to prefer .js over .ts/.tsx (currently all probed with no order guarantee).",
+      "before": {
+        "behavior": "_executeSubCommand (command.js:1202-1346) does inline findFile with sourceExt ['.js','.ts','.tsx','.mjs','.cjs'], realpath resolution, mandatory/conflicting option checks before spawn, node-launch for source files, inspector port increments. Dispatch call at command.js:1365.",
+        "anchors": ["command.js:1202-1346", "command.js:1363-1369", "command.js:2705-2746"]
+      },
+      "after": {
+        "behavior": "File resolution moved to new lib/resolveExecutable.js with deterministic extension order; _executeSubCommand imports it; resolution errors surface with same messages; no behavioral change to spawn/validation flow.",
+        "anchors": ["lib/resolveExecutable.js (new)", "command.js:1202-1346 (refactored)"]
+      },
+      "ground_truth": {
+        "gt_status": "DRAFT — dual-evaluator calibration pending (protocol v1.1 §4.2), NOT frozen",
+        "impact_chain": [
+          { "component": "command.js _executeSubCommand", "kind": "direct", "evidence": "1202-1346; resolution logic removed/replaced by module call" },
+          { "component": "lib/resolveExecutable.js (new module)", "kind": "direct", "evidence": "new file; zero-dep policy means it must be hand-rolled in-tree (GT-C02)" },
+          { "component": "command.js _dispatchSubcommand", "kind": "transitive", "evidence": "1363-1369; passes operands+unknown into execute path" },
+          { "component": "spawn/validation flow (mandatory/conflicting checks before spawn)", "kind": "transitive", "evidence": "1224-1226; must stay in parent regardless of module extraction" },
+          { "component": "tests/command.executableSubcommand.test.js", "kind": "tests", "evidence": "extension probing and error-message assertions" },
+          { "component": "Readme.md executable subcommand section", "kind": "docs", "evidence": "documented file-naming convention <parent>-<subcommand> (Readme 700-723)" },
+          { "component": "package.json exports/ESM wrapper", "kind": "config", "evidence": "new lib file is internal (not exported); zero-dep and exports-map check (GT-C18)" }
+        ],
+        "critical_edges": [
+          "resolution order change → existing projects with both .ts and .js executables pick different file (silent behavior change)",
+          "module extraction → zero-dep policy and in-tree utility rule (GT-C02)",
+          "error messages/surface → tests asserting 'Cannot find executable' text"
+        ],
+        "gt_note": "Chain semantics: change → dependency (dispatch → execute → resolve module) → behavior (which file wins probing order) → contract (executable naming convention, docs)."
+      }
+    },
+    {
+      "id": "MUT-04",
+      "kind": "internal_architecture",
+      "candidate": "_excessArguments",
+      "change_summary": "Proposed: move the excess-arguments check from _processArguments (post-parse) into parseOptions' operand loop (pre-dispatch), so excess detection happens before subcommand dispatch and subcommands can no longer observe excess parent operands.",
+      "before": {
+        "behavior": "_excessArguments (command.js:2146-2154) is called from _processArguments (1418) after parsing; compares received args to registeredArguments.length; throws commander.excessArguments unless _allowExcessArguments. Subcommand dispatch happens later (1352-1371).",
+        "anchors": ["command.js:1418", "command.js:2146-2154", "command.js:1352-1371"]
+      },
+      "after": {
+        "behavior": "Excess check fires inside parseOptions operand collection; parent operands in excess are rejected before any subcommand gets them; error code/message unchanged; allowExcessArguments escape still honored.",
+        "anchors": ["command.js parseOptions (modified)", "command.js:2146-2154 (moved/adapted)"]
+      },
+      "ground_truth": {
+        "gt_status": "DRAFT — dual-evaluator calibration pending (protocol v1.1 §4.2), NOT frozen",
+        "impact_chain": [
+          { "component": "command.js parseOptions", "kind": "direct", "evidence": "operand loop; insertion point changes when excess is detected" },
+          { "component": "command.js _excessArguments", "kind": "direct", "evidence": "2146-2154; call site moves; message/args computation may need operand-count context" },
+          { "component": "command.js _processArguments", "kind": "transitive", "evidence": "1418; check removed from here" },
+          { "component": "command.js dispatch (_dispatchSubcommand / _parseCommand)", "kind": "transitive", "evidence": "1352-1371; subcommand no longer receives excess parent operands (cross-level argument passing, GT-C06/C09 cluster)" },
+          { "component": "tests/command.arguments.test.js + allowExcessArguments tests", "kind": "tests", "evidence": "excess-argument error timing assertions" },
+          { "component": "docs/options-in-depth.md / Readme.md excess-arguments section", "kind": "docs", "evidence": "documents allowExcessArguments and default strictness (GT-C04)" }
+        ],
+        "critical_edges": [
+          "check timing vs subcommand dispatch (behavior change: excess parent operands rejected pre-dispatch — GT-C06/C09 recursion semantics)",
+          "allowExcessArguments escape (must still work from parseOptions path)",
+          "error message 'too many arguments ... got N' (message parity across moved call site)"
+        ],
+        "gt_note": "Chain semantics: change → dependency (parseOptions operand loop + dispatch) → behavior (excess detection timing) → contract (error code commander.excessArguments + documented strictness)."
+      }
+    },
+    {
+      "id": "MUT-05",
+      "kind": "compatibility_constraint",
+      "candidate": "error code: commander.invalidArgument",
+      "change_summary": "Proposed: add a new stable error code commander.invalidArgumentValue emitted when parseArg throws a non-CommanderError, while preserving commander.invalidArgument for InvalidArgumentError instances; update exitOverride docs and tests accordingly.",
+      "before": {
+        "behavior": "InvalidArgumentError carries code 'commander.invalidArgument' (lib/error.js:13-19). _callParseArg (command.js:599-604) wraps parseArg exceptions: if err.code === 'commander.invalidArgument' it prepends invalidArgumentMessage, otherwise rethrows the original error. exitOverride tests assert exact (code,message) pairs as 'intended to be stable' (tests/command.exitOverride.test.js:5-13,51-435).",
+        "anchors": ["lib/error.js:13-19", "command.js:590-610", "tests/command.exitOverride.test.js:5-13"]
+      },
+      "after": {
+        "behavior": "Non-CommanderError throws from parseArg are caught and re-emitted as CommanderError with code commander.invalidArgumentValue; InvalidArgumentError path unchanged; both codes documented in exitOverride docs.",
+        "anchors": ["command.js:590-610 (modified)", "lib/error.js (extended)"]
+      },
+      "ground_truth": {
+        "gt_status": "DRAFT — dual-evaluator calibration pending (protocol v1.1 §4.2), NOT frozen",
+        "impact_chain": [
+          { "component": "command.js _callParseArg", "kind": "direct", "evidence": "590-610; catch/re-wrap logic is the change site" },
+          { "component": "lib/error.js InvalidArgumentError", "kind": "direct", "evidence": "13-19; existing code retained (compat)" },
+          { "component": "command.js parse pipeline (parseOptions → value application)", "kind": "transitive", "evidence": "value pipeline choke point (GT-C22); every parseArg failure funnels here" },
+          { "component": "tests/command.exitOverride.test.js", "kind": "tests", "evidence": "asserts exact stable code pairs; new code must be added there" },
+          { "component": "docs/errors.md or exitOverride docs", "kind": "docs", "evidence": "documented stable error codes (GT-C29 contract)" },
+          { "component": "typings/index.d.ts CommanderError", "kind": "api", "evidence": "code field semantics; new code value is a public contract" }
+        ],
+        "critical_edges": [
+          "error-code stability contract (GT-C29): consumers match on code, not message; adding a code is additive, but re-classifying an existing failure path changes what consumers see",
+          "_callParseArg catch → wrap → message composition (invalidArgumentMessage prefix)",
+          "exitOverride test suite exact-pair assertions (intended-to-be-stable list must be extended)"
+        ],
+        "gt_note": "Chain semantics: change → dependency (parseArg failures via value pipeline) → behavior (which error class/code a failure yields) → contract (stable code list, docs, typings)."
+      }
+    },
+    {
+      "id": "MUT-06",
+      "kind": "compatibility_constraint",
+      "candidate": "error code: commander.missingMandatoryOptionValue",
+      "change_summary": "Proposed: change the missingMandatoryOptionValue error code from commander.missingMandatoryOptionValue to commander.missingMandatoryOptionValue (message unchanged) is NOT the proposal — the proposal is: message gains the option flags string, and the code stays stable; only the message composition changes.",
+      "before": {
+        "behavior": "missingMandatoryOptionValue(option) (command.js:2058-2060) calls this.error(message, { code: 'commander.missingMandatoryOptionValue' }); invoked from _checkForMissingMandatoryOptions (1683) during dispatch precedence. Message currently 'error: required option ... not specified'.",
+        "anchors": ["command.js:1683", "command.js:2058-2060"]
+      },
+      "after": {
+        "behavior": "Message includes option flags (e.g. '-r, --required <value>') and hint of the missing-value condition; code unchanged; exitOverride tests updated only for message text.",
+        "anchors": ["command.js:2058-2060 (modified)"]
+      },
+      "ground_truth": {
+        "gt_status": "DRAFT — dual-evaluator calibration pending (protocol v1.1 §4.2), NOT frozen",
+        "impact_chain": [
+          { "component": "command.js missingMandatoryOptionValue", "kind": "direct", "evidence": "2058-2060; message composition change" },
+          { "component": "command.js _checkForMissingMandatoryOptions", "kind": "transitive", "evidence": "1683; caller passes the offending option" },
+          { "component": "command.js dispatch precedence (mandatory check before action)", "kind": "transitive", "evidence": "1558-1640; check ordering unchanged (GT-C10)" },
+          { "component": "tests/command.requiredOption.test.js + exitOverride tests", "kind": "tests", "evidence": "message-text assertions; code assertions unchanged" },
+          { "component": "docs (README requiredOption / errors docs)", "kind": "docs", "evidence": "message examples in docs may embed current text" },
+          { "component": "consumer message parsing", "kind": "config", "evidence": "code-stable consumers unaffected; message-scraping consumers break (documented risk)" }
+        ],
+        "critical_edges": [
+          "message text is NOT part of the stability contract (GT-C29: consumers match on code) — but docs/tests embed it",
+          "code stability preserved by design (this mutation is a message-only change)",
+          "mandatory-check timing in dispatch precedence (unchanged, but must be verified in tests)"
+        ],
+        "gt_note": "Chain semantics: change → dependency (mandatory check caller) → behavior (user-visible error text) → contract (code stable; message is advisory). Included as the 'minimal-risk' compatibility mutation; distinguishes code-contract awareness from message awareness."
+      }
+    }
+  ],
+  "usage": {
+    "experiment_b": "Each mutation is a proposed change; runs receive the change_summary as the frozen change request and must produce an impact chain (change → dependency → behavior → contract). Scored by Impact Recall / Impact Precision / Critical Edge Detection (experiment-b-protocol-draft.md).",
+    "experiment_c": "Selected mutations are injected into a T1 clone of the T0 workspace (build-t1-snapshot.js), committed, blind-truncated; run-2 must detect stale claims from run-1 (claim invalidation, experiment-c-protocol-draft.md). GT = this manifest itself."
+  },
+  "status": "DRAFT — mechanical selection complete; impact GT chains pending dual-evaluator calibration; NOT locked. No mutation has been injected anywhere."
+}
