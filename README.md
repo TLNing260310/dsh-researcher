@@ -1,7 +1,7 @@
 # dsh-researcher
 
-## Project Cognition Layer for AI Software Engineering
-## AI 软件工程项目认知层
+## Evolving Toward a Project Cognition Infrastructure for AI Software Engineering
+## 走向 AI 软件工程项目认知基础设施(演化中)
 
 **EN** — AI coding agents are becoming increasingly capable at modifying code. The next challenge is understanding the systems they modify.
 
@@ -82,7 +82,7 @@ dsh-researcher 在动手修改之前，建立一份基于证据的软件项目�
 | 失败代价 Failure cost | 写错 wrong code | 计划错误 wrong plan | 认知失真 distorted cognition |
 
 **分层宣传 / layered messaging**：
-- **官方定位（第一层）**：Project Cognition Layer（AI 软件工程项目认知层）。
+- **官方定位（第一层，演化中）**：**evolving toward a Project Cognition Infrastructure** —— 已验证的基础设施能力(状态模型/迁移/评测治理)+ 未验证的应用层价值(Research Mode 优越性)。不是"已完成的基础设施"。
 - **用户理解（第二层）**：Architecture Intelligence Assistant（架构智能分析助手）——提供**架构师式的理解流程**，不是替代架构师。
 - **营销话术（第三层）**：为 AI Coding Agent 提供"架构师级别的项目理解能力"。
 
@@ -215,6 +215,7 @@ npx -y github:TLNing260310/dsh-researcher
 | 入口 Entry | 内容 Contents |
 |---|---|
 | [docs/repositioning-v0.7.md](./docs/repositioning-v0.7.md) | v0.7 定位重构备忘录 / repositioning memo（认知层定位、PCR 结构、评测调整、分阶段计划） |
+| [docs/project-cognition-position.md](./docs/project-cognition-position.md) | 当前架构定位：evolving toward a Project Cognition Infrastructure（双层架构、验证边界、竞争位置）/ current positioning（two-layer architecture, verified boundary, competitive position） |
 | [docs/landscape.md](./docs/landscape.md) | 竞品格局与 L0–L5 分层 / competitive landscape & L0–L5 layering（Cairn / Drift / GitNexus / Serena / Understand Anything） |
 | [docs/roadmap.md](./docs/roadmap.md) | 路线图 / roadmap（Claim Delta、生态化、集成缝、Capsule） |
 | [docs/ai-engineering-skills-map.md](./docs/ai-engineering-skills-map.md) | 与 AI Engineering Skills Map 的能力映射与方法论保留 / capability mapping & methodological caveats |

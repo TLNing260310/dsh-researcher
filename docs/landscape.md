@@ -34,7 +34,7 @@ L4 怎么做       → DSH Plan Mode
 L5 做           → Coding Agent
 ```
 
-**双层架构（2026-08，Experiment C+ 后，见 docs/evaluation-cplus-conclusion.md）**：
+**双层架构（2026-08，Experiment C+ 后，见 docs/evaluation-cplus-conclusion.md 与 docs/project-cognition-position.md）**：
 
 ```
 Infrastructure 层（已验证）   Project Cognition Infrastructure
