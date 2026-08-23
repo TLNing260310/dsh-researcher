@@ -1,0 +1,102 @@
+{
+  "schema": "dsh-researcher/cplus-adjudication/v1",
+  "finalized": false,
+  "runs": {
+    "exp-cplus-mut01-b": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut04-b": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut02-b": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut05-b": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut02-a": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut03-a": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut06-a": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut01-a": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut03-b": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut05-a": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut04-a": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    },
+    "exp-cplus-mut06-b": {
+      "mutation_recall": null,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": ""
+    }
+  }
+}
