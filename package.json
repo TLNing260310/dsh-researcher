@@ -1,22 +1,64 @@
 {
   "name": "dsh-researcher",
-  "version": "0.5.3",
-  "description": "Evidence-driven Project Intelligence Layer for DeepSeek Harness — a read-only build-shaping preset with runtime verification (Runtime Certificate, evidence state machine, zero-write guard).",
+  "version": "0.8.0-alpha.1",
+  "description": "Evidence-backed project cognition and host-governed definitions of done for DeepSeek Harness.",
+  "author": "TLNing260310",
   "license": "MIT",
+  "main": "lib/index.js",
   "bin": {
-    "dsh-researcher": "bin/install.js"
+    "dsh-researcher": "bin/install.js",
+    "project-cognition": "bin/project-cognition.js"
   },
   "files": [
     "bin/",
+    "lib/",
     "researcher/",
+    "governed/",
+    "schemas/",
+    "examples/",
+    "docs/",
+    "fixtures/",
+    "tests/",
+    "evaluation/selection_result.json",
+    "evaluation/random_seed.txt",
+    "evaluation/cases/commander.js/gt-calibration/experiment-cplus-validity.json",
+    "evaluation/results/experiment-a/analysis-report.md",
+    "evaluation/results/experiment-a/limitations.md",
+    "evaluation/results/experiment-a/score-report.json",
+    "evaluation/results/experiment-cplus/analysis-report.md",
+    "evaluation/results/experiment-cplus/limitations.md",
+    "evaluation/results/experiment-cplus/score-report.json",
+    ".project-cognition/",
+    "PROJECT_COGNITION.md",
     "README.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
     "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "doctor": "node bin/project-cognition.js doctor . && node bin/project-cognition.js adapter doctor governed/adapter-manifest.json",
+    "check": "npm test && npm run doctor"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "ai-coding",
+    "project-cognition",
+    "goal-governor",
+    "research-agent",
+    "agent-governance"
   ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TLNing260310/dsh-researcher.git"
   },
+  "homepage": "https://github.com/TLNing260310/dsh-researcher#readme",
+  "bugs": {
+    "url": "https://github.com/TLNing260310/dsh-researcher/issues"
+  },
   "engines": {
-    "node": ">=16.7"
+    "node": ">=22.12.0"
   }
 }

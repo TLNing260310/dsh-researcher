@@ -4,7 +4,7 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const { __test } = require('../researcher/plugins/research-state/index.js')
-const { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState } = __test
+const { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState, foldCheckpointEventsDetailed } = __test
 
 const SEQUENCE = [
   {
@@ -173,4 +173,34 @@ test('parseCheckpointArgs accepts object and string, rejects garbage', () => {
   assert.throws(() => parseCheckpointArgs(42))
   assert.throws(() => parseCheckpointArgs('not-json'))
   assert.throws(() => parseCheckpointArgs('[]'))
+})
+
+test('import is strict and atomic on invalid payloads', () => {
+  const state = makeState()
+  applyCheckpoint(state, SEQUENCE[0])
+  const before = fullExport(state)
+
+  const duplicate = JSON.parse(JSON.stringify(before))
+  duplicate.claims.push({ ...duplicate.claims[0] })
+  assert.throws(() => importState(state, duplicate), /duplicate id/)
+  assert.deepEqual(fullExport(state), before)
+
+  const unknown = JSON.parse(JSON.stringify(before))
+  unknown.untrusted = true
+  assert.throws(() => importState(state, unknown), /unknown field/)
+  assert.deepEqual(fullExport(state), before)
+
+  const badConfidence = JSON.parse(JSON.stringify(before))
+  badConfidence.claims[0].confidence = 2
+  assert.throws(() => importState(state, badConfidence), /between 0 and 1/)
+  assert.deepEqual(fullExport(state), before)
+})
+
+test('replay reports rejected historical events instead of hiding them', () => {
+  const result = foldCheckpointEventsDetailed([
+    { type: 'tool/call', data: { name: 'research_checkpoint', callId: 'ok', arguments: JSON.stringify(SEQUENCE[0]) } },
+    { type: 'tool/call', data: { name: 'research_checkpoint', callId: 'bad', arguments: 'not-json' } },
+  ], makeState())
+  assert.equal(result.state.claims.size, 2)
+  assert.deepEqual(result.rejected.map((entry) => entry.callId), ['bad'])
 })

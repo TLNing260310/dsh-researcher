@@ -1,0 +1,12 @@
+{
+  "schema": "dsh-researcher/experiment-validity/v1",
+  "experiment": "C+",
+  "valid_for_causal_claim": false,
+  "reasons": [
+    "Condition B received state-specific meta-instructions that Condition A did not receive.",
+    "T0 and sibling directories were readable from T1 during the frozen runs.",
+    "Synthetic mutation markers leaked condition-relevant information in source text.",
+    "There was no equal-content static-document control separating information from lifecycle mechanics."
+  ],
+  "required_repairs": ["R1", "R2", "R3"]
+}

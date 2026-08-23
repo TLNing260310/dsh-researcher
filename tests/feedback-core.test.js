@@ -54,6 +54,8 @@ test('level 1 metrics are anonymous: no prompts, no paths, no statements', () =>
   assert.equal(bundle.metrics.claims_created, 2)
   assert.equal(bundle.metrics.claims_revised, 1)
   assert.equal(bundle.metrics.decision, 'INVESTIGATE')
+  assert.equal(bundle.metrics.session_completed, false)
+  assert.equal(bundle.metrics.goal_decision, null)
   assert.equal(bundle.metrics.tool_calls.research_doctor, 1)
   assert.equal(bundle.metrics.tool_calls.research_checkpoint, 2)
 })
@@ -74,4 +76,41 @@ test('level 2 adds redacted claims: statements kept, evidence reduced to basenam
 test('redactEvidence handles garbage and caps length', () => {
   assert.deepEqual(redactEvidence(null), [])
   assert.deepEqual(redactEvidence(['a/b/c.ts:10', 42, 'x']), ['c.ts:10', '42', 'x'])
+})
+
+test('completion comes only from a terminal goal decision event', () => {
+  const proseOnly = extractMetrics([
+    { type: 'assistant/message', data: { content: '研究报告 Project Model 证据台账' } },
+  ])
+  assert.equal(proseOnly.session_completed, false)
+
+  const done = extractMetrics([
+    { type: 'project-cognition/goal-decision', data: { decision: 'DONE' } },
+  ])
+  assert.equal(done.goal_decision, 'DONE')
+  assert.equal(done.session_completed, true)
+
+  const stopped = extractMetrics([
+    { type: 'project-cognition/goal-decision', data: { decision: 'STOPPED' } },
+  ])
+  assert.equal(stopped.session_completed, false)
+
+  const dshDone = extractMetrics([
+    { type: 'tool/call', data: { callId: 'g1', name: 'request_goal_decision', arguments: '{}' } },
+    { type: 'tool/result', data: { message: { callId: 'g1', content: [{ type: 'text', text: '{"decision":"DONE","reason":"trusted"}' }] } } },
+  ])
+  assert.equal(dshDone.goal_decision, 'DONE')
+  assert.equal(dshDone.session_completed, true)
+
+  const fakeAssistant = extractMetrics([
+    { type: 'assistant/message', data: { content: '{"decision":"DONE"}' } },
+  ])
+  assert.equal(fakeAssistant.session_completed, false)
+})
+
+test("DON'T BUILD is not also counted as BUILD", () => {
+  const metrics = extractMetrics([
+    { type: 'assistant/message', data: { content: "Decision: DON'T BUILD" } },
+  ])
+  assert.equal(metrics.decision, "DON'T_BUILD")
 })

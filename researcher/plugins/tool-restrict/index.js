@@ -61,7 +61,23 @@
 // the session sandbox (read-only) and the approval policy (never) remain the
 // real enforcement. Start researcher sessions with read-only + never.
 
+const fs = require('node:fs')
+const path = require('node:path')
+
 const DENY = ['write', 'edit']
+const doctorCapabilities = new WeakMap()
+
+const recordDoctorVerdict = (agent, overall) => {
+  if (!agent || (typeof agent !== 'object' && typeof agent !== 'function')) return
+  if (overall === 'SAFE') {
+    doctorCapabilities.set(agent, { overall: 'SAFE', issuedAt: Date.now() })
+  } else {
+    doctorCapabilities.delete(agent)
+  }
+}
+
+const doctorCapabilityOf = (agent) => agent ? doctorCapabilities.get(agent) : undefined
+const revokeDoctorCapability = (agent) => { if (agent) doctorCapabilities.delete(agent) }
 
 // Pure environment verdict used by both the creation-time preflight and the
 // execution-time guard (unit-testable).
@@ -78,13 +94,39 @@ const envVerdict = (mode, policy) => {
 const readOnlyDenial = (name) => 'Refused: research mode is strictly read-only; the "' + name + '" tool is disabled by the researcher preset, so no file can be created or modified in this session.'
 
 const DOCTOR_GATE_DENIAL = '[dsh-researcher] health gate: run research_doctor first — the Researcher Runtime Certificate must be SAFE before research begins (this is enforced, not a suggestion).'
+const READ_ROOT_DENIAL = '[dsh-researcher] read-root confinement: researcher filesystem tools may read only inside the session workspace. Parent, sibling, and external absolute paths are refused.'
+
+const canonicalExisting = (value) => {
+  try { return fs.realpathSync.native ? fs.realpathSync.native(value) : fs.realpathSync(value) } catch (error) { return path.resolve(value) }
+}
+
+const isWithin = (root, target) => {
+  const relative = path.relative(root, target)
+  return relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))
+}
+
+const readPathVerdict = (name, args, workspaceRoot) => {
+  const fields = name === 'read' || name === 'read_image' ? ['file_path'] : name === 'glob' || name === 'grep' ? ['path'] : []
+  if (fields.length === 0) return undefined
+  const lexicalRoot = path.resolve(workspaceRoot)
+  const canonicalRoot = canonicalExisting(lexicalRoot)
+  for (const field of fields) {
+    const value = args && args[field]
+    if (value === undefined && (name === 'glob' || name === 'grep')) continue
+    if (typeof value !== 'string' || value.includes('\0')) return READ_ROOT_DENIAL
+    const lexical = path.resolve(lexicalRoot, value)
+    if (!isWithin(lexicalRoot, lexical)) return READ_ROOT_DENIAL
+    if (!isWithin(canonicalRoot, canonicalExisting(lexical))) return READ_ROOT_DENIAL
+  }
+  return undefined
+}
 
 // Pure guard decision machine (unit-tested): write/edit always denied; the
 // doctor itself ALWAYS runs (it must be able to report UNSAFE); every other
-// tool is denied until the doctor has run once, and is permanently denied
-// when the environment failed verification (fail-closed; the certificate
-// remains available as the explanation).
+// tool is denied until the doctor has actually PRODUCED a SAFE certificate.
+// Merely calling the tool is not a capability token.
 const decideGuard = (name, st, env) => {
+  st = st || { doctorCalled: false, doctorSafe: false }
   if (name === 'write' || name === 'edit') return { deny: readOnlyDenial(name), st }
   const envFailure = env !== undefined ? envVerdict(env.mode, env.policy) : undefined
   if (name === 'research_doctor') {
@@ -94,14 +136,17 @@ const decideGuard = (name, st, env) => {
         envVerified: envFailure === undefined,
         envFailed: envFailure !== undefined,
         doctorCalled: true,
+        doctorSafe: false,
       },
     }
   }
-  if (!st.doctorCalled) return { deny: DOCTOR_GATE_DENIAL, st }
   if (st.envFailed) {
     return { deny: '[dsh-researcher] environment failed verification — the Runtime Certificate is UNSAFE; fix the listed checks and start a new session. Run research_doctor again for the certificate details.', st }
   }
-  if (envFailure !== undefined) return { deny: envFailure, st }
+  if (envFailure !== undefined) {
+    return { deny: envFailure, st: { ...st, envVerified: false, envFailed: true, doctorSafe: false } }
+  }
+  if (!st.doctorSafe) return { deny: DOCTOR_GATE_DENIAL, st }
   return { deny: undefined, st }
 }
 
@@ -259,22 +304,38 @@ module.exports = {
       if (!agent) return name === 'write' || name === 'edit' ? readOnlyDenial(name) : undefined
       let st = guardStates.get(agent)
       if (st === undefined) {
-        st = { doctorCalled: false }
+        st = { doctorCalled: false, doctorSafe: false, envFailed: false }
         guardStates.set(agent, st)
       }
       let env
       try {
+        const policy = ctx.sandboxPolicy.resolve({ session: agent.session })
         env = {
-          mode: ctx.sandboxPolicy.resolve({ session: agent.session }).mode,
+          mode: policy.mode,
           policy: ctx.approval.overrideOf(agent.session),
+          workspaceRoot: policy.workspaceRoot,
         }
       } catch (error) {
         return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
       }
+      const readDenial = readPathVerdict(name, exec && exec.arguments, env.workspaceRoot)
+      if (readDenial !== undefined) return readDenial
+      if (name === 'research_doctor') {
+        // Re-running doctor revokes the old token until the new certificate
+        // has been fully computed and explicitly recorded as SAFE.
+        revokeDoctorCapability(agent)
+      } else {
+        const capability = doctorCapabilityOf(agent)
+        if (capability && capability.overall === 'SAFE') {
+          st = { ...st, doctorCalled: true, doctorSafe: true, envVerified: true, envFailed: false }
+        }
+      }
       const outcome = decideGuard(name, st, env)
+      if (outcome.st && outcome.st.envFailed) revokeDoctorCapability(agent)
       guardStates.set(agent, outcome.st)
       return outcome.deny
     })
   },
-  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, DOCTOR_GATE_DENIAL },
+  __capability: { recordDoctorVerdict, doctorCapabilityOf, revokeDoctorCapability },
+  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, readPathVerdict, DOCTOR_GATE_DENIAL, READ_ROOT_DENIAL, recordDoctorVerdict, doctorCapabilityOf, revokeDoctorCapability },
 }

@@ -23,7 +23,19 @@
 //
 // The tool is read-only: it writes nothing and only reads live runtime facts.
 
-const { makeState, foldCheckpointEvents, fullExport } = require('../research-state/index.js').__test
+const { makeState, foldCheckpointEventsDetailed, fullExport, liveStateOf } = require('../research-state/index.js').__test
+const toolRestrict = require('../tool-restrict/index.js')
+const { recordDoctorVerdict } = toolRestrict.__capability
+const { readPathVerdict } = toolRestrict.__test
+
+const certificateOverall = (checks) => {
+  let worst = 0
+  for (const check of checks) {
+    if (check.status === 'FAIL') worst = 2
+    else if (check.status === 'WARN' && worst < 1) worst = 1
+  }
+  return worst === 2 ? 'UNSAFE' : worst === 1 ? 'DEGRADED' : 'SAFE'
+}
 
 const renderCertificate = (checks, meta) => {
   const lines = ['Researcher Runtime Certificate']
@@ -33,15 +45,37 @@ const renderCertificate = (checks, meta) => {
   } else if (meta) {
     lines.push('History: none (first run)')
   }
-  let worst = 0 // 0 = pass, 1 = warn, 2 = fail
   for (const c of checks) {
     lines.push(c.name + ': ' + c.status + (c.detail ? ' (' + c.detail + ')' : ''))
-    if (c.status === 'FAIL') worst = 2
-    else if (c.status === 'WARN' && worst < 1) worst = 1
   }
-  const overall = worst === 2 ? 'UNSAFE' : worst === 1 ? 'DEGRADED' : 'SAFE'
+  const overall = certificateOverall(checks)
   lines.push('Overall: ' + overall)
   return lines.join('\n')
+}
+
+const checkReplay = (events, liveState) => {
+  try {
+    const first = foldCheckpointEventsDetailed(events, makeState())
+    const second = foldCheckpointEventsDetailed(events, makeState())
+    const a = fullExport(first.state)
+    const b = fullExport(second.state)
+    if (JSON.stringify(a) !== JSON.stringify(b)) {
+      return { status: 'FAIL', detail: 'non-deterministic fold' }
+    }
+    if (first.rejected.length > 0) {
+      return { status: 'FAIL', detail: 'log contains ' + first.rejected.length + ' rejected research_checkpoint event(s)' }
+    }
+    if (!liveState) {
+      return { status: 'FAIL', detail: 'live research state unavailable; cannot prove replay equivalence' }
+    }
+    const live = fullExport(liveState)
+    if (JSON.stringify(a) !== JSON.stringify(live)) {
+      return { status: 'FAIL', detail: 'live research state diverges from the folded session log' }
+    }
+    return { status: 'PASS', detail: 'live state matches log (' + a.claims.length + ' claims, ' + a.hypotheses.length + ' hypotheses, 0 rejected events)' }
+  } catch (error) {
+    return { status: 'FAIL', detail: 'replay check error: ' + (error && error.message ? error.message : String(error)) }
+  }
 }
 
 // Reconstruct prior research_doctor runs from the session log: pair doctor
@@ -106,7 +140,8 @@ module.exports = {
           session = agent.session
           if (!session) throw new Error('agent has no live session')
 
-          const mode = ctx.sandboxPolicy.resolve({ session }).mode
+          const resolvedPolicy = ctx.sandboxPolicy.resolve({ session })
+          const mode = resolvedPolicy.mode
           checks.push({ name: 'Sandbox', status: mode === 'read-only' ? 'PASS' : 'FAIL', detail: 'mode=' + mode })
 
           const policy = ctx.approval.overrideOf(session)
@@ -129,27 +164,15 @@ module.exports = {
           const shellPresent = getDef('pwsh') !== undefined || getDef('bash') !== undefined
           checks.push({ name: 'Shell surface', status: gitOk && !shellPresent ? 'PASS' : 'FAIL', detail: 'git_read=' + (gitOk ? 'present' : 'missing') + ', shell=' + (shellPresent ? 'PRESENT' : 'absent') })
 
+          const root = resolvedPolicy.workspaceRoot
+          const readRootOk = readPathVerdict('read', { file_path: '.' }, root) === undefined && readPathVerdict('read', { file_path: '..' }, root) !== undefined
+          checks.push({ name: 'Read root', status: readRootOk ? 'PASS' : 'FAIL', detail: readRootOk ? 'workspace-confined=' + root : 'parent traversal was not refused' })
+
           const checkpointOk = getDef('research_checkpoint') !== undefined
           checks.push({ name: 'Checkpoint', status: checkpointOk ? 'PASS' : 'FAIL', detail: checkpointOk ? 'available' : 'missing' })
 
-          let replayStatus = 'PASS'
-          let replayDetail
-          try {
-            const events = Array.isArray(session.events) ? session.events : []
-            const a = fullExport(foldCheckpointEvents(events, makeState()))
-            const b = fullExport(foldCheckpointEvents(events, makeState()))
-            if (JSON.stringify(a) !== JSON.stringify(b)) {
-              replayStatus = 'FAIL'
-              replayDetail = 'non-deterministic fold'
-            } else {
-              const count = a.claims.length
-              replayDetail = 'log folds deterministically (' + count + ' claims, ' + a.hypotheses.length + ' hypotheses); live-state comparison is covered by the reducer invariant tests'
-            }
-          } catch (error) {
-            replayStatus = 'WARN'
-            replayDetail = 'replay check error: ' + (error && error.message ? error.message : String(error))
-          }
-          checks.push({ name: 'Replay', status: replayStatus, detail: replayDetail })
+          const replay = checkReplay(Array.isArray(session.events) ? session.events : [], liveStateOf(agent))
+          checks.push({ name: 'Replay', status: replay.status, detail: replay.detail })
         } catch (error) {
           checks.push({ name: 'Runtime', status: 'FAIL', detail: error && error.message ? error.message : String(error) })
         }
@@ -158,11 +181,13 @@ module.exports = {
         // call, so the certificate could never render).
         const events = session && Array.isArray(session.events) ? session.events : []
         const history = certificateHistory(events)
+        const overall = certificateOverall(checks)
+        recordDoctorVerdict(agent, overall)
         return renderCertificate(checks, { run: history.length + 1, history })
       },
     }
 
     ctx.tools.register(definition)
   },
-  __test: { renderCertificate, certificateHistory },
+  __test: { renderCertificate, certificateHistory, certificateOverall, checkReplay },
 }

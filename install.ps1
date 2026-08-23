@@ -1,19 +1,24 @@
 # dsh-researcher installer (PowerShell)
-# Copies the `researcher` preset into ${DSH_HOME:-~/.dsh}/.agent-presets/
+# Installs the researcher + governed presets and their portable core.
 
 $ErrorActionPreference = 'Stop'
 
 $presetSource = Join-Path $PSScriptRoot 'researcher'
+$governedSource = Join-Path $PSScriptRoot 'governed'
 if (-not (Test-Path (Join-Path $presetSource 'agent.cordis.yml'))) {
   throw "preset source not found at $presetSource (run from the repository root)"
+}
+if (-not (Test-Path (Join-Path $governedSource 'agent.cordis.yml'))) {
+  throw "preset source not found at $governedSource"
 }
 
 $dshHome = if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $env:USERPROFILE '.dsh' }
 $targetRoot = Join-Path $dshHome '.agent-presets'
 $target = Join-Path $targetRoot 'researcher'
+$governedTarget = Join-Path $targetRoot 'governed'
 
-# Version preflight: verified against DeepSeek Harness 0.1.0-rc.6.
-$verifiedVersion = '0.1.0-rc.6'
+# Version preflight: verified against DeepSeek Harness 0.1.0-rc.7.
+$verifiedVersion = '0.1.0-rc.7'
 try {
   $dshVersion = (& dsh --version 2>$null | Select-Object -First 1)
 } catch {
@@ -25,17 +30,22 @@ if ($null -eq $dshVersion -or $dshVersion.Trim() -eq '') {
   Write-Warning "Verified on DSH $verifiedVersion; you are running '$($dshVersion.Trim())'. The preset's read-only guard fails closed on incompatible runtimes (STRICT mode), so a broken session is expected rather than silent degradation. Update or pin the preset accordingly."
 }
 
-if (Test-Path $target) {
-  throw "target preset already exists: $target (back it up and remove it first)"
+if ((Test-Path $target) -or (Test-Path $governedTarget)) {
+  throw "target preset already exists: $target or $governedTarget (back it up and remove it first)"
 }
 
 New-Item -ItemType Directory -Force -Path $targetRoot | Out-Null
 Copy-Item -Recurse -Force $presetSource $target
+Copy-Item -Recurse -Force $governedSource $governedTarget
+$portableTarget = Join-Path $target 'project-cognition'
+New-Item -ItemType Directory -Force -Path $portableTarget | Out-Null
+Copy-Item -Recurse -Force (Join-Path $PSScriptRoot 'lib') (Join-Path $portableTarget 'lib')
+Copy-Item -Recurse -Force (Join-Path $PSScriptRoot 'schemas') (Join-Path $portableTarget 'schemas')
 
 Write-Host ""
 Write-Host "Installed 'researcher' preset to $target"
+Write-Host "Installed 'governed' preset to $governedTarget"
 Write-Host "Next steps:"
-Write-Host "  1. Start dsh, create a new session with preset '项目研究 Project Research'."
-Write-Host "  2. Choose permission read-only, approval never (custom combination)."
-Write-Host "  3. Verify: write/edit show as 'DISABLED in research mode' stubs;"
-Write-Host "     run 'git status --porcelain' before and after the session - identical."
+Write-Host "  1. Certified research: choose '项目研究 Project Research', read-only + approval never."
+Write-Host "  2. Governed execution: choose '目标治理编码 Governed Coding', then /researcher run <contract>."
+Write-Host "  3. /researcher <question> starts one guarded read-only turn in Governed Coding."

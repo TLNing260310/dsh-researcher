@@ -36,6 +36,8 @@ const SCHEMA_VERSION = 1
 
 const TIERS = ['C0', 'C1', 'C2', 'C3', 'C4']
 const VERDICTS = ['Known', 'Likely', 'Claimed', 'Unknown', 'Contradicted']
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024
+const agentStates = new WeakMap()
 
 const makeState = () => ({
   schemaVersion: SCHEMA_VERSION,
@@ -176,13 +178,119 @@ const projection = (state) => ({
   dirty: [...state.dirty],
 })
 
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+const reject = (message) => { throw new Error('research_checkpoint import: ' + message) }
+const assertAllowedKeys = (value, allowed, label) => {
+  for (const key of Object.keys(value)) {
+    if (!allowed.includes(key)) reject(label + ' has unknown field "' + key + '"')
+  }
+}
+const assertText = (value, label, options = {}) => {
+  if (typeof value !== 'string') reject(label + ' must be a string')
+  if (options.nonEmpty && value.length === 0) reject(label + ' must not be empty')
+  if (value.length > (options.max || 10000)) reject(label + ' is too long')
+  if (/\0/.test(value)) reject(label + ' contains a NUL character')
+}
+const assertRevision = (value, label) => {
+  if (!Number.isSafeInteger(value) || value < 1) reject(label + ' must be a positive integer')
+}
+const assertStringList = (value, label, maxItems = 1000) => {
+  if (!Array.isArray(value) || value.length > maxItems) reject(label + ' must be an array with at most ' + maxItems + ' items')
+  for (let index = 0; index < value.length; index++) assertText(value[index], label + '[' + index + ']', { max: 2000 })
+}
+const assertUniqueIds = (items, label, key = 'id') => {
+  const seen = new Set()
+  for (const item of items) {
+    if (seen.has(item[key])) reject(label + ' contains duplicate ' + key + ' "' + item[key] + '"')
+    seen.add(item[key])
+  }
+}
+
+const validateClaim = (claim, index) => {
+  const label = 'claims[' + index + ']'
+  if (!isPlainObject(claim)) reject(label + ' must be an object')
+  assertAllowedKeys(claim, ['id', 'statement', 'tier', 'verdict', 'evidence', 'confidence', 'revision'], label)
+  assertText(claim.id, label + '.id', { nonEmpty: true, max: 200 })
+  if (claim.statement !== undefined) assertText(claim.statement, label + '.statement')
+  if (claim.tier !== undefined && !TIERS.includes(claim.tier)) reject(label + '.tier is invalid')
+  if (claim.verdict !== undefined && !VERDICTS.includes(claim.verdict)) reject(label + '.verdict is invalid')
+  if (claim.evidence !== undefined) assertStringList(claim.evidence, label + '.evidence', 100)
+  if (claim.confidence !== undefined && (typeof claim.confidence !== 'number' || !Number.isFinite(claim.confidence) || claim.confidence < 0 || claim.confidence > 1)) reject(label + '.confidence must be between 0 and 1')
+  assertRevision(claim.revision, label + '.revision')
+}
+
+const validateHypothesisVersion = (version, label) => {
+  if (!isPlainObject(version)) reject(label + ' must be an object')
+  assertAllowedKeys(version, ['revision', 'statement', 'status', 'dependsOn'], label)
+  assertRevision(version.revision, label + '.revision')
+  if (version.statement !== undefined) assertText(version.statement, label + '.statement')
+  if (!['active', 'invalidated'].includes(version.status)) reject(label + '.status is invalid')
+  assertStringList(version.dependsOn, label + '.dependsOn', 1000)
+}
+
+const validateHypothesis = (hypothesis, index) => {
+  const label = 'hypotheses[' + index + ']'
+  if (!isPlainObject(hypothesis)) reject(label + ' must be an object')
+  assertAllowedKeys(hypothesis, ['id', 'statement', 'status', 'dependsOn', 'history', 'revision'], label)
+  assertText(hypothesis.id, label + '.id', { nonEmpty: true, max: 200 })
+  if (hypothesis.statement !== undefined) assertText(hypothesis.statement, label + '.statement')
+  if (!['active', 'invalidated'].includes(hypothesis.status)) reject(label + '.status is invalid')
+  assertStringList(hypothesis.dependsOn, label + '.dependsOn', 1000)
+  assertRevision(hypothesis.revision, label + '.revision')
+  if (hypothesis.history !== undefined) {
+    if (!Array.isArray(hypothesis.history) || hypothesis.history.length > 20) reject(label + '.history must contain at most 20 versions')
+    hypothesis.history.forEach((entry, historyIndex) => validateHypothesisVersion(entry, label + '.history[' + historyIndex + ']'))
+  }
+}
+
+const validateView = (view, index) => {
+  const label = 'views[' + index + ']'
+  if (!isPlainObject(view)) reject(label + ' must be an object')
+  assertAllowedKeys(view, ['name', 'dependsOn', 'revision'], label)
+  assertText(view.name, label + '.name', { nonEmpty: true, max: 200 })
+  assertStringList(view.dependsOn, label + '.dependsOn', 1000)
+  assertRevision(view.revision, label + '.revision')
+}
+
+const validateImportPayload = (payload) => {
+  if (!isPlainObject(payload)) reject('payload must be an object')
+  assertAllowedKeys(payload, ['schemaVersion', 'phase', 'claims', 'hypotheses', 'views', 'dirty'], 'payload')
+  if (payload.schemaVersion !== SCHEMA_VERSION) reject('incompatible state payload')
+  if (payload.phase !== null && payload.phase !== undefined) assertText(payload.phase, 'phase', { max: 200 })
+  for (const field of ['claims', 'hypotheses', 'views', 'dirty']) {
+    if (!Array.isArray(payload[field])) reject(field + ' must be an array')
+  }
+  if (payload.claims.length > 10000 || payload.hypotheses.length > 10000 || payload.views.length > 10000 || payload.dirty.length > 20000) reject('payload exceeds collection limits')
+  payload.claims.forEach(validateClaim)
+  payload.hypotheses.forEach(validateHypothesis)
+  payload.views.forEach(validateView)
+  assertStringList(payload.dirty, 'dirty', 20000)
+  assertUniqueIds(payload.claims, 'claims')
+  assertUniqueIds(payload.hypotheses, 'hypotheses')
+  assertUniqueIds(payload.views, 'views', 'name')
+  return payload
+}
+
 const importState = (state, payload) => {
-  if (!payload || payload.schemaVersion !== SCHEMA_VERSION) throw new Error('research_checkpoint import: incompatible state payload')
-  state.phase = payload.phase ?? null
-  state.claims = new Map((payload.claims || []).map((c) => [c.id, { ...c, revision: c.revision ?? 1 }]))
-  state.hypotheses = new Map((payload.hypotheses || []).map((h) => [h.id, { ...h, revision: h.revision ?? 1 }]))
-  state.views = new Map((payload.views || []).map((v) => [v.name, { dependsOn: v.dependsOn || [], revision: v.revision ?? 1 }]))
-  state.dirty = new Set(payload.dirty || [])
+  validateImportPayload(payload)
+  // Build the replacement first. The live state is changed only after every
+  // field has passed validation, so a rejected import is atomic.
+  const replacement = makeState()
+  replacement.phase = payload.phase ?? null
+  replacement.claims = new Map(payload.claims.map((claim) => [claim.id, { ...claim, evidence: claim.evidence ? [...claim.evidence] : claim.evidence }]))
+  replacement.hypotheses = new Map(payload.hypotheses.map((hypothesis) => [hypothesis.id, {
+    ...hypothesis,
+    dependsOn: [...hypothesis.dependsOn],
+    history: (hypothesis.history || []).map((entry) => ({ ...entry, dependsOn: [...entry.dependsOn] })),
+  }]))
+  replacement.views = new Map(payload.views.map((view) => [view.name, { dependsOn: [...view.dependsOn], revision: view.revision }]))
+  replacement.dirty = new Set(payload.dirty)
+
+  state.phase = replacement.phase
+  state.claims = replacement.claims
+  state.hypotheses = replacement.hypotheses
+  state.views = replacement.views
+  state.dirty = replacement.dirty
 }
 
 // Accept the live object form (tool execution) or the DSH event form
@@ -200,32 +308,41 @@ const parseCheckpointArgs = (raw) => {
 // THE single reducer: live execution and session replay both go through here.
 const applyCheckpoint = (state, rawArgs) => {
   const args = parseCheckpointArgs(rawArgs)
-  if (args.importState !== undefined) importState(state, JSON.parse(args.importState))
+  if (args.importState !== undefined) {
+    if (typeof args.importState !== 'string') throw new Error('research_checkpoint import: importState must be a JSON string')
+    if (Buffer.byteLength(args.importState, 'utf8') > MAX_IMPORT_BYTES) throw new Error('research_checkpoint import: payload exceeds 2 MiB')
+    importState(state, JSON.parse(args.importState))
+  }
   reduceMutation(state, args)
 }
 
 // Fold a session's logged research_checkpoint tool/call events into a state
 // (used by live replay AND by the research_doctor replay-consistency check).
-const foldCheckpointEvents = (events, state) => {
+const foldCheckpointEventsDetailed = (events, state) => {
   const target = state || makeState()
+  const rejected = []
   for (const event of Array.isArray(events) ? events : []) {
     if (!event || event.type !== 'tool/call') continue
     if (!event.data || event.data.name !== 'research_checkpoint') continue
     try {
       applyCheckpoint(target, event.data.arguments)
     } catch (error) {
-      // Skip one malformed historical call; keep folding the rest.
+      rejected.push({
+        callId: event.data.callId,
+        error: error && error.message ? error.message : String(error),
+      })
     }
   }
-  return target
+  return { state: target, rejected }
 }
+
+const foldCheckpointEvents = (events, state) => foldCheckpointEventsDetailed(events, state).state
+const liveStateOf = (agent) => agentStates.get(agent)
 
 module.exports = {
   name: 'research-state',
   inject: ['tools'],
   apply(ctx) {
-    const states = new WeakMap() // agent -> state
-
     const definition = {
       name: 'research_checkpoint',
       description: 'Record research-state revisions: claims (with confidence), hypotheses, view dependencies, and invalidation. A stage is complete ONLY when its results are committed here — text summaries are not completion. Writes ONLY to the DSH session log (this tool call) — never to the filesystem; the project stays untouched. State is rebuilt automatically on session resume by replaying logged checkpoints. Returns the compact current projection; recompute only the listed dirty views, never re-run the whole pipeline.',
@@ -285,10 +402,10 @@ module.exports = {
       async execute(args, exec) {
         const agent = exec && exec.agent
         if (!agent) return 'research_checkpoint: no executing agent; state not recorded'
-        let state = states.get(agent)
+        let state = agentStates.get(agent)
         if (state === undefined) {
           state = makeState()
-          states.set(agent, state)
+          agentStates.set(agent, state)
         }
         try {
           applyCheckpoint(state, args)
@@ -312,23 +429,10 @@ module.exports = {
     // model's raw JSON strings). Same reducer as live execution.
     ctx.on('agent/created', (payload) => {
       const agent = payload && payload.agent
-      if (!agent || !agent.session || !Array.isArray(agent.session.events)) return
+      if (!agent || !agent.session) return
       try {
-        let state = states.get(agent)
-        if (state === undefined) {
-          state = makeState()
-          states.set(agent, state)
-        }
-        for (const event of agent.session.events) {
-          if (!event || event.type !== 'tool/call') continue
-          if (!event.data || event.data.name !== 'research_checkpoint') continue
-          try {
-            applyCheckpoint(state, event.data.arguments)
-          } catch (error) {
-            // One malformed historical call must not veto publication; skip it
-            // and keep folding the rest.
-          }
-        }
+        const events = Array.isArray(agent.session.events) ? agent.session.events : []
+        agentStates.set(agent, foldCheckpointEventsDetailed(events, makeState()).state)
       } catch (error) {
         // Replay is best-effort at the event-array level: the model can always
         // re-import or re-derive.
@@ -336,5 +440,5 @@ module.exports = {
     })
   },
   // Test hooks: the reducer is nearly pure; unit tests exercise these.
-  __test: { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState, projection, foldCheckpointEvents },
+  __test: { makeState, applyCheckpoint, parseCheckpointArgs, fullExport, importState, projection, foldCheckpointEvents, foldCheckpointEventsDetailed, validateImportPayload, liveStateOf, agentStates },
 }

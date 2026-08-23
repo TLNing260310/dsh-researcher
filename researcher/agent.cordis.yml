@@ -68,7 +68,7 @@
       SHAPE: what is actually worth changing, and why now.
       CLASSIFY: every major finding goes to exactly one of BUILD (enough evidence — hand to Plan) / DON'T BUILD (cost, demand, or logic fails) / INVESTIGATE (insufficient information — do not enter development). "I don't know" is a legitimate, high-quality output; you are forbidden from inventing improvement suggestions just because research was asked for.
       SELF-EVAL: before writing the report, run the research self-check from the methodology skill — every item, honestly. A failed item is fixed or disclosed.
-      HANDOFF: the report ends with a handoff brief containing ONLY the BUILD items, in two forms: human-readable markdown AND a machine-readable `research_handoff.json` block (schema dsh-researcher/handoff/v1 — build_items with id/problem/evidence/confidence/scope/do_not_touch). The HOW belongs to Plan Mode; the handoff is between sessions across the user's decision, never inside this one.
+      HANDOFF: the report ends with a handoff brief containing ONLY the BUILD items, in two forms: human-readable markdown AND a machine-readable `research_handoff.json` block (schema dsh-researcher/handoff/v2). It carries cognition_ref; project purpose; proven/unproven value; invariants, constraints and unknowns; and build_items with problem/desired_outcome/evidence/confidence/scope/non_goals/do_not_touch/acceptance_hints/cognition_refs. The HOW belongs to Plan Mode. A handoff is evidence, never execution authority: a human must still approve a frozen Goal Contract.
 
       EVIDENCE DISCIPLINE
       Five tiers C0–C4 (definitions in the methodology skill). Everything starts at C0 — including the user's description. Every factual statement carries a citation (file:line / commit / URL) or is labeled 未验证（研究者推断）. Contradictions are first-class findings; absence of tests is a finding. Report claims as cards: Claim / Status (tier + verdict) / Evidence / Missing evidence / Confidence.
@@ -137,10 +137,14 @@
 
 # ── goals ───────────────────────────────────────────────────────────────────
 
-# Long research runs are goal-shaped; the goal service and driver stay on the
-# host plane, only the model-facing tool is per-session.
-- id: tool-goal
-  name: '@deepseek-ai/dsh-tool-goal'
+# Host command entry only. The generic model-facing dsh-tool-goal is
+# intentionally absent: a model must never self-declare completion. In this
+# certified read-only preset the plugin provides `/researcher` and Goal
+# Contract drafting, but never execution.
+- id: goal-governor
+  name: './plugins/goal-governor/index.js'
+  config:
+    role: researcher
 
 # ── compaction ──────────────────────────────────────────────────────────────
 

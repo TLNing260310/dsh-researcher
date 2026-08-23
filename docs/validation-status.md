@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-08-24 工程验证增量：Project Cognition + Goal Governor
+
+本节描述 `0.8.0-alpha.1` 新增机制的**机械验证边界**，不改变下方历史实验结论。
+
+| 能力 | 当前证据 | 可采信结论 |
+|---|---|---|
+| Project Cognition | schema、canonical hash、revision、Markdown 确定性投影、freshness/doctor、仓库自描述状态 | 可以保存并机械检查项目目的、已证/未证事实、不变量、决策与下一步证明；不能据此宣称它已提高长期生产力 |
+| Goal Contract | 冻结目标、MUST/SHOULD、边界、预算、人工 gate、verifier registry hash | “什么算完成”可以在执行前固定，合同或 verifier 漂移会失效 |
+| Goal Governor | DSH session 事件重放、call-ID/参数绑定、同一最终 attempt 重验全部 MUST、宿主独占终态写入 | 模型文本不能完成目标；证据不足继续，完整性异常暂停，外部阻塞才可 BLOCKED |
+| 两种入口 | `/researcher <question>` 一次性只读研究；`/researcher on/off` 持续只读模式；Governed preset 执行已批准合同 | 同一客户端内研究与执行权限可分离；独立 Researcher preset 仍是更强的 OS/DSH 只读边界 |
+| 可移植核心 | 无 DSH 依赖的 cognition/goal/verifier reducer、JSON schema、CLI、adapter contract | 机制可以适配其他客户端，但目前只有 DSH adapter 获得仓库内测试，不能宣称 Codex/Claude Code/Zed/OpenClaw 已兼容 |
+
+当前验证包括单元测试、伪造/过期证据拒绝、预算与 no-progress 终止、人工 gate、合同运行分段、Researcher Mode allowlist、host-owned completion、完整性失败暂停，以及 DSH `0.1.0-rc.7` 临时安装后的 preset 扫描。尚未完成真实模型的 live DSH 端到端轨迹，也未完成多模型×多客户端因子实验；对应方案见 [goal-governor-evaluation-protocol.md](./goal-governor-evaluation-protocol.md)。
+
+---
+
 ## ✅ Validated(已验证)
 
 | # | 能力 | 证据 | 层级 |

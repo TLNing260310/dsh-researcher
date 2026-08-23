@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-cognition/observation/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "goal_id", "contract_hash", "attempt_id", "criterion_id", "verifier_id", "result", "evidence_refs", "repo_revision", "observed_at"],
+  "properties": {
+    "schema": { "const": "project-cognition/observation/v1" },
+    "goal_id": { "type": "string", "minLength": 1 },
+    "contract_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "attempt_id": { "type": "string", "minLength": 1 },
+    "criterion_id": { "type": "string", "minLength": 1 },
+    "verifier_id": { "type": "string", "minLength": 1 },
+    "result": { "enum": ["pass", "fail", "unknown"] },
+    "evidence_refs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "repo_revision": { "type": "string", "minLength": 1 },
+    "observed_at": { "type": "string", "minLength": 1 }
+  }
+}

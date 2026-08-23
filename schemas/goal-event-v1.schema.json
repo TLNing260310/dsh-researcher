@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-cognition/goal-event/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "sequence", "goal_id", "contract_hash", "type", "at", "data"],
+  "properties": {
+    "schema": { "const": "project-cognition/goal-event/v1" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "goal_id": { "type": "string", "minLength": 1 },
+    "contract_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "type": { "enum": ["goal_started", "attempt_started", "observation_recorded", "attempt_completed", "human_gate_recorded", "guard_violation", "blocker_reported", "usage_recorded", "goal_cancelled", "goal_superseded", "goal_decision"] },
+    "at": { "type": "string", "minLength": 1 },
+    "data": { "type": "object" }
+  }
+}

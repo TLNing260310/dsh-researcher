@@ -1,0 +1,27 @@
+{
+  "schema": "project-cognition/verifier-registry/v1",
+  "revision": 1,
+  "registry_hash": null,
+  "entries": [
+    {
+      "id": "tests.core",
+      "invocations": [
+        {
+          "tool_name": "pwsh",
+          "arguments": { "command": "npm test" },
+          "arguments_hash": null
+        },
+        {
+          "tool_name": "bash",
+          "arguments": { "command": "npm test" },
+          "arguments_hash": null
+        }
+      ],
+      "result_policy": {
+        "kind": "json_field_equals",
+        "path": "exit_code",
+        "equals": 0
+      }
+    }
+  ]
+}

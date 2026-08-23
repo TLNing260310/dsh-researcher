@@ -1,0 +1,43 @@
+{
+  "schema": "project-cognition/goal/v1",
+  "goal_id": "example-simple-fix",
+  "revision": 1,
+  "status": "draft",
+  "contract_hash": null,
+  "verifier_registry_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "mode": "simple",
+  "intent": {
+    "problem": "A localized defect has one deterministic regression test.",
+    "value": "Fix the defect without broad refactoring or post-success polishing."
+  },
+  "baseline": {
+    "repo_revision": "REPLACE_WITH_CURRENT_GIT_REVISION",
+    "cognition_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "known_failures": []
+  },
+  "target_state": "The regression is fixed and the frozen test command passes.",
+  "criteria": [
+    {
+      "id": "C1",
+      "priority": "must",
+      "expected": "The complete test suite exits successfully.",
+      "verifier_id": "tests.core",
+      "authority": "tool",
+      "evidence_required": ["Earlier matching npm test tool call and result"]
+    }
+  ],
+  "boundaries": {
+    "in_scope": ["The smallest files required for the defect and its regression test"],
+    "out_of_scope": ["Unrelated cleanup", "Dependency upgrades", "Public API redesign"],
+    "do_not_touch": ["Generated files", "Secrets", "Unrelated formatting"]
+  },
+  "invariant_refs": [],
+  "limits": {
+    "max_attempts": 2,
+    "max_no_progress_attempts": 2,
+    "max_time_sec": 1800,
+    "max_tokens": null
+  },
+  "human_gates": [],
+  "approval": null
+}

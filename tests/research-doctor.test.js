@@ -70,3 +70,27 @@ test('foldCheckpointEvents is deterministic and skips malformed events', () => {
   assert.equal(a.claims.length, 1)
   assert.equal(a.claims[0].id, 'C1')
 })
+
+test('replay check compares the folded log with the actual live state', () => {
+  const events = [
+    { type: 'tool/call', data: { name: 'research_checkpoint', callId: 'c1', arguments: JSON.stringify({ phase: 'DISCOVER', revise: [{ id: 'C1', statement: 'x', tier: 'C1', verdict: 'Known', evidence: ['a:1'], confidence: 0.8 }] }) } },
+  ]
+  const live = state.foldCheckpointEvents(events, state.makeState())
+  assert.equal(doctor.checkReplay(events, live).status, 'PASS')
+
+  const divergent = state.makeState()
+  assert.deepEqual(doctor.checkReplay(events, divergent), {
+    status: 'FAIL',
+    detail: 'live research state diverges from the folded session log',
+  })
+})
+
+test('replay check fails closed and reports rejected events', () => {
+  const events = [
+    { type: 'tool/call', data: { name: 'research_checkpoint', callId: 'bad', arguments: 'not-json' } },
+  ]
+  assert.deepEqual(doctor.checkReplay(events, state.makeState()), {
+    status: 'FAIL',
+    detail: 'log contains 1 rejected research_checkpoint event(s)',
+  })
+})

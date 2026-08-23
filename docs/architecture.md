@@ -6,6 +6,24 @@
 
 ---
 
+## 0. 2026-08-24 当前系统边界
+
+原有 Research Application / Cognition Infrastructure 双层仍成立，但系统现已增加两条执行治理平面：
+
+```text
+Research Application (read-only cognition producer)
+        ↓ handoff v2 — evidence, not authority
+Portable Cognition Core (canonical project truth + Markdown projection)
+        ↓ human-approved, hash-frozen Goal Contract
+Portable Goal + Verifier Core (pure fold and decision)
+        ↓ client adapter
+DSH Host Governor (commands, real session events, human identity, hard stop)
+        ↓
+Governed Coding Agent (execution, never completion authority)
+```
+
+规范状态位于 `.project-cognition/state.json`；`PROJECT_COGNITION.md` 只生成不双写。Goal Contract、Verifier Registry 与 runtime events 分别回答“DONE 是什么”“什么证据可信”“实际发生了什么”。详细协议见 [goal-governor.md](./goal-governor.md)。
+
 ## 1. 架构总览(双层)
 
 ```
@@ -54,7 +72,7 @@ evaluation governance(G1–G7 gate · eval-lock · blind-doctor · 失败保留)
 | architecture analysis(架构分析) | PCR §2 Architecture Map / §3 Critical Components |
 | risk analysis(风险分析) | PCR §5 Risk Map(风险区域,非 bug 预测) |
 | decision support(决策支持) | PCR §7 Decision Memo(BUILD / DON'T BUILD / INVESTIGATE) |
-| handoff(交接) | `research_handoff.json`(schema v1) |
+| handoff(交接) | `research_handoff.json`(schema v2；v1 读取兼容) |
 
 **身份边界(能力面强制,非 prompt 自觉)**:无 shell(唯一子进程 = git_read 固定 allowlist)、write/edit 永拒桩、只读沙箱 + never 审批 —— Researcher 是**认知生产者**,不是执行者。
 
@@ -73,6 +91,10 @@ evaluation governance(G1–G7 gate · eval-lock · blind-doctor · 失败保留)
 | **revision tracking** | 版本化假设(invalidated 保留历史,revision 递增) | ✅ 代码存在 |
 | **export / import migration** | `fullExport` → `cognition-state-export.js` → `cognition-state-to-import.js` → `importState` | ✅ 已验证(G1 32/32 保真;6/6 C+ B-runs G2 PASS) |
 | **evaluation governance** | `fixtures/blind/eval-lock.js`(sha256 锁)、`blind-doctor.js`(金丝雀)、`research-doctor`(8 项运行时检查)、G1–G7 gate | ✅ 已验证(抓住 QUOTA 失败;LOCK OK) |
+| **portable cognition state** | `lib/cognition-core`:strict schema/canonical hash/authority/proof/freshness/Markdown projection | ✅ 机械测试通过；本仓库已 dogfood |
+| **goal governor** | `lib/goal-core`:frozen revisions/event fold/MUST-SHOULD/human gates/attempt+no-progress stop | ✅ 机械测试通过；真实长期价值未证明 |
+| **trusted verifier** | `lib/verifier-core`:tool + canonical arguments + hash + result policy；DSH call-id pairing | ✅ forged/drift/error replay tests 通过 |
+| **DSH host adapter** | `lib/dsh-adapter` + `researcher/plugins/goal-governor` + `governed/` | ✅ DSH rc.7 parser 通过；live model E2E 待做 |
 
 **原型边界(诚实声明)**:以上全部为**原型级实现**,不是商业级基础设施 —— 产品化(v0.9 capsule / Memory Bridge / 自动迁移)未做;应用层价值未验证。
 

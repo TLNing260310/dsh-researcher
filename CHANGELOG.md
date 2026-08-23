@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased (v0.7.0 — Product Alignment, in progress)
+## 0.8.0-alpha.1 (2026-08-24) — Project Cognition + Goal Governor
+
+- 新增 portable Cognition / Goal / Verifier Core、严格 JSON schemas、canonical hashing、revision 与确定性 Markdown projection。
+- 新增 DSH Governed Coding preset 与 `/researcher` one-shot / persistent guarded mode；移除模型可自我完成的通用 `dsh-tool-goal`。
+- Goal Contract 冻结 verifier registry hash；证据必须绑定更早的真实 DSH tool call/result、工具名、参数 hash 与结果策略；host 独占 DONE/STOP/BLOCK/PAUSE 权限。
+- Simple 最多 2 次、Governed 最多 5 次修改尝试；连续 2 次无 MUST 进展自动 STOPPED；SHOULD 不维持循环。
+- Research handoff 升级到 v2，交接 cognition hash、项目目的、已证明/未证明价值、不变量、约束、未知、desired outcomes 与 non-goals。
+- 修复 completion telemetry 文本误判、DON'T BUILD 双计数、research-state import 原子性/严格验证、doctor live-vs-replay 证明、read-root 隔离与 C+ 因果有效性误报。
+- 发布仓库补齐双平台 Node 22 CI、Security Policy、贡献指南、反馈模板与诚实竞品/证据说明。
+
+## Development history — v0.7 product alignment
 
 从"研究预设"到"AI 编码时代的项目认知层"的定位一致化：**不增加能力、不修改核心运行逻辑、保留 Flask 实验（含 0/60 范围声明）**。
 
@@ -10,7 +20,7 @@
 - **Researcher Benchmark Suite（评测体系）**：Understanding（GUS）/ Risk（ARD）/ Change Impact（DQ）/ Drift（CDD）四个主基准；Future Issue Recall 降级为次级（机会性）指标；Flask 实验不删除。
 - **治理**：persona/模板/README 变更发生于 Flask Phase A 完成之后——`evaluation/locks/flask.protocol-v1.lock` 是历史冻结，变更后 `--check` 按预期失败；新实验需 protocol v1.1 bump + 重锁。核心运行逻辑（tool-restrict / research-doctor / research-state / git-read）零改动。
 
-## Unreleased (v0.6.0 — Verified Project Intelligence, in progress)
+## Development history — v0.6 verified project intelligence
 
 发布纪律变更：从 v0.5.3 起，小改动只进 main 不贴 tag；功能攒成有意义的版本再正式发布（频繁小版本会向外部传递"设计边界未稳定"的信号）。v0.6.0 的目标：从"研究预设"到"具备验证、评估与持续认知能力的项目智能层"。
 

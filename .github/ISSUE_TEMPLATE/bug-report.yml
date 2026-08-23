@@ -21,13 +21,23 @@ body:
         ...
         Overall: SAFE
       render: text
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - Project Research runtime
+        - Goal Governor / Governed Coding
+        - project-cognition CLI
+        - Installer or package
+        - Documentation or evaluation tooling
     validations:
       required: true
   - type: input
     id: version
     attributes:
       label: DSH version and preset version
-      placeholder: e.g. DSH 0.1.0-rc.6, dsh-researcher v0.5.3 (installed via npx / clone / ZIP)
+      placeholder: e.g. DSH 0.1.0-rc.7, dsh-researcher v0.8.0-alpha.1 (installed via npx / clone / ZIP)
     validations:
       required: true
   - type: textarea

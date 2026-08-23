@@ -3,17 +3,42 @@
   "adjudicated": true,
   "pairs_total": 6,
   "pairs_valid": 6,
-  "h2_checks_passed": 5,
-  "h2_condition_met": true,
-  "verdict": "H2 SUPPORTED (total effect)",
+  "h2_checks_passed": 3,
+  "mechanical_h2_condition_met": false,
+  "h2_condition_met": false,
+  "causal_validity": {
+    "schema": "dsh-researcher/experiment-validity/v1",
+    "experiment": "C+",
+    "valid_for_causal_claim": false,
+    "reasons": [
+      "Condition B received state-specific meta-instructions that Condition A did not receive.",
+      "T0 and sibling directories were readable from T1 during the frozen runs.",
+      "Synthetic mutation markers leaked condition-relevant information in source text.",
+      "There was no equal-content static-document control separating information from lifecycle mechanics."
+    ],
+    "required_repairs": [
+      "R1",
+      "R2",
+      "R3"
+    ]
+  },
+  "verdict": "INVALID FOR CAUSAL CLAIM",
   "pairs": [
     {
       "mutation": "MUT-01",
       "recall_A": 1,
       "recall_B": 1,
       "recall_delta": 0,
-      "stale_recovery_B": "5/1",
-      "stale_rate_B": 5,
+      "stale_recovery_B": "0/1",
+      "stale_recall_B": 0,
+      "stale_precision_B": 0,
+      "stale_false_hits_B": [
+        "H1",
+        "C15",
+        "C10b",
+        "C05",
+        "C02"
+      ],
       "consistency_A": 0,
       "consistency_B": 0,
       "cost_A_ms": 316331,
@@ -28,7 +53,9 @@
       "recall_B": 1,
       "recall_delta": 0,
       "stale_recovery_B": "4/4",
-      "stale_rate_B": 1,
+      "stale_recall_B": 1,
+      "stale_precision_B": 1,
+      "stale_false_hits_B": [],
       "consistency_A": 0,
       "consistency_B": 0,
       "cost_A_ms": 595258,
@@ -42,8 +69,12 @@
       "recall_A": 1,
       "recall_B": 1,
       "recall_delta": 0,
-      "stale_recovery_B": "1/1",
-      "stale_rate_B": 1,
+      "stale_recovery_B": "0/1",
+      "stale_recall_B": 0,
+      "stale_precision_B": 0,
+      "stale_false_hits_B": [
+        "C6"
+      ],
       "consistency_A": 0,
       "consistency_B": 0,
       "cost_A_ms": 438612,
@@ -57,8 +88,12 @@
       "recall_A": 1,
       "recall_B": 1,
       "recall_delta": 0,
-      "stale_recovery_B": "2/1",
-      "stale_rate_B": 2,
+      "stale_recovery_B": "1/1",
+      "stale_recall_B": 1,
+      "stale_precision_B": 0.5,
+      "stale_false_hits_B": [
+        "C02"
+      ],
       "consistency_A": 0,
       "consistency_B": 0,
       "cost_A_ms": 417482,
@@ -73,7 +108,9 @@
       "recall_B": 1,
       "recall_delta": 0,
       "stale_recovery_B": "5/5",
-      "stale_rate_B": 1,
+      "stale_recall_B": 1,
+      "stale_precision_B": 1,
+      "stale_false_hits_B": [],
       "consistency_A": 0,
       "consistency_B": 0,
       "cost_A_ms": 360740,
@@ -87,8 +124,12 @@
       "recall_A": 1,
       "recall_B": 1,
       "recall_delta": 0,
-      "stale_recovery_B": "3/2",
-      "stale_rate_B": 1.5,
+      "stale_recovery_B": "2/2",
+      "stale_recall_B": 1,
+      "stale_precision_B": 0.6666666666666666,
+      "stale_false_hits_B": [
+        "C0-002"
+      ],
       "consistency_A": 0,
       "consistency_B": 0,
       "cost_A_ms": 480889,
@@ -128,6 +169,20 @@
         "false_invalidation": 0,
         "over_invalidation": 2,
         "notes": "Explicit 'Previous assumptions that no longer hold': H1 INVALIDATED, C15/C10b/C05/C02 revised with evidence. No sibling read. Expected stale C06 not hit by id; semantic coverage via H1/state revision (C06 is arch relation, partially covered by H1 invalidation)."
+      },
+      "stale_recovery": {
+        "expected": 1,
+        "reported_unique": 5,
+        "true_hits": [],
+        "false_hits": [
+          "H1",
+          "C15",
+          "C10b",
+          "C05",
+          "C02"
+        ],
+        "recall": 0,
+        "precision": 0
       }
     },
     {
@@ -161,6 +216,19 @@
         "false_invalidation": 0,
         "over_invalidation": 4,
         "notes": "No sibling read. Imported 32 claims, H1 rev 8, H2 invalidated, committed 38 claims with revisions ('revising the claims that no longer hold'). Expected stale 4/4 covered."
+      },
+      "stale_recovery": {
+        "expected": 4,
+        "reported_unique": 4,
+        "true_hits": [
+          "C24",
+          "C27",
+          "C28",
+          "C29"
+        ],
+        "false_hits": [],
+        "recall": 1,
+        "precision": 1
       }
     },
     {
@@ -188,6 +256,16 @@
         "false_invalidation": 0,
         "over_invalidation": 1,
         "notes": "'Previous assumptions that no longer hold': pristine-snapshot assumption false; git-forensics assumption false (C6 commit-level evidence not re-derivable). Expected stale C3 hit semantically via pristine-assumption invalidation."
+      },
+      "stale_recovery": {
+        "expected": 1,
+        "reported_unique": 1,
+        "true_hits": [],
+        "false_hits": [
+          "C6"
+        ],
+        "recall": 0,
+        "precision": 0
       }
     },
     {
@@ -216,6 +294,18 @@
         "false_invalidation": 0,
         "over_invalidation": 3,
         "notes": "Sibling/T0 leak (read pristine baseline for byte-level diff — unusually thorough). Explicit 'Previous assumptions that no longer hold': C02 FALSE (injected defect), C04 line anchors swapped. Expected stale C04 hit. Byte-level proof methodology."
+      },
+      "stale_recovery": {
+        "expected": 1,
+        "reported_unique": 2,
+        "true_hits": [
+          "C04"
+        ],
+        "false_hits": [
+          "C02"
+        ],
+        "recall": 1,
+        "precision": 0.5
       }
     },
     {
@@ -239,6 +329,14 @@
         "false_invalidation": 0,
         "over_invalidation": 0,
         "notes": "Sibling/T0 leak: read sibling snapshots AND pristine T0. Change identified (configureHelp base param)."
+      },
+      "stale_recovery": {
+        "expected": 0,
+        "reported_unique": 0,
+        "true_hits": [],
+        "false_hits": [],
+        "recall": null,
+        "precision": null
       }
     },
     {
@@ -262,6 +360,14 @@
         "false_invalidation": 0,
         "over_invalidation": 0,
         "notes": "Sibling leak (read sibling MUT-01 pristine reference for diff). Change identified (extension probing order)."
+      },
+      "stale_recovery": {
+        "expected": 0,
+        "reported_unique": 0,
+        "true_hits": [],
+        "false_hits": [],
+        "recall": null,
+        "precision": null
       }
     },
     {
@@ -285,6 +391,14 @@
         "false_invalidation": 0,
         "over_invalidation": 0,
         "notes": "Sibling leak. Change identified (flags() TypeError risk in message)."
+      },
+      "stale_recovery": {
+        "expected": 0,
+        "reported_unique": 0,
+        "true_hits": [],
+        "false_hits": [],
+        "recall": null,
+        "precision": null
       }
     },
     {
@@ -308,6 +422,14 @@
         "false_invalidation": 0,
         "over_invalidation": 0,
         "notes": "Sibling/T0 leak: read pristine T0 workspace. Change identified with impact (repeated-parse contract flip)."
+      },
+      "stale_recovery": {
+        "expected": 0,
+        "reported_unique": 0,
+        "true_hits": [],
+        "false_hits": [],
+        "recall": null,
+        "precision": null
       }
     },
     {
@@ -343,6 +465,20 @@
         "false_invalidation": 0,
         "over_invalidation": 3,
         "notes": "Used prior-session state anchors (1202/1403/1675/1748 etc), identified mutation via MUT-01 pristine comparison (sibling read). Stale set 5/5 covered by anchor verification + claim revisions. Deep session, 22 messages."
+      },
+      "stale_recovery": {
+        "expected": 5,
+        "reported_unique": 5,
+        "true_hits": [
+          "C7",
+          "C13",
+          "C21",
+          "C24",
+          "C27"
+        ],
+        "false_hits": [],
+        "recall": 1,
+        "precision": 1
       }
     },
     {
@@ -366,6 +502,14 @@
         "false_invalidation": 0,
         "over_invalidation": 0,
         "notes": "Sibling leak. Change identified (invalidArgumentValue code)."
+      },
+      "stale_recovery": {
+        "expected": 0,
+        "reported_unique": 0,
+        "true_hits": [],
+        "false_hits": [],
+        "recall": null,
+        "precision": null
       }
     },
     {
@@ -389,6 +533,14 @@
         "false_invalidation": 0,
         "over_invalidation": 0,
         "notes": "Sibling/T0 leak. Change identified (excess check moved; dead _excessArguments)."
+      },
+      "stale_recovery": {
+        "expected": 0,
+        "reported_unique": 0,
+        "true_hits": [],
+        "false_hits": [],
+        "recall": null,
+        "precision": null
       }
     },
     {
@@ -419,6 +571,19 @@
         "false_invalidation": 0,
         "over_invalidation": 2,
         "notes": "No sibling read. Snapshot Delta table: C0-002 invalidated->replaced, history flattened, mutation as new finding. Expected stale C2-007/C2-008 covered."
+      },
+      "stale_recovery": {
+        "expected": 2,
+        "reported_unique": 3,
+        "true_hits": [
+          "C2-007",
+          "C2-008"
+        ],
+        "false_hits": [
+          "C0-002"
+        ],
+        "recall": 1,
+        "precision": 0.6666666666666666
       }
     }
   ],

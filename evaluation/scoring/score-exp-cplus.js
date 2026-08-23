@@ -30,6 +30,10 @@ const runsBase = path.join(root, 'evaluation', 'runs', 'commander.js', 'exp-cplu
 const manifest = JSON.parse(fs.readFileSync(path.join(runsBase, 'exp-cplus-runs-manifest.json'), 'utf8'))
 const exec = JSON.parse(fs.readFileSync(path.join(runsBase, 'exp-cplus-exec-config.json'), 'utf8'))
 const execRuns = new Map(exec.runs.map((r) => [r.run_id, r]))
+const validityPath = path.join(root, 'evaluation', 'cases', 'commander.js', 'gt-calibration', 'experiment-cplus-validity.json')
+const validity = fs.existsSync(validityPath)
+  ? JSON.parse(fs.readFileSync(validityPath, 'utf8'))
+  : { valid_for_causal_claim: false, reasons: ['missing experiment validity declaration'] }
 
 // execution log integrity
 const integrity = new Map()
@@ -106,6 +110,18 @@ for (const run of manifest.runs) {
     over_invalidation: adj.over_invalidation || 0,
     notes: adj.notes || '',
   }
+  const expectedIds = new Set(metrics.expected_stale_ids)
+  const uniqueHits = [...new Set(hits)]
+  const trueHits = uniqueHits.filter((id) => expectedIds.has(id))
+  const falseHits = uniqueHits.filter((id) => !expectedIds.has(id))
+  metrics.stale_recovery = {
+    expected: expectedIds.size,
+    reported_unique: uniqueHits.length,
+    true_hits: trueHits,
+    false_hits: falseHits,
+    recall: expectedIds.size > 0 ? trueHits.length / expectedIds.size : null,
+    precision: uniqueHits.length > 0 ? trueHits.length / uniqueHits.length : null,
+  }
   rows.push(metrics)
 }
 
@@ -129,8 +145,10 @@ for (const [mutation, conds] of byMutation) {
     recall_A: a.adj.mutation_recall,
     recall_B: b.adj.mutation_recall,
     recall_delta: judged ? (b.adj.mutation_recall - a.adj.mutation_recall) : null,
-    stale_recovery_B: b.expected_stale_set ? b.adj.stale_recovery_hits.length + '/' + b.expected_stale_set : null,
-    stale_rate_B: b.expected_stale_set ? (b.adj.stale_recovery_hits.length / b.expected_stale_set) : null,
+    stale_recovery_B: b.stale_recovery.expected > 0 ? b.stale_recovery.true_hits.length + '/' + b.stale_recovery.expected : null,
+    stale_recall_B: b.stale_recovery.recall,
+    stale_precision_B: b.stale_recovery.precision,
+    stale_false_hits_B: b.stale_recovery.false_hits,
     consistency_A: a.adj.consistency_conflicts,
     consistency_B: b.adj.consistency_conflicts,
     cost_A_ms: a.duration_ms,
@@ -142,8 +160,9 @@ for (const [mutation, conds] of byMutation) {
 }
 
 const validPairs = pairs.filter((p) => p.b_valid && p.recall_A !== null && p.recall_B !== null)
-const h2Checks = validPairs.filter((p) => p.recall_B >= p.recall_A && p.consistency_B <= p.consistency_A && p.stale_rate_B >= 0.5 && p.cost_ratio <= 1.5)
-const h2 = validPairs.length >= 4 && h2Checks.length >= 4
+const h2Checks = validPairs.filter((p) => p.recall_B >= p.recall_A && p.consistency_B <= p.consistency_A && p.stale_recall_B >= 0.5 && p.cost_ratio <= 1.5)
+const mechanicalH2 = validPairs.length >= 4 && h2Checks.length >= 4
+const h2 = validity.valid_for_causal_claim === true && mechanicalH2
 
 const summary = {
   schema: 'dsh-researcher/experiment-cplus/score-report/v1',
@@ -151,8 +170,12 @@ const summary = {
   pairs_total: pairs.length,
   pairs_valid: validPairs.length,
   h2_checks_passed: h2Checks.length,
+  mechanical_h2_condition_met: mechanicalH2,
   h2_condition_met: h2,
-  verdict: adjudication.finalized ? (h2 ? 'H2 SUPPORTED (total effect)' : 'H2 NOT SUPPORTED') : 'PENDING ADJUDICATION',
+  causal_validity: validity,
+  verdict: validity.valid_for_causal_claim !== true
+    ? 'INVALID FOR CAUSAL CLAIM'
+    : adjudication.finalized ? (h2 ? 'H2 SUPPORTED (total effect)' : 'H2 NOT SUPPORTED') : 'PENDING ADJUDICATION',
   pairs,
   rows,
   note: 'Mutation Recall / Stale Recovery / Consistency adjudicated via adjudication-exp-cplus.json (filled by evaluator AFTER runs). Rebuild Cost mechanical.',

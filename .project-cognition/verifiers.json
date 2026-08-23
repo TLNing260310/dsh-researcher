@@ -1,0 +1,29 @@
+{
+  "schema": "project-cognition/verifier-registry/v1",
+  "revision": 1,
+  "registry_hash": "ad85a8299f913b5cc2fa1a14882bcfe733467f63e94aed41e7eab5626e753414",
+  "entries": [
+    {
+      "id": "tests.core",
+      "invocations": [
+        {
+          "tool_name": "pwsh",
+          "arguments": {
+            "command": "npm test",
+            "description": "Run project test suite"
+          },
+          "arguments_hash": "74fd85c41b740727b5f5697876f11a3dc4a420eac7baf32c81dbdd786b42014a"
+        }
+      ],
+      "result_policy": {
+        "kind": "text_excludes",
+        "patterns": [
+          "[exit code:",
+          "[timed out",
+          "[killed by signal:",
+          "[sandbox:"
+        ]
+      }
+    }
+  ]
+}

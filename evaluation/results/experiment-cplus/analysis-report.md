@@ -1,6 +1,7 @@
 # Experiment C+ Analysis Report — Cognition-State Inheritance(commander.js)
 
 > **Preliminary, not statistically conclusive; VALIDITY-COMPROMISED (see §6).** Single repository, 6 mutations × (A stateless / B inherited), one model, one snapshot.
+> **2026-08-24 authority override: INVALID FOR CAUSAL CLAIM.** The historical "H2 SUPPORTED" paragraph below is retained as an audit artifact but is not admissible product-value evidence. A/B meta-instructions differed, T0/sibling roots and synthetic markers leaked information, and no equal-content static control existed. The regenerated scorer is gated by `experiment-cplus-validity.json` and now reports bounded stale recall/precision plus `INVALID FOR CAUSAL CLAIM`.
 > 协议:docs/experiment-cplus-protocol-v0.2-freeze-candidate.md(冻结后未修改)。
 
 ## 1. Experiment Question(结论边界:total effect)

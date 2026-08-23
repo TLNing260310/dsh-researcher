@@ -1,0 +1,59 @@
+name: Real-world Feedback
+description: Share a Researcher or Goal Governor run, including negative and no-value results
+title: "[Feedback] "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Real outcomes matter more than polished reports. Anonymous or redacted evidence is welcome; never post private source code or secrets.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface used
+      options:
+        - Project Research preset
+        - /researcher one-shot or guarded mode
+        - Goal Governor / Governed Coding
+        - Portable CLI or core
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      placeholder: dsh-researcher 0.8.0-alpha.1, DSH 0.1.0-rc.7, model/client
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to decide or complete?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What changed in the real outcome?
+      description: Did it reveal an unknown fact, prevent a wrong change, stop unnecessary work, or add only overhead?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Redacted certificate, terminal decision, attempts, tests, diff summary or report excerpt.
+  - type: textarea
+    id: failures
+    attributes:
+      label: Misjudgments, friction or no-value work
+      description: Negative results are especially useful.
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed secrets, personal data and source material I am not allowed to share.
+          required: true

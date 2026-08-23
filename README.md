@@ -1,235 +1,165 @@
 # dsh-researcher
 
-## 1. Project Introduction — 项目介绍
+[![CI](https://github.com/TLNing260310/dsh-researcher/actions/workflows/test.yml/badge.svg)](https://github.com/TLNing260310/dsh-researcher/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/TLNing260310/dsh-researcher?include_prereleases&sort=semver)](https://github.com/TLNing260310/dsh-researcher/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)](./docs/validation-status.md)
 
-> **EN** — **Evolving toward a Project Cognition Infrastructure for AI Software Engineering.**
-> **中文** — **正在向 AI 软件工程项目认知基础设施方向发展(演化中,不是已完成的基础设施)。**
+**让 AI coding 先恢复项目认知，再冻结完成条件，并在证据满足时停止。**<br>
+**Recover project cognition, freeze what “done” means, and let evidence—not agent confidence—end the loop.**
 
-**EN** — dsh-researcher is an **AI project-cognition research tool** and a **Project Cognition Infrastructure prototype**. It builds an evidence-backed model of a software project — its purpose, architecture, constraints, risks, and change impact — **before any code is changed**, and persists that cognition across sessions.
+`dsh-researcher` 是面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的开源原型，包含两个互补部分：
 
-**中文** — dsh-researcher 是 **AI 项目认知研究工具**与 **Project Cognition Infrastructure 原型**。它在动手修改之前,建立一份基于证据的软件项目认知模型(项目目的、架构、约束、风险与修改影响),并让这份认知跨会话持续存在。
+- **Project Research**：制度性只读的项目研究 preset，从代码、文档、历史和测试中重建项目目的、架构、约束、矛盾与未知。
+- **Project Cognition + Goal Governor**：把项目认知、Goal Contract、验证器和真实执行事件分开保存；模型可以执行和报告证据，但只有宿主可以判定目标完成。
 
-**第一眼定位 / First-glance positioning**:
+> **Alpha boundary / 边界**：DSH adapter 已实现并有仓库内机械测试；长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。它不是“Researcher 比普通 Agent 更强”的广告，也不是通用自动编码框架。
 
-- ✅ **是 / It is**:项目认知研究工具 · Project Cognition Infrastructure 原型 · AI 编码时代的项目理解层
-- ❌ **不是 / It is not**:AI chatbot · 普通 repository analyzer · 更强的 Research Agent(优越性未验证)· 已完成的基础设施
+## 为什么存在
 
-> **EN** — The problem is not that AI can't write code. It's that AI can modify code quickly while not knowing **why the project was designed this way**. Local correctness does not guarantee global correctness.
-> **中文** — 问题不是 AI 不会写代码,而是 AI 可以快速修改代码,却不知道**这个项目为什么这样设计**。局部正确不保证全局正确(米格-25 效应)。
+AI coding 降低了单次修改的成本，却没有自动解决三个项目级问题：
 
-## 2. Why This Exists — 为什么需要它
+1. **Context loss**：新会话重新推导旧会话已经理解的内容。
+2. **Architecture drift**：每个局部 diff 都合理，累积结果却偏离原始目的和边界。
+3. **Endless polishing**：没有事先约定 Definition of Done，Agent 会继续寻找“还能改什么”。
 
-**传统 Agent 的工作方式 / Traditional agents**:
+本项目把这三类事实拆开：
 
-```
-read repository
-    ↓
-generate answer
-    ↓
-forget(会话结束,上下文丢弃 — context discarded at session end)
-```
-
-**dsh-researcher 的工作方式 / dsh-researcher**:
-
-```
-observe project
-    ↓
-build cognition state(claims/evidence/依赖图,版本化)
-    ↓
-maintain understanding(证据锚定,局部失效)
-    ↓
-continue future reasoning(export/import 跨会话迁移)
+```text
+.project-cognition/state.json       项目为何存在、当前相信什么、证据与不变量
+        +
+.project-cognition/goals/*.json     这一次做到什么算完成、范围与预算
+        +
+DSH durable session events          实际调用过什么工具、得到什么结果
+        ↓
+host Goal Governor                  CONTINUE / NEEDS_HUMAN / DONE / STOPPED / ...
 ```
 
-**EN** — AI coding tools have made implementation cheap, but software development has another bottleneck: **understanding the whole system**. A single change may be correct; a hundred correct changes may still create architectural drift, outdated assumptions, and loss of original intent. The structural problem is that agent cognition is **session-local**: each session re-derives what the previous one already learned. dsh-researcher separates the *production* of cognition (Research Mode) from the *carriage* of cognition (Infrastructure) — the research direction, not a completed product.
+`PROJECT_COGNITION.md` 是由 JSON 确定性生成的人类视图，不是第二份可以悄悄漂移的真相。
 
-**中文** — AI 编码工具让实现变得廉价,但软件开发还有另一个瓶颈:**理解整个系统**。一次修改可能是正确的;一百次正确的修改仍可能累积出架构漂移、过期假设与最初意图的丢失。结构性问题是 agent 认知是**会话局部的**:每次会话重新推导上一次已学到的东西。dsh-researcher 将认知的**生产**(Research Mode)与认知的**承载**(Infrastructure)分离 —— 这是研究方向,不是已完成产品。
+## 适合什么场景
 
-## 3. Architecture Overview — 架构总览
+适合：接手陌生仓库、重大重构前、AI 已连续修改多轮、架构/安全/迁移边界敏感、团队需要明确停止条件。
 
-```
-dsh-researcher — Project Cognition System(演化中 / evolving)
-    |
-    +-------------------------------------------+
-    |                                           |
-Infrastructure Layer                      Application Layer
-Project Cognition Infrastructure          Research Mode
-  - cognition-state                       - repository research
-  - claims graph                          - architecture analysis
-  - evidence anchors                      - risk analysis
-  - dependency tracking                   - decision support
-  - revision tracking                     - handoff
-  - export / import migration
-  - evaluation governance
-```
+不适合：一个明显的小 bug、简单 CRUD、一次性脚本，或只需要常规 spec/plan/tasks 的工作；这些场景直接使用现有 Coding Agent、Spec Kit 或 OpenSpec 通常更轻。
 
-**EN — Application consumes Infrastructure; the two layers must not be conflated.** Research Mode (the application layer) *produces* cognition through the eleven-stage pipeline and `research_checkpoint`; the Infrastructure layer *carries* it: a versioned, dependency-carrying state machine with evidence anchors, revision history, cross-session export/import migration, and evaluation governance. The application layer's superiority over ordinary agents is **not yet validated**; the infrastructure layer's engineering capability **is validated** (see §4).
+## 两种研究入口
 
-**中文 — Application 消费 Infrastructure;两层不可混淆。** Research Mode(应用层)通过十一阶段管道与 `research_checkpoint` **生产**认知;Infrastructure 层(底层)**承载**认知:版本化、带依赖的状态机,含证据锚、修订历史、跨会话 export/import 迁移与评测治理。应用层相对普通 agent 的优越性**尚未验证**;基础设施层的工程能力**已验证**(见 §4)。
-
-**Research Mode 输出 / Output**:Project Cognition Report(7 节用户层 + AI 内部层附录:Evidence Ledger / Claims / Confidence / Certificate / Checkpoint State)+ Decision Memo(BUILD / DON'T BUILD / INVESTIGATE)+ `research_handoff.json`。
-
-## 4. Validation Status — 验证状态表
-
-> 依据:Experiment A(commander.js,12 runs)+ Experiment C+(cognition-state inheritance,12 runs)。完整结论:[docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md)。
-
-### ✅ Validated(已验证 —— 基础设施层)
-
-| # | 能力 | 证据 |
+| 入口 | 权限与生命周期 | 用途 |
 |---|---|---|
-| V1 | **cognition-state schema** | 版本化状态机(claims/依赖图/局部失效/会话日志重放);137 claims 实证写入 |
-| V2 | **state export / import** | 跨会话迁移管线;G1 保真(32/32 零失真);6/6 注入运行 G2 PASS |
-| V3 | **cross-session cognition migration** | 证据锚定旧认知失效可复现(6/6 B-runs);成本 0.93× 无惩罚 |
-| V4 | **evaluation integrity framework** | G1–G7 gate;完整性检测真实抓住 QUOTA 失败;eval-lock;失败保留 |
+| `/researcher <question>` | Governed Coding 中一次只读 turn，结束后自动退出 | 编码过程中临时核对项目事实 |
+| `项目研究 Project Research` preset | 持续模式；要求 sandbox=`read-only`、approval=`never`，无通用 shell，并由 Runtime Certificate 自证 | 高风险或完整项目研究 |
 
-### ❌ Invalidated / Not Admissible(已证伪或不可采信)
+Governed Coding 还支持 `/researcher on|off` 持久 guarded mode；它有工具白名单保护，但不等同于独立 preset 的环境级只读证明。`/researcher goal <task>` 只提出 Goal Contract 草案，不批准、不执行。
 
-| # | 主张 | 状态 | 原因 |
-|---|---|---|---|
-| U1 | Researcher 超过普通 Agent | ❌ 不可采信 | C+ A/B 配对被 T1 snapshot isolation leakage 污染(见 §5);Exp A 方向亦不支持 |
-| U2 | Mutation Recall 优越性 | ❌ 不可采信 | 12/12 饱和 = marker 可搜索 + 泄漏的产物 |
-| U3 | Projection Layer 有效性 | ❌ 未验证 | claims 无 invalidation_condition 字段,实验未触及 |
+## 快速开始
 
-### ❓ Unknown(未知 —— 需后续实验)
-
-| # | 问题 | 需要 |
-|---|---|---|
-| K1 | 维护生产力(maintenance productivity) | 隔离重跑 + 长期维护评估 |
-| K2 | 长期开发者价值(long-term developer value) | 多阶段维护实验 |
-
-## 5. Experiment C+ Honest Result — 诚实结论(含漏洞披露)
-
-**Experiment C+ — Cognition-State Inheritance(2026-08,commander.js,6 mutations × (A stateless / B inherited)):**
-
-- **Validated**:状态注入管线可运行(6/6 B-runs G2 PASS:importState + export:true 验证);跨会话认知迁移技术上可行(B-runs 展示证据锚定的旧认知失效,成本 0.93×);评测系统能检测完整性问题(抓住 QUOTA 失败)。
-- **Invalidated**:**snapshot isolation leakage** —— T1 快照建于 `commander.js-cplus-t1/`,与原始 T0 同级;只读沙箱允许读 workspace 之外,5/6 A-runs(和 2 个 B-runs)读取了 sibling mutation 目录或原始 T0,获得外部 ground truth。**因此 Mutation Recall 的 A/B 比较不成立,Researcher 优越性结论不成立。** 本问题不隐藏。
-- 失败记录(QUOTA 中断 7 runs)与泄漏记录全部保留 —— 失败是可信度资产。
-
-完整结论与剩余验证路径(R1 隔离重跑 / R2 机制隔离 / R3 长期维护):[docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md)。实验产物:[evaluation/results/experiment-cplus/](./evaluation/results/experiment-cplus/)。
-
-## 6. Roadmap — 路线图
-
-> 详见 [docs/roadmap.md](./docs/roadmap.md)。每阶段由前一步结果裁决;失败保留为反例资产。
-
-| 阶段 | 内容 | 状态 |
-|---|---|---|
-| **Phase 1 — Infrastructure prototype** | state model(cognition-state schema)✅ · migration(export/import)✅ · evaluation governance(G1–G7)✅ | **已完成(原型级,非产品级)** |
-| **Phase 2 — Real value validation** | maintenance experiments(多阶段注入)· fresh analysis vs cognition recovery(隔离重跑 R1 + 机制隔离 R2 + 长期维护 R3) | **进行中(未完成)** |
-| **Phase 3 — Future extensions** | semantic dependency(语义依赖)· invalidation condition(失效条件)· automatic migration(自动迁移) | **未开始(取决于 Phase 2)** |
-
----
-
-## Trust — 为什么相信它：Research Runtime Health Gate
-
-**EN** — Many agents claim to be safe. **Researcher proves its operating conditions.**
-**中文** — 很多 Agent 声称自己安全。**Researcher 证明自己的运行条件。**
-
-```
-Researcher Runtime Certificate
-Run: #1
-History: none (first run)
-Preset:        PASS   (composedPreset=researcher)
-Sandbox:       PASS   (mode=read-only)
-Approval:      PASS   (policy=never)
-Write tools:   PASS   (write/edit = refusing stubs)
-Shell surface: PASS   (git_read only; no pwsh/bash)
-Checkpoint:    PASS
-Replay:        PASS   (log folds deterministically)
-Overall: SAFE
-```
-
-**EN** — The certificate is an **enforced first step**: every other tool is refused by the health gate until it is produced; in a bad environment the certificate still renders UNSAFE as the explanation. Every run is numbered with history (`Run #N` + `History: #1 SAFE · #2 DEGRADED`), every report starts with the certificate block — Researcher itself is an auditable system (see [docs/runtime-certificates/](./docs/runtime-certificates/)).
-**中文** — 证书是**执行级强制首步**：在它产出之前，其他一切工具被健康门禁拒绝；环境不达标时证书照常渲染 UNSAFE 作为解释。每次运行可编号、带历史（`Run #N` + `History: #1 SAFE · #2 DEGRADED`），每一份报告以证书块开头——Researcher 自己也是可审计系统（见 [docs/runtime-certificates/](./docs/runtime-certificates/)）。
-
-## Proof — 证明：Benchmark Suite
-
-**EN** — Three public, reproducible synthetic cases with ground truth and a scorer — **the moat: anyone can write a research prompt; we publish an evaluation standard.**
-**中文** — 三个公开、可复现的合成案例（带 ground truth 与打分器）——**这是第一道护城河：别人可以写 Research Prompt，我们提供公开评测标准。**
-
-| 案例 Case | 埋入的事实 Planted facts | 期望判定 Expected verdicts |
-|---|---|---|
-| **architecture-drift** | EN: v1 layered architecture → ten "locally reasonable" perf edits → Controller hits DB directly, cache leaks in, README describes the old architecture. 中文：v1 分层架构 → 十次"局部合理"的性能修改 → Controller 直连 DB、缓存入侵、README 描述旧架构 | 架构主张 **Contradicted**；修改 = **腐蚀而非演化 corrosion, not evolution**；BUILD 修复边界 / DON'T BUILD 继续补丁 |
-| **documentation-drift** | EN: README claims "42 tests passing, CI green"; actually 3 test files, no CI, never executed. 中文：README 声称"42 tests passing, CI green"，实际 3 个测试文件、无 CI、从未执行 | 测试主张 **Contradicted**；文档漂移发现 doc-drift；真实状态 **INVESTIGATE** |
-| **false-progress** | EN: v1.1/v1.2 added 10 peripheral features; the core problem (cold-start quality) has had no evaluation since v1.0. 中文：v1.1/v1.2 加了 10 个外围功能，核心问题（冷启动质量）自 v1.0 起无评测 | 功能速度上升 ≠ 问题被解决 feature velocity ≠ problem resolution；额外功能 **DON'T BUILD**，核心问题 **INVESTIGATE** |
-
-```
-node fixtures/benchmark/benchmark-runner.js generate <dir>
-node fixtures/benchmark/benchmark-runner.js score <case-dir> <report.md>
-```
-
-（marker 打分是下限，证据引用与证书由人工复核。/ Marker matching is a floor; citations and the certificate are human-reviewed.）
-
-### Historical Blind Benchmark — Phase A（范围声明，不是广告）
-
-**EN** — The first real-world blind evaluation (pallets/flask @ 2025-11-17, 4 modes × 3 runs, deepseek-v4-flash, full protocol in [docs/evaluation-protocol-v1.md](./docs/evaluation-protocol-v1.md)) is published as-is in [evaluation/cases/flask/evaluation-result.md](./evaluation/cases/flask/evaluation-result.md). The honest summary:
-**中文** — 第一次真实仓库盲测（pallets/flask @ 2025-11-17，4 模式 × 3 次，deepseek-v4-flash，完整协议见 [docs/evaluation-protocol-v1.md](./docs/evaluation-protocol-v1.md)）原样公开在 [evaluation/cases/flask/evaluation-result.md](./evaluation/cases/flask/evaluation-result.md)。诚实的结论：
-
-| 指标 Metric | 结果 Result | 解读 Reading |
-|---|---|---|
-| Future Issue Recall（机会性指标） | **0/60** | Researcher 不是 Bug 预测器；未来 issue 召回不在能力面。**这是范围声明，不是缺陷。** |
-| Precision（重要发现证据支持率，mean） | Standard 80% / Plan 76% / Quick 85% / Deep 81% | 四种模式的发现均高度证据锚定 |
-| 认知重建 | 12/12 运行正确重建项目主导现实（3.2 上下文合并 + shim + 文档漂移） | 项目理解是真实能力 |
-| Risk Discovery | 全模式收敛发现 shim/文档/语义破坏类风险；Deep 额外发现 CVE-2026-27205、devcontainer 损坏、MethodView 405 等已验证缺陷 | **发现"未来容易错的地方"（Risk）≠ 预测具体 Bug** |
-
-**EN** — What the experiment proved: structured project understanding (claims ledger, evidence tiers, architecture mapping, risk analysis, handoff, certificate) — what ordinary agents do not natively produce. What it did not prove: prediction of specific future bugs. The benchmark suite is being extended with Understanding / Risk / Change Impact / Drift benchmarks (see [docs/evaluation.md](./docs/evaluation.md)).
-**中文** — 实验证明的：结构化项目理解（claims ledger、证据分级、架构映射、风险分析、交接包、证书）——普通 Agent 不天然具备的能力。实验没有证明的：预测具体未来 Bug。评测套件正在扩展 Understanding / Risk / Change Impact / Drift 四个基准（见 [docs/evaluation.md](./docs/evaluation.md)）。
-
-## How it works — 工作原理（三层 / three layers）
-
-**Layer 1 — Understand 理解**：Repository → Code / Docs / History / Tests / Issues / External context → **Project Model**（项目身份 / 架构地图 / 核心组件 / 设计决策）
-**Layer 2 — Judge 判断**：Claim → Evidence → Confidence → Contradiction → **Risk Map**（证据分级 evidence tiers C0–C4 + 裁决态 verdicts Known/Likely/Claimed/Unknown/Contradicted；风险 = "这里未来容易错"，不是"这里错了"）
-**Layer 3 — Guide 引导**：Risk Map → **Decision Memo（BUILD / DON'T BUILD / INVESTIGATE）** → Plan Mode
-
-十一阶段管道 Pipeline：`DISCOVER → RECONSTRUCT → EVIDENCE MAP → DIAGNOSE → TRADEOFF ANALYSIS → EXTERNAL RESEARCH → COMPARE → CHALLENGE → SHAPE → CLASSIFY → SELF-EVAL → HANDOFF`。**The pipeline is linear in execution but stateful in reasoning. 执行是线性的，推理是有状态的。**
-
-## Non-goals — 明确不做什么
-
-Researcher is **NOT**：
-- ❌ 一个 Coding Agent（它从不修改代码）/ a coding agent (it never modifies code)
-- ❌ 自动重构工具（它只诊断，不执行）/ an automatic refactoring tool (it diagnoses, it does not execute)
-- ❌ **Bug 预测器（未来 issue 召回 0/60 是范围声明）**/ a bug predictor (0/60 future-issue recall is the scope statement)
-- ❌ **AI 架构师（它提供架构师式的理解流程，不承诺最优架构决策）**/ an AI architect (it offers architect-style understanding, not architecture decisions)
-- ❌ 通用网页调研器（它面向代码仓库，不是 Deep Research）/ a general web researcher (it targets code repositories, not web deep research)
-- ❌ 架构分析工具的替代品（GitNexus / Serena / RepoMap 等 L0/L1 能力应被整合，见 [docs/landscape.md](./docs/landscape.md)）/ a replacement for architecture tools (integrate L0/L1 instead)
-
-它负责 It does：✅ Understanding 理解 ✅ Evidence 证据 ✅ Risk Discovery 风险发现 ✅ Decision 决策依据。
-
-## Install — 快速安装
+安装已发布的 alpha（同时安装 `researcher`、`governed` 和 portable core）：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.1
 ```
 
-**EN** — One line (no clone, no npm publish) installs into `${DSH_HOME}/.agent-presets/researcher`; `--force` overwrites. Alternatives: `git clone` + `install.ps1/sh`, or Download ZIP and copy manually.
-**中文** — 一行安装（无需 clone、无需 npm 发布），装进 `${DSH_HOME}/.agent-presets/researcher`；`--force` 覆盖更新。备选：`git clone` + `install.ps1/sh`，或 Download ZIP 手动复制。
+只读研究：新建 DSH 会话，选择「项目研究 Project Research」，确认 read-only + never，然后描述仓库和你真正想判断的问题。`research_doctor` 是强制首个工具调用；证书不是 SAFE 时研究不会开始。
 
-**EN Usage** — New session → preset「项目研究 Project Research」→ permission read-only + approval never → the first tool call is automatically `research_doctor` (Runtime Certificate) → research after SAFE; the final report starts with the certificate block and ends with the handoff package.
-**中文 使用** — 新建会话 → 预设选「项目研究 Project Research」→ 权限 read-only + 审批 never → 第一次工具调用自动是 `research_doctor`（Runtime Certificate）→ SAFE 后开始研究，最终报告以证书块开头、以交接包结尾。
+Goal Governor 最小入口：
 
-## Docs — 深入文档
+```bash
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.1 project-cognition init .
+```
 
-| 入口 Entry | 内容 Contents |
+随后人工维护 Project Cognition、冻结 Verifier Registry、批准 Goal Contract，并在「目标治理编码 Governed Coding」中运行：
+
+```text
+/researcher run .project-cognition/goals/<goal>.r1.json
+```
+
+完整命令见 [Goal Governor 指南](./docs/goal-governor.md#8-最小可运行流程)，可复制的完整合同见 [Minimal Simple Goal](./examples/simple-goal/README.md)。安装脚本也支持 clone 后运行 `install.ps1` / `install.sh`。
+
+## 什么算 DONE
+
+- 每个 MUST criterion 都由冻结的 verifier 证明；不能引用模型编造的 call ID。
+- tool name、完整 arguments、arguments hash 和结果策略必须与批准时一致。
+- 最终一次 attempt 必须重新证明全部 MUST，不能继承旧 attempt 的成功。
+- 主观或架构判断必须经过直接 human gate。
+- SHOULD 未完成不会成为继续消耗尝试的理由。
+- baseline 已满足时返回 `ALREADY_SATISFIED`，不得为了“显得有工作”而改代码。
+- Simple 最多 2 次修改尝试，Governed 最多 5 次；连续 2 次无 MUST 进展返回 `STOPPED`。
+- 合同、认知或验证器漂移会 `NEEDS_HUMAN`；只有真实外部阻塞才是 `BLOCKED`。
+
+模型无权写入终态。DSH 宿主重放 session log 后，才可调用 `complete / pause / block`。
+
+## 与相近方案的简要比较
+
+Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到了什么”，task 工具保存“还有什么没做”。本项目尝试保存的是：**关于项目现实的主张、为什么相信它、何时证据已经陈旧，以及目标是否有结果证据。**
+
+| 方案 | 用户获得的主要价值 | 与本项目的关系 |
+|---|---|---|
+| [GitHub Spec Kit](https://github.github.com/spec-kit/) | Constitution → Spec → Plan → Tasks → Implement → Converge | 目标治理的直接部分替代；本项目额外绑定 observed evidence、认知约束和通用终态 |
+| [Kiro](https://kiro.dev/docs/) | Steering、Specs、任务执行、Hooks、权限与完整客户端体验 | 用户体验重叠最高；本项目更窄，强调独立只读研究和宿主终态裁决 |
+| [OpenSpec](https://github.com/Fission-AI/OpenSpec) | 轻量 proposal/spec/design/tasks、delta 和归档 | 很适合作为 BUILD 结论的下游；它保存约定变化，本项目核对观察现实与矛盾 |
+| [Serena](https://github.com/oraios/serena/blob/main/docs/02-usage/045_memories.md) | 语义代码工具、onboarding、可版本化 Markdown memories | 项目记忆层的强替代；本项目增量是 typed claims、证据、依赖和 freshness |
+| [Beads](https://github.com/gastownhall/beads) | 持久依赖任务图、ready/claim/close、gates 与多 Agent 协调 | 任务状态部分替代且可能互补：Beads 管工作项，Governor 裁决结果是否真的达成 |
+| [Claude Code](https://code.claude.com/docs/en/memory) | CLAUDE.md、auto memory 和只读 Plan mode | 单客户端最容易获得的替代；本项目目标是客户端无关、证据化和可失效协议 |
+
+更详细、带官方来源的边界见 [竞争与集成地图](./docs/landscape.md)。这里不主张“没有竞品”：每个单项能力都有成熟替代，项目是否值得继续取决于“证据失效 + 结果完成裁决”的组合能否产生真实维护增量。
+
+## 有价值的测试证据
+
+| 证据 | 当前结果 | 能说明什么 |
+|---|---|---|
+| Node unit/replay/integration/package tests | **83/83 pass** | hash/revision/replay、预算、人工 gate、伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作 |
+| `project-cognition doctor .` | cognition、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 本仓库自己的规范状态与投影未漂移 |
+| DSH preset discovery | `researcher` 与 `governed` 在 DSH `0.1.0-rc.7` 临时安装后均 `broken=null` | 发布布局和本地插件路径可由目标 DSH 版本加载 |
+| Experiment A（12 runs） | 同一模型下编排显著改变成本与输出，但未证明 Researcher 更优 | 客户端/工作流重要，不等于本项目有净收益 |
+| Experiment C+（12 runs） | 状态迁移链可运行；A/B 因 snapshot leakage 被判定为 causal-invalid | 证明基础设施存在，也证明评测会保留失败并拒绝夸大结论 |
+
+本地复核：
+
+```bash
+npm test
+npm run doctor
+```
+
+公开验证边界见 [Validation Status](./docs/validation-status.md)，预注册的下一阶段实验见 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md)。
+
+## 已证明、未证明与不允许静默改变
+
+**仓库内已证明**：canonical hashing、严格 schema、revision、确定性重放、只读工具面、真实 verifier call 绑定、attempt/no-progress 限制和 host-owned completion。
+
+**仍是待验证假设**：长期维护效率提升、架构漂移减少、不同模型/客户端的 effect size、Codex/Claude Code/Kiro/OpenClaw/Zed adapter 可行性。
+
+**硬不变量**：Certified Researcher 保持只读；JSON 是 Project Cognition 唯一规范事实；模型不能批准、削弱或完成自己的 Goal Contract；失败或无效实验不能被改写成正向产品证据。改变这些内容需要新的 owner-approved cognition revision 和重新审查。
+
+## 架构与可移植性
+
+Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas、CLI）不依赖 DSH。客户端 adapter 必须证明五项能力才能标记为 `governed`：human approval identity、hard stop/pause、durable ordered events、trusted verifier binding、project-root confinement。缺少其中任何一项时只能称为 advisory。
+
+当前只有 DSH adapter；不要把“核心可移植”误读成“其他客户端已经兼容”。
+
+## 仓库入口
+
+| 入口 | 内容 |
 |---|---|
-| [docs/architecture.md](./docs/architecture.md) | 真实架构：Application Layer(Research Mode)消费 Infrastructure Layer(Project Cognition Infrastructure)/ real architecture (two layers, application consumes infrastructure) |
-| [docs/validation-status.md](./docs/validation-status.md) | 验证状态：Validated / Unknown / Invalidated 三段（含 C+ leakage 披露）/ validation status (three-way split, honest) |
-| [docs/project-cognition-position.md](./docs/project-cognition-position.md) | 当前架构定位：evolving toward a Project Cognition Infrastructure（双层架构、验证边界、竞争位置）/ current positioning（two-layer architecture, verified boundary, competitive position） |
-| [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md) | Experiment C+ 诚实结论（Validated / Invalidated / Unknown / Remaining,含 leakage 披露）/ honest C+ conclusion |
-| [docs/repositioning-v0.7.md](./docs/repositioning-v0.7.md) | v0.7 定位重构备忘录 / repositioning memo（认知层定位、PCR 结构、评测调整、分阶段计划） |
-| [docs/landscape.md](./docs/landscape.md) | 竞品格局与 L0–L5 分层 / competitive landscape & L0–L5 layering（Cairn / Drift / GitNexus / Serena / Understand Anything） |
-| [docs/roadmap.md](./docs/roadmap.md) | 路线图 / roadmap（Phase 1 基础设施原型 → Phase 2 价值验证 → Phase 3 未来扩展） |
-| [docs/ai-engineering-skills-map.md](./docs/ai-engineering-skills-map.md) | 与 AI Engineering Skills Map 的能力映射与方法论保留 / capability mapping & methodological caveats |
-| [docs/handoff-schema.md](./docs/handoff-schema.md) | `research_handoff.json` 机器可读交接接口 / machine-readable handoff interface（schema v1） |
-| [docs/postmortems/](./docs/postmortems/) | 事后分析 / postmortems："配置正确 ≠ 运行正确"（recompose 洞） |
-| [docs/runtime-certificates/](./docs/runtime-certificates/) | 证书审计日志用法 / certificate audit log |
-| [fixtures/benchmark/](./fixtures/benchmark/) | 公开评测基准 / public benchmark（三案例 + 打分器 / three cases + scorer） |
-| `researcher/` | 预设本体 / the preset itself：组合 composition、persona、三个内嵌插件 plugins、两个方法技能 skills |
+| [PROJECT_COGNITION.md](./PROJECT_COGNITION.md) | 本项目目的、架构、不变量、已证/未证价值和下一步证明 |
+| [docs/architecture.md](./docs/architecture.md) | 当前真实架构与权限面 |
+| [docs/goal-governor.md](./docs/goal-governor.md) | 合同、验证器、状态机、两种 Researcher 入口和 CLI |
+| [docs/validation-status.md](./docs/validation-status.md) | Validated / Unknown / Invalidated 边界 |
+| [docs/landscape.md](./docs/landscape.md) | 相近方案、替代关系与集成边界 |
+| [evaluation/](./evaluation/) | 协议、锁、原始运行、失败记录和评分产物 |
+| [schemas/](./schemas/) | Portable JSON contracts |
 
-社区索引约定 Community index convention：以 GitHub topic **`dsh-plugin`** 打标；内置市场提案见 / marketplace proposal: [deepseek-harness#2994](https://github.com/deepseek-ai/deepseek-harness/discussions/2994)。
+## 参与和反馈
 
-## Compatibility — 兼容性
+- 真实报告、误判和“没有产生价值”的结果都欢迎提交到 [Show us your Researcher report](https://github.com/TLNing260310/dsh-researcher/discussions/1)。
+- Bug 请使用 [issue template](https://github.com/TLNing260310/dsh-researcher/issues/new/choose)。
+- 开始贡献前阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)；安全问题按 [SECURITY.md](./SECURITY.md) 私下报告。
 
-**EN** — Verified on DeepSeek Harness **0.1.0-rc.6**; on other versions the guard fails closed (refuses to start rather than degrading silently).
-**中文** — 已验证 DeepSeek Harness **0.1.0-rc.6**；其他版本守卫 fail-closed（拒绝启动而非静默退化）。
+## Compatibility
+
+- DeepSeek Harness：已验证 `0.1.0-rc.7`。
+- Node.js：`>=22.12`（与已验证的 DSH `0.1.0-rc.7` 运行时一致）。
+- 当前版本：`0.8.0-alpha.1`，不承诺稳定 API。
 
 ## License
 

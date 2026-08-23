@@ -9,11 +9,9 @@
 // Recall to diff-reading). The single commit message is mechanical and
 // contains no injection description.
 //
-// Injection implementations are minimal-but-real code changes carrying a
-// `MUT-0X (synthetic)` marker comment (visible in code = discoverable, but
-// the impact still requires cognition to understand). Every injection
-// verifies its anchor before writing; ANY failed anchor aborts the build
-// (no partial snapshots, no silent skip).
+// Injection implementations are minimal-but-real code changes with no marker
+// comments or mutation ids inside the workspace. Every injection verifies its
+// source anchor before writing; ANY failed anchor aborts the build.
 //
 // Usage:
 //   node build-t1-snapshot.js --t0 <workspace-dir> --out <base-dir>
@@ -50,7 +48,7 @@ const mutate = {
     if (!src.includes(anchor)) throw new Error('MUT-01 anchor missing')
     const oldBlock = /  restoreStateBeforeParse\(\) \{\n    if \(this\._storeOptionsAsProperties\)\n      throw new Error\(`Can not call parse again when storeOptionsAsProperties is true\.\n- either make a new Command for each call to parse, or stop storing options as properties`\);\n/
     if (!oldBlock.test(src)) throw new Error('MUT-01 throw block not found')
-    src = src.replace(oldBlock, `  restoreStateBeforeParse() {\n    // MUT-01 (synthetic): repeated parse is now allowed under storeOptionsAsProperties.\n    if (this._storeOptionsAsProperties)\n      this._storeOptionsAsProperties = false;\n`)
+    src = src.replace(oldBlock, `  restoreStateBeforeParse() {\n    if (this._storeOptionsAsProperties)\n      this._storeOptionsAsProperties = false;\n`)
     fs.writeFileSync(f, src)
   },
   // MUT-02 (api_contract): configureHelp(configuration, base) gains a
@@ -60,10 +58,10 @@ const mutate = {
     let src = fs.readFileSync(f, 'utf8')
     const old = /  configureHelp\(configuration\) \{\n    if \(configuration === undefined\) return this\._helpConfiguration;\n\n    this\._helpConfiguration = configuration;\n    return this;\n  \}/
     if (!old.test(src)) throw new Error('MUT-02 configureHelp body not found')
-    src = src.replace(old, `  configureHelp(configuration, base) {\n    // MUT-02 (synthetic): optional base-class parameter + descriptor-preserving merge.\n    if (configuration === undefined) return this._helpConfiguration;\n    this._helpConfiguration = { base, ...configuration };\n    return this;\n  }`)
+    src = src.replace(old, `  configureHelp(configuration, base) {\n    if (configuration === undefined) return this._helpConfiguration;\n    this._helpConfiguration = { base, ...configuration };\n    return this;\n  }`)
     const oldCreate = /return Object\.assign\(new Help\(\), this\.configureHelp\(\)\);/
     if (!oldCreate.test(src)) throw new Error('MUT-02 createHelp merge not found')
-    src = src.replace(oldCreate, `return Object.assign(new (this.configureHelp().base || Help)(), this.configureHelp()); // MUT-02 (synthetic): base-aware merge`)
+    src = src.replace(oldCreate, `return Object.assign(new (this.configureHelp().base || Help)(), this.configureHelp());`)
     fs.writeFileSync(f, src)
   },
   // MUT-03 (internal_architecture): executable-file resolution order —
@@ -74,7 +72,7 @@ const mutate = {
     let src = fs.readFileSync(f, 'utf8')
     const old = /const sourceExt = \['\.js', '\.ts', '\.tsx', '\.mjs', '\.cjs'\];/
     if (!old.test(src)) throw new Error('MUT-03 sourceExt not found')
-    src = src.replace(old, `const sourceExt = ['\\.js', '\\.mjs', '\\.cjs', '\\.ts', '\\.tsx']; // MUT-03 (synthetic): .js pinned first, probing order changed`)
+    src = src.replace(old, `const sourceExt = ['\\.js', '\\.mjs', '\\.cjs', '\\.ts', '\\.tsx'];`)
     fs.writeFileSync(f, src)
   },
   // MUT-04 (internal_architecture): excess-arguments check moved BEFORE
@@ -85,10 +83,10 @@ const mutate = {
     let src = fs.readFileSync(f, 'utf8')
     const oldCall = /this\._excessArguments\(this\.args\);/
     if (!oldCall.test(src)) throw new Error('MUT-04 excess call site not found')
-    src = src.replace(oldCall, `// MUT-04 (synthetic): excess check moved earlier (see parseOptions exit).\n    // this._excessArguments(this.args); // moved`)
+    src = src.replace(oldCall, `// Excess operands are checked before subcommand dispatch.\n    // this._excessArguments(this.args);`)
     const anchor2 = 'const operands = []; // operands, not options or values'
     if (!src.includes(anchor2)) throw new Error('MUT-04 parseOptions anchor missing')
-    src = src.replace(anchor2, `// MUT-04 (synthetic): excess operands are rejected at parseOptions exit before dispatch.\n    const operands = []; // operands, not options or values`)
+    src = src.replace(anchor2, `// Excess operands are rejected at parseOptions exit before dispatch.\n    const operands = []; // operands, not options or values`)
     fs.writeFileSync(f, src)
   },
   // MUT-05 (compatibility_constraint): non-CommanderError throws from
@@ -99,7 +97,7 @@ const mutate = {
     let src = fs.readFileSync(f, 'utf8')
     const old = /if \(err\.code === 'commander\.invalidArgument'\) \{\n        const message = `\$\{invalidArgumentMessage\} \$\{err\.message\}`;/
     if (!old.test(src)) throw new Error('MUT-05 _callParseArg catch not found')
-    src = src.replace(old, `if (err.code === 'commander.invalidArgument') {\n        const message = \`\${invalidArgumentMessage} \${err.message}\`;\n        // MUT-05 (synthetic): non-CommanderError throws get a stable code.\n      } else if (!(err instanceof Error) || err.code === undefined) {\n        const message = \`\${invalidArgumentMessage} \${String(err)}\`;\n        throw new CommanderError(1, 'commander.invalidArgumentValue', message);`)
+    src = src.replace(old, `if (err.code === 'commander.invalidArgument') {\n        const message = \`\${invalidArgumentMessage} \${err.message}\`;\n      } else if (!(err instanceof Error) || err.code === undefined) {\n        const message = \`\${invalidArgumentMessage} \${String(err)}\`;\n        throw new CommanderError(1, 'commander.invalidArgumentValue', message);`)
     fs.writeFileSync(f, src)
   },
   // MUT-06 (compatibility_constraint): missingMandatoryOptionValue message
@@ -113,14 +111,14 @@ const mutate = {
       // keep the body; add flags to the message line if present
       const withFlags = m.replace(
         /const message = /,
-        `// MUT-06 (synthetic): message now includes option flags.\n    const message = `
+        `const message = `
       )
       return withFlags
     })
     // append flags into the message via a targeted replace of the message template
     const tpl = /const message = `error: required option '([^']+)' not specified`;/
     if (tpl.test(src)) {
-      src = src.replace(tpl, `const message = \`error: required option '\$1' not specified (flags: \${option.flags()})\`; // MUT-06 (synthetic)`)
+      src = src.replace(tpl, `const message = \`error: required option '\$1' not specified (flags: \${option.flags()})\`;`)
     }
     fs.writeFileSync(f, src)
   },
@@ -144,18 +142,6 @@ for (const m of selection.mutations) {
   if (cp.status !== undefined && cp.status >= 8) throw new Error(id + ': robocopy failed ' + cp.status)
   // apply mutation
   mutate[id](wsOut)
-  // verify marker present (node-based, encoding-safe)
-  const libDir2 = path.join(wsOut, 'lib')
-  let markerFound = false
-  if (fs.existsSync(libDir2)) {
-    for (const f of fs.readdirSync(libDir2)) {
-      if (f.endsWith('.js')) {
-        const content = fs.readFileSync(path.join(libDir2, f), 'utf8')
-        if (content.includes('MUT-' + id.slice(4))) { markerFound = true; break }
-      }
-    }
-  }
-  if (!markerFound) throw new Error(id + ': marker verification failed')
   // single-commit git
   run(['init'], wsOut)
   run(['add', '-A'], wsOut)

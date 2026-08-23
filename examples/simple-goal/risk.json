@@ -1,0 +1,12 @@
+{
+  "target_clear": true,
+  "deterministic_verifiers": true,
+  "localized_change": true,
+  "touches_public_api": false,
+  "touches_data_migration": false,
+  "touches_security": false,
+  "touches_architecture": false,
+  "touches_hard_invariant": false,
+  "subjective_acceptance": false,
+  "expected_attempts": 1
+}

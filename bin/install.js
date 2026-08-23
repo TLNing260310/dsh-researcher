@@ -7,21 +7,30 @@
 //   npx -y github:TLNing260310/dsh-researcher
 //
 // Also: node bin/install.js [--force]
-// Copies researcher/ into ${DSH_HOME:-~/.dsh}/.agent-presets/researcher.
+// Copies the certified researcher and governed coding presets plus the
+// portable core into ${DSH_HOME:-~/.dsh}/.agent-presets/.
 
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 
-const SOURCE = path.join(__dirname, '..', 'researcher')
+const REPOSITORY = path.join(__dirname, '..')
+const SOURCES = {
+  researcher: path.join(REPOSITORY, 'researcher'),
+  governed: path.join(REPOSITORY, 'governed'),
+}
 const DSH_HOME = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')
-const TARGET = path.join(DSH_HOME, '.agent-presets', 'researcher')
+const TARGET_ROOT = path.join(DSH_HOME, '.agent-presets')
+const TARGETS = {
+  researcher: path.join(TARGET_ROOT, 'researcher'),
+  governed: path.join(TARGET_ROOT, 'governed'),
+}
 const FORCE = process.argv.includes('--force')
-const VERIFIED_DSH = '0.1.0-rc.6'
+const VERIFIED_DSH = '0.1.0-rc.7'
 
-if (!fs.existsSync(path.join(SOURCE, 'agent.cordis.yml'))) {
-  console.error('preset source not found at ' + SOURCE)
+for (const source of Object.values(SOURCES)) if (!fs.existsSync(path.join(source, 'agent.cordis.yml'))) {
+  console.error('preset source not found at ' + source)
   process.exit(1)
 }
 
@@ -39,21 +48,26 @@ try {
   console.warn('Warning: could not detect a dsh install (verified on ' + VERIFIED_DSH + ').')
 }
 
-if (fs.existsSync(TARGET)) {
+for (const target of Object.values(TARGETS)) if (fs.existsSync(target)) {
   if (!FORCE) {
-    console.error('Target preset already exists: ' + TARGET)
+    console.error('Target preset already exists: ' + target)
     console.error('Re-run with --force to replace it.')
     process.exit(1)
   }
-  fs.rmSync(TARGET, { recursive: true, force: true })
 }
 
-fs.mkdirSync(path.dirname(TARGET), { recursive: true })
-fs.cpSync(SOURCE, TARGET, { recursive: true })
+fs.mkdirSync(TARGET_ROOT, { recursive: true })
+for (const target of Object.values(TARGETS)) if (fs.existsSync(target)) fs.rmSync(target, { recursive: true, force: true })
+fs.cpSync(SOURCES.researcher, TARGETS.researcher, { recursive: true })
+fs.cpSync(SOURCES.governed, TARGETS.governed, { recursive: true })
+const portableTarget = path.join(TARGETS.researcher, 'project-cognition')
+fs.cpSync(path.join(REPOSITORY, 'lib'), path.join(portableTarget, 'lib'), { recursive: true })
+fs.cpSync(path.join(REPOSITORY, 'schemas'), path.join(portableTarget, 'schemas'), { recursive: true })
 
 console.log('')
-console.log('Installed "researcher" preset to ' + TARGET)
+console.log('Installed "researcher" preset to ' + TARGETS.researcher)
+console.log('Installed "governed" preset to ' + TARGETS.governed)
 console.log('Next steps:')
-console.log('  1. Start dsh, create a new session with preset "项目研究 Project Research".')
-console.log('  2. Choose permission read-only + approval never.')
-console.log('  3. The first tool call will be research_doctor (Runtime Certificate) — SAFE means you are good to go.')
+console.log('  1. Certified research: select "项目研究 Project Research", permission read-only + approval never.')
+console.log('  2. Governed execution: select "目标治理编码 Governed Coding" and run /researcher run <approved-contract>.')
+console.log('  3. In Governed Coding, /researcher <question> is one read-only turn; /researcher on is persistent guarded mode.')

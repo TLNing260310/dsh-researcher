@@ -1,0 +1,12 @@
+{
+  "schema": "project-cognition/adapter-capabilities/v1",
+  "client": "dsh",
+  "version": "1",
+  "capabilities": {
+    "human_approval": true,
+    "hard_stop": true,
+    "event_store": true,
+    "trusted_verifier": true,
+    "project_root_confinement": true
+  }
+}

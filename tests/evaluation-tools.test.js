@@ -51,6 +51,15 @@ test('selection result is frozen: seed recorded, 3 selected, distinct languages'
   assert.equal(langs.size, 3)
 })
 
+test('invalid C+ experiment cannot be represented as causal support', () => {
+  const validity = JSON.parse(fs.readFileSync(path.join(root, 'evaluation', 'cases', 'commander.js', 'gt-calibration', 'experiment-cplus-validity.json'), 'utf8'))
+  const score = JSON.parse(fs.readFileSync(path.join(root, 'evaluation', 'results', 'experiment-cplus', 'score-report.json'), 'utf8'))
+  assert.equal(validity.valid_for_causal_claim, false)
+  assert.equal(score.causal_validity.valid_for_causal_claim, false)
+  assert.equal(score.h2_condition_met, false)
+  assert.equal(score.verdict, 'INVALID FOR CAUSAL CLAIM')
+})
+
 test('eval lock: --check passes unchanged and fails after a mutation', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-lock-'))
   const snapshot = path.join(dir, 'snapshot')

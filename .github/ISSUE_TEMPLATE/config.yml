@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Product questions and ideas
+    url: https://github.com/TLNing260310/dsh-researcher/discussions
+    about: Discuss positioning, workflows, adapters and evaluation design.
+  - name: Private security report
+    url: https://github.com/TLNing260310/dsh-researcher/security/advisories/new
+    about: Do not disclose sandbox, authority or evidence-forgery bypasses publicly.

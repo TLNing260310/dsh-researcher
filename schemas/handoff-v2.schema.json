@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dsh-researcher/handoff/v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run", "certificate", "cognition_ref", "project", "build_items"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/handoff/v2" },
+    "run": { "type": "string", "minLength": 1 },
+    "certificate": { "enum": ["SAFE", "DEGRADED", "UNSAFE"] },
+    "cognition_ref": {
+      "type": "object", "additionalProperties": false, "required": ["state_hash", "revision"],
+      "properties": { "state_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }, "revision": { "type": "integer", "minimum": 0 } }
+    },
+    "project": {
+      "type": "object", "additionalProperties": false,
+      "required": ["purpose", "value_proven", "value_unproven", "invariants", "constraints", "unknowns"],
+      "properties": {
+        "purpose": { "type": "string", "minLength": 1 },
+        "value_proven": { "$ref": "#/$defs/stringArray" },
+        "value_unproven": { "$ref": "#/$defs/stringArray" },
+        "invariants": { "$ref": "#/$defs/stringArray" },
+        "constraints": { "$ref": "#/$defs/stringArray" },
+        "unknowns": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "build_items": { "type": "array", "items": { "$ref": "#/$defs/buildItem" } }
+  },
+  "$defs": {
+    "stringArray": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "buildItem": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "problem", "desired_outcome", "evidence", "confidence", "scope", "non_goals", "do_not_touch", "acceptance_hints", "cognition_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "problem": { "type": "string", "minLength": 1 },
+        "desired_outcome": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "#/$defs/stringArray" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "scope": { "$ref": "#/$defs/stringArray" },
+        "non_goals": { "$ref": "#/$defs/stringArray" },
+        "do_not_touch": { "$ref": "#/$defs/stringArray" },
+        "acceptance_hints": { "$ref": "#/$defs/stringArray" },
+        "cognition_refs": { "$ref": "#/$defs/stringArray" }
+      }
+    }
+  }
+}

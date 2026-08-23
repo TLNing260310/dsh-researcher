@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-cognition/goal/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "goal_id", "revision", "status", "verifier_registry_hash", "mode", "intent", "baseline", "target_state", "criteria", "boundaries", "invariant_refs", "limits", "human_gates"],
+  "properties": {
+    "schema": { "const": "project-cognition/goal/v1" },
+    "goal_id": { "type": "string", "minLength": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "status": { "enum": ["draft", "approved", "superseded"] },
+    "contract_hash": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+    "verifier_registry_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "mode": { "enum": ["simple", "governed"] },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problem", "value"],
+      "properties": { "problem": { "type": "string", "minLength": 1 }, "value": { "type": "string", "minLength": 1 } }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_revision", "cognition_hash", "known_failures"],
+      "properties": {
+        "repo_revision": { "type": "string", "minLength": 1 },
+        "cognition_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "known_failures": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "target_state": { "type": "string", "minLength": 1 },
+    "criteria": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/criterion" } },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["in_scope", "out_of_scope", "do_not_touch"],
+      "properties": { "in_scope": { "$ref": "#/$defs/stringArray" }, "out_of_scope": { "$ref": "#/$defs/stringArray" }, "do_not_touch": { "$ref": "#/$defs/stringArray" } }
+    },
+    "invariant_refs": { "$ref": "#/$defs/stringArray" },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_attempts", "max_no_progress_attempts"],
+      "properties": {
+        "max_attempts": { "type": "integer", "minimum": 1 },
+        "max_no_progress_attempts": { "type": "integer", "minimum": 1 },
+        "max_time_sec": { "type": ["integer", "null"], "minimum": 1 },
+        "max_tokens": { "type": ["integer", "null"], "minimum": 1 }
+      }
+    },
+    "human_gates": { "type": "array", "items": { "$ref": "#/$defs/humanGate" } },
+    "approval": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["actor", "approved_at", "approved_hash"],
+          "properties": {
+            "actor": { "type": "string", "minLength": 1 },
+            "approved_at": { "type": "string", "minLength": 1 },
+            "approved_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "simple" } }, "required": ["mode"] },
+      "then": { "properties": { "limits": { "properties": { "max_attempts": { "maximum": 2 }, "max_no_progress_attempts": { "maximum": 2 } } } } }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "governed" } }, "required": ["mode"] },
+      "then": { "properties": { "limits": { "properties": { "max_attempts": { "maximum": 5 }, "max_no_progress_attempts": { "maximum": 2 } } } } }
+    }
+  ],
+  "$defs": {
+    "stringArray": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "criterion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "priority", "expected", "verifier_id", "authority", "evidence_required"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "priority": { "enum": ["must", "should"] },
+        "expected": { "type": "string", "minLength": 1 },
+        "verifier_id": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]*$" },
+        "authority": { "enum": ["tool", "human"] },
+        "evidence_required": { "$ref": "#/$defs/stringArray" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "priority": { "const": "must" } }, "required": ["priority"] },
+          "then": { "properties": { "authority": { "const": "tool" } } }
+        }
+      ]
+    },
+    "humanGate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "description"],
+      "properties": { "id": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 } }
+    }
+  }
+}

@@ -1,0 +1,3 @@
+name: 目标治理编码 Governed Coding
+description: 具备完整编码工具，但由冻结 Goal Contract、可信验证器、人工架构门和主机判停控制完成状态；同时支持 /researcher 单次只读研究与持久 guarded Researcher Mode。
+order: 2

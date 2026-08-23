@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-cognition/state/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "revision", "mission", "architecture", "value_claims", "invariants", "decisions", "evidence", "known_unknowns", "next_proofs"],
+  "properties": {
+    "schema": { "const": "project-cognition/state/v1" },
+    "revision": { "type": "integer", "minimum": 1 },
+    "state_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "mission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["purpose", "intended_users", "use_cases", "environment"],
+      "properties": {
+        "purpose": { "type": "string", "minLength": 1 },
+        "intended_users": { "$ref": "#/$defs/stringArray" },
+        "use_cases": { "$ref": "#/$defs/stringArray" },
+        "environment": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["components", "boundaries"],
+      "properties": {
+        "components": { "$ref": "#/$defs/stringArray" },
+        "boundaries": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "value_claims": { "type": "array", "items": { "$ref": "#/$defs/valueClaim" } },
+    "invariants": { "type": "array", "items": { "$ref": "#/$defs/invariant" } },
+    "decisions": { "type": "array", "items": { "$ref": "#/$defs/decision" } },
+    "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+    "known_unknowns": { "type": "array", "items": { "$ref": "#/$defs/question" } },
+    "next_proofs": { "type": "array", "items": { "$ref": "#/$defs/question" } }
+  },
+  "$defs": {
+    "stringArray": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "valueClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "authority", "proof_status", "scope", "confidence", "evidence_refs", "invalidation_conditions", "freshness"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "authority": { "enum": ["repository_observed", "document_declared", "model_inferred", "owner_ratified"] },
+        "proof_status": { "enum": ["unknown", "hypothesis", "supported", "proven_within_scope", "refuted"] },
+        "scope": { "type": "string", "minLength": 1 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+        "invalidation_conditions": { "$ref": "#/$defs/stringArray" },
+        "freshness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": { "enum": ["fresh", "stale", "unknown"] },
+            "fingerprint": { "type": "string" },
+            "checked_at": { "type": "string" }
+          }
+        }
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "lifecycle", "strength", "authority", "evidence_refs", "change_policy"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "lifecycle": { "enum": ["candidate", "ratified", "superseded"] },
+        "strength": { "enum": ["soft", "hard"] },
+        "authority": { "enum": ["repository_observed", "document_declared", "model_inferred", "owner_ratified"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+        "change_policy": { "type": "string", "minLength": 1 },
+        "supersedes": { "type": "string" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "rationale", "status", "authority", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["active", "superseded"] },
+        "authority": { "enum": ["repository_observed", "document_declared", "model_inferred", "owner_ratified"] },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" },
+        "supersedes": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "ref"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["repository", "document", "test", "benchmark", "human"] },
+        "ref": { "type": "string", "minLength": 1 },
+        "fingerprint": { "type": "string" },
+        "observed_at": { "type": "string" }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "evidence_refs"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "statement": { "type": "string", "minLength": 1 },
+        "evidence_refs": { "$ref": "#/$defs/evidenceRefs" }
+      }
+    }
+  }
+}

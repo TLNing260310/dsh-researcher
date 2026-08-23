@@ -63,12 +63,14 @@ HANDOFF           仅 BUILD 项交给 Plan（跨会话、经你的决策）
 ## 用法
 
 1. 新建会话 → 预设 **项目研究 Project Research**；权限 `read-only` + 审批 `never`（当前 UI 显示为 custom 组合，是最严格组合）。
-2. 工作目录指向项目仓库，发送：**仓库说明 + 当前状态 + 你的困惑**。
+2. 工作目录指向项目仓库，直接发送问题，或使用 `/researcher <问题>`；若要为后续执行建立完成标准，使用 `/researcher goal <任务>`，只生成待人工审批的 Goal Contract 草案。
 3. 验收：`write`/`edit` 显示为 "DISABLED in research mode" 永拒桩；会话前后 `git status --porcelain` 一致。
+
+本 preset 是持续且可自证的 certified Researcher Mode。Governed Coding preset 内也支持 `/researcher <问题>` 单次只读 turn 与 `/researcher on|off` guarded mode，但后者没有本 preset 的 OS sandbox Runtime Certificate，不能混称为同一级别证明。
 
 ## 报告
 
-十四节：执行摘要（含分类汇总）→ 方法（含自查摘要）→ **项目模型重建**（含 初始假设→反证→修正假设）→ 架构地图 → 实现水平 → **证据台账（claim 卡片含裁决）** → 宣传与实现差距 → **竞品矩阵 + GitHub 可复用候选清单** → 优势 → **问题与权衡（问题链 + 12 维度表）** → 未验证假设 → 候选改进点（预分类）→ **建议与分类（交接包仅含 BUILD 项）** → 置信度与自查附录。报告在对话中输出（只读不写盘），复制保存是你的动作。
+Project Cognition Report 使用 7 节用户层（Identity / Architecture / Critical Components / Decisions / Risks / Change Impact / Decision Memo）+ AI 内部证据附录。末尾 handoff v2 仅含 BUILD 项，同时携带 cognition hash、项目目的、已证明/未证明价值、不变量、约束、未知、desired outcomes 与 non-goals。报告在对话中输出（只读不写盘），复制或由 host 流程批准保存是你的动作。
 
 ## 参考框架与保留意见
 
@@ -82,6 +84,7 @@ researcher/
 ├── agent.cordis.yml                   # 组合：工具行 + persona + 限制行
 ├── plugins/tool-restrict/index.js     # 只读守卫：环境预检 + 永拒桩 + 指引段遮蔽
 ├── plugins/research-state/index.js    # 证据状态机：台账/依赖图/局部失效/会话日志重放
+├── plugins/goal-governor/index.js     # /researcher 入口 + portable Goal Governor 的 DSH host adapter
 ├── plugins/git-read/index.js          # 白名单只读 git 工具（唯一的子进程能力，无 shell）
 ├── skills/project-research-methodology/SKILL.md   # 六模块 + 十一部 + 自查清单
 ├── skills/research-report-template/SKILL.md       # 十四节报告骨架
