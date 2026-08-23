@@ -99,6 +99,12 @@ Verifier / Eval Did it actually work? → evidence ──→ 回到 Researcher
 **EN** — Researcher does not replace Plan Mode. **It maintains the cognition Plan Mode builds on.** Uncertain items remain INVESTIGATE — it never manufactures tasks.
 **中文** — Researcher 不取代 Plan Mode。**它维护 Plan Mode 所依赖的认知。** 不确定的项保持 INVESTIGATE——它从不强行生成任务。
 
+**技术边界 / Verified boundary(2026-08,Experiment C+ 架构级结论,见 [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md))**:
+
+- **已验证 / Validated**:cognition-state 的生产与跨会话迁移管线(export → importState → export:true)可运行且可验证;注入完整性检测与评测治理(G1–G7)真实有效;证据锚定的旧认知失效在 6/6 注入继承运行中可复现,成本无惩罚。
+- **未验证 / Unvalidated**:Researcher 相对普通 agent 的**优越性**(Experiment A 未支持,Experiment C+ 的配对比较因快照隔离泄漏而不具采信性);机制因果(无 context-injection 对照);Projection Layer 的 invalidation-condition 价值。
+- **当前定位**:**项目认知基础设施(已验证)+ Research Mode 应用层(未验证优越性)**。基础设施层 = 状态生产/迁移/治理;应用层 = 十一阶段 Research Mode,其价值主张待隔离重跑裁决。
+
 ## Why not just a Prompt — 为什么不只是一段 Prompt：Project Cognition State
 
 **EN** — A plain AI reads code as **Read → Answer**. Researcher works as **Observe → Record → Challenge → Update belief**.
@@ -164,6 +170,8 @@ node fixtures/benchmark/benchmark-runner.js score <case-dir> <report.md>
 
 **EN** — What the experiment proved: structured project understanding (claims ledger, evidence tiers, architecture mapping, risk analysis, handoff, certificate) — what ordinary agents do not natively produce. What it did not prove: prediction of specific future bugs. The benchmark suite is being extended with Understanding / Risk / Change Impact / Drift benchmarks (see [docs/evaluation.md](./docs/evaluation.md)).
 **中文** — 实验证明的：结构化项目理解（claims ledger、证据分级、架构映射、风险分析、交接包、证书）——普通 Agent 不天然具备的能力。实验没有证明的：预测具体未来 Bug。评测套件正在扩展 Understanding / Risk / Change Impact / Drift 四个基准（见 [docs/evaluation.md](./docs/evaluation.md)）。
+
+**Experiment C+ — Cognition-State Inheritance(2026-08)**:**已验证**状态注入/迁移管线与评测治理(6/6 B runs G2 PASS,Stale Recovery 证据锚定失效可复现,成本 0.93×);**未验证**优越性与机制因果 —— A/B 配对比较因 T1 快照隔离泄漏(同级目录可读)而不具采信性。完整结论与剩余验证路径见 [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md)。泄漏与失败记录全部保留,不宣称 Projection Layer 已验证。
 
 ## How it works — 工作原理（三层 / three layers）
 

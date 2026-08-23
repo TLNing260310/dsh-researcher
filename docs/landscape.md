@@ -34,6 +34,23 @@ L4 怎么做       → DSH Plan Mode
 L5 做           → Coding Agent
 ```
 
+**双层架构（2026-08，Experiment C+ 后，见 docs/evaluation-cplus-conclusion.md）**：
+
+```
+Infrastructure 层（已验证）   Project Cognition Infrastructure
+  ├─ cognition-state：会话内状态机（claims / 依赖图 / 局部失效 / 重放）
+  ├─ 状态迁移管线：export → importState（跨会话认知继承，6/6 运行验证，
+  │    证据锚定失效可复现，成本 0.93× 无惩罚）
+  ├─ 对账工具：cognition-diff（证据锚指纹 → 失效候选，机械真值）
+  └─ 评测治理：G1–G7 gate、注入完整性检测、锁、失败保留
+
+Application 层（未验证优越性）   Research Mode（十一阶段 Research Agent）
+  ├─ 只读能力面、证据纪律 C0–C4、BUILD / DON'T BUILD / INVESTIGATE
+  ├─ PCR 双层输出 + Runtime Certificate
+  └─ 优越性主张待隔离重跑裁决（Experiment A 未支持；C+ 配对因快照
+       隔离泄漏不可采信，见 evaluation-cplus-conclusion.md Unvalidated）
+```
+
 **整合原则**：L0/L1 通过它们的 MCP 端点/导出图/blueprint 文件接入；Researcher 的独特价值是把它们的输出提升为**决策问题**——例如 Drift 报 "Controller→DB 违反 convention"，Researcher 不问"要不要拦"，而问"这个 convention 为什么存在？理由今天还成立吗？这次 deviation 是架构腐蚀还是合理演化？"
 
 ## 与 DSH 官方的关系
