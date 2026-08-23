@@ -45,6 +45,20 @@ const canonicalExisting = (value) => {
   try { return fs.realpathSync.native ? fs.realpathSync.native(value) : fs.realpathSync(value) } catch (error) { return path.resolve(value) }
 }
 
+const canonicalWithMissingTail = (value) => {
+  let cursor = path.resolve(value)
+  const missing = []
+  while (!fs.existsSync(cursor)) {
+    const parent = path.dirname(cursor)
+    if (parent === cursor) break
+    missing.unshift(path.basename(cursor))
+    cursor = parent
+  }
+  return path.resolve(canonicalExisting(cursor), ...missing)
+}
+
+const isPortableAbsolute = (value) => path.isAbsolute(value) || path.win32.isAbsolute(value) || path.posix.isAbsolute(value)
+
 const workspaceRoot = (agent) => {
   const cwd = agent && agent.session && agent.session.header && agent.session.header.cwd
   if (!cwd) throw new Error('session workspace root is unavailable')
@@ -52,10 +66,10 @@ const workspaceRoot = (agent) => {
 }
 
 const confinedFile = (root, relativePath, requiredParent) => {
-  if (typeof relativePath !== 'string' || relativePath.includes('\0') || path.isAbsolute(relativePath)) throw new Error('path must be relative to the workspace')
+  if (typeof relativePath !== 'string' || /[\u0000-\u001f\u007f]/.test(relativePath) || isPortableAbsolute(relativePath)) throw new Error('path must be relative to the workspace')
   const lexical = path.resolve(root, relativePath)
   const parent = path.resolve(root, requiredParent)
-  if (!isWithin(parent, lexical) || !isWithin(canonicalExisting(parent), canonicalExisting(lexical))) throw new Error('path escapes ' + requiredParent)
+  if (!isWithin(parent, lexical) || !isWithin(canonicalWithMissingTail(parent), canonicalWithMissingTail(lexical))) throw new Error('path escapes ' + requiredParent)
   return lexical
 }
 

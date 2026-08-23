@@ -5,7 +5,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'handoff-schema.md'), 'utf8')
-const jsonBlock = doc.match(/```json\n([\s\S]*?)```/)[1]
+const jsonBlock = doc.match(/```json\r?\n([\s\S]*?)```/)[1]
 
 test('handoff example parses and satisfies schema v2', () => {
   const parsed = JSON.parse(jsonBlock)

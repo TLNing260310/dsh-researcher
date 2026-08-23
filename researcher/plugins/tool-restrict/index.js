@@ -100,6 +100,11 @@ const canonicalExisting = (value) => {
   try { return fs.realpathSync.native ? fs.realpathSync.native(value) : fs.realpathSync(value) } catch (error) { return path.resolve(value) }
 }
 
+// path.isAbsolute understands only the current host's path dialect. Treat a
+// foreign absolute path as absolute too, otherwise C:/outside becomes a
+// workspace-relative path on POSIX and can slip past the lexical check.
+const isPortableAbsolute = (value) => path.isAbsolute(value) || path.win32.isAbsolute(value) || path.posix.isAbsolute(value)
+
 const isWithin = (root, target) => {
   const relative = path.relative(root, target)
   return relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))
@@ -113,7 +118,8 @@ const readPathVerdict = (name, args, workspaceRoot) => {
   for (const field of fields) {
     const value = args && args[field]
     if (value === undefined && (name === 'glob' || name === 'grep')) continue
-    if (typeof value !== 'string' || value.includes('\0')) return READ_ROOT_DENIAL
+    if (typeof value !== 'string' || /[\u0000-\u001f\u007f]/.test(value)) return READ_ROOT_DENIAL
+    if (isPortableAbsolute(value) && !path.isAbsolute(value)) return READ_ROOT_DENIAL
     const lexical = path.resolve(lexicalRoot, value)
     if (!isWithin(lexicalRoot, lexical)) return READ_ROOT_DENIAL
     if (!isWithin(canonicalRoot, canonicalExisting(lexical))) return READ_ROOT_DENIAL

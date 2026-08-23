@@ -93,11 +93,13 @@ test('doctor capability exists only for an actual SAFE verdict', () => {
 })
 
 test('read-root confinement rejects parent, sibling and external paths', () => {
-  const root = path.resolve('D:/isolated/workspace')
+  const root = path.resolve('isolated', 'workspace')
+  const external = path.resolve(path.parse(root).root, 'outside', 'image.png')
   assert.equal(readPathVerdict('read', { file_path: 'src/index.js' }, root), undefined)
   assert.equal(readPathVerdict('glob', { pattern: '**/*' }, root), undefined)
   assert.equal(readPathVerdict('grep', { pattern: 'x', path: '.' }, root), undefined)
   assert.equal(readPathVerdict('read', { file_path: '../T0/state.json' }, root), READ_ROOT_DENIAL)
   assert.equal(readPathVerdict('glob', { pattern: '**/*', path: '../sibling' }, root), READ_ROOT_DENIAL)
-  assert.equal(readPathVerdict('read_image', { file_path: 'C:/outside/image.png' }, root), READ_ROOT_DENIAL)
+  assert.equal(readPathVerdict('read_image', { file_path: external }, root), READ_ROOT_DENIAL)
+  assert.equal(readPathVerdict('read_image', { file_path: 'C:/foreign/image.png' }, root), READ_ROOT_DENIAL)
 })
