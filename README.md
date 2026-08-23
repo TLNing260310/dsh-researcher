@@ -211,6 +211,7 @@ npx -y github:TLNing260310/dsh-researcher
 | 入口 Entry | 内容 Contents |
 |---|---|
 | [docs/architecture.md](./docs/architecture.md) | 真实架构：Application Layer(Research Mode)消费 Infrastructure Layer(Project Cognition Infrastructure)/ real architecture (two layers, application consumes infrastructure) |
+| [docs/validation-status.md](./docs/validation-status.md) | 验证状态：Validated / Unknown / Invalidated 三段（含 C+ leakage 披露）/ validation status (three-way split, honest) |
 | [docs/project-cognition-position.md](./docs/project-cognition-position.md) | 当前架构定位：evolving toward a Project Cognition Infrastructure（双层架构、验证边界、竞争位置）/ current positioning（two-layer architecture, verified boundary, competitive position） |
 | [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md) | Experiment C+ 诚实结论（Validated / Invalidated / Unknown / Remaining,含 leakage 披露）/ honest C+ conclusion |
 | [docs/repositioning-v0.7.md](./docs/repositioning-v0.7.md) | v0.7 定位重构备忘录 / repositioning memo（认知层定位、PCR 结构、评测调整、分阶段计划） |
