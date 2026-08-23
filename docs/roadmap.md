@@ -1,5 +1,39 @@
 # Roadmap
 
+> 当前定位(2026-08):**evolving toward a Project Cognition Infrastructure**。路线按三阶段组织:Phase 1(基础设施原型,已完成)→ Phase 2(真实价值验证,进行中)→ Phase 3(未来扩展,未开始)。每阶段由前一步结果裁决;失败保留为反例资产。
+
+## Phase 1 — Infrastructure Prototype(已完成,原型级)
+
+**目标**:验证认知基础设施的工程能力(非产品化,非优越性)。
+
+- ✅ **state model**:cognition-state schema(schemaVersion:1;claims/hypotheses/views/dirty;单 reducer 事件溯源;会话日志重放)—— 137 claims 实证写入。
+- ✅ **migration**:export(fullExport → cognition-state-export.js)/ import(cognition-state-to-import.js → importState)—— G1 保真(32/32 零失真);6/6 C+ B-runs G2 PASS。
+- ✅ **evaluation**:G1–G7 gate、eval-lock(20 项 sha256)、blind-doctor 金丝雀、research-doctor 8 项检查、完整性检测(抓住 QUOTA 失败)、失败保留。
+- ✅ **实验**:Experiment A(commander.js GUS,12 runs)+ Experiment C+(状态继承,12 runs)+ 全部协议/GT/评分/锁冻结。
+- ⚠️ **未完成(原型边界)**:产品化(v0.9 capsule / Memory Bridge / 自动迁移)未做;应用层价值未验证。
+
+## Phase 2 — Real Value Validation(进行中,未完成)
+
+**目标**:验证基础设施是否带来真实价值 —— 隔离重跑与长期维护实验。
+
+- **R1 — Isolated rerun(隔离重跑)**:修复 C+ 的 T1 snapshot isolation leakage(根目录隔离 + 无 marker 注入;同冻结协议)→ 获得可采信的 Mutation Recall 与 A/B 配对比较。
+- **R2 — Mechanism isolation(机制隔离)**:Condition C(context injection 对照)→ 区分"信息增量"(A vs C)与"机制净效应"(C vs B);需 protocol bump 或独立实验。
+- **R3 — Long-term maintenance evaluation(长期维护评估)**:多阶段连续变更(T0→T1→T2→T3),维护臂 vs 重建臂 → Maintenance Recall / Consistency Drift / Rebuild Cost Ratio。
+- **判定纪律**:Phase 2 结果裁决 Phase 3 是否开始;H2 无增益 → 按失败标准降级(保留只读分析模式价值);失败记录全部保留。
+
+## Phase 3 — Future Extensions(未开始,取决于 Phase 2)
+
+**目标**:基础设施扩展(仅当 Phase 2 显示价值后)。
+
+- **semantic dependency(语义依赖)**:claim 级 relation(当前依赖图只在 hypotheses/views 层)。
+- **invalidation condition(失效条件)**:条目级"被推翻条件"字段(Projection Layer 核心主张,当前 claims 无此字段)。
+- **automatic migration(自动迁移)**:host-plane capsule 持久化与自动状态桥(v0.9 Memory Bridge 方向)。
+- **产品化决策**:仅当 Phase 2/R3 显示真实维护价值后,才评估 v0.9 路线。
+
+---
+
+## 历史(版本记录,保留)
+
 ## 已发布
 
 - **v0.1.0** — 只读研究预设：证据分级 C0–C4、八步流程、永拒桩 + 指引段遮蔽。

@@ -1,105 +1,51 @@
 # dsh-researcher
 
-## Evolving Toward a Project Cognition Infrastructure for AI Software Engineering
-## 走向 AI 软件工程项目认知基础设施(演化中)
+## 1. Project Introduction — 项目介绍
 
-**EN** — AI coding agents are becoming increasingly capable at modifying code. The next challenge is understanding the systems they modify.
+> **EN** — **Evolving toward a Project Cognition Infrastructure for AI Software Engineering.**
+> **中文** — **正在向 AI 软件工程项目认知基础设施方向发展(演化中,不是已完成的基础设施)。**
 
-dsh-researcher builds an evidence-backed model of a software project — its purpose, architecture, constraints, risks, and change impact — **before any code is changed**.
+**EN** — dsh-researcher is an **AI project-cognition research tool** and a **Project Cognition Infrastructure prototype**. It builds an evidence-backed model of a software project — its purpose, architecture, constraints, risks, and change impact — **before any code is changed**, and persists that cognition across sessions.
 
-**中文** — AI 编码 Agent 正在变得越来越擅长修改代码。下一个瓶颈，是理解正在被修改的系统。
+**中文** — dsh-researcher 是 **AI 项目认知研究工具**与 **Project Cognition Infrastructure 原型**。它在动手修改之前,建立一份基于证据的软件项目认知模型(项目目的、架构、约束、风险与修改影响),并让这份认知跨会话持续存在。
 
-dsh-researcher 在动手修改之前，建立一份基于证据的软件项目认知模型：项目目的、架构、约束、风险与修改影响。
+**第一眼定位 / First-glance positioning**:
 
-> **EN** — The problem is not that AI can't write code. It's that AI can modify code quickly while not knowing **why the project was designed this way**.
-> **中文** — 问题不是 AI 不会写代码，而是 AI 可以快速修改代码，却不知道**这个项目为什么这样设计**。
->
-> **EN** — Local correctness does not guarantee global correctness. Coding agents accelerate implementation; **dsh-researcher maintains project cognition.**
-> **中文** — 局部正确不保证全局正确。Coding Agent 加速实现；**Researcher 维护项目认知。**
+- ✅ **是 / It is**:项目认知研究工具 · Project Cognition Infrastructure 原型 · AI 编码时代的项目理解层
+- ❌ **不是 / It is not**:AI chatbot · 普通 repository analyzer · 更强的 Research Agent(优越性未验证)· 已完成的基础设施
 
-**零修改承诺是"可证明"而非"声称"**：别的 Agent 说 *trust me*，本层回答 **verify me** —— 每次研究开始前强制产出 Runtime Certificate，不 SAFE 不开始。
-**The zero-write promise is proven, not claimed**: other agents say *trust me*; this layer answers **verify me** — a Runtime Certificate is enforced before research begins, and no research starts unless it is SAFE.
+> **EN** — The problem is not that AI can't write code. It's that AI can modify code quickly while not knowing **why the project was designed this way**. Local correctness does not guarantee global correctness.
+> **中文** — 问题不是 AI 不会写代码,而是 AI 可以快速修改代码,却不知道**这个项目为什么这样设计**。局部正确不保证全局正确(米格-25 效应)。
 
-```
-                    DSH
-                      │
-                Coding Agent
-                      ↑
-                 Plan Mode
-                      ↑
-        ┌─────────────┴─────────────┐
-        │        Researcher         │
-        │    Project Cognition      │
-        │  ├─ Evidence Ledger       │
-        │  ├─ Risk Discovery        │
-        │  ├─ Runtime Verification  │
-        │  └─ Consistency (Checkpoint; Drift Detection: roadmap v0.7+) │
-        └─────────────┬─────────────┘
-                Repository（只读 / read-only）
-```
+## 2. Why This Exists — 为什么需要它
 
-## Why — 为什么需要它
-
-**EN** — AI coding tools have made implementation cheap. But software development has another bottleneck: **understanding the whole system**.
-**中文** — AI 编码工具让实现变得廉价，但软件开发还有另一个瓶颈：**理解整个系统**。
-
-**EN**
-- A single change may be correct.
-- A hundred correct changes may still create: architectural drift, outdated assumptions, inconsistent documentation, hidden complexity, loss of original intent.
-
-**中文**
-- 一次修改可能是正确的。
-- 一百次正确的修改，仍然可能累积出：架构漂移、过期的假设、文档与实现失配、隐性复杂度、最初意图的丢失。
-
-**EN** — Local correctness does not guarantee global correctness.
-**中文** — 局部最优不会自动产生系统最优（米格-25 效应）。
-
-## When to use — 何时用它
-
-**✅ 适合 / Use it when**
-- 接手陌生的大型仓库 / taking over a large unfamiliar repository
-- 重构之前，先建立认知基线 / before a refactor, establish a cognition baseline
-- **风险改动前的影响评估**：改认证、换缓存层、动数据模型之前，先知道波及面 / **change-impact check before risky changes** (auth, caching, data model …)
-- 开源项目评估 / 技术尽调 / OSS evaluation or technical due diligence
-- 长期项目的认知维护：定期 refresh，检测认知过期（roadmap v0.7+）/ long-term cognition maintenance with periodic refresh (roadmap v0.7+)
-
-**❌ 不适合 / Skip it when**（直接用 Coding Agent 更快 / a coding agent is faster）
-- 修改一个小函数 / changing one small function
-- 修一个明显的 bug / fixing an obvious bug
-- 简单 CRUD 需求 / simple CRUD work
-
-## Position — 定位：Researcher 是认知层，不是另一个 Coding Agent
-
-**EN** — Researcher is not another coding agent, not an upgraded Plan Mode, not an AI architect, and not a bug predictor. It is the **cognition layer** they all build on.
-**中文** — Researcher 不是另一个 Coding Agent，不是 Plan Mode 的加强版，不是 AI 架构师，也不是 Bug 预测器。它是它们共同依赖的**认知层**。
-
-| 问题 Question | Coding Agent | Plan Mode | **Researcher** |
-|---|---|---|---|
-| EN | How to implement it | How to change it | **What is this project, and what should change, if anything** |
-| 中文 | 怎么实现 | 怎么修改 | **这个项目是什么，以及该不该动、动哪里** |
-| 目标 Goal (EN/中文) | produce code / 产生代码 | produce a plan / 产生方案 | maintain project cognition / 建立并维护项目认知 |
-| 输出 Output | patch | implementation plan | Project Cognition Report + Decision Memo |
-| 失败代价 Failure cost | 写错 wrong code | 计划错误 wrong plan | 认知失真 distorted cognition |
-
-**分层宣传 / layered messaging**：
-- **官方定位（第一层，演化中）**：**evolving toward a Project Cognition Infrastructure** —— 已验证的基础设施能力(状态模型/迁移/评测治理)+ 未验证的应用层价值(Research Mode 优越性)。不是"已完成的基础设施"。
-- **用户理解（第二层）**：Architecture Intelligence Assistant（架构智能分析助手）——提供**架构师式的理解流程**，不是替代架构师。
-- **营销话术（第三层）**：为 AI Coding Agent 提供"架构师级别的项目理解能力"。
+**传统 Agent 的工作方式 / Traditional agents**:
 
 ```
-Researcher      What is this project? → evidence + cognition + Decision Memo
-     ↓ 仅 BUILD/INVESTIGATE 项交接（Markdown 简述 + research_handoff.json）
-Plan            How should we build it? → implementation specification
-     ↓
-Coding Agent    Build it. → working implementation
-     ↓
-Verifier / Eval Did it actually work? → evidence ──→ 回到 Researcher
+read repository
+    ↓
+generate answer
+    ↓
+forget(会话结束,上下文丢弃 — context discarded at session end)
 ```
 
-**EN** — Researcher does not replace Plan Mode. **It maintains the cognition Plan Mode builds on.** Uncertain items remain INVESTIGATE — it never manufactures tasks.
-**中文** — Researcher 不取代 Plan Mode。**它维护 Plan Mode 所依赖的认知。** 不确定的项保持 INVESTIGATE——它从不强行生成任务。
+**dsh-researcher 的工作方式 / dsh-researcher**:
 
-**架构说明 / Architecture**：
+```
+observe project
+    ↓
+build cognition state(claims/evidence/依赖图,版本化)
+    ↓
+maintain understanding(证据锚定,局部失效)
+    ↓
+continue future reasoning(export/import 跨会话迁移)
+```
+
+**EN** — AI coding tools have made implementation cheap, but software development has another bottleneck: **understanding the whole system**. A single change may be correct; a hundred correct changes may still create architectural drift, outdated assumptions, and loss of original intent. The structural problem is that agent cognition is **session-local**: each session re-derives what the previous one already learned. dsh-researcher separates the *production* of cognition (Research Mode) from the *carriage* of cognition (Infrastructure) — the research direction, not a completed product.
+
+**中文** — AI 编码工具让实现变得廉价,但软件开发还有另一个瓶颈:**理解整个系统**。一次修改可能是正确的;一百次正确的修改仍可能累积出架构漂移、过期假设与最初意图的丢失。结构性问题是 agent 认知是**会话局部的**:每次会话重新推导上一次已学到的东西。dsh-researcher 将认知的**生产**(Research Mode)与认知的**承载**(Infrastructure)分离 —— 这是研究方向,不是已完成产品。
+
+## 3. Architecture Overview — 架构总览
 
 ```
 dsh-researcher — Project Cognition System(演化中 / evolving)
@@ -111,40 +57,67 @@ Project Cognition Infrastructure          Research Mode
   - cognition-state                       - repository research
   - claims graph                          - architecture analysis
   - evidence anchors                      - risk analysis
-  - revision tracking                     - decision support
-  - export / import                       - handoff
-  - cognition migration
+  - dependency tracking                   - decision support
+  - revision tracking                     - handoff
+  - export / import migration
   - evaluation governance
 ```
 
-**当前定位 / Current positioning**:dsh-researcher 是 AI 项目认知研究工具与 **Project Cognition Infrastructure 原型** —— **正在向项目认知基础设施方向发展,目前已验证认知状态建模和迁移能力,但应用层收益仍需进一步验证**(evolving toward a Project Cognition Infrastructure;not a completed infrastructure, not a proven-superior agent)。
+**EN — Application consumes Infrastructure; the two layers must not be conflated.** Research Mode (the application layer) *produces* cognition through the eleven-stage pipeline and `research_checkpoint`; the Infrastructure layer *carries* it: a versioned, dependency-carrying state machine with evidence anchors, revision history, cross-session export/import migration, and evaluation governance. The application layer's superiority over ordinary agents is **not yet validated**; the infrastructure layer's engineering capability **is validated** (see §4).
 
-**已验证能力 / Validated(2026-08,Experiment C+ 架构级结论,见 [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md))**:
+**中文 — Application 消费 Infrastructure;两层不可混淆。** Research Mode(应用层)通过十一阶段管道与 `research_checkpoint` **生产**认知;Infrastructure 层(底层)**承载**认知:版本化、带依赖的状态机,含证据锚、修订历史、跨会话 export/import 迁移与评测治理。应用层相对普通 agent 的优越性**尚未验证**;基础设施层的工程能力**已验证**(见 §4)。
 
-1. **cognition-state schema** — 版本化状态机(claims/依赖图/局部失效/会话日志重放),137 claims 实证写入;
-2. **state export / import** — 跨会话迁移管线,G1 保真(32/32 零失真),6/6 注入运行 G2 PASS;
-3. **cross-session cognition migration** — 证据锚定旧认知失效可复现,成本 0.93× 无惩罚;
-4. **evaluation integrity framework** — G1–G7 gate、完整性检测(真实抓住 QUOTA 失败)、eval-lock、失败保留。
+**Research Mode 输出 / Output**:Project Cognition Report(7 节用户层 + AI 内部层附录:Evidence Ledger / Claims / Confidence / Certificate / Checkpoint State)+ Decision Memo(BUILD / DON'T BUILD / INVESTIGATE)+ `research_handoff.json`。
 
-**未验证能力 / Unvalidated**:
+## 4. Validation Status — 验证状态表
 
-1. Researcher 是否超过普通 Agent(Experiment A 未支持;Experiment C+ 配对比较因快照隔离泄漏而不具采信性);
-2. 是否提高长期开发效率(需隔离重跑与长期维护评估);
-3. Projection Layer 是否有效(invalidation-condition 价值未经实验触及);
-4. 长期维护收益(多阶段维护评估未做)。
+> 依据:Experiment A(commander.js,12 runs)+ Experiment C+(cognition-state inheritance,12 runs)。完整结论:[docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md)。
 
-**当前定位 / Positioning summary**:**项目认知基础设施(已验证)+ Research Mode 应用层(未验证优越性)**。基础设施层 = 状态生产/迁移/治理;应用层 = 十一阶段 Research Mode,其价值主张待隔离重跑裁决。
+### ✅ Validated(已验证 —— 基础设施层)
 
-## Why not just a Prompt — 为什么不只是一段 Prompt：Project Cognition State
+| # | 能力 | 证据 |
+|---|---|---|
+| V1 | **cognition-state schema** | 版本化状态机(claims/依赖图/局部失效/会话日志重放);137 claims 实证写入 |
+| V2 | **state export / import** | 跨会话迁移管线;G1 保真(32/32 零失真);6/6 注入运行 G2 PASS |
+| V3 | **cross-session cognition migration** | 证据锚定旧认知失效可复现(6/6 B-runs);成本 0.93× 无惩罚 |
+| V4 | **evaluation integrity framework** | G1–G7 gate;完整性检测真实抓住 QUOTA 失败;eval-lock;失败保留 |
 
-**EN** — A plain AI reads code as **Read → Answer**. Researcher works as **Observe → Record → Challenge → Update belief**.
-**中文** — 普通 AI 读代码的方式是 **Read → Answer**；Researcher 的方式是 **观察 → 记录 → 挑战 → 更新信念**。
+### ❌ Invalidated / Not Admissible(已证伪或不可采信)
 
-**EN** — The eleven-stage pipeline is easy to copy; the **state** is not. Every research run produces a versioned, dependency-carrying, evidence-backed cognition state: Project Model → Claims → Evidence → Confidence → Decision → Revision History.
-**中文** — 十一阶段流程容易复制；**状态**不可复制。每次研究产出一个带版本、带依赖、带证据的项目认知状态：项目模型 → 主张 → 证据 → 置信度 → 决策 → 版本历史。
+| # | 主张 | 状态 | 原因 |
+|---|---|---|---|
+| U1 | Researcher 超过普通 Agent | ❌ 不可采信 | C+ A/B 配对被 T1 snapshot isolation leakage 污染(见 §5);Exp A 方向亦不支持 |
+| U2 | Mutation Recall 优越性 | ❌ 不可采信 | 12/12 饱和 = marker 可搜索 + 泄漏的产物 |
+| U3 | Projection Layer 有效性 | ❌ 未验证 | claims 无 invalidation_condition 字段,实验未触及 |
 
-**EN** — New evidence invalidates only what depends on it (versioned hypotheses, local recomputation) — never a full pipeline rerun.
-**中文** — 新证据只失效依赖它的结论（假设版本化、局部重算），不整管重跑、不重读已读文件。
+### ❓ Unknown(未知 —— 需后续实验)
+
+| # | 问题 | 需要 |
+|---|---|---|
+| K1 | 维护生产力(maintenance productivity) | 隔离重跑 + 长期维护评估 |
+| K2 | 长期开发者价值(long-term developer value) | 多阶段维护实验 |
+
+## 5. Experiment C+ Honest Result — 诚实结论(含漏洞披露)
+
+**Experiment C+ — Cognition-State Inheritance(2026-08,commander.js,6 mutations × (A stateless / B inherited)):**
+
+- **Validated**:状态注入管线可运行(6/6 B-runs G2 PASS:importState + export:true 验证);跨会话认知迁移技术上可行(B-runs 展示证据锚定的旧认知失效,成本 0.93×);评测系统能检测完整性问题(抓住 QUOTA 失败)。
+- **Invalidated**:**snapshot isolation leakage** —— T1 快照建于 `commander.js-cplus-t1/`,与原始 T0 同级;只读沙箱允许读 workspace 之外,5/6 A-runs(和 2 个 B-runs)读取了 sibling mutation 目录或原始 T0,获得外部 ground truth。**因此 Mutation Recall 的 A/B 比较不成立,Researcher 优越性结论不成立。** 本问题不隐藏。
+- 失败记录(QUOTA 中断 7 runs)与泄漏记录全部保留 —— 失败是可信度资产。
+
+完整结论与剩余验证路径(R1 隔离重跑 / R2 机制隔离 / R3 长期维护):[docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md)。实验产物:[evaluation/results/experiment-cplus/](./evaluation/results/experiment-cplus/)。
+
+## 6. Roadmap — 路线图
+
+> 详见 [docs/roadmap.md](./docs/roadmap.md)。每阶段由前一步结果裁决;失败保留为反例资产。
+
+| 阶段 | 内容 | 状态 |
+|---|---|---|
+| **Phase 1 — Infrastructure prototype** | state model(cognition-state schema)✅ · migration(export/import)✅ · evaluation governance(G1–G7)✅ | **已完成(原型级,非产品级)** |
+| **Phase 2 — Real value validation** | maintenance experiments(多阶段注入)· fresh analysis vs cognition recovery(隔离重跑 R1 + 机制隔离 R2 + 长期维护 R3) | **进行中(未完成)** |
+| **Phase 3 — Future extensions** | semantic dependency(语义依赖)· invalidation condition(失效条件)· automatic migration(自动迁移) | **未开始(取决于 Phase 2)** |
+
+---
 
 ## Trust — 为什么相信它：Research Runtime Health Gate
 
@@ -201,8 +174,6 @@ node fixtures/benchmark/benchmark-runner.js score <case-dir> <report.md>
 **EN** — What the experiment proved: structured project understanding (claims ledger, evidence tiers, architecture mapping, risk analysis, handoff, certificate) — what ordinary agents do not natively produce. What it did not prove: prediction of specific future bugs. The benchmark suite is being extended with Understanding / Risk / Change Impact / Drift benchmarks (see [docs/evaluation.md](./docs/evaluation.md)).
 **中文** — 实验证明的：结构化项目理解（claims ledger、证据分级、架构映射、风险分析、交接包、证书）——普通 Agent 不天然具备的能力。实验没有证明的：预测具体未来 Bug。评测套件正在扩展 Understanding / Risk / Change Impact / Drift 四个基准（见 [docs/evaluation.md](./docs/evaluation.md)）。
 
-**Experiment C+ — Cognition-State Inheritance(2026-08)**:**已验证**状态注入/迁移管线与评测治理(6/6 B runs G2 PASS,Stale Recovery 证据锚定失效可复现,成本 0.93×);**未验证**优越性与机制因果 —— A/B 配对比较因 T1 快照隔离泄漏(同级目录可读)而不具采信性;Projection Layer 有效性未经实验验证。完整结论与剩余验证路径见 [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md)。泄漏与失败记录全部保留。
-
 ## How it works — 工作原理（三层 / three layers）
 
 **Layer 1 — Understand 理解**：Repository → Code / Docs / History / Tests / Issues / External context → **Project Model**（项目身份 / 架构地图 / 核心组件 / 设计决策）
@@ -210,11 +181,6 @@ node fixtures/benchmark/benchmark-runner.js score <case-dir> <report.md>
 **Layer 3 — Guide 引导**：Risk Map → **Decision Memo（BUILD / DON'T BUILD / INVESTIGATE）** → Plan Mode
 
 十一阶段管道 Pipeline：`DISCOVER → RECONSTRUCT → EVIDENCE MAP → DIAGNOSE → TRADEOFF ANALYSIS → EXTERNAL RESEARCH → COMPARE → CHALLENGE → SHAPE → CLASSIFY → SELF-EVAL → HANDOFF`。**The pipeline is linear in execution but stateful in reasoning. 执行是线性的，推理是有状态的。**
-
-### Output — 输出：Project Cognition Report（双层）
-
-**EN** — A readable **user layer** (7 sections: Project Identity / Architecture Map / Critical Components / Design Decisions / Risk Map / Change Impact Analysis / Decision Memo) sits on top of an **AI-internal layer** that is never deleted, only summarized: Evidence Ledger, Claims, Confidence, Certificate, Checkpoint State. Like a cockpit: passengers see altitude and speed; pilots keep the full instrument panel.
-**中文** — 可读的**用户层**（7 节：项目身份 / 架构地图 / 核心组件 / 设计决策 / 风险地图 / 修改影响分析 / 决策建议）之下，保留**AI 内部层**（证据台账、主张、置信度、证书、checkpoint 状态）——不删除，只摘要呈现。像飞机驾驶舱：乘客看到高度、速度；飞行员拥有完整仪表。
 
 ## Non-goals — 明确不做什么
 
@@ -244,10 +210,12 @@ npx -y github:TLNing260310/dsh-researcher
 
 | 入口 Entry | 内容 Contents |
 |---|---|
-| [docs/repositioning-v0.7.md](./docs/repositioning-v0.7.md) | v0.7 定位重构备忘录 / repositioning memo（认知层定位、PCR 结构、评测调整、分阶段计划） |
+| [docs/architecture.md](./docs/architecture.md) | 真实架构：Application Layer(Research Mode)消费 Infrastructure Layer(Project Cognition Infrastructure)/ real architecture (two layers, application consumes infrastructure) |
 | [docs/project-cognition-position.md](./docs/project-cognition-position.md) | 当前架构定位：evolving toward a Project Cognition Infrastructure（双层架构、验证边界、竞争位置）/ current positioning（two-layer architecture, verified boundary, competitive position） |
+| [docs/evaluation-cplus-conclusion.md](./docs/evaluation-cplus-conclusion.md) | Experiment C+ 诚实结论（Validated / Invalidated / Unknown / Remaining,含 leakage 披露）/ honest C+ conclusion |
+| [docs/repositioning-v0.7.md](./docs/repositioning-v0.7.md) | v0.7 定位重构备忘录 / repositioning memo（认知层定位、PCR 结构、评测调整、分阶段计划） |
 | [docs/landscape.md](./docs/landscape.md) | 竞品格局与 L0–L5 分层 / competitive landscape & L0–L5 layering（Cairn / Drift / GitNexus / Serena / Understand Anything） |
-| [docs/roadmap.md](./docs/roadmap.md) | 路线图 / roadmap（Claim Delta、生态化、集成缝、Capsule） |
+| [docs/roadmap.md](./docs/roadmap.md) | 路线图 / roadmap（Phase 1 基础设施原型 → Phase 2 价值验证 → Phase 3 未来扩展） |
 | [docs/ai-engineering-skills-map.md](./docs/ai-engineering-skills-map.md) | 与 AI Engineering Skills Map 的能力映射与方法论保留 / capability mapping & methodological caveats |
 | [docs/handoff-schema.md](./docs/handoff-schema.md) | `research_handoff.json` 机器可读交接接口 / machine-readable handoff interface（schema v1） |
 | [docs/postmortems/](./docs/postmortems/) | 事后分析 / postmortems："配置正确 ≠ 运行正确"（recompose 洞） |
