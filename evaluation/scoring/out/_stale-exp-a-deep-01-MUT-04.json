@@ -1,0 +1,325 @@
+{
+  "schema": "dsh-researcher/cognition-diff/v1",
+  "source_state": "exp-a-deep-01",
+  "generated_at": "2026-08-22T21:26:04.266Z",
+  "stale_claims": [
+    {
+      "id": "C24",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "2073-2091",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C27",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1290-1301",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C28",
+      "stale_anchors": 3,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1916",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "2623",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1955",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C29",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "99-114",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "affected_hypotheses": [
+    {
+      "id": "H1",
+      "status": "active",
+      "stale_dependencies": [
+        "C24"
+      ]
+    }
+  ],
+  "affected_views": [
+    {
+      "name": "diagnosis",
+      "stale_dependencies": [
+        "C24",
+        "C27",
+        "C28",
+        "C29"
+      ]
+    },
+    {
+      "name": "risk_map",
+      "stale_dependencies": [
+        "C24"
+      ]
+    }
+  ],
+  "unchanged_claims": [
+    {
+      "id": "C02",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C03",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C04",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C05",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C06",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C07",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C08",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C10",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C17",
+      "note": "partial staleness",
+      "stale_anchors": 2,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "typings/index.d.ts",
+          "line_span": "873",
+          "recorded_sha": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "current_sha": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "stale": false
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1020",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "2118-2133",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C18",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C19",
+      "note": "partial staleness",
+      "stale_anchors": 2,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "lib/error.js",
+          "line_span": "4-36",
+          "recorded_sha": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
+          "current_sha": "013d254f21524dc912aa61a53394d5ebb97e722be1c683f7bd2313c14597d521",
+          "stale": false
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "533-539",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1303-1342",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C20",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C22",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C25",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C26",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "2475-2495",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        },
+        {
+          "file": "typings/index.d.ts",
+          "line_span": "20",
+          "recorded_sha": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "current_sha": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C30",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "163",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "9b947c0c7e9f42da695d40a8f2ceb487cff213929cc29873e4c08de69075fc4e",
+          "stale": true
+        },
+        {
+          "file": "lib/option.js",
+          "line_span": "316-320",
+          "recorded_sha": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "current_sha": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "stale": false
+        }
+      ]
+    }
+  ],
+  "unverifiable_claims": [
+    {
+      "id": "C01",
+      "reason": "git log HEAD (bf35c5f 2026-02-02) | git status clean | package.json version 14.0.3",
+      "anchor_count": 3
+    },
+    {
+      "id": "C09",
+      "reason": "github/workflows/tests.yml:15-16 | .github/workflows/codeql-analysis.yml",
+      "anchor_count": 2
+    },
+    {
+      "id": "C11",
+      "reason": "git log 500 entries: majority dependabot[bot]",
+      "anchor_count": 1
+    },
+    {
+      "id": "C12",
+      "reason": "grep TODO|FIXME|XXX|HACK in lib/ -> no matches",
+      "anchor_count": 1
+    },
+    {
+      "id": "C13",
+      "reason": "docs/deprecated.md headings",
+      "anchor_count": 1
+    },
+    {
+      "id": "C14",
+      "reason": "web_search: osv.dev MAL-2025-192687 for commmander/commander-stable (NOT real commander) | Snyk package page exists",
+      "anchor_count": 2
+    },
+    {
+      "id": "C15",
+      "reason": "glob tests/*.test.js (134 files incl. special) | jest.config.js collectCoverage: true",
+      "anchor_count": 2
+    },
+    {
+      "id": "C16",
+      "reason": "blame lib/command.js: core skeleton from 08245cc7 (2021-05-25, v8-era rewrite) | git log shows surgical feature layering 2021-2026",
+      "anchor_count": 2
+    },
+    {
+      "id": "C21",
+      "reason": "full subagent report: 1,071 static test()/it() + 30 each-blocks; negatives.test.js 7x17, argumentVariations 8x4, action 6x3 | jest.config.js excludes .mjs from default patterns",
+      "anchor_count": 2
+    },
+    {
+      "id": "C23",
+      "reason": "full subagent report gaps: Help.commandDescription/prepareContext/formatItemList/displayWidth, Option.is/isBoolean no direct tests | esm-imports-test.mjs is smoke-only, not jest-run | deprecated.test.js 3 tests; Windows describes skipped",
+      "anchor_count": 3
+    },
+    {
+      "id": "C31",
+      "reason": "web_search: github.com/tj/commander.js/releases/tag/v15.0.0 | dependabot bumps 14.0.3 -> 15.0.0 in multiple repos",
+      "anchor_count": 2
+    },
+    {
+      "id": "C32",
+      "reason": "web_search: snyk page, osv MAL-2025-192687 for typosquats | no CVE for real commander found",
+      "anchor_count": 2
+    }
+  ],
+  "metrics": {
+    "total_claims": 32,
+    "stale_candidates": 4,
+    "unchanged": 16,
+    "unverifiable": 12,
+    "affected_hypotheses": 1,
+    "affected_views": 2
+  }
+}

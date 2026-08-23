@@ -1,0 +1,415 @@
+
+
+===MSG===
+
+Runtime Proof: **Researcher Runtime Certificate — Run #2, Overall: SAFE** (preset=researcher-deep, sandbox=read-only, approval=never, write/edit=refusing stubs, git_read only subprocess, checkpoint available, replay consistent).
+
+Starting with DISCOVER — cartography of the snapshot.
+
+===MSG===
+
+The workspace is a snapshot of commander.js. Let me dig into identity details and git history.
+
+===MSG===
+
+Single squashed commit — no in-repo history. The name `MUT-06` suggests this is a mutated snapshot of commander.js v14.0.3. Let me check for sibling snapshots (for the previous-snapshot comparison) and read the entry points.
+
+===MSG===
+
+Sibling snapshots MUT-01…MUT-06 exist, plus a `snapshot.json` metadata file. Let me read the snapshot metadata — this is the key to the previous-snapshot comparison.
+
+===MSG===
+
+Now the picture is clear: each `MUT-NN` is a single-mutation snapshot of commander.js (t0 = pristine upstream commit `bf35c5f`), and MUT-06's injected candidate is the error code `commander.missingMandatoryOptionValue` (kind: `compatibility_constraint`). My job: find the mutation, map the project, and compare against the previous snapshot (MUT-05) and pristine upstream.
+
+Let me hunt the candidate error code and read the error module.
+
+===MSG===
+
+The candidate error code exists at the expected throw site. The mutation likely sits near it — either the detection logic, the message, or a second throw site. Let me read the surrounding code in `lib/command.js`.
+
+===MSG===
+
+**Mutation found and marked in source.** `lib/command.js:2058-2062` carries an explicit `// MUT-06 (synthetic)` comment: the message now appends `(flags: ${option.flags()})`. The critical question: does `Option` have a callable `flags()` method, or is `flags` a string property (making this a TypeError crash that kills the error-code contract)? Let me check `lib/option.js` and the pristine MUT-05 counterpart.
+
+===MSG===
+
+Confirmed at first pass: `option.flags` is a **string property** (`lib/option.js:12`), and there is **no `flags()` method** anywhere in option.js — so `option.flags()` throws `TypeError: option.flags is not a function` *before* `this.error(...)` runs, destroying the `commander.missingMandatoryOptionValue` error-code contract. MUT-05 (previous snapshot) has a *different* mutation (command.js:605) and its `missingMandatoryOptionValue` is pristine — a local pristine reference.
+
+Now let me (a) delegate a full MUT-05↔MUT-06 diff to a background subagent, and (b) verify upstream pristine ground truth via web, plus check whether any test expects the mutated message.
+
+===MSG===
+
+No test, doc, or typing expects the mutated `(flags: ...)` message — `typings/index.d.ts:96` declares `flags: string`, README documents the pristine message, and the exitOverride test still expects the pristine string. Let me pin down the exact call chain, the pristine reference in MUT-05, and upstream ground truth.
+
+===MSG===
+
+MUT-05's pristine method and its own separate mutation at line 605 are now confirmed, and MUT-06's `_callParseArg` is pristine — two distinct, non-overlapping single-site mutations. The affected tests (exitOverride:290-308, showHelpAfterError:43-54) clearly expect the pristine error. Now let me trace the call chain, the `error()` implementation, and validate snapshot provenance against GitHub.
+
+===MSG===
+
+Web provider unavailable — external verification is out; local evidence is already conclusive (two independent pristine references agree). Let me read the `error()`/`_exit()` machinery to complete the impact chain, then move to full reconstruction of the remaining modules.
+
+===MSG===
+
+`error()` → `_exit()` chain confirmed: with the mutation, stderr output, `showHelpAfterError`, `_exitCallback` (exitOverride), and `process.exit(1)` are all bypassed — a raw TypeError escapes instead. Now the full module reconstruction: option.js, argument.js, suggestSimilar.js, and typings checks.
+
+===MSG===
+
+
+
+===MSG===
+
+option.js and suggestSimilar.js are pristine v14 code. Now let me read the Command constructor and parse pipeline (core of the architecture map), and delegate the remaining broad reads (help.js/argument.js structure, test-suite inventory) to background subagents.
+
+===MSG===
+
+Command constructor is pristine v14. Let me map the parse pipeline methods and read the key regions.
+
+===MSG===
+
+
+
+===MSG===
+
+Parse pipeline confirmed pristine v14. Now the impact surface beyond tests: examples and README code samples that use `requiredOption`, plus README/typings for the identity and design sections.
+
+===MSG===
+
+Impact surface is clear. Let me check the background diff subagent and read typings/CHANGELOG heads for the identity and design sections.
+
+===MSG===
+
+Typings confirm `flags: string` with no `flags()` method, and CHANGELOG shows v14.0.3 (2026-01-31). Let me check the subagents' status and read the mandatory-options test suite + parseOptions tokenizer first-hand.
+
+===MSG===
+
+Key nuance found: the coarse `.toThrow()` tests in `options.mandatory.test.js` would still **pass** (a TypeError is still a throw) — only the precise error-code assertions fail. Let me verify the assertion helpers and the test setup.
+
+===MSG===
+
+
+
+===MSG===
+
+The test-file header (exitOverride.test.js:4-7) states the project's own compatibility contract: exitCode and code are "intended to be stable for semver minor versions" — exactly the constraint MUT-06 breaks. Let me read the parseOptions tokenizer and CI config while the diff subagent finishes.
+
+===MSG===
+
+help.js/argument.js confirmed pristine, and the subagent's cross-check independently found the **only** MUT markers in `lib/` are the two at command.js:2059-2060. Let me look at the examples that exercise the mutated path and the typings' Command surface while the diff subagent finishes.
+
+===MSG===
+
+The example would crash under the mutation. Now let me collect the two remaining background subagents.
+
+===MSG===
+
+Both still running. Meanwhile, let me finish the parse pipeline reading (parseOptions tail, `_processArguments`, `_checkNumberOfArguments`).
+
+===MSG===
+
+Let me commit the evidence ledger and hypothesis state via research_checkpoint while the subagents finish.
+
+===MSG===
+
+Checkpoint committed. Let me check on the remaining subagents.
+
+===MSG===
+
+While the diff subagent works, let me check one more detection signal: whether the mutated line violates the repo's prettier config (CI runs `npm run check`).
+
+===MSG===
+
+Prettier (printWidth 80, singleQuote) would reformat the ~120-char mutated line — so CI's `npm run check:format` is another detection signal. Let me check the docs' description of the required-option contract, then collect the diff subagent.
+
+===MSG===
+
+Docs don't specify the message text — the README is the contract reference. Let me read the README's required-option section verbatim while the diff subagent completes.
+
+===MSG===
+
+README:357-360 pins the exact documented contract. Checking the diff subagent once more.
+
+===MSG===
+
+While the diff subagent finishes, let me re-examine MUT-05's exact mutation block carefully — my earlier reading warrants a second look for the previous-snapshot comparison section.
+
+===MSG===
+
+MUT-05's mutation re-read confirmed (its `this.error` in the first branch is replaced by a comment; a `throw` is injected in the second). While the diff subagent finishes its full-tree comparison, let me complete the remaining architecture reads: `_prepareUserArgs` and the unknown-option/command error paths.
+
+===MSG===
+
+Architecture reading is complete. Let me collect the diff subagent.
+
+===MSG===
+
+Both still running. Let me do a cheap independent spot-check of file sizes (line counts) between the two trees for the files most likely to have been touched, without duplicating the subagent's full diff.
+
+===MSG===
+
+Wait — this comparison reveals something important. MUT-06's `_callParseArg` (599-609) lacks the `else if (!(err instanceof Error) || err.code === undefined)` branch that MUT-05 has at 606-610. Either pristine v14 has that branch (MUT-06 removed it — a *second*, unmarked mutation) or pristine lacks it (MUT-05 added it as part of its own mutation). The tests and CHANGELOG can decide. Let me check.
+
+===MSG===
+
+The inventory subagent's summary matches my findings. But the `_callParseArg` branch discrepancy needs resolution: does pristine v14 have the `else if` branch (making MUT-06 missing it = second mutation) or not? The other snapshots MUT-01…MUT-04 are independent copies of the same pristine t0 — they can settle this. Let me check their candidates and their `_callParseArg` regions.
+
+===MSG===
+
+**Decisive resolution:** MUT-01 (same pristine t0, unrelated mutation) has the same single-branch `_callParseArg` as MUT-06, and its command.js is 2777 lines — exactly pristine. So the `else if` block in MUT-05 was *part of MUT-05's own mutation* (pristine +4 lines = 2781 ✓), and **MUT-06's `_callParseArg` is pristine**. Line-count arithmetic now reconciles perfectly: pristine=2777, MUT-06=2778 (+1 marked line), MUT-05=2781 (+4 its own block). MUT-06 has exactly one mutation.
+
+Let me get the inventory subagent's full report.
+
+===MSG===
+
+While those settle, let me spot-check the remaining key files between the two trees (package.json, error.js, help.js tails).
+
+===MSG===
+
+All spot-checks identical. Let me check on the diff subagent.
+
+===MSG===
+
+While the diff subagent grinds on, let me check whether the JS type-check (`tsc -p tsconfig.js.json`, part of `npm run check`) would also flag the `option.flags()` call — another CI detection signal.
+
+===MSG===
+
+`checkJs: true` + strict on `lib/**/*.js` — the mutated `option.flags()` would also fail `tsc -p tsconfig.js.json` (TS2349: not callable). That's a third independent CI detection signal (jest + prettier + tsc). Let me collect the diff subagent now.
+
+===MSG===
+
+The diff subagent is grinding through the full tree (package-lock.json is large). My independent evidence is already decisive; let me update the checkpoint with the refined understanding while it finishes.
+
+===MSG===
+
+The full inventory report is in — it independently confirms every core finding. Only the full-tree diff remains. Let me check its status.
+
+===MSG===
+
+The diff subagent is grinding too long (likely on package-lock.json). Let me interrupt and re-scope it to the meaningful paths.
+
+===MSG===
+
+
+
+===MSG===
+
+While the diff subagent re-runs its scoped comparison, one last airtight check: ensure no `get flags()` accessor exists anywhere that could make `option.flags()` legal.
+
+===MSG===
+
+Airtight: the only `flags()` call in the entire repo is the mutated line itself. Now let me collect the diff subagent's scoped result.
+
+===MSG===
+
+While the diff subagent completes, let me record the final diagnosis/classification state in the checkpoint.
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+I'll stop polling and write the final report now — the diff subagent's confirmation is optional (my evidence is already decisive), and its notice will arrive if it settles. Let me do one final check on the overall state, then deliver.
+
+===MSG===
+
+# Project Cognition Report — commander.js snapshot MUT-06
+
+**Runtime Proof:** Researcher Runtime Certificate — **Run #2, Overall SAFE** (preset=researcher-deep; sandbox=read-only; approval=never; write/edit=refusing stubs; shell surface=git_read only; checkpoint available; replay consistent). All findings are static analysis from file reads/greps — nothing was executed (read-only session), and external web verification was unavailable (no web provider registered).
+
+---
+
+## 1. Project Identity
+
+| Fact | Evidence |
+|---|---|
+| npm package **`commander`** v14.0.3 — "the complete solution for node.js command-line programs" | `package.json:2-4` |
+| MIT license; original author TJ Holowaychuk; upstream repo `tj/commander.js`; maintained via sponsorships (shadowspawn, abetomo) | `package.json:16-19`; `package-support.json:12-15` |
+| Node.js ≥ 20 required (v14 breaking change) | `package.json:78-80`; `CHANGELOG.md:60` |
+| **Zero runtime dependencies** (deliberate policy) | `package.json` has no `dependencies`; `CONTRIBUTING.md:40-43` |
+| CJS package with ESM wrapper (`esm.mjs`) and conditional exports; hand-written typings (1113 lines) | `package.json:43-61`; `typings/index.d.ts` |
+| 110 jest test files, 1079 static `test()` sites; CI matrix Node 20/22/24 × 3 OS, runs `npm test` + `npm run check` | inventory subagent; `.github/workflows/tests.yml:15-16,28-31` |
+| Release history: 14.0.3 (2026-01-31), 14.0.2 (2025-10-25), 14.0.1 (2025-09-12), 14.0.0 (2025-05-18) | `CHANGELOG.md:11-45` |
+
+**Snapshot identity (what this specific tree is).** This workspace is *not* pristine upstream: it is **commander.js v14.0.3 (t0 commit `bf35c5f99c…`) with exactly one injected mutation**, per `snapshot.json`:
+
+```json
+{ "mutation": "MUT-06", "kind": "compatibility_constraint",
+  "candidate": "error code: commander.missingMandatoryOptionValue",
+  "history": "single-commit snapshot (no T0 history; injection not visible via git log/show/diff)" }
+```
+
+The injection is explicitly marked in the source at `lib/command.js:2059-2060` (`// MUT-06 (synthetic)` — the only such markers in the entire tree).
+
+---
+
+## 2. Architecture Map
+
+```
+index.js (CJS entry) ──┬─ program (singleton Command)
+                      ├─ createCommand/createOption/createArgument factories
+                      └─ exports: Command, Option, Argument, Help, CommanderError, InvalidArgumentError
+esm.mjs (ESM wrapper, named re-exports)
+lib/command.js   (2778 lines)  Command extends EventEmitter — parser core, 99 methods
+lib/option.js    (380 lines)   Option + DualOptions + splitOptionFlags
+lib/argument.js  (150 lines)   Argument + humanReadableArgName
+lib/help.js      (747 lines)   Help formatter + stripColor
+lib/error.js     (39 lines)    CommanderError, InvalidArgumentError
+lib/suggestSimilar.js (101)    Damerau–Levenshtein suggestions for unknown options/commands
+typings/index.d.ts, typings/esm.d.mts, typings/index.test-d.ts
+tests/ (110 jest files)  examples/ (25+ runnable samples)  docs/ (EN + zh-CN)  Readme.md
+```
+
+**Parse pipeline** (`command.js`): `parse()/parseAsync()` (1090, 1119) → `_prepareForParse()` (state save/restore, 1127) → `_prepareUserArgs()` (argv conventions, electron/eval detection, 1001) → `_parseCommand()` (1550) → `parseOptions()` tokenizer (operands/unknown/option classification, short-flag groups, `--flag=value`, negative numbers, variadic capture, positional/passthrough modes, 1748) → `_parseOptionsEnv()` (1966) → `_parseOptionsImplied()` (1996) → **subcommand dispatch** (`_dispatchSubcommand` 1352 → recursive `_parseCommand`; executable subcommands via `_executeSubCommand` 1202) or **leaf path**: `_outputHelpIfRequested` (1585) → `_checkForMissingMandatoryOptions` (1586) → `_checkForConflictingOptions` (1587) → unknown-option check → action handler / `command:*` events / `_processArguments` (1428).
+
+**Error model** (the compatibility surface the mutation attacks). All parse failures funnel into `Command.error()` (1940): write to `_outputConfiguration` (stderr), optional `showHelpAfterError`, then `_exit()` (533) → `_exitCallback` if `exitOverride()` was set (throws `CommanderError` for embedding) else `process.exit(code)`. Stable error codes: `commander.missingArgument`, `commander.optionMissingArgument`, `commander.missingMandatoryOptionValue`, `commander.unknownOption`, `commander.excessArguments`, `commander.unknownCommand`, `commander.conflictingOption`, `commander.invalidArgument`, `commander.error`, `commander.helpDisplayed`, `commander.help`, `commander.version`, `commander.executeSubCommandAsync`.
+
+**Mandatory-option chain (the mutated component):** `_checkForMissingMandatoryOptions()` (1675) walks the command and its ancestors (so parent mandatory options are enforced in subcommand parses), and for each mandatory option with `undefined` value calls `cmd.missingMandatoryOptionValue(anOption)` (1683) → **the mutated method** (2058-2062) → `this.error(message, { code: 'commander.missingMandatoryOptionValue' })`. The same check runs before spawning executable subcommands (1225).
+
+---
+
+## 3. Critical Components
+
+1. **`missingMandatoryOptionValue`** (`lib/command.js:2058-2062`) — **MUTATED.** Leaf emitter of the required-option error; the last step of the mandatory-option enforcement chain.
+2. **`_checkForMissingMandatoryOptions`** (1675-1687) — ancestor-walking enforcement; call sites at 1586 (leaf parse) and 1225 (executable subcommand dispatch).
+3. **`error()`/`_exit()`/`exitOverride()`** (1940, 533, 508) — the controlled-error machinery: stderr output, help-after-error, `CommanderError` throw (embedding) or `process.exit(1)`.
+4. **`parseOptions()`** (1748-1895) — the tokenizer; largest and most behavior-dense function.
+5. **`Option`** (`lib/option.js`) — flag parsing (`splitOptionFlags`), attribute naming, `flags` **string property** (line 12), `makeOptionMandatory` (144).
+6. **Typings + contract tests** — `typings/index.d.ts` (1113 lines, checked with `skipLibCheck: false`), `tests/command.exitOverride.test.js` (the file that pins error codes/messages), `tests/options.mandatory.test.js`, `tests/command.showHelpAfterError.test.js`.
+7. **CI gates** — jest + tsc (`checkJs` on `lib/**`) + eslint + prettier (`package.json:22-27`).
+
+---
+
+## 4. Design Decisions
+
+| Decision | Evidence | Why it matters here |
+|---|---|---|
+| Stable error codes as a semver-adjacent contract | `tests/command.exitOverride.test.js:4-7` ("exitCode and code … intended to be stable for semver minor versions"); `CHANGELOG.md:461` (renaming `commander.invalidOptionArgument`→`commander.invalidArgument` was *Breaking*) | The mutation breaks exactly this contract |
+| `exitOverride()` for embedding — throw `CommanderError` instead of `process.exit` | `command.js:508-539` | Embedders pattern-match on `err.code`; a `TypeError` has none |
+| Mandatory options checked *after* help flags (help wins) | `_parseCommand:1585-1586`; `tests/options.mandatory.test.js:259,273` | Keeps `--help` usable even with missing required options |
+| Zero runtime dependencies | `CONTRIBUTING.md:40-43` | Small install; the whole lib is first-party code |
+| Strict parsing by default, `allowUnknownOption`/`allowExcessArguments`/`passThroughOptions`/`enablePositionalOptions` as explicit opt-outs | `command.js:837-905` | Predictable failure modes — which the mutation breaks |
+| Single-class-per-file lib, JSDoc + `checkJs` strict type checking of JS | `tsconfig.json:17-24`; `tsconfig.js.json` | The mutated call is a *type error* under the project's own gate |
+| CJS + ESM wrapper + dual typings + `package-support.json` | `package.json:43-61` | Published artifact surface (`files` includes `lib/*.js`) ships the mutation |
+| Error message text is part of the tested contract | `tests/command.exitOverride.test.js:306` (exact message), `Readme.md:357-360` | Any message change (even a "fixed" suffix) breaks tests/docs |
+
+---
+
+## 5. Risk Map
+
+**R1 — CRITICAL (this snapshot, injected).** `missingMandatoryOptionValue` builds its message as `` `… not specified (flags: ${option.flags()})` `` — but `Option.flags` is a **string property** (`option.js:12`, `typings/index.d.ts:96`, `help.js:183` reads it as a property) and **no `flags()` method or getter exists anywhere in the repo** (whole-tree grep: the only `flags()` call is the mutated line). Evaluating the template literal throws `TypeError: option.flags is not a function` **before** `this.error(...)` runs. Consequence: no stderr message, no `showHelpAfterError`, no `_exitCallback`/`CommanderError` (exitOverride), no `process.exit(1)` — a raw uncaught TypeError escapes instead of the documented `CommanderError` with code `commander.missingMandatoryOptionValue`. Evidence: claims C1-C4, C14 (all Known, ≥0.97).
+
+**R2 — HIGH (detection).** The mutation is caught by exactly **two** precise tests (`exitOverride.test.js:290-308`, `showHelpAfterError.test.js:43-54`) and by **three** independent CI gates: jest (2 failures), `prettier --check` (the 121-char line exceeds printWidth 80), and `tsc checkJs` (TS2349: string not callable). **Five** error-path tests in `options.mandatory.test.js` (118, 127, 136, 148, 215) assert only `.toThrow()` and would pass anyway — the suite's weak assertions are a genuine gap the mutation exploits (C6).
+
+**R3 — MEDIUM (inherent).** Error message text and codes are a de-facto API for a package of this scale (millions of installs — 未验证（研究者推断）, no web access this session); the project itself treats code+exitCode as stable and message as tested (exitOverride.test.js:4-7). Any human "fix" that keeps the `(flags: …)` suffix still violates the contract (R2-adjacent).
+
+**R4 — LOW (inherent).** Hand-maintained 1113-line typings and 2778-line `command.js`; type-check gates (`skipLibCheck: false`, checkJs) mitigate drift.
+
+**R5 — LOW (snapshot-level).** Single squashed commit (`e2ca3ed`, "ci repository snapshot") — the injection is invisible to git forensics; provenance lives only in the out-of-tree `snapshot.json`.
+
+---
+
+## 6. Change Impact Analysis
+
+**The change (this snapshot vs pristine t0):** exactly **+1 line** — `lib/command.js:2059-2060` replaces the pristine message with the comment + mutated template literal. Line-count reconciliation proves this is the *only* difference: pristine (verified via MUT-01, same t0, unrelated mutation) = 2777 lines; MUT-06 = 2778 (+1); MUT-05 = 2781 (+4 from its own block) (C11).
+
+**Behavioral impact.** Every CLI path that hits a missing mandatory option — root parse (1586), subcommand parse via ancestor walk (1677-1683), executable-subcommand dispatch (1225) — now crashes with an uncaught `TypeError` instead of the controlled error. End users see a JS stack trace; `exitOverride` embedders receive a non-`CommanderError` with no `.code`/`.exitCode`; `showHelpAfterError`/`showSuggestionAfterError` never run; executable subcommands with an unsatisfied mandatory parent option crash before spawn. Examples affected at runtime: `examples/options-required.js`, `examples/help-subcommands-usage.js`. Documentation now lies: `Readme.md:357-360` shows the pristine message.
+
+**Test impact (static projection, not executed):** FAIL — `command.exitOverride.test.js:290-308` (instanceof/exitCode/code/exact message) and `command.showHelpAfterError.test.js:43-54` (code + help output). PASS unchanged — the five `.toThrow()` tests, the `--help`-wins tests (259, 273: help is checked first), and `options.implies.test.js:167` (implied values satisfy the check). Untouched paths: `optionMissingArgument` (2046), `missingArgument` (2034), unknown option/command, conflicts.
+
+**Changes vs the previous snapshot (MUT-05):**
+1. **MUT-06's own mutation** at `lib/command.js:2058-2062` (missing-mandatory-option message) — not present in MUT-05 (pristine there, verified 2062-2065).
+2. **MUT-05's mutation removed** — MUT-05 had modified `_callParseArg` (`command.js:599-613`: branch-1 `this.error` replaced by a comment; an entire `else if` branch with `throw new CommanderError(1, 'commander.invalidArgumentValue', …)` injected). MUT-06's `_callParseArg` is **pristine**, identical to MUT-01's (the t0 reference). *Note: I initially misread MUT-05's block as evidence that MUT-06 was missing a pristine branch — the MUT-01 cross-check and line-count arithmetic disproved that; MUT-06 is pristine there.*
+3. Everything else spot-checked identical between the two trees (package.json, index.js, esm.mjs, lib/error.js, lib/help.js, lib/option.js, lib/argument.js, typings/index.d.ts, tests/options.mandatory.test.js — identical line counts/tails); a full-tree diff confirmation was still in progress at report time (C13, Likely).
+
+**Previous assumptions that no longer hold:**
+- ❌ "The mutation in this snapshot affects `commander.invalidArgument` / `_callParseArg` handling" — that was **MUT-05**; MUT-06's `_callParseArg` is pristine.
+- ❌ "`missingMandatoryOptionValue` produces the documented `CommanderError` with code `commander.missingMandatoryOptionValue`" — in MUT-06 it throws an uncaught `TypeError`.
+- ❌ "The snapshot passes its own test suite / CI gates" — jest (2 failures), prettier, and tsc-checkJs all fail.
+- ❌ "The README's documented error output (`Readme.md:359`) matches runtime behavior" — it no longer does in this snapshot.
+
+---
+
+## 7. Decision Memo
+
+**What is this change?** Corrosion, not evolution — and not even a human regression: it is an **injected synthetic mutation** (harness metadata `snapshot.json`, kind `compatibility_constraint`, candidate = the error code it destroys; explicit `// MUT-06 (synthetic)` markers). Every convention it violates — the stable-code contract (exitOverride.test.js:4-7), the documented message (Readme.md:359), the typings (`flags: string`), the project's own type/format/test gates — exists for reasons that still fully hold. The mutation's stated rationale ("message now includes option flags") is a cover story; even taken at face value it is broken (calls a non-existent method) and would still break the exact-message contract. Verdict: **revert.**
+
+**What deserves intervention (and nothing else):** exactly one line in `lib/command.js` — restore the pristine message and remove the marker comment:
+
+```js
+// pristine (MUT-05:2062-2065, matches Readme.md:359 and exitOverride.test.js:306):
+missingMandatoryOptionValue(option) {
+  const message = `error: required option '${option.flags}' not specified`;
+  this.error(message, { code: 'commander.missingMandatoryOptionValue' });
+}
+```
+
+Rejected alternatives: keeping a "fixed" `(flags: …)` suffix (still violates the exact-message contract and README — locally plausible, globally wrong); any other change to the snapshot (nothing else differs from pristine).
+
+**Confidence:** high — the mutation is self-marked (C1, Known 0.98), the pristine reference is triple-confirmed (MUT-05 source + README + contract tests, C2, Known 0.97), the crash mechanism is deterministic JavaScript semantics (C4, Known 0.97), and the repo-wide check found no other `flags()` call (C14, Known 0.99). Residual uncertainty: tests were not executed (read-only) — the *behavior* is deduced from assertions, not observed; and the full-tree MUT-05↔MUT-06 diff was still confirming at report time (C13, Likely 0.92).
+
+**Classification:** BUILD — revert. No DON'T BUILD, no INVESTIGATE items.
+
+---
+
+### Handoff brief (BUILD items only)
+
+**Human-readable:** Revert the injected mutation in `lib/command.js` `missingMandatoryOptionValue` (lines 2058-2062): restore `const message = \`error: required option '${option.flags}' not specified\`;` and delete both `// MUT-06 (synthetic)` markers. Do not touch anything else. Re-run `npm test` and `npm run check` (expect green; the two failing contract tests and the format/type gates are the verification).
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "build_items": [
+    {
+      "id": "MUT-06-revert-missingMandatoryOptionValue",
+      "problem": "Injected mutation in lib/command.js:2059-2060 makes the mandatory-option-missing error path call option.flags() as a method (flags is a string property), throwing an uncaught TypeError instead of the documented CommanderError with code 'commander.missingMandatoryOptionValue'; breaks stderr output, showHelpAfterError, exitOverride embedding, and two contract tests; also fails prettier and tsc checkJs gates",
+      "evidence": [
+        "lib/command.js:2058-2062 (mutation, self-marked)",
+        "lib/option.js:12 + typings/index.d.ts:96 (flags is a string; no flags() method anywhere — repo-wide grep)",
+        "lib/command.js:1940-1958, 533-539 (error()/_exit() bypassed)",
+        "tests/command.exitOverride.test.js:290-308 and tests/command.showHelpAfterError.test.js:43-54 (failing assertions)",
+        "Readme.md:357-360 (documented contract)",
+        "MUT-05/workspace/lib/command.js:2062-2065 (pristine reference); snapshot.json (injected mutation)"
+      ],
+      "confidence": 0.97,
+      "scope": "lib/command.js lines 2058-2062 only: restore pristine message line, delete both '// MUT-06 (synthetic)' markers. No other file changes.",
+      "do_not_touch": [
+        "lib/command.js _callParseArg (lines 599-609) — already pristine; MUT-05's mutation must NOT be reintroduced",
+        "tests/, typings/, docs/, examples/, package.json — all pristine, no adaptation to the mutated message",
+        "Any 'fix' that keeps a '(flags: ...)' suffix — violates the exact-message contract (exitOverride.test.js:306)"
+      ]
+    }
+  ]
+}
+```
+
+===MSG===
+
+The inventory subagent's full report arrived and is fully consistent with everything already incorporated in the delivered report (110 jest files, 1079 test sites, the two failing contract tests, the five non-detecting `.toThrow()` tests, CI matrix, marker uniqueness). No corrections needed.
+
+One loose end: the full-tree MUT-05↔MUT-06 diff subagent. Let me check its status.
+
+===MSG===
+
+The diff subagent has been unproductive for too long (it even hit its own "script bug" earlier); its remaining value — confirming C13 — is marginal and honestly disclosed in the delivered report. The decision-critical evidence is already Known-grade from multiple independent sources, so I'll stop it and close out.
+
+===MSG===
+
+The optional full-tree diff subagent is stopped. The **Project Cognition Report stands as delivered**, complete and unchanged. Final state:
+
+- **Runtime Proof:** Research Doctor Run #2 — Overall SAFE (read-only, never-approval, refusing stubs, git_read-only shell).
+- **Central finding (Known, 0.97-0.99):** MUT-06 is commander.js v14.0.3 with exactly one injected mutation (`snapshot.json` kind `compatibility_constraint`, candidate `commander.missingMandatoryOptionValue`), explicitly marked at `lib/command.js:2059-2060`. The mutated `missingMandatoryOptionValue` calls `option.flags()` — a string property, with no `flags()` method anywhere in the repo (repo-wide grep) — so the documented `CommanderError` becomes an uncaught `TypeError`, bypassing stderr output, `showHelpAfterError`, `exitOverride`, and `process.exit(1)`.
+- **Detection:** 2 precise contract tests fail (`exitOverride.test.js:290`, `showHelpAfterError.test.js:43`); 3 CI gates trip (jest, prettier, tsc checkJs); 5 coarse `.toThrow()` tests in `options.mandatory.test.js` do **not** detect it.
+- **vs previous snapshot (MUT-05):** MUT-05's `_callParseArg` mutation is absent (pristine restored, verified against MUT-01/t0 reference + line-count arithmetic 2777/2778/2781); MUT-06's only delta is its own mutation. Assumptions from the MUT-05 analysis that no longer hold are listed in §6.
+- **Decision Memo / handoff:** BUILD — revert `lib/command.js:2058-2062` to the pristine message line and delete both `// MUT-06 (synthetic)` markers; nothing else changes; `research_handoff.json` block included in the report.
+
+The claim ledger (14 claims, C0-C4 graded), hypotheses (H1/H2, versioned), and view dependencies are committed via research_checkpoint; the report is the complete deliverable.

@@ -1,0 +1,20 @@
+The enumeration subagent's final report is the expanded version of the result already incorporated — same verdict, same counts, now with the full audit trail (all 109 test files' parse calls, all 130 `toThrow` sites). It confirms rather than revises claims **C44/C45**, so no state change is needed.
+
+**Reconciliation check against the committed ledger:**
+
+| Claim | Ledger value | Subagent final report | Match |
+|---|---|---|---|
+| Mutation locus | `lib/command.js:1417-1420` call commented out; no call site anywhere; dead `_excessArguments` (2148); inert `_allowExcessArguments` (default false, read only at 2149); missing-arg check intact (1405-1409) | Identical, incl. the "red herring" verdict on the 1750 comment | ✅ |
+| Failing instances | 16 = 12 + 2 + 1 + 1 | 16 = 12 + 2 + 1 + 1 | ✅ |
+| Unique definitions / files | 10 / 4 | 10 / 4 | ✅ |
+| Indirect dependent | `unknownCommand.test.js:21-27` (bare-program operand fall-through) | Same, with the full `_parseCommand` trace (1630-1631) | ✅ |
+| All other tests pass | Bounding argument: only tests whose expected error *was* the excess error can flip | Confirmed by exhaustive audit; `unknownOption`-before-`_processArguments` precedence (1591-1595) explains the close calls | ✅ |
+
+The final deliverable therefore stands as amended:
+
+- **Project**: commander.js v14.0.3, synthetic specimen MUT-04 of the cplus-t1 series.
+- **Change**: only `lib/command.js` differs from T0 (+2 comment lines) — excess-arguments guard deleted, false "moved" comment, dead `_excessArguments`, inert `allowExcessArguments()`.
+- **Impact**: excess args silently accepted; v13+ contract (`commander.excessArguments`) unreachable; README/CHANGELOG contradicted; **16 failing test executions / 10 unique cases / 4 files** → detected (killed) mutation; CI would be red.
+- **Decision**: DON'T BUILD — no build items; one INVESTIGATE (kind-label semantics, corpus owner); do-not-touch: pristine baseline, tests, typings.
+
+Research state: 18 claims, H1 invalidated → H2 active (rev. 2), no dirty views, project filesystem untouched throughout. The Project Cognition Report in this conversation — including the amendment — is the complete deliverable.

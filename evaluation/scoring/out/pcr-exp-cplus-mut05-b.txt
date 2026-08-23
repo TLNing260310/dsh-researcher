@@ -1,0 +1,10 @@
+Re-delivery of tests part 2 (56 files IDENTICAL) — already incorporated; the implied "next step" (lib/ comparison) was completed long ago. No new information.
+
+All ten verification passes are settled and mutually consistent. Final record:
+
+- **Change-set (C17, byte-proven, conf 1.0):** exactly 1 of 223 paths differs — `lib/command.js` (4-line MUT-05 mutation in `_callParseArg`, lines 605–610). All tests (111 files), typings (3), other lib (5), configs/CI/metadata (26), docs+examples (58), and fixtures are identical to the pristine baseline; no CRLF in either tree.
+- **Mutation (C14/C15):** byte-proven; breaks the documented `commander.invalidArgument` error path (message formatting, exitOverride, showHelpAfterError, exit code) and wraps plain/non-Error throws into a new undocumented code `commander.invalidArgumentValue`.
+- **Impact (C16, conf 0.95):** 6 jest failures + red `check:lint`; tests untampered (the oracle).
+- **Decision:** corrosion → BUILD-01: revert `_callParseArg` to upstream verbatim, nothing else, verify with full jest + `npm run check` + empty re-diff vs pristine baseline.
+
+Project Cognition Report (7 sections), prior-snapshot change notes, and `research_handoff.json` stand as delivered. Ledger committed (17 claims, H1/H2 active). Research complete — no pending items.

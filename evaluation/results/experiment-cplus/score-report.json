@@ -1,0 +1,426 @@
+{
+  "schema": "dsh-researcher/experiment-cplus/score-report/v1",
+  "adjudicated": true,
+  "pairs_total": 6,
+  "pairs_valid": 6,
+  "h2_checks_passed": 5,
+  "h2_condition_met": true,
+  "verdict": "H2 SUPPORTED (total effect)",
+  "pairs": [
+    {
+      "mutation": "MUT-01",
+      "recall_A": 1,
+      "recall_B": 1,
+      "recall_delta": 0,
+      "stale_recovery_B": "5/1",
+      "stale_rate_B": 5,
+      "consistency_A": 0,
+      "consistency_B": 0,
+      "cost_A_ms": 316331,
+      "cost_B_ms": 240080,
+      "cost_ratio": 0.7589518573898859,
+      "b_integrity": "OK",
+      "b_valid": true
+    },
+    {
+      "mutation": "MUT-04",
+      "recall_A": 1,
+      "recall_B": 1,
+      "recall_delta": 0,
+      "stale_recovery_B": "4/4",
+      "stale_rate_B": 1,
+      "consistency_A": 0,
+      "consistency_B": 0,
+      "cost_A_ms": 595258,
+      "cost_B_ms": 393987,
+      "cost_ratio": 0.6618760268656616,
+      "b_integrity": "OK",
+      "b_valid": true
+    },
+    {
+      "mutation": "MUT-02",
+      "recall_A": 1,
+      "recall_B": 1,
+      "recall_delta": 0,
+      "stale_recovery_B": "1/1",
+      "stale_rate_B": 1,
+      "consistency_A": 0,
+      "consistency_B": 0,
+      "cost_A_ms": 438612,
+      "cost_B_ms": 315437,
+      "cost_ratio": 0.7191709301159112,
+      "b_integrity": "OK",
+      "b_valid": true
+    },
+    {
+      "mutation": "MUT-05",
+      "recall_A": 1,
+      "recall_B": 1,
+      "recall_delta": 0,
+      "stale_recovery_B": "2/1",
+      "stale_rate_B": 2,
+      "consistency_A": 0,
+      "consistency_B": 0,
+      "cost_A_ms": 417482,
+      "cost_B_ms": 673915,
+      "cost_ratio": 1.6142372605285977,
+      "b_integrity": "OK",
+      "b_valid": true
+    },
+    {
+      "mutation": "MUT-03",
+      "recall_A": 1,
+      "recall_B": 1,
+      "recall_delta": 0,
+      "stale_recovery_B": "5/5",
+      "stale_rate_B": 1,
+      "consistency_A": 0,
+      "consistency_B": 0,
+      "cost_A_ms": 360740,
+      "cost_B_ms": 387913,
+      "cost_ratio": 1.07532571935466,
+      "b_integrity": "OK",
+      "b_valid": true
+    },
+    {
+      "mutation": "MUT-06",
+      "recall_A": 1,
+      "recall_B": 1,
+      "recall_delta": 0,
+      "stale_recovery_B": "3/2",
+      "stale_rate_B": 1.5,
+      "consistency_A": 0,
+      "consistency_B": 0,
+      "cost_A_ms": 480889,
+      "cost_B_ms": 416437,
+      "cost_ratio": 0.865973228749254,
+      "b_integrity": "OK",
+      "b_valid": true
+    }
+  ],
+  "rows": [
+    {
+      "run_id": "exp-cplus-mut01-b",
+      "condition": "B",
+      "mutation": "MUT-01",
+      "state_source": "exp-a-quick-01",
+      "duration_ms": 240080,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 38,
+      "integrity": "OK",
+      "exit_code": 0,
+      "expected_stale_set": 1,
+      "expected_stale_ids": [
+        "C06"
+      ],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [
+          "H1",
+          "C15",
+          "C10b",
+          "C05",
+          "C02"
+        ],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 2,
+        "notes": "Explicit 'Previous assumptions that no longer hold': H1 INVALIDATED, C15/C10b/C05/C02 revised with evidence. No sibling read. Expected stale C06 not hit by id; semantic coverage via H1/state revision (C06 is arch relation, partially covered by H1 invalidation)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut04-b",
+      "condition": "B",
+      "mutation": "MUT-04",
+      "state_source": "exp-a-deep-01",
+      "duration_ms": 393987,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 56,
+      "integrity": "OK",
+      "exit_code": 0,
+      "expected_stale_set": 4,
+      "expected_stale_ids": [
+        "C24",
+        "C27",
+        "C28",
+        "C29"
+      ],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [
+          "C24",
+          "C27",
+          "C28",
+          "C29"
+        ],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 4,
+        "notes": "No sibling read. Imported 32 claims, H1 rev 8, H2 invalidated, committed 38 claims with revisions ('revising the claims that no longer hold'). Expected stale 4/4 covered."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut02-b",
+      "condition": "B",
+      "mutation": "MUT-02",
+      "state_source": "exp-a-quick-02",
+      "duration_ms": 315437,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 35,
+      "integrity": "OK",
+      "exit_code": 0,
+      "expected_stale_set": 1,
+      "expected_stale_ids": [
+        "C3"
+      ],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [
+          "C6"
+        ],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 1,
+        "notes": "'Previous assumptions that no longer hold': pristine-snapshot assumption false; git-forensics assumption false (C6 commit-level evidence not re-derivable). Expected stale C3 hit semantically via pristine-assumption invalidation."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut05-b",
+      "condition": "B",
+      "mutation": "MUT-05",
+      "state_source": "exp-a-quick-03",
+      "duration_ms": 673915,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 116,
+      "integrity": "OK",
+      "exit_code": 0,
+      "expected_stale_set": 1,
+      "expected_stale_ids": [
+        "C04"
+      ],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [
+          "C02",
+          "C04"
+        ],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 3,
+        "notes": "Sibling/T0 leak (read pristine baseline for byte-level diff — unusually thorough). Explicit 'Previous assumptions that no longer hold': C02 FALSE (injected defect), C04 line anchors swapped. Expected stale C04 hit. Byte-level proof methodology."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut02-a",
+      "condition": "A",
+      "mutation": "MUT-02",
+      "state_source": null,
+      "duration_ms": 438612,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 78,
+      "integrity": "N/A",
+      "exit_code": 0,
+      "expected_stale_set": null,
+      "expected_stale_ids": [],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 0,
+        "notes": "Sibling/T0 leak: read sibling snapshots AND pristine T0. Change identified (configureHelp base param)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut03-a",
+      "condition": "A",
+      "mutation": "MUT-03",
+      "state_source": null,
+      "duration_ms": 360740,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 86,
+      "integrity": "N/A",
+      "exit_code": 0,
+      "expected_stale_set": null,
+      "expected_stale_ids": [],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 0,
+        "notes": "Sibling leak (read sibling MUT-01 pristine reference for diff). Change identified (extension probing order)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut06-a",
+      "condition": "A",
+      "mutation": "MUT-06",
+      "state_source": null,
+      "duration_ms": 480889,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 107,
+      "integrity": "N/A",
+      "exit_code": 0,
+      "expected_stale_set": null,
+      "expected_stale_ids": [],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 0,
+        "notes": "Sibling leak. Change identified (flags() TypeError risk in message)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut01-a",
+      "condition": "A",
+      "mutation": "MUT-01",
+      "state_source": null,
+      "duration_ms": 316331,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 74,
+      "integrity": "N/A",
+      "exit_code": 0,
+      "expected_stale_set": null,
+      "expected_stale_ids": [],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 0,
+        "notes": "Sibling/T0 leak: read pristine T0 workspace. Change identified with impact (repeated-parse contract flip)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut03-b",
+      "condition": "B",
+      "mutation": "MUT-03",
+      "state_source": "exp-a-deep-02",
+      "duration_ms": 387913,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 67,
+      "integrity": "OK",
+      "exit_code": 0,
+      "expected_stale_set": 5,
+      "expected_stale_ids": [
+        "C13",
+        "C21",
+        "C24",
+        "C27",
+        "C7"
+      ],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [
+          "C7",
+          "C13",
+          "C21",
+          "C24",
+          "C27"
+        ],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 3,
+        "notes": "Used prior-session state anchors (1202/1403/1675/1748 etc), identified mutation via MUT-01 pristine comparison (sibling read). Stale set 5/5 covered by anchor verification + claim revisions. Deep session, 22 messages."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut05-a",
+      "condition": "A",
+      "mutation": "MUT-05",
+      "state_source": null,
+      "duration_ms": 417482,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 89,
+      "integrity": "N/A",
+      "exit_code": 0,
+      "expected_stale_set": null,
+      "expected_stale_ids": [],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 0,
+        "notes": "Sibling leak. Change identified (invalidArgumentValue code)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut04-a",
+      "condition": "A",
+      "mutation": "MUT-04",
+      "state_source": null,
+      "duration_ms": 595258,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 110,
+      "integrity": "N/A",
+      "exit_code": 0,
+      "expected_stale_set": null,
+      "expected_stale_ids": [],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 0,
+        "notes": "Sibling/T0 leak. Change identified (excess check moved; dead _excessArguments)."
+      }
+    },
+    {
+      "run_id": "exp-cplus-mut06-b",
+      "condition": "B",
+      "mutation": "MUT-06",
+      "state_source": "exp-a-deep-03",
+      "duration_ms": 416437,
+      "exit": 0,
+      "final_reason": "completed",
+      "preset": "researcher-deep",
+      "tool_calls": 69,
+      "integrity": "OK",
+      "exit_code": 0,
+      "expected_stale_set": 2,
+      "expected_stale_ids": [
+        "C2-007",
+        "C2-008"
+      ],
+      "adj": {
+        "mutation_recall": 1,
+        "stale_recovery_hits": [
+          "C0-002",
+          "C2-007",
+          "C2-008"
+        ],
+        "consistency_conflicts": 0,
+        "false_invalidation": 0,
+        "over_invalidation": 2,
+        "notes": "No sibling read. Snapshot Delta table: C0-002 invalidated->replaced, history flattened, mutation as new finding. Expected stale C2-007/C2-008 covered."
+      }
+    }
+  ],
+  "note": "Mutation Recall / Stale Recovery / Consistency adjudicated via adjudication-exp-cplus.json (filled by evaluator AFTER runs). Rebuild Cost mechanical."
+}

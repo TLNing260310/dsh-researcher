@@ -1,0 +1,309 @@
+I'll start with the mandatory runtime certificate, then import the previous cognition state.
+
+===MSG===
+
+**Runtime Proof — Researcher Runtime Certificate, Run #2, History: #1 unknown; Preset PASS, Sandbox PASS (read-only), Approval PASS (never), Write tools PASS (refusing stubs), Shell surface PASS (git_read only), Checkpoint PASS, Replay PASS. Overall: SAFE.**
+
+Now importing the previous session's cognition state:
+
+===MSG===
+
+State imported: 32 claims, H1 active, H2 invalidated, 5 views, no dirty nodes. Per instructions, let me read the full state back and start cartography on the current snapshot in parallel.
+
+===MSG===
+
+Full state read back — 32 claims, H1 active (rev 6), H2 invalidated, 5 views, dirty: none. Key initial observation: **the git history is now a single squashed commit** (`a8c313a 2026-08-23 "ci repository snapshot"`), which already contradicts C01's "500+ commits" claim. Let me map the tree and check what's tracked.
+
+===MSG===
+
+Tree structure looks like standard commander.js v14.0.3 with 223 tracked paths. Since history is squashed to one commit, I need another baseline to detect changes. Let me check whether sibling snapshot directories (e.g., a baseline or other MUTs) exist, and start reading the core file.
+
+===MSG===
+
+There are sibling MUT-01…MUT-06 directories and a `snapshot.json` one level up — likely describing this snapshot. Let me read it and check the full sibling layout.
+
+===MSG===
+
+`snapshot.json` is the ground truth: **MUT-04 is a mutation-injection snapshot** — kind `internal_architecture`, candidate `_excessArguments`, T0 = pristine `bf35c5f` (the exact commit from the previous session), T1 = `a8c313a` (current). The injection is not visible via git. Now let me find the mutated region in the local `lib/command.js`.
+
+===MSG===
+
+Found the mutation trace: line 1419 has a commented-out call `// this._excessArguments(this.args); // moved`. Let me examine the surrounding flow and the `_excessArguments` definition.
+
+===MSG===
+
+The mutation is confirmed in `_checkNumberOfArguments()` (lines 1403–1421): the `_excessArguments(this.args)` call is commented out with a note claiming it was "moved earlier (see parseOptions exit)". I need to verify whether that call truly exists elsewhere (the "moved" claim) or is dead code, and whether tests were touched.
+
+===MSG===
+
+Two mutation markers found: the removed call at 1419 and a claim at 1750 that the check "moved" to the `parseOptions` exit. Let me read the full `parseOptions` body to verify whether the moved check exists there and how it behaves.
+
+===MSG===
+
+`parseOptions` (1749–1897) contains **no excess-argument check at its exit** — the comment at 1750 is a fabrication. `_excessArguments` (2148–2156) is now dead code: never called anywhere. The "moved" claim is false; the check was simply removed.
+
+To be rigorous, let me verify against the pristine T0 commit (bf35c5f) using GitHub: fetch the tree blob SHAs and the raw upstream `command.js`.
+
+===MSG===
+
+Web provider is unavailable in this session (same limitation as the previous session noted in C31), so I can't fetch the upstream baseline directly. I'll instead verify the mutation scoping using the previous session's precise line-level citations as anchors: if anchors match (exactly before the mutation point, ±2 after), the only diff is the mutation region. Let me set up tracking and run the anchor checks.
+
+===MSG===
+
+Anchors C29 (99–114), C30 (163), C19 (533–539) all match **exactly**. Let me verify the remaining anchors in command.js and the other lib files.
+
+===MSG===
+
+Signal listeners (1290–1301), findBestOptionFromValue (+2 shift), unknownOption suggestion (+2 shift) — all consistent with a single mutation region. Continuing anchor verification:
+
+===MSG===
+
+All anchors continue to match exactly (420, 679, 1339 nestedError, 1345 runningCommand, 2475–2495 HelpContext). Now the remaining anchors in command.js (help/exitCode), plus the other lib files and typings:
+
+===MSG===
+
+help.js anchors verified exactly (11, 84 "dubious", 139–153 side effect). Now option.js / argument.js anchors and typings:
+
+===MSG===
+
+All remaining anchors verified exactly — including typings at 1113 lines. The whole tree matches the pristine v14.0.3 line map **except** the two mutation spots in command.js. Now let me trace the behavioral impact: the dispatch flow around `_processArguments`/`_parseCommand`, the `allowExcessArguments` setter/default, and which tests lock the excess-arguments behavior.
+
+===MSG===
+
+The full impact picture is emerging. `_checkNumberOfArguments` is called from `_processArguments` (line 1445), invoked at 4 dispatch sites (1600, 1617, 1631, 1639); the "too few" branch still works, but "too many" is now a silent no-op. Default `_allowExcessArguments = false` (line 28) — strict by default is now dead. Let me quantify the failing tests:
+
+===MSG===
+
+Now let me verify the remaining unchanged surfaces (index.js, esm.mjs, jest config, CHANGELOG head, CI workflow) and count the test files precisely:
+
+===MSG===
+
+All consistent with the pristine baseline (index.js, jest config, CHANGELOG head, CI matrix). My manual count of `tests/*.test.js` from ls-files gives exactly **109 jest files** — matching C21's count exactly, confirming the test suite is unmodified. Two final spot-checks (eslint config for CI-impact, error.js anchor, esm.mjs):
+
+===MSG===
+
+One more check — whether `tsconfig.js.json` enables `noUnusedLocals`, which would make tsc flag the now-dead `_excessArguments` method (relevant for CI impact):
+
+===MSG===
+
+`tsconfig.json` has no `noUnusedLocals`, so the dead method won't be flagged by tsc — `npm run check` likely passes while `npm test` fails. Two last evidence refreshes for C07 (sponsors/Tidelift still present?) before I commit the revised state:
+
+===MSG===
+
+All evidence gathered. Now I'll commit the revised research state — revising the claims that no longer hold, adding the mutation claims, and adding hypothesis H3:
+
+===MSG===
+
+JSON parse error — likely a stray character in a long string. Let me resubmit with cleaned, quote-free strings:
+
+===MSG===
+
+The response looks like a compact projection — let me export the full state to verify my revisions were applied:
+
+===MSG===
+
+The export shows my revisions were **not** applied — I wrapped the payload incorrectly (in an `arguments` object instead of passing the parameters directly). Let me resubmit with the correct parameter shape:
+
+===MSG===
+
+State committed: 38 claims, H1 rev 8, H2 rev 2 (still invalidated), H3 active, views updated. All pipeline moves are complete; the remaining work is SELF-EVAL and the final report. Here it is.
+
+---
+
+# Project Cognition Report — commander.js @ snapshot MUT-04
+
+**Runtime Proof** — Researcher Runtime Certificate, **Run #2** (History: #1 unknown): Preset PASS (researcher-deep), Sandbox PASS (read-only), Approval PASS (policy=never), Write tools PASS (refusing stubs), Shell surface PASS (git_read only), Checkpoint PASS, Replay PASS. **Overall: SAFE.**
+
+**Cognition state**: imported the previous session's full state (32 claims C01–C32, hypotheses H1 active / H2 invalidated, 5 views), then verified it against the current tree and committed revisions through `research_checkpoint` (now 38 claims; H1 rev 8, H3 rev 1 active; views recomputed only for dirty nodes).
+
+**What this snapshot is**: per `snapshot.json` (schema `dsh-researcher/cplus-t1-snapshot/v1`), this is not the pristine repo. It is commander.js v14.0.3 content (T0 = `bf35c5f`, the exact commit the previous session analyzed) plus a **synthetic mutation MUT-04** of kind `internal_architecture` targeting `_excessArguments`, with all history squashed into one commit (`a8c313a`, "ci repository snapshot", 2026-08-23) so the injection is invisible to git. The analysis below separates **pristine-project cognition** (verified from prior state) from the **mutation finding**.
+
+---
+
+## 1. Project Identity
+
+| Attribute | Finding | Status |
+|---|---|---|
+| Package | `commander` v14.0.3, "the complete solution for node.js command-line programs" (package.json:3–4) | C3 C0 → verified unchanged |
+| Nature | Zero-runtime-dependency CLI framework (all deps devDependencies; CONTRIBUTING.md "zero production dependencies") | C02 Known |
+| Users | Top-tier npm adoption; CLI authors; TypeScript consumers via hand-maintained typings | C14/C32 Likely |
+| Value mechanism | Batteries-included, **strict-by-default** parsing (unknown options, missing/excess arguments, option clashes all error), help system, subcommand/executable support — with zero install cost | C05 (see mutation caveat), C17, C18 |
+| Maintainers | John Gee (shadowspawn) primary; abetomo release/CI; funded via GitHub Sponsors + Tidelift (package-support.json:12–15; Readme.md:1174–1176) | C07 Likely (git-log basis void in this snapshot) |
+| Platform | Node.js ≥ 20; CJS with ESM wrapper (esm.mjs); semver, majors ~6 months with Node LTS bumps; 12-month security window for old majors | C04, C06 |
+| Baseline integrity | Content matches the previous snapshot's line-level map of pristine v14.0.3 in **every file checked** (20+ anchors: command.js 99–114, 163, 420, 533–539, 679, 1020, 1290–1301, 1345, 2075, 2120, 2477, 2623; help.js 11/84/139–153; option.js 165–172/316–320; argument.js 56–63; typings 1113 lines; index.js; esm.mjs; error.js; jest.config; CI workflows) — **except the mutation** | C16 Known |
+| **This snapshot's identity** | Synthetic mutation #4 (`internal_architecture`, candidate `_excessArguments`), T0 bf35c5f → T1 a8c313a, created 2026-08-22 | **C33 Known (new)** |
+
+**Hypothesis (project-level, H1 rev 8, active)**: commander.js is a mature, extremely widely adopted CLI framework whose value is zero-dependency, batteries-included, strict-by-default parsing; the monolith `Command` class is deliberate compatibility-driven evolution (stable since the 2021 rewrite); its natural risk profile is edge-heuristic fragility, `Command`↔`Help` private coupling, hand-maintained typings drift, and maintainer concentration — *not* acute code defects. MUT-04 overlays exactly one synthetic regression on top of that baseline (H3).
+
+---
+
+## 2. Architecture Map
+
+```
+index.js / esm.mjs (thin export surface; 24/16 lines)
+  └─ lib/  (zero deps; JSDoc + tsc checkJs)
+       ├─ command.js   (2779 lines — the monolith: state, builder API, parser, dispatch, errors)
+       ├─ help.js      (747 lines — subclassable Help class, formatHelp pipeline)
+       ├─ option.js / argument.js (flag & argument declaration; _collectValue duplicated in both)
+       ├─ error.js     (CommanderError / InvalidArgumentError)
+       └─ suggestSimilar.js (Levenshtein suggestion)
+  └─ typings/ (hand-maintained index.d.ts 1113 lines + esm.d.mts; tsd + skipLibCheck:false CI)
+```
+
+**Parse/dispatch pipeline** (all verified intact in this snapshot):
+`parse()/parseAsync()` → `_prepareUserArgs` (from: node/user/electron; undocumented 'eval' at :1020) → `_parseCommand` (:1551) → `parseOptions` scanner (:1749; public API, single-pass, negative-number heuristic, combos, `--foo=bar`, variadic continuation) → dispatch ladder (:1559 subcommand → :1562 help command → :1568 default command → :1598 action handler / legacy `command:` events / `command:*` / `*` command) → `_processArguments` (:1429) → **`_checkNumberOfArguments` (:1403 — MUTATION SITE)** → `_checkForMissingMandatoryOptions`/`_checkForConflictingOptions` → hooks → action.
+
+**Error model**: `CommanderError(exitCode, code, message)` thrown via `exitOverride()` or `process.exit` via `_exit` (:533); executable subcommands propagate child exit codes; `runningCommand` published (:1345).
+
+**Where the mutation sits in the map**: the per-command argument-count validation step — specifically the "too many" branch of `_checkNumberOfArguments`, which runs *after* subcommand dispatch, per-command, on each command's own `this.args`. This placement is load-bearing: the dispatch ladder forwards operands down to subcommands *before* validation, so validation must happen per-command post-dispatch, not once on the parent (see C37).
+
+---
+
+## 3. Critical Components
+
+1. **`parseOptions` scanner** (command.js:1749–1897) — public API (typings:873), hand-rolled imperative parser. Unchanged. The mutation's comment (:1750) *claims* the excess check now lives at its exit — **verified false**: the function body ends `return { operands, unknown }` with no check (C34).
+2. **`_parseCommand` dispatch ladder** (:1551–1642) — unchanged; still calls `_processArguments` at 4 sites (:1600, :1617, :1631, :1639).
+3. **`_checkNumberOfArguments` (:1403–1421) — MUTATED.** "Too few" branch intact (`missingArgument` still fires). "Too many" branch is now an empty block holding only two comments:
+   - `:1418` `// MUT-04 (synthetic): excess check moved earlier (see parseOptions exit).`
+   - `:1419` `// this._excessArguments(this.args); // moved` (the original call preserved as a comment)
+4. **`_excessArguments` (:2148–2156) — now dead code.** Zero call sites repo-wide (grep: only the comment at :1419, the definition, and the message string). The `commander.excessArguments` error path is unreachable (C34).
+5. **`allowExcessArguments()` setter** (:843–849) — **inert**: its flag `_allowExcessArguments` (default `false`, :28) is read only inside the dead function (:2149).
+6. **Help class / error model / typings** — unchanged, including known couplings (help.js:84 "dubious" auto-hide, :139–153 description side-effect; nestedError drift at command.js:1339; HelpContext drift).
+
+---
+
+## 4. Design Decisions
+
+Verified unchanged from the pristine baseline (C05, C08, C16–C20, C29):
+
+- **Strict-by-default (since 13.0.0)** — unknown options, missing arguments, **excess arguments**, and option/command clashes error by default; opt-outs via `.allowUnknownOption()` / `.allowExcessArguments()`. **This is the decision MUT-04 breaks** (see §6).
+- **Zero runtime dependencies** — the parser, help, and typings are all hand-maintained; nothing to audit except the package itself. Soft constraint per CONTRIBUTING.md:40.
+- **Monolith `Command` with underscore-privates** — deliberately stable since the 2021 rewrite; features layered surgically (help option 2024-01, colors 2024-11, groups 2025-05, save/restore 2024-12). Help couples to privates; copyInheritedSettings copies 11 settings and deliberately omits others (C29).
+- **Per-command post-dispatch validation** — argument counts are validated *after* the subcommand dispatch attempt, on the receiving command. The mutation's claimed design ("reject at parseOptions exit before dispatch", :1750) is not just unimplemented — it is **semantically incoherent**: `parseOptions` runs at `_parseCommand:1552`, before dispatch (:1559–1560), so a check there would count operands destined for subcommands as the parent's excess (C37).
+- **Hand-maintained typings + dual type-check** (tsc checkJs over lib; tsd; `skipLibCheck:false` "we want to check our hand crafted definitions") — typings unchanged; they still document the strict contract (typings/index.d.ts:771).
+- **Release policy** — semver; majors ~6 months; current major gets all updates; previous majors 12 months security (docs/release-policy.md). Note: upstream v15.0.0 exists after this snapshot (C31, unverifiable here — no web provider).
+
+---
+
+## 5. Risk Map
+
+**Pre-existing risks (verified still present, unchanged):**
+- Edge-heuristic fragility in parsing: variadic regex over whole flags string, two-long-flags stored in short field, `camelcase('')` crash via `--no-` (option.js:316–320), DualOptions strict-`===` heuristic, `findBestOptionFromValue` reimplementing the heuristic (C24, C17).
+- `Command`↔`Help` private coupling; help-flag auto-hide "dubious" behavior; description-mutation side effect (C25).
+- Typings drift (nestedError, HelpContext, getters, Option d.ts omissions, stripColor not exported) (C26).
+- Signal-forwarding listener accumulation on repeated executable-subcommand dispatch; signal-terminated child exits 1 (C27).
+- API quirks: `opts()` by reference, `help()` reads `process.exitCode`, `error()` cannot emit exit 0 (C28).
+- Two author-error crash paths (`.command('')`, `.option('--no-')`) (C30).
+- Thin coverage pockets (Help methods, Option.is/isBoolean, ESM smoke-level, deprecated paths) (C23).
+- Maintainer concentration; no known CVE for commander; typosquat lookalikes (commmander, commander-stable) (C07, C32).
+
+**New risk introduced by MUT-04 (the finding):**
+- **Silent strictness regression (HIGH user impact, trivial code fix)**: every commander-based CLI now silently accepts excess arguments — the documented, changelog-promised, test-locked `error: too many arguments... / commander.excessArguments` behavior is gone (C35). Default strictness (C05) is broken; `.allowExcessArguments(false)` is inert; `exitOverride` users can no longer catch the code; `showHelpAfterError` no longer triggers for excess args.
+- **Docs/typings/behavior drift**: Readme.md:696–698/1021 and typings:771 still promise the strict contract the code no longer enforces (C35).
+- **Dead code + false narrative**: `_excessArguments` unreachable; two in-repo comments assert a refactor that did not happen (C34) — a trap for anyone reading the code later ("moved earlier (see parseOptions exit)" sends the reader to a location with no check).
+- **CI red**: `npm test` fails on ~15 jest cases; `npm run check` likely still passes (no `noUnusedLocals`; ESLint doesn't flag class methods) — so a type/lint-green + test-red signature (C38).
+
+---
+
+## 6. Change Impact Analysis
+
+### 6.1 What changed vs the previous snapshot
+
+| Dimension | Previous snapshot (bf35c5f, pristine v14.0.3) | This snapshot (MUT-04, a8c313a) | Verdict |
+|---|---|---|---|
+| Git substrate | 500+ commits, history predates 2023, HEAD bf35c5f | **Single squashed commit** "ci repository snapshot"; no history; forensics (blame/log) impossible | **C01 revised → Known (new statement)** |
+| Code | — | **lib/command.js only**: call `this._excessArguments(this.args)` deleted from `_checkNumberOfArguments` (:1419); 3 comments added (:1418, :1419, :1750) | **C34 Known (new)** |
+| Behavior | Excess args error by default since 13.0.0 | **Excess args silently accepted everywhere; `commander.excessArguments` never emitted; `allowExcessArguments(false)` inert** | **C05 revised → Contradicted** |
+| Tests | 109 jest files, all green | **Same 109 files, unmodified**; ~15 executed cases now red | C22 revised; **C36 Known (new)** |
+| Docs/typings | Promise strict-by-default | Unchanged — still promise it (now false) | C35 |
+| Everything else | — | Verified byte-for-byte consistent with the previous line map (20+ anchors) | Unchanged claims stand |
+
+### 6.2 Previous assumptions that no longer hold
+
+1. **C01** (HEAD bf35c5f, 500+ commits, history predates 2023) — **void**: history was squashed; the content baseline is still v14.0.3 (per package.json + snapshot.json T0).
+2. **C05** (excess-arguments strictness) — **broken by the mutation**; unknown-option and clash strictness still hold.
+3. **C07** (maintainer model) — substance intact via package-support.json/Readme, but its git-log evidence is **void**; downgraded Known → Likely.
+4. **C11** (dependabot-dominated history) — **unverifiable** (no history); downgraded to Unknown.
+5. **C16** (architecture dating) — substance **confirmed** via content anchors, but its blame evidence is **void**.
+6. **C22** (tests lock excess-args errors) — still true as written, but those tests **now fail**; the "tests = oracle" property still holds (they were not adapted).
+7. **H2** ("critical regression present") — was invalidated for the pristine snapshot; for MUT-04 the regression is *real but synthetic* — superseded by **H3**.
+
+### 6.3 Behavioral impact matrix (static trace; not executed — no shell)
+
+| Scenario | Pristine v14.0.3 | MUT-04 |
+|---|---|---|
+| `parse(['excess'])`, no args declared | error `commander.excessArguments`, exit 1 / exitOverride throw | **silent accept** |
+| `parse(['file','excess'])` with `<file>` | error | **silent accept** |
+| `parse(['sub','excess'])` with subcommand | error on `sub` | **silent accept** |
+| `.allowExcessArguments(false)` | error | **silent accept (API inert)** |
+| `.allowExcessArguments()` / `(true)` | no error | no error (unchanged) |
+| `.exitOverride()` catching `commander.excessArguments` | catch | **never fires** |
+| `.showHelpAfterError()` with excess args | error + help | **nothing** |
+| Missing required arg (`<file>` absent) | `commander.missingArgument` | unchanged (too-few branch intact) |
+| Unknown option | `commander.unknownOption` | unchanged |
+
+### 6.4 Test & CI impact
+- **15 executed jest cases fail** (C36): `command.allowExcessArguments.test.js` 12 of 20 (6 `toThrow` tests × `describe.each([true,false])`), `command.exitOverride.test.js` 2 (expected `commander.excessArguments` codes and messages, :167–210), `command.showHelpAfterError.test.js` 1 (:70–77). All other ~1,250+ cases unaffected (the mutation touches only the excess-args path).
+- `npm test` = `jest && check:type:ts` → **fails at jest**. `npm run check` (tsc/lint/prettier) **likely passes** (C38) — the defect is invisible to static checks, only to behavioral tests. CI (node 20/22/24 × 3 OS, tests.yml) goes red.
+- **Downstream**: any CLI built on commander that relied on strict excess-arg rejection (scripts, CI guards, arg-count validation) silently changes behavior; extra arguments are now ignored by the action handler (only declared args are bound).
+
+### 6.5 Change surface summary
+- **Files changed**: `lib/command.js` only (2 spots: :1417–1420, :1750).
+- **API surface**: unchanged (no signature/export changes; `parseOptions` untouched).
+- **Docs/typings**: unchanged → now inconsistent with behavior.
+- **Tests**: unchanged → 15 red cases are the oracle.
+
+---
+
+## 7. Decision Memo
+
+**Verdict on the change**: The mutation presents as an "internal architecture refactor" (check "moved" to `parseOptions` exit) but is **corrosion, not evolution** — it removes a documented, changelog-promised, test-locked strictness behavior; leaves `_excessArguments` dead; plants a false narrative in two comments; and breaks the docs/typings/behavior contract. It is confirmed synthetic (snapshot.json), but a reviewer without that metadata would correctly reject it on the evidence alone: the claimed relocation target does not exist, and even if it did, the claimed design is semantically wrong for subcommand hierarchies (C37).
+
+**Classification**:
+- **BUILD (1 item)** — restore the excess-arguments check at its original, correct call site.
+- **INVESTIGATE** — none. The defect is fully characterized; nothing requires more research before action.
+- **DON'T BUILD** — do **not** implement the "check at `parseOptions` exit" design the comments describe; it would break subcommand dispatch. Do not touch tests/typings/docs (they encode the correct contract).
+
+### Handoff brief (human-readable)
+
+**Build item MUT04-RESTORE-01 — reinstate `_excessArguments` call in `_checkNumberOfArguments`**
+- Restore `this._excessArguments(this.args);` inside the `if (this.args.length > this.registeredArguments.length)` block of `_checkNumberOfArguments` (lib/command.js, currently :1417–1420).
+- Delete the three mutation comments: `// MUT-04 (synthetic): excess check moved earlier (see parseOptions exit).` (:1418), `// this._excessArguments(this.args); // moved` (:1419), and `// MUT-04 (synthetic): excess operands are rejected at parseOptions exit before dispatch.` (:1750).
+- **Do not touch**: `parseOptions` (no check may be added there — wrong place, C37), the `_excessArguments` method itself (it becomes live again), tests, typings, docs, any other file.
+- Acceptance: the 15 previously-red cases in `command.allowExcessArguments.test.js`, `command.exitOverride.test.js`, `command.showHelpAfterError.test.js` pass again; file returns to pristine line layout (verify `opts()` returns `_optionValues` at :1916 and `unknownOption` suggestion at :2118–2133 as in pristine).
+
+### Handoff brief (machine-readable)
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "commander.js-cplus-t1/MUT-04",
+  "t1_head": "a8c313af491df485deb53ca71981ebf53ebc6ee2",
+  "t0_commit": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+  "build_items": [
+    {
+      "id": "MUT04-RESTORE-01",
+      "problem": "Synthetic mutation MUT-04 deleted the only call site of _excessArguments (command.js _checkNumberOfArguments, too-many branch), leaving dead code and fabricated comments claiming the check moved to parseOptions exit (which contains no check). Net effect: excess command-arguments are silently accepted everywhere; commander.excessArguments error never emitted; allowExcessArguments(false) is inert; docs (Readme.md:696-698,1021) and typings (index.d.ts:771) still promise the strict contract; 15 executed jest cases fail in 3 test files.",
+      "evidence": [
+        "lib/command.js:1417-1420 (empty too-many branch, commented-out call)",
+        "lib/command.js:1750 (false 'moved to parseOptions exit' comment; parseOptions 1749-1897 has no check)",
+        "lib/command.js:2148-2156 (_excessArguments dead; repo-wide grep: 3 matches only)",
+        "snapshot.json (kind internal_architecture, candidate _excessArguments)",
+        "tests/command.allowExcessArguments.test.js:17-114, command.exitOverride.test.js:167-210, command.showHelpAfterError.test.js:70-77"
+      ],
+      "confidence": 0.97,
+      "scope": "lib/command.js only: restore `this._excessArguments(this.args);` in _checkNumberOfArguments; delete the 3 mutation comments (lines 1418, 1419, 1750)",
+      "do_not_touch": [
+        "parseOptions - do NOT add any excess check there (would break subcommand dispatch, C37)",
+        "_excessArguments method itself - becomes live again after restore",
+        "tests, typings, docs, CHANGELOG, examples, other lib files - they encode the correct contract",
+        "allowExcessArguments setter and _allowExcessArguments flag"
+      ]
+    }
+  ]
+}
+```
+
+---
+
+**SELF-EVAL (research self-check)**: runtime certificate quoted at top ✓; read-only respected throughout (no filesystem writes; checkpoint metadata only) ✓; every claim tiered C0–C4 with citations and confidence ✓; contradictions reported as first-class findings (C05 Contradicted; C01/C07/C11 evidence-basis changes) ✓; hypotheses versioned, only dirty views recomputed ✓; "I don't know" boundaries disclosed (15-case count is static analysis, not executed — C36 at 0.85; upstream comparison impossible — no web provider; `npm run check` outcome inferred — C38 at 0.7) ✓; handoff contains only the single BUILD item with scope and do-not-touch ✓.

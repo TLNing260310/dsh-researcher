@@ -1,0 +1,175 @@
+
+
+===MSG===
+
+Runtime Proof: Researcher Runtime Certificate **Run #2 — Overall: SAFE** (Preset PASS researcher-deep, Sandbox PASS read-only, Approval PASS never, Write tools PASS refusing stubs, Shell PASS git_read-only, Checkpoint PASS, Replay PASS).
+
+Now importing the previous session's cognition state.
+
+===MSG===
+
+State imported. Now exporting the full state to confirm what was restored.
+
+===MSG===
+
+Full state restored: 10 claims (C1–C10), H1 active, three views, dirty set empty. Now I'll verify what still holds in the current snapshot — cartography first.
+
+===MSG===
+
+Key finding already: **git history is a single squashed snapshot commit** (`c8e2d4c 2026-08-23 ci repository snapshot`) — no prior commits to diff against in-repo. Version remains 14.0.3. The directory name (`MUT-02`) suggests this snapshot may contain an injected change relative to pristine upstream. Let me get the full file listing and read the small core files.
+
+===MSG===
+
+File inventory matches the pristine v14.0.3 tree (223 paths; 109 test suites). Entry files (index.js, esm.mjs, error.js, suggestSimilar.js) look pristine. Now the core data classes.
+
+===MSG===
+
+argument.js and option.js match upstream v14.0.3. Now the Help class and the parser core.
+
+===MSG===
+
+help.js matches upstream. Now the parser core — lib/command.js (~2800 lines), in chunks.
+
+===MSG===
+
+Found a labeled synthetic change already — `createHelp`/`configureHelp` at lib/command.js:204-220 carry an explicit `// MUT-02 (synthetic)` comment. Let me finish reading command.js and search for any other markers.
+
+===MSG===
+
+Full command.js read. The only deviation marker is at lines 204 and 215-220. Now I need to verify against pristine upstream v14.0.3 — fetching the upstream file and checking the tests/typings that cover this API.
+
+===MSG===
+
+The web provider is unavailable, so upstream verification must rely on internal consistency: typings, docs, tests, and CHANGELOG. The typings at index.d.ts:561-572 show `configureHelp(configuration: HelpConfiguration)` — **no `base` parameter**, already a mismatch with the new code. Let me check the test coverage, CHANGELOG, and docs for this API.
+
+===MSG===
+
+The `base:` grep in tests returned nothing, but **tests/help.style.test.js:36 calls `configureHelp({...}, displayWidth)` with TWO arguments** — that is not upstream API. This looks like a test modified for the MUT-02 feature. Let me examine it and the related test files.
+
+===MSG===
+
+The 'styleTitle' test (help.style.test.js:34-45) is the smoking gun: it calls `configureHelp({styleTitle}, displayWidth)` — passing `displayWidth` as the **base** argument. Under MUT-02's implementation, `createHelp()` would execute `new displayWidth()` — and `displayWidth` is a plain function that calls `stripRed(undefined).replace(...)` → **TypeError**. The other 12 style tests all keep `displayWidth` *inside* the config object (upstream form). Let me verify the remaining consistency points: docs, CI matrix, createHelp test, release policy.
+
+===MSG===
+
+Docs and typings confirm: no `base` parameter documented anywhere (help-in-depth.md:4,9,41,50; Readme.md:950; index.d.ts:570-572). CI matrix (node 20/22/24 × 3 OS) confirms C5. Final consistency checks on the config plumbing and the style tests.
+
+===MSG===
+
+All verification complete. The delta is fully characterized. Committing the research state before writing the report.
+
+===MSG===
+
+
+
+===MSG===
+
+# Project Cognition Report — commander.js @ MUT-02 snapshot
+
+**Runtime Proof:** Researcher Runtime Certificate **Run #2 — Overall: SAFE** (Preset PASS researcher-deep · Sandbox PASS read-only · Approval PASS never · Write tools PASS refusing stubs · Shell PASS git_read-only · Checkpoint PASS · Replay PASS). Prior cognition state (10 claims C1–C10, hypothesis H1, 3 views) imported via `research_checkpoint` and verified against the live snapshot; 17 claims now committed (C1–C17), hypotheses H1–H2. Depth: **DEEP** (all eleven moves), per the frozen Phase-A evaluation override.
+
+**Snapshot delta at a glance (what changed vs. the previous session's state):**
+
+| Item | Previous snapshot | This snapshot (MUT-02) |
+|---|---|---|
+| Package identity | commander v14.0.3, MIT, zero runtime deps | **Unchanged** (verified package.json:2-80) |
+| `createHelp()` / `configureHelp()` | pristine upstream: `Object.assign(new Help(), this.configureHelp())`; `configureHelp(configuration)` single-arg | **Changed** — labeled `// MUT-02 (synthetic)` (lib/command.js:204, 215-220): optional `base` parameter; `createHelp()` constructs `new (this.configureHelp().base \|\| Help)()` |
+| tests/help.style.test.js | pristine: `configureHelp({ styleTitle: …, displayWidth })` (single object) | **Changed** — 'styleTitle' test (L36) passes `displayWidth` as the second (`base`) argument; the other 13 style tests keep the upstream form |
+| Git forensics | `git log` over ~500 commits available | **No longer possible** — history squashed to one commit `c8e2d4c "ci repository snapshot" 2026-08-23` |
+| CHANGELOG / typings / docs | v14.0.3 entries; `configureHelp(configuration: HelpConfiguration)` | **Unchanged** — i.e., the new `base` parameter is typings-silent, doc-silent, changelog-silent |
+
+**Previous assumptions that no longer hold:** (1) *"the snapshot is pristine commander v14.0.3"* — false; it carries a synthetic, labeled, defect-bearing change. (2) *"git history can be used for forensics"* — false; the repo is a single squashed commit, so C6's commit-level evidence is not re-derivable (the claim itself still holds on CHANGELOG/release-policy evidence). (3) *"the test suite is green on this tree"* — not verifiable by execution (read-only sandbox), but deterministic static analysis shows the modified 'styleTitle' test throws a TypeError against the MUT-02 implementation (details in §6). All other prior claims (C1–C5, C7–C10) were re-verified and still hold.
+
+---
+
+## 1. Project Identity
+
+**What it is.** Commander is the de-facto standard Node.js CLI argument-parsing framework: "the complete solution for node.js command-line programs" (package.json:4). v14.0.3, MIT, CommonJS with an ESM wrapper (`esm.mjs`), **zero runtime dependencies**, requires Node ≥ 20 (package.json:43-61, 78-80). Published from tj/commander.js. [C1, tier C2, Known — re-verified]
+
+**Adoption and phase.** >10M weekly npm downloads and top-tier dependent count [C7, tier C4, Known — unchanged, external]. Maintainers John Gee (shadowspawn) and Abe Tomoaki (abetomo); the CHANGELOG shows 14.0.1 (2025-09-12), 14.0.2 (2025-10-25), 14.0.3 (2026-01-31) as fix/dev-dep/docs releases with **no feature work since 14.0.0 (2025-05-18)** [C6, tier C3, Likely — claim survives; its commit-log evidence no longer re-derivable, see delta table]. This is a mature project in a **maintenance/plateau phase**: correctness and backward compatibility are valued above feature velocity [H1, active]. The project's own release policy (docs/release-policy.md) and `"support": true` in package.json confirm a governed support window (12 months for old majors since 14.0.3).
+
+**Snapshot provenance.** The working tree is a frozen v14.0.3 with one injected, explicitly labeled synthetic change ("MUT-02") [C11, C12]. This is the single most important identity fact of *this* snapshot: it is not pristine upstream.
+
+## 2. Architecture Map
+
+Verified against the full source (all six lib files read in their entirety):
+
+- **`Command` extends `EventEmitter`** (lib/command.js:13) — one class is simultaneously the *parser*, the *command tree node*, and the *lifecycle-hook host*. Parsing is a single left-to-right pass (`parseOptions`, lib/command.js:1748-1895) that emits `option:<name>` events; subcommand dispatch recurses into child `_parseCommand`.
+- **Option/Argument as data classes** (lib/option.js:3-380, lib/argument.js:3-150) with `parseArg`/`choices`/`conflicts`/`implies`/`env`/`preset`; `DualOptions` resolves negated-pair value attribution (lib/option.js:268-306).
+- **Value flow with source tracking** — `setOptionValueWithSource` records `default|config|env|cli|implied`; precedence: CLI beats env beats config/default (`_parseOptionsEnv` lib/command.js:1966-1989, `_parseOptionsImplied` 1996-2025). [C3, re-verified]
+- **Help as a style-hook class** — `Help` (lib/help.js:12-747) with `formatHelp`, `visibleOptions/Commands/Arguments`, style hooks (`styleTitle`…), `boxWrap`/`displayWidth`/`stripColor`. **`Command.createHelp()`/`configureHelp()` are the extension seam** — and precisely this seam is where the MUT-02 change lives.
+- **Error taxonomy** — `CommanderError`/`InvalidArgumentError` (lib/error.js); default `process.exit` with `exitOverride()` escape hatch.
+- **Strict-by-default posture** — unknown option / excess arguments / flag-format / duplicate-registration all throw (lib/command.js:619-662, lib/option.js:350-374) [C4, re-verified].
+- **Public surface** — index.js re-exports the six classes + `program` singleton; hand-maintained typings (typings/index.d.ts, 1113 lines) kept in sync via tsd + tsc checkJS [C10, re-verified].
+
+## 3. Critical Components
+
+| Component | File | Role | Health |
+|---|---|---|---|
+| `Command` parser/dispatcher | lib/command.js (2777 lines) | Everything | **MUT-02 modified here** (createHelp/configureHelp only; the 2700 other lines verified pristine) |
+| `Option` + `DualOptions` | lib/option.js (380) | Option semantics | Pristine |
+| `Help` + `stripColor` | lib/help.js (747) | Help rendering | Pristine |
+| `Argument` | lib/argument.js (150) | Argument semantics | Pristine |
+| Errors | lib/error.js (39) | Error taxonomy | Pristine |
+| Suggestion engine | lib/suggestSimilar.js (101) | Damerau–Levenshtein | Pristine |
+| Typings | typings/index.d.ts + esm.d.mts | TS surface | Pristine — and therefore **inconsistent with the new `base` parameter** |
+| Test surface | ~109 jest suites + tsd + ESM-import test; CI node 20/22/24 × 3 OS + CodeQL | Oracle | One test ('styleTitle') modified to exercise the new API; **deterministically fails** (§6) |
+
+## 4. Design Decisions
+
+- **MUT-02 decision (the injected change, lib/command.js:204, 215-220):** add an optional `base` class parameter to `configureHelp(configuration, base)`, store `{ base, ...configuration }`, and let `createHelp()` construct `new (this.configureHelp().base || Help)()` then `Object.assign` the config over it. In-code comments claim "base-aware merge" and "descriptor-preserving merge".
+- **Why it's a design violation of this project:** commander's documented extension pattern for custom Help classes is *override `createHelp()`* (documented in Readme.md:950, docs/help-in-depth.md:4, tested in tests/command.createHelp.test.js:3-18). MUT-02 grafts a second, undocumented route onto `configureHelp` — a method whose contract (typings/index.d.ts:570-572) and docs know nothing of a `base`. The project's own quality bar (C10: typings synced by tsd; CHANGELOG per release; docs thorough) is **not met**: no typings change, no JSDoc `@param`, no docs, no CHANGELOG entry [C16]. The comment "descriptor-preserving merge" is false — `{ base, ...configuration }` is a data spread; getters are evaluated and accessor descriptors lost (a lie in the code, though behaviorally equal to upstream's own spread).
+- **Semantic incoherence (the defect):** the implementation treats `base` as a *constructor* (`new base()`), but the modified test passes `displayWidth` — a plain function — as `base`. `new displayWidth()` executes `stripRed(undefined)` → `undefined.replace(...)` → **TypeError thrown during help construction** (tests/help.style.test.js:10-13, 36; lib/command.js:204). Even if construction survived, the instance would lack `formatHelp`, so `helpInformation()` would still throw [C14]. Implementation and its own test disagree about what `base` means — the change is internally incoherent [H2].
+- **Secondary behavioral drift for the documented API:** after any `configureHelp(config)` call, the stored config and every created Help instance now carry an own `base: undefined` key [C17]. Invisible to jest `toEqual` (undefined keys ignored — why tests/command.copySettings.test.js:85 still passes), invisible to `JSON.stringify`, but observable via `Object.keys(helper)`, `'base' in helper`, or `toStrictEqual` in downstream consumer code.
+
+## 5. Risk Map
+
+Verified/holds from prior state: governance — 2 active maintainers, bus factor [C6]; npm typosquat 'commmander' (MAL-2025-192687, MAL-2025-17423), no CVEs on commander itself [C8]; ~10 legacy deprecation features still implemented (docs/deprecated.md) [C9]; hand-written typings as a drift point [C10].
+
+New for this snapshot:
+
+- **R1 — Suite is red (high, immediate):** the modified 'styleTitle' test fails deterministically under the MUT-02 implementation (TypeError) [C14→C15]. Anything built on this tree — a release, a benchmark run — starts from a failing suite. The failure is in the *test the change itself modified*, i.e., the change fails its own acceptance test.
+- **R2 — Public API inconsistency (medium, latent):** if MUT-02 were shipped, TypeScript consumers calling `configureHelp(config, Base)` would be rejected by the typings (tsd/tsc), and the feature would be invisible to docs — a silent, half-wired API surface in a >10M-downloads package [C16]. This violates the project's compatibility contract (semver: a new overload is additive, but *untyped* additive is a type-level break for nobody and a promise of support for nobody).
+- **R3 — Subtle observable drift (low probability, wide blast radius):** the stray `base` key on Help instances/config affects any downstream code that introspects the helper (custom `formatHelp` doing `Object.keys(helper)`, config round-trips via `configureHelp()` getter + re-set). 10M+ weekly downloads make even low-probability behavioral deltas notable [C17].
+- **R4 — Forensic loss (process risk):** squashed history removes commit-level attribution; any future analysis of this snapshot must rely on file contents and labels only [C11].
+
+## 6. Change Impact Analysis
+
+**Scope of the delta (complete enumeration):** exactly three artifacts changed vs. pristine v14.0.3 — (a) lib/command.js:204, (b) lib/command.js:215-220, (c) tests/help.style.test.js:36. Everything else in the 223-file tree was verified identical to the prior state (all lib files read fully; package.json, typings, CHANGELOG, docs, CI config, and test-suite inventory checked against the imported claim ledger). The mutation is self-labeling — "MUT-02 (synthetic)" comments — which is how the delta was pinned with confidence.
+
+**Impact chain (DIAGNOSE, problem-first):**
+1. *User/business problem:* a maintainer (or the benchmark) attempting to extend `configureHelp` with a Help base class gets — with the current code — a crash for any non-class `base` (TypeError inside help generation) and no type/docs support for the legitimate class case. For the project: the change is unmergeable as-is and unlabeled in the CHANGELOG.
+2. *Seriousness:* high for this snapshot's immediate purpose (its own test fails); low-to-moderate for the real product (the new parameter is additive; no released consumer can be using it — but the *test* modification proves someone intends it).
+3. *Evidence:* deterministic code-path analysis [C14]; no execution performed (read-only sandbox) [C15 noted as Likely, conf 0.85].
+4. *Deserves intervention:* yes — the snapshot is not pristine; anyone using it as a baseline inherits a red suite and an incoherent API.
+
+**Comparisons (COMPARE):** the correct upstream pattern for a custom Help base is `createHelp()` override (tests/command.createHelp.test.js:10-14) — a subclass hook, not a config parameter. An actually-correct `base` feature would (i) keep `createHelp` as the only construction point or delegate to it, (ii) add the overload to typings (`configureHelp(configuration: HelpConfiguration, base?: HelpConstructor): this`), (iii) document + CHANGELOG it, (iv) validate `base` is a constructor, (v) not leak a `base` key into the merged config. MUT-02 does none of these.
+
+**CHALLENGE (disconfirmation search) — what would make "MUT-02 is a defect" wrong?** (a) *Maybe jest tolerates the crash?* No — an uncaught TypeError in a test body is a failure. (b) *Maybe `new displayWidth()` doesn't throw?* It deterministically does: `stripRed(undefined).replace` (tests/help.style.test.js:7-13). (c) *Maybe other code paths neutralize `base`?* `_helpConfiguration` is read only at constructor init, copyInheritedSettings, and configureHelp/createHelp (grep: 4 hits) — no neutralization. (d) *Maybe the test was supposed to pass a Help subclass?* It passes `displayWidth`; and even the subclass path is untyped/undocumented. The defect reading survives; the revised hypothesis is **H2** (change is internally incoherent and fails its own test), superseding the initial "likely benign additive extension" reading.
+
+## 7. Decision Memo
+
+**Project verdict:** commander v14.0.3 remains a healthy, mature, zero-dependency framework in plateau phase [H1 holds]. The MUT-02 snapshot, however, is **not pristine**: it contains one labeled synthetic change that is (1) behavior-breaking for its own modified test, (2) semantically incoherent (constructor vs. function `base`), (3) untyped, undocumented, changelog-silent, and (4) drifts the Help configuration object's shape.
+
+**Options (TRADEOFF):**
+- **A. Revert to pristine v14.0.3** (undo lib/command.js:204/215-220 and tests/help.style.test.js:36). Cheapest; restores a green suite and the documented contract; loses nothing the product needs. → **Recommended if this snapshot is a baseline.**
+- **B. Implement the feature properly** (if a Help-base parameter is genuinely wanted): add the typings overload, docs, CHANGELOG entry, constructor validation, no stray `base` key, and a real test with a Help subclass. Cost: small-to-moderate; conflicts with the project's deliberate "override `createHelp()`" design and would need upstream maintainer buy-in (plateau-phase project, feature work dormant since 14.0.0 — the demand signal is weak).
+- **C. Keep as-is.** Unacceptable: red suite, incoherent API.
+
+**Classification:** MUT-02 as-is → **DON'T BUILD** (fails its own test, fails every project convention). Feature "Help base class via configureHelp" → **INVESTIGATE** (demand unclear; upstream design already covers it via `createHelp` override). No other BUILD/INVESTIGATE items for the project itself.
+
+**Handoff brief — BUILD items:** none (see JSON block below; the honest output of this research pass is a *revert-or-fix decision*, which belongs to the user/Plan stage, not a build).
+
+---
+
+### Research self-check (SELF-EVAL)
+1. Runtime certificate produced first, SAFE — ✓. 2. Prior state imported and re-verified, not trusted blindly — ✓. 3. Every factual statement cited (file:line) or labeled as deterministic derivation — ✓. 4. Claims graded C1–C17 with verdicts; the one un-runnable check (test execution) explicitly marked Likely/C3 rather than Known — ✓. 5. Contradictions surfaced as first-class findings (implementation vs. its own test; comment vs. code semantics) — ✓. 6. Disconfirmation search performed on the central finding — ✓. 7. No build items invented; DON'T BUILD/INVESTIGATE stated — ✓. 8. External research attempted (upstream diff via web_fetch) but the web provider is unregistered in this runtime; upstream equivalence therefore rests on internal consistency + prior ledger — disclosed, not hidden. 9. Read-only discipline maintained; checkpoint committed (17 claims, H1 rev 3, H2). 10. Project filesystem untouched.
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "build_items": [],
+  "note": "No BUILD items. The MUT-02 synthetic change (lib/command.js:204,215-220; tests/help.style.test.js:36) is classified DON'T BUILD as-is: it deterministically fails its own modified 'styleTitle' test (TypeError via new displayWidth()), is untyped/undocumented/changelog-silent, and is semantically incoherent (base treated as constructor; test passes a function). Recommended disposition for the user/Plan stage: revert to pristine v14.0.3 (option A) or, if the feature is genuinely wanted, INVESTIGATE a proper implementation per project conventions (typings overload, docs, CHANGELOG, constructor validation, no stray 'base' key, Help-subclass test). do_not_touch: all lib files except the two labeled MUT-02 lines; the other 13 style tests; typings/index.d.ts:570-572 (pristine, must not be 'fixed' to match the mutant).",
+  "evidence": ["lib/command.js:204", "lib/command.js:215-220", "tests/help.style.test.js:36", "typings/index.d.ts:570-572", "docs/help-in-depth.md:4-50", "CHANGELOG.md:11-62"]
+}
+```

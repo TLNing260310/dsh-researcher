@@ -1,0 +1,221 @@
+{
+  "schema": "dsh-researcher/cognition-diff/v1",
+  "source_state": "exp-a-deep-03",
+  "generated_at": "2026-08-22T21:26:04.455Z",
+  "stale_claims": [
+    {
+      "id": "C2-007",
+      "stale_anchors": 3,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "13",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "720-730",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1748-1895",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C2-008",
+      "stale_anchors": 3,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "533-539",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1940-1958",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "508-521",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "affected_hypotheses": [
+    {
+      "id": "H1",
+      "status": "invalidated",
+      "stale_dependencies": [
+        "C2-007",
+        "C2-008"
+      ]
+    }
+  ],
+  "affected_views": [
+    {
+      "name": "report",
+      "stale_dependencies": [
+        "C2-007",
+        "C2-008"
+      ]
+    }
+  ],
+  "unchanged_claims": [
+    {
+      "id": "C0-001",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C0-003",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C0-D1",
+      "note": "partial staleness",
+      "stale_anchors": 2,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "Readme.md",
+          "line_span": "73",
+          "recorded_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "current_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "stale": false
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "27",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "2114-2137",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C0-D2",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C0-D3",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C0-D4",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C0-D5",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C2-005",
+      "fresh_anchors": 3
+    },
+    {
+      "id": "C2-009",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "40",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "208b14ba00e363a03a3ce5718e1c64756299056f54c89981af1d758061f61d1b",
+          "stale": true
+        },
+        {
+          "file": "docs/deprecated.md",
+          "line_span": "1-18",
+          "recorded_sha": "0388b904dd7b7439cc12a4fc3856d45a166ff1dc5b807a59d2b08f2c71057915",
+          "current_sha": "0388b904dd7b7439cc12a4fc3856d45a166ff1dc5b807a59d2b08f2c71057915",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C2-012",
+      "fresh_anchors": 4
+    },
+    {
+      "id": "C2-013",
+      "fresh_anchors": 2
+    }
+  ],
+  "unverifiable_claims": [
+    {
+      "id": "C0-002",
+      "reason": "git log output | git status empty",
+      "anchor_count": 2
+    },
+    {
+      "id": "C2-004",
+      "reason": "git log 500 commits: maintainers John Gee (shadowspawn) + abetomo + dependabot; feature commits rare, mostly John Gee",
+      "anchor_count": 1
+    },
+    {
+      "id": "C2-006",
+      "reason": "tests/ 109 jest files + tsd + esm-import tests | jest.config.js collectCoverage true, no threshold | .github/workflows/tests.yml Node 20/22/24 x 3 OS",
+      "anchor_count": 3
+    },
+    {
+      "id": "C2-010",
+      "reason": "typings/index.d.ts 1113 lines hand-written | typings/index.test-d.ts tsd tests | package.json check:type scripts",
+      "anchor_count": 3
+    },
+    {
+      "id": "C2-011",
+      "reason": "package-support.json: response 'time-permitting', sponsors shadowspawn+abetomo | SECURITY.md Tidelift contact",
+      "anchor_count": 2
+    },
+    {
+      "id": "C3-001",
+      "reason": "https://github.com/tj/commander.js/releases/tag/v15.0.0 (search result) | https://newreleases.io/project/npm/commander/release/15.0.0-0 | multiple dependabot/renovate PRs bumping 14.0.3 -> 15.0.0 (PaloAltoNetworks/docusaurus-openapi-docs #1532, bitwarden/directory-connector #1134, zazuko/trifid #990)",
+      "anchor_count": 3
+    },
+    {
+      "id": "C3-002",
+      "reason": "https://osv.dev/vulnerability/MAL-2025-192687 (commander-stable typosquat) | https://deps.dev/advisory/osv/MAL-2025-192687 | https://www.cloudsek.com/blog/bridgehead-npm-typosquatting-wsl-windows-crypto-wallet-stealer",
+      "anchor_count": 3
+    },
+    {
+      "id": "C3-003",
+      "reason": "https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0 (commander in >10M weekly downloads tier) | https://www.pkgpulse.com/blog/commander-vs-yargs-2026",
+      "anchor_count": 2
+    }
+  ],
+  "metrics": {
+    "total_claims": 21,
+    "stale_candidates": 2,
+    "unchanged": 11,
+    "unverifiable": 8,
+    "affected_hypotheses": 1,
+    "affected_views": 1
+  }
+}

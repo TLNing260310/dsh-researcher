@@ -1,0 +1,9 @@
+Duplicate delivery of agent e1eb70c5's report (received earlier, already folded into the ledger as the C3-tier upgrade of C7). The added detail — fan-out coverage ledger (134/134 tests, 9/9 docs, 45/45 examples compared; 0 differ, 0 missing, 0 added) and the disclosed byte-level limitation (CRLF/BOM/trailing-newline not hash-verifiable for the BASE side, since BASE lies outside the git_read repo root) — changes nothing: the byte-level caveat was already disclosed in the report's SELF-EVAL limitations and does not affect any committed claim, since the mutation delta is established at line level in `lib/command.js` regardless.
+
+All three background agents have now delivered and fully converged (the later two messages were pure re-deliveries with no new information). The research is complete and the report stands unchanged:
+
+- **One mutation, fully evidenced:** MUT-02 = pristine commander.js v14.0.3 + exactly one self-tagged `api_contract` mutation in `createHelp`/`configureHelp` (`lib/command.js:204,215-220`); everything else in the tree byte-identical to base (12/12 key files + 188/188 tests/docs/examples).
+- **One BUILD item:** two-hunk revert to upstream semantics (handoff brief + `research_handoff.json` with `MUT02-F1`, scope and do_not_touch enumerated).
+- **Ledger committed:** 13 claims, 2 active hypotheses (H1, H2), 5 views, no dirty nodes.
+
+Nothing further from this session.

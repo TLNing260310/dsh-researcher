@@ -1,0 +1,267 @@
+
+
+===MSG===
+
+Runtime Proof — Researcher Runtime Certificate, Run #2, Overall **SAFE** (preset=researcher-deep, sandbox=read-only, approval=never, write/edit=stubs, git_read=only subprocess, checkpoint available, replay consistent).
+
+Now importing the previous session's cognition state:
+
+===MSG===
+
+Import confirmed (36 claims). The response shows 0 hypotheses/views — let me export to see the full reconstructed state:
+
+===MSG===
+
+Prior state imported: claims C1–C36 recovered; hypotheses H1/H2 and views were not carried by the import payload — I'll re-register them once verified. Now starting DISCOVER on the current snapshot:
+
+===MSG===
+
+Key finding already: git history is **squashed to a single commit** `a4fcd76 "ci repository snapshot"` dated **2026-08-23** — the previous session had full history (120 entries, tags, dependabot commits). This is a fresh snapshot of the same project. Now verifying whether the working tree matches the previous snapshot's version (v14.0.3) or has moved/changed:
+
+===MSG===
+
+**Critical comparison point found**: the current snapshot is still **v14.0.3** (package.json:3, CHANGELOG head 14.0.3 2026-01-31), and all key line numbers in `lib/command.js` match the previous session's evidence exactly (unknownOption:2114, _checkNumberOfArguments:1403, _checkForMissingMandatoryOptions:1675, _executeSubCommand:1202, nestedError:1339, parseOptions:1748, saveStateBeforeParse:1141). The working tree appears identical to the previously analyzed state — only git history is squashed (1 commit, 2026-08-23).
+
+To be rigorous about "what changed", I'll hash the local files and compare against upstream v14.0.3 blob SHAs via the GitHub API:
+
+===MSG===
+
+`web_fetch` is unavailable in this session too (matching the previous session's note) — so upstream blob-SHA comparison is out; I'll rely on local verification of the prior evidence plus web_search for upstream state. Test count: **109 files — matches C18 exactly**. Continuing structural verification:
+
+===MSG===
+
+Structural verification so far is a clean match with the previous session: help.js 747 lines (C22), typings 1113 lines with `nestedError?: string` at line 20 (C26 drift persists), signal listeners at 1290–1301 (C21), `nestedError = err` at 1339, jest config without threshold (C23/C28), 109 test files (C18), and upstream **v15.0.0 released** with ecosystem dependabot bumps 14.0.3→15.0.0 (C32 holds). Continuing verification of remaining claims:
+
+===MSG===
+
+All prior structural claims verified unchanged (Readme 1176 lines, deprecated.md 258, tests.yml matrix node 20/22/24 × 3 OS, release-policy 16 lines, SECURITY Tidelift, package-support sponsors, CONTRIBUTING zero-deps at line 40). Now spot-checking behavior-level constants (error codes, nestedError test usage) and upstream v15 details:
+
+===MSG===
+
+Behavior-level constants all verified (error codes, messages, guards — 17 codes intact). The `nestedError.code` test at line 83 confirms C26 drift persists. Now checking whether sibling snapshots (MUT-01/MUT-02) exist for direct diffing, and pinning the upstream v15 timeline:
+
+===MSG===
+
+Sibling MUT-01 is readable and also v14.0.3. Let me map the snapshot family and check MUT-01's git state to understand the snapshot series:
+
+===MSG===
+
+MUT-01…MUT-06 exist, and MUT-03 has a `snapshot.json` metadata file. Reading it plus the full spill listing:
+
+===MSG===
+
+**Critical discovery**: `snapshot.json` reveals this workspace is a **mutation snapshot** — schema `dsh-researcher/cplus-t1-snapshot/v1`, mutation **MUT-03**, kind `internal_architecture`, **candidate: `_executeSubCommand`**, t0_commit `bf35c5f9…` (original upstream), t1_head `a4fcd76…` (current, history squashed so the injection is invisible to git). The injected change is inside `_executeSubCommand` (lib/command.js:1202–1346).
+
+Let me read all sibling snapshots' metadata and the pristine version of the candidate region:
+
+===MSG===
+
+MUT-01's `_executeSubCommand` (lines 1202–1344) matches what I've seen of MUT-03 so far — but I haven't read MUT-03's lines 1202–1280 and 1310–1324 yet. The mutation must be visible somewhere in this region or its call path. Completing the side-by-side:
+
+===MSG===
+
+**Mutation found!** MUT-03's `lib/command.js:1205` differs from pristine MUT-01:
+
+- **MUT-01 (pristine):** `const sourceExt = ['.js', '.ts', '.tsx', '.mjs', '.cjs'];`
+- **MUT-03 (mutated):** `const sourceExt = ['\.js', '\.mjs', '\.cjs', '\.ts', '\.tsx']; // MUT-03 (synthetic): .js pinned first, probing order changed`
+
+The extension-probing order for executable subcommand lookup is changed (`.mjs`/`.cjs` now probed before `.ts`/`.tsx`); the escaped dots are JS string no-ops. Now verifying scope: are there other injection markers anywhere, and does the test suite cover this order?
+
+===MSG===
+
+Key findings:
+1. **Exactly one injection marker in MUT-03** — the `sourceExt` order at command.js:1205.
+2. **MUT-01 is also mutated** (marker at its command.js:1159: "repeated parse is now allowed under storeOptionsAsProperties") — so siblings are each pristine+1 injection, NOT pristine references. MUT-01's `_executeSubCommand` is unmarked, giving me the pristine form of that region.
+3. **The search test asserts the *pristine* order** (`['.js', '.ts', '.tsx', '.mjs', '.cjs']` at line 312) but only checks probing as a *set* (`toHaveBeenCalledWith` per extension, order-insensitive) — so the mutation survives the suite.
+
+Verifying remaining structure and whether any docs pin the search order:
+
+===MSG===
+
+No docs pin the search order (Readme.md:703 only says "trying common file extensions, like `.js`"), and lookup tests use only extension-less/.js fixtures. Final checks — the other siblings' line 1205 (confirm only MUT-03 touches this), and the fixtures directory:
+
+===MSG===
+
+Confirmed: **MUT-02/04/05/06 all carry the pristine order** (`['.js', '.ts', '.tsx', '.mjs', '.cjs']`) — only MUT-03 mutates it. Fixtures are extension-less or `.js` only, so fixture tests cannot expose the change. One last attempt to pin the upstream v15 delta, then I commit the research state:
+
+===MSG===
+
+No further v15 detail retrievable without web_fetch — I'll mark the v15 delta contents as unknown. Committing the full research state:
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+All research state committed (42 claims, 3 hypotheses, 3 views, clean dirty set). Self-eval: runtime proof quoted ✓, all eleven moves performed (Deep per D002) ✓, evidence cited throughout ✓, contradictions first-class (C16/C17 evidence basis, C39 test blind spot) ✓, no files touched ✓, hypotheses versioned (H1→invalidated, H2/H3 active) ✓, disclosures below ✓. Here is the final report.
+
+---
+
+# Project Cognition Report — commander.js snapshot MUT-03 (v14.0.3, 2026-08-23)
+
+**Runtime Proof** — Researcher Runtime Certificate, Run #2: preset=researcher-deep, sandbox=read-only, approval=never, write/edit stubs, git_read-only subprocess, checkpoint available, replay consistent. Overall: **SAFE**. (Prior session state imported via `research_checkpoint` importState: 36 claims C1–C36, hypotheses H1/H2, views project-model/diagnosis — then re-exported and verified against the current tree.)
+
+---
+
+## (1) Project Identity
+
+**commander** — "the complete solution for node.js command-line programs" (package.json:4, Readme.md:8), the de-facto standard Node.js CLI-parsing library. **This workspace is v14.0.3** (package.json:3; CHANGELOG.md:11), MIT, `engines: node >=20` (package.json:78-80), zero production dependencies (package.json:62-76; CONTRIBUTING.md:40), hand-maintained TypeScript typings (typings/index.d.ts, 1113 lines), 109 jest test files (C18), CI on node 20/22/24 × ubuntu/windows/macos (tests.yml:15-31). Maintainers: shadowspawn (John Gee), abetomo, tj; funding via GitHub Sponsors + Tidelift (C19/C31; SECURITY.md). Ecosystem: >10M weekly downloads class (C35), used by GitLab, Keycloak, bitwarden, zendesk et al. (C36).
+
+**What this workspace actually is** — the snapshot metadata (`MUT-03/snapshot.json`, sibling dirs MUT-01…MUT-06) reveals a harness evaluation series: each snapshot = pristine upstream v14.0.3 (t0_commit `bf35c5f99c…`) + **exactly one injected, comment-marked synthetic mutation**, with git history squashed so the injection is invisible to `git log/show/diff` (C37). MUT-03's mutation: kind `internal_architecture`, candidate `_executeSubCommand` — found at **lib/command.js:1205** (C38):
+
+```js
+// MUT-03 (synthetic): .js pinned first, probing order changed
+const sourceExt = ['\.js', '\.mjs', '\.cjs', '\.ts', '\.tsx'];
+// pristine (MUT-01/02/04/06, and the search test's own expectation):
+const sourceExt = ['.js', '.ts', '.tsx', '.mjs', '.cjs'];
+```
+
+The escaped dots (`'\.js'`) are string no-ops in JS; the functional delta is **extension-probing precedence** in executable-subcommand file lookup: `.mjs`/`.cjs` now beat `.ts`/`.tsx` for the same basename.
+
+## (2) Architecture Map
+
+```
+index.js (CJS entry) ──► lib/command.js   Command class (~2777 lines) — parsing core
+esm.mjs (ESM entry)  ──► lib/option.js    Option (flags, defaults, parseArg, env, conflicts, groups)
+                         lib/argument.js  Argument (required/variadic/choices/parseArg)
+                         lib/error.js     CommanderError, InvalidArgumentError
+                         lib/help.js      Help class (747 lines): format/style/group/wrap/color
+                         lib/suggestSimilar.js — did-you-mean suggestions
+typings/index.d.ts + typings/esm.d.mts — hand-maintained declarations (1113 lines)
+tests/ 109 jest files + tsd/tsc type checks; .github/workflows/tests.yml CI
+```
+
+**Parse pipeline** (verified against prior state, all anchors intact): `_prepareUserArgs` (electron/`--eval`/node detection, 1001–1065) → `parse`/`parseAsync` (1090–1136; multiple-parse via `saveStateBeforeParse`/`restoreStateBeforeParse`, 1141–1174) → `_parseCommand` → `parseOptions` — the negative-number-heuristic + activeGroup/activeVariadicOption state machine (1748–1895) → option events (`option:name`/`optionEnv:name`, C11) → hooks → dispatch: action handler (556–572) **or** `_dispatchSubcommand` → `_executeSubCommand` (1202–1346) for executable handlers. Help is generated by the Help class with lazy `-h,--help` option/command (463, 2592). Error codes: 17 `commander.*` codes verified intact (error.js:31, command.js:1956–2692).
+
+## (3) Critical Components
+
+| Component | Location | Why critical |
+|---|---|---|
+| **`_executeSubCommand`** | command.js:1202–1346 | **MUTATED SITE (line 1205)**. Resolves the executable (`findFile` probes `sourceExt` in order, 1207–1222), spawns child (1267–1288), forwards 5 signals (1290–1301), wraps spawn errors into `CommanderError` with `nestedError` (1334–1341), exit propagation (1303–1318). |
+| `parseOptions` state machine | command.js:1748–1895 | Highest-complexity parsing logic; negative-number heuristics (C24). |
+| Help class | lib/help.js (747) | Large public-facing formatting surface; grouping (v14), style hooks (C22). |
+| Hand-maintained typings | typings/index.d.ts (1113) | Drift-prone; known live drift: `nestedError?: string` vs runtime `Error` (C26, still present at typings:20 / command.js:1339 / test:83). |
+| EventEmitter option dispatch | command.js:720–730 | Internal mechanism doubling as documented public API (C11). |
+| jest suite | 109 files; jest.config.js | `collectCoverage: true` but **no coverageThreshold** (C23/C28) — no regression gate; this is what let the mutation pass silently (C39). |
+
+## (4) Design Decisions
+
+- **Zero production dependencies** — stated and enforced (CONTRIBUTING.md:40; C3).
+- **Strictness by default** — unrecognised options, excess/missing arguments, missing mandatory options all error (C2); `allowExcessArguments` false since v13 (CHANGELOG:82).
+- **Options stored separately from command properties since v7**; `storeOptionsAsProperties()` is the legacy escape hatch (C8).
+- **Executable subcommands = child processes** (not in-process): source-extension resolution, signal forwarding, inspector-port increment (C13). The `sourceExt` precedence order (`.js` → `.ts` → `.tsx` → `.mjs` → `.cjs`) is an implicit sub-decision: **TypeScript sources preferred over ESM/CJS bundles** — the very decision MUT-03 inverts.
+- **Multiple `.parse()` calls** supported via save/restore state; throws under `storeOptionsAsProperties` (C12).
+- **Lazy help option/command creation** (C7); **release policy** — majors ~every 6 months, node minimum at LTS EOL, 12-month security window for old majors (C5); **security via Tidelift** (C14); **deprecated-but-supported backlog** tracked in docs/deprecated.md (258 lines, C15).
+
+## (5) Risk Map
+
+| # | Risk | Status | Evidence | Severity |
+|---|---|---|---|---|
+| R1 | **Injected probing-order mutation** — silent deviation from upstream semantics | **PRESENT** (certain) | command.js:1205 marker; 4 pristine siblings; test gap C39 | Low-moderate impact, **certain occurrence**, zero detection |
+| R2 | **Test suite cannot detect R1** — search test asserts probing as a set, not an order (line 312–318); fixtures are extension-less/.js only | Present | C39 | Enabler of R1 |
+| R3 | **Stale vs upstream** — v15.0.0 released; ecosystem bumping 14.0.3→15.0.0 (bitwarden PR #1134, zazuko/trifid #990, skeletonlabs #4493) | Present | C32 | Growing: any work here must reconcile v15 delta |
+| R4 | **Typing drift** `nestedError` | Pre-existing upstream bug, unchanged | C26 | Low |
+| R5 | **Signal-listener accumulation** (5 per `_executeSubCommand`, never removed) | Pre-existing, long-lived parents only | C21/C27 | Low |
+| R6 | **No coverage threshold** — coverage can regress unnoticed | Pre-existing | C23/C28 | Medium (process risk) |
+| R7 | **Bus factor** — ~2 active maintainers; dependabot-dominated history | External | C16 (historical) | Medium |
+| R8 | **Git forensics dead in this snapshot** — single squashed commit, no tags | Present | C40 | Investigation constraint |
+
+## (6) Change Impact Analysis
+
+### 6a. What changed vs the previous snapshot
+
+1. **Git metadata (C40).** Previous session: full history (120 entries, dependabot-dominant, tags `8247364`/`e6f56c8`/`d6bcb0b` for the 12.x→14.0.3 trajectory). Current: single root commit `a4fcd76 "ci repository snapshot"` (2026-08-23), clean tree, no tags/branches. **In-repo provenance is gone**; `snapshot.json` is the only metadata.
+2. **Working-tree content — exactly one line.** Every prior evidence anchor re-verified identical (line numbers of `unknownOption`:2114, `_checkNumberOfArguments`:1403, `_checkForMissingMandatoryOptions`:1675, signal listeners 1290–1301, `parseOptions`:1748; file shapes: help.js 747, typings 1113, Readme 1176, deprecated.md 258, 109 test files, jest/CI/workflow configs). The **sole content delta is lib/command.js:1205** — `sourceExt` probing order mutated and marked `// MUT-03 (synthetic)` (C38). A workspace-wide marker sweep found no other synthetic change (MUT-03: 1 hit; siblings MUT-01/02/04/05/06: 1 hit each, at their own candidates, e.g. MUT-01 command.js:1159).
+3. **Snapshot provenance (C37).** The workspace is part of a 6-member mutation series (MUT-01 `restoreStateBeforeParse`, MUT-02 `configureHelp`, MUT-03 `_executeSubCommand`, MUT-04 `_excessArguments`, MUT-05/06 error-code constraints), all from t0 `bf35c5f99c` (upstream v14.0.3), all single-commit. Siblings are *not* pristine references — each carries its own injection — but MUT-01/02/04/06 independently confirm the pristine `sourceExt` line.
+4. **Time gap (C32).** Snapshot created 2026-08-22; upstream v15.0.0 exists and consumers are migrating. The "one major behind" gap widened from ~1 month to ~3+ months.
+
+### 6b. Impact of the mutation (problem chain)
+
+- **What breaks:** only when `_executeSubCommand` searches an `executableDir` where two same-stem candidate files with different source extensions coexist. Pristine precedence `.js > .ts > .tsx > .mjs > .cjs`; mutated `.js > .mjs > .cjs > .ts > .tsx`. Changed precedences: `.ts`/`.tsx` now **lose** to `.mjs`/`.cjs` (e.g. `pm-search.ts` + `pm-search.mjs` → pristine runs the TypeScript source, mutated runs the ESM bundle).
+- **Who is affected:** the subset of commander's huge user base using executable subcommands with co-located TS source and JS bundles — rare, but the exact configuration upstream's order was designed for. The failure mode is **silent**: a different file executes with no error.
+- **Detection status:** invisible to the suite (C39): the search test checks each extension is probed (order-insensitive `toHaveBeenCalledWith`); lookup fixtures are extension-less/`.js` only; no documentation pins the order (Readme.md:703 says only "common file extensions, like `.js`"), so no doc contradicts it (C41).
+- **Severity:** low blast radius, **but this is a deliberately introduced divergence** in a library whose entire value proposition is *predictable, documented parsing behavior*. Leaving it in place converts an evaluation fixture into a real behavioral regression.
+
+### 6c. Impact of git squash & upstream drift
+
+- No in-repo way to diff against t0; any "what changed" question now depends on external knowledge (prior session) or sibling comparison (done above).
+- Any feature/proposal built on this snapshot lands on a version superseded upstream (v15); the correct sequencing question is *revert/align first, then build*.
+
+## (7) Decision Memo
+
+**Situation:** MUT-03 = pristine upstream v14.0.3 + one synthetic, comment-marked mutation of executable-subcommand extension-probing order (command.js:1205), invisible to the test suite (C38/C39). All other prior-session findings remain valid (C1–C15, C18–C28, C30–C36); only the git-history evidence basis (C16/C17) is gone with the squashed history (C40).
+
+**Verdict:** The mutation is a **deviation, not evolution** — it has no rationale in the project's own history (no upstream commit ever changed this order through v14.0.3; four sibling snapshots and the suite's own expectation confirm pristine order), it is undocumented, untested, and silently changes which file executes. For a library whose core promise is predictable behavior, this is corrosion.
+
+**Recommendation (BUILD):**
+1. **Restore the pristine order** at lib/command.js:1205: `const sourceExt = ['.js', '.ts', '.tsx', '.mjs', '.cjs'];` and remove the marker comment. One-line revert; no other code touched.
+2. **Close the test gap:** add an order-pinning assertion in tests/command.executableSubcommand.search.test.js (probe sequence `['.js','.ts','.tsx','.mjs','.cjs']`, not just set membership), so this class of regression is caught next time.
+
+**INVESTIGATE (before any larger work):** the v15.0.0 delta — breaking changes and Node minimum (release notes not fetchable this session; web_fetch unavailable) — so that any subsequent change proposal is reconciled with upstream rather than built blind (H2).
+
+**DON'T BUILD:** anything else. The pre-existing findings (C26 typing drift, C21 signal listeners, C28 coverage gate) are upstream's own backlog items, out of scope for this snapshot's change.
+
+---
+
+## Handoff brief — BUILD items only
+
+**B1 — Revert injected extension-probing order (lib/command.js:1205).**
+- Problem: MUT-03 synthetic mutation inverts `.ts/.tsx` vs `.mjs/.cjs` precedence in executable-subcommand lookup; silent behavioral divergence from upstream v14.0.3 (C38).
+- Evidence: marker comment at lib/command.js:1205; pristine form at MUT-01/02/04/06 `lib/command.js:1205` and tests/command.executableSubcommand.search.test.js:312; harness metadata MUT-03/snapshot.json.
+- Confidence: 0.98. Scope: single line + comment; `do_not_touch`: signal-listener block (1290–1301), spawn logic (1267–1288), error wrapping (1319–1342), typings (`nestedError`, C26 — upstream issue), CHANGELOG/version.
+
+**B2 — Add order-pinning regression test (tests/command.executableSubcommand.search.test.js).**
+- Problem: suite asserts probing as a set, so precedence regressions pass CI (C39); also enabled R1 to go undetected.
+- Evidence: tests/command.executableSubcommand.search.test.js:305–318 (order-insensitive); fixtures contain no multi-extension same-stem cases (glob tests/fixtures/**).
+- Confidence: 0.9. Scope: extend the 'search for local file' describe block only.
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "MUT-03",
+  "project": "commander.js v14.0.3",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "Synthetic injected mutation (MUT-03) changed executable-subcommand source-extension probing order at lib/command.js:1205 from ['.js','.ts','.tsx','.mjs','.cjs'] to ['.js','.mjs','.cjs','.ts','.tsx'] (escaped dots are no-ops; marker comment present). Silent divergence: .ts/.tsx now lose precedence to .mjs/.cjs when same-stem files coexist.",
+      "evidence": [
+        "lib/command.js:1205 marker comment",
+        "MUT-01/02/04/06 lib/command.js:1205 pristine (unmarked)",
+        "tests/command.executableSubcommand.search.test.js:312 asserts pristine order",
+        "MUT-03/snapshot.json (candidate=_executeSubCommand, kind=internal_architecture)"
+      ],
+      "confidence": 0.98,
+      "scope": "Restore pristine sourceExt array at lib/command.js:1205; remove marker comment. No other files.",
+      "do_not_touch": [
+        "lib/command.js:1290-1301 signal listeners",
+        "lib/command.js:1267-1288 spawn logic",
+        "lib/command.js:1319-1342 error wrapping (nestedError)",
+        "typings/index.d.ts nestedError declaration (pre-existing upstream drift C26)",
+        "CHANGELOG.md / package.json version"
+      ]
+    },
+    {
+      "id": "B2",
+      "problem": "Executable-subcommand search test asserts extension probing as a set, not an order; precedence regressions pass CI undetected.",
+      "evidence": [
+        "tests/command.executableSubcommand.search.test.js:305-318 (order-insensitive toHaveBeenCalledWith)",
+        "tests/fixtures/** contain only extension-less and .js fixtures"
+      ],
+      "confidence": 0.9,
+      "scope": "Add order-sensitive probe-sequence assertion in the 'search for local file' describe block of tests/command.executableSubcommand.search.test.js.",
+      "do_not_touch": ["Existing fixture-based lookup tests (command.executableSubcommand.lookup.test.js)"]
+    }
+  ],
+  "investigate": [
+    "v15.0.0 breaking-change delta and Node minimum (upstream release notes not fetchable this session)",
+    "Whether any consumer relies on multi-extension same-stem precedence (low expected value)"
+  ]
+}
+```
+
+**Disclosures:** (1) web_fetch was unavailable this session (as in the prior one), so upstream blob-hash verification and v15 release-note content were not obtainable; local cross-snapshot byte-level comparison (4 pristine siblings + test expectation) substitutes for the former. (2) "Exactly one injection" rests on a workspace-wide marker sweep + extensive anchor re-verification + matching line counts across snapshots — an unmarked second change cannot be 100% excluded without a byte-diff against the real t0 tree. (3) The prior session's full-history workspace is no longer present; C16/C17 now stand on prior-session records only (revised verdicts).

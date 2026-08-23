@@ -1,0 +1,100 @@
+{
+  "schema": "dsh-researcher/cognition-diff/v1",
+  "source_state": "exp-a-quick-03",
+  "generated_at": "2026-08-22T21:26:04.726Z",
+  "stale_claims": [
+    {
+      "id": "C04",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "13",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "85055fecc797fe3b308ebb4e911e579a7a85e081ad963936079b6e51870610c7",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "affected_hypotheses": [],
+  "affected_views": [
+    {
+      "name": "change_impact",
+      "stale_dependencies": [
+        "C04"
+      ]
+    },
+    {
+      "name": "project_model",
+      "stale_dependencies": [
+        "C04"
+      ]
+    }
+  ],
+  "unchanged_claims": [
+    {
+      "id": "C01",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C03",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C05",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C07",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C08",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C10",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C11",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C12",
+      "fresh_anchors": 1
+    }
+  ],
+  "unverifiable_claims": [
+    {
+      "id": "C02",
+      "reason": "git status empty | git log: bf35c5f dependabot bump post-14.0.3 | git rev-parse HEAD bf35c5f",
+      "anchor_count": 3
+    },
+    {
+      "id": "C06",
+      "reason": "glob tests/*.test.js (109) | jest.config.js (collectCoverage, no threshold) | github/workflows/tests.yml:14-16",
+      "anchor_count": 3
+    },
+    {
+      "id": "C09",
+      "reason": "dev.to audit of >10M weekly-download packages lists commander | pkgpulse.com/packages/commander",
+      "anchor_count": 2
+    },
+    {
+      "id": "C13",
+      "reason": "grep lib TODO|FIXME (none) | grep lib @ts-ignore (11) | grep coverageThreshold (none)",
+      "anchor_count": 3
+    }
+  ],
+  "metrics": {
+    "total_claims": 13,
+    "stale_candidates": 1,
+    "unchanged": 8,
+    "unverifiable": 4,
+    "affected_hypotheses": 0,
+    "affected_views": 2
+  }
+}

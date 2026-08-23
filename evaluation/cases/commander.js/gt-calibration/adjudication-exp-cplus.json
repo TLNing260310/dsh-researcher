@@ -1,102 +1,109 @@
 {
   "schema": "dsh-researcher/cplus-adjudication/v1",
-  "finalized": false,
+  "finalized": true,
+  "adjudicated_at": "2026-08-23",
+  "adjudicator": "D001 (single evaluator, internal phase)",
+  "notes": [
+    "Mutation Recall: matched(1.0) = injected change identified WITH cognitive-impact presentation (mechanism/contract effect stated, not just marker/diff filename). partial(0.5) = change identified but impact chain incomplete. miss(0) = not identified.",
+    "Validity threats (see report): (1) T1 sibling/T0 directory leak — 5/6 A-runs read sibling mutation snapshots or the pristine T0 workspace via read/glob (read-only sandbox permits reading outside the workspace), giving A-runs external ground truth; B-runs mostly did NOT (only mut03-b, mut05-b touched siblings). This asymmetrically inflates A recall and makes A/B paired comparison unreliable for Mutation Recall. (2) Single-commit history made 'change detection' partially trivial (git log shows 1 commit), but models still needed cognitive analysis for impact.",
+    "Stale Recovery adjudicated per run against expected stale sets (G3 precomputed). Hits counted when the run explicitly invalidates/revises the claim OR its semantic content ('previous assumptions that no longer hold' lists, hypothesis invalidation with evidence). Over-Invalidation = non-expected claims marked invalidated without evidence."
+  ],
   "runs": {
+    "exp-cplus-mut01-a": {
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": "Sibling/T0 leak: read pristine T0 workspace. Change identified with impact (repeated-parse contract flip)."
+    },
     "exp-cplus-mut01-b": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": ["H1", "C15", "C10b", "C05", "C02"],
       "consistency_conflicts": 0,
       "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
-    },
-    "exp-cplus-mut04-b": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
-      "consistency_conflicts": 0,
-      "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
-    },
-    "exp-cplus-mut02-b": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
-      "consistency_conflicts": 0,
-      "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
-    },
-    "exp-cplus-mut05-b": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
-      "consistency_conflicts": 0,
-      "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
+      "over_invalidation": 2,
+      "notes": "Explicit 'Previous assumptions that no longer hold': H1 INVALIDATED, C15/C10b/C05/C02 revised with evidence. No sibling read. Expected stale C06 not hit by id; semantic coverage via H1/state revision (C06 is arch relation, partially covered by H1 invalidation)."
     },
     "exp-cplus-mut02-a": {
-      "mutation_recall": null,
+      "mutation_recall": 1.0,
       "stale_recovery_hits": [],
       "consistency_conflicts": 0,
       "false_invalidation": 0,
       "over_invalidation": 0,
-      "notes": ""
+      "notes": "Sibling/T0 leak: read sibling snapshots AND pristine T0. Change identified (configureHelp base param)."
+    },
+    "exp-cplus-mut02-b": {
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": ["C6"],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 1,
+      "notes": "'Previous assumptions that no longer hold': pristine-snapshot assumption false; git-forensics assumption false (C6 commit-level evidence not re-derivable). Expected stale C3 hit semantically via pristine-assumption invalidation."
     },
     "exp-cplus-mut03-a": {
-      "mutation_recall": null,
+      "mutation_recall": 1.0,
       "stale_recovery_hits": [],
       "consistency_conflicts": 0,
       "false_invalidation": 0,
       "over_invalidation": 0,
-      "notes": ""
-    },
-    "exp-cplus-mut06-a": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
-      "consistency_conflicts": 0,
-      "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
-    },
-    "exp-cplus-mut01-a": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
-      "consistency_conflicts": 0,
-      "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
+      "notes": "Sibling leak (read sibling MUT-01 pristine reference for diff). Change identified (extension probing order)."
     },
     "exp-cplus-mut03-b": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": ["C7", "C13", "C21", "C24", "C27"],
       "consistency_conflicts": 0,
       "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
-    },
-    "exp-cplus-mut05-a": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
-      "consistency_conflicts": 0,
-      "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
+      "over_invalidation": 3,
+      "notes": "Used prior-session state anchors (1202/1403/1675/1748 etc), identified mutation via MUT-01 pristine comparison (sibling read). Stale set 5/5 covered by anchor verification + claim revisions. Deep session, 22 messages."
     },
     "exp-cplus-mut04-a": {
-      "mutation_recall": null,
+      "mutation_recall": 1.0,
       "stale_recovery_hits": [],
       "consistency_conflicts": 0,
       "false_invalidation": 0,
       "over_invalidation": 0,
-      "notes": ""
+      "notes": "Sibling/T0 leak. Change identified (excess check moved; dead _excessArguments)."
+    },
+    "exp-cplus-mut04-b": {
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": ["C24", "C27", "C28", "C29"],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 4,
+      "notes": "No sibling read. Imported 32 claims, H1 rev 8, H2 invalidated, committed 38 claims with revisions ('revising the claims that no longer hold'). Expected stale 4/4 covered."
+    },
+    "exp-cplus-mut05-a": {
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": "Sibling leak. Change identified (invalidArgumentValue code)."
+    },
+    "exp-cplus-mut05-b": {
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": ["C02", "C04"],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 3,
+      "notes": "Sibling/T0 leak (read pristine baseline for byte-level diff — unusually thorough). Explicit 'Previous assumptions that no longer hold': C02 FALSE (injected defect), C04 line anchors swapped. Expected stale C04 hit. Byte-level proof methodology."
+    },
+    "exp-cplus-mut06-a": {
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": [],
+      "consistency_conflicts": 0,
+      "false_invalidation": 0,
+      "over_invalidation": 0,
+      "notes": "Sibling leak. Change identified (flags() TypeError risk in message)."
     },
     "exp-cplus-mut06-b": {
-      "mutation_recall": null,
-      "stale_recovery_hits": [],
+      "mutation_recall": 1.0,
+      "stale_recovery_hits": ["C0-002", "C2-007", "C2-008"],
       "consistency_conflicts": 0,
       "false_invalidation": 0,
-      "over_invalidation": 0,
-      "notes": ""
+      "over_invalidation": 2,
+      "notes": "No sibling read. Snapshot Delta table: C0-002 invalidated->replaced, history flattened, mutation as new finding. Expected stale C2-007/C2-008 covered."
     }
   }
 }

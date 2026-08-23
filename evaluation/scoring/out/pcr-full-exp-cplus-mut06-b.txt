@@ -1,0 +1,283 @@
+
+
+===MSG===
+
+**Runtime Proof — Researcher Runtime Certificate, Run #2**: Preset PASS (researcher-deep), Sandbox PASS (read-only), Approval PASS (never), Write tools PASS (refusing stubs), Shell surface PASS (git_read only), Checkpoint PASS, Replay PASS → **Overall: SAFE**.
+
+Now importing the previous session's cognition state:
+
+===MSG===
+
+State imported (21 claims, H2 active, no dirty views). Now reading the full state back and starting DISCOVER — git forensics first, to detect what changed since the previous snapshot:
+
+===MSG===
+
+Key discovery already: the git history has changed fundamentally. The previous snapshot had HEAD `bf35c5f` (2026-02-02) with full 500-commit history; now the log shows **a single squashed commit `e2ca3ed` "ci repository snapshot" (2026-08-23)** — the repo has been flattened, and the snapshot date moved ~6.5 months forward. This invalidates C0-002 and the git-based evidence of C2-004. Now let me inventory the tree and check the version state:
+
+===MSG===
+
+package.json still says v14.0.3 and CHANGELOG tops at 14.0.3 (2026-01-31) — but the snapshot commit is dated 2026-08-23 with a single flattened commit. The path `MUT-06` and the flattened history mean git can no longer show me the diff; I must verify the previous session's code-level anchors to detect content changes. Let me read the full file inventory and check the lib/command.js anchors:
+
+===MSG===
+
+Full inventory captured (223 paths). Several previous anchors verified (command.js:13 `extends EventEmitter`, :27 `_allowUnknownOption = false`, :508 `exitOverride`, :2115 `unknownOption(` — all match). But the `unknownOption` **call site** is now at line 1592, while the previous snapshot had `parseOptions` at 1748–1895 — a structural shift. Let me probe more anchors:
+
+===MSG===
+
+All previous anchors in `lib/command.js` still hold (parseOptions:1748, _exit:533, exitOverride:508, unknownOption:2115, storeOptionsAsProperties:905-961, outputHelp deprecated callback:2506-2538, option listeners:720) — the file is 2778 lines and appears structurally **identical to the previous snapshot**. The change must be elsewhere. Since git history is flattened, I'll compare blob hashes against upstream v14.0.3 to detect differences precisely. Testing web_fetch availability and computing local hashes in parallel:
+
+===MSG===
+
+web_fetch is unavailable this session (same as the previous one — the upstream-comparison route is closed; I'll note that as a constraint). Local hashes are computed; I'll rely on prior anchors + internal consistency instead. Checking the remaining deprecation anchors, the suspicious `summary` API, and jest config; also testing web_search:
+
+===MSG===
+
+web_search **works** this session (web_fetch doesn't) — sources confirm upstream 14.0.3 and v15.0.0 PRs exist (e.g. [openclaw/clawhub #2476 "bump commander from 14.0.3 to 15.0.0"](https://github.com/openclaw/clawhub/commit/843f19e640b6f0caba603a36f75380a65906d37a)), supporting C3-001. Also: `.summary()` is a consistent, documented API (lib + typings + help.js + tests + CHANGELOG-verifiable) — not an anomaly. Test inventory matches the previous 109 jest files exactly.
+
+Since git history is flattened and web_fetch is down, change detection must come from content review. Reading the smaller lib files fully:
+
+===MSG===
+
+`option.js` (380 lines) and `argument.js` (150 lines) both match canonical commander v14 structure and quirks (the `'guard'` concat in splitOptionFlags, `_collectValue` default-check, DualOptions.valueFromOption logic) — no anomalies. Continuing with the remaining small lib files:
+
+===MSG===
+
+All canonical — error.js, suggestSimilar.js (Damerau–Levenshtein, maxDistance=3), esm.mjs, index.js match the documented surface. Now the last big lib file, help.js, plus a check of the typings size and CHANGELOG's `.summary()` entry:
+
+===MSG===
+
+`help.js` (747 lines) is canonical v14 — all style/group/format machinery matches upstream, and `.summary()` is confirmed as a legit 11.0.0 feature (CHANGELOG #1726). All seven lib files check out. Now verifying the remaining evidence anchors: typings, docs, CI, package files, Readme:
+
+===MSG===
+
+Nearly everything verifies exactly — typings/index.d.ts is precisely 1113 lines (C2-010 ✓), package-lock root v14.0.3 dev-only (C0-001 ✓), CI matrix Node 20/22/24 × 3 OS (C2-006 ✓), package-support.json time-permitting + sponsors (C2-011 ✓), deprecated.md's ten-item list (C2-009 ✓), Readme anchors 73/683/743/836/968/1044 ✓.
+
+But two discrepancies surfaced: **"not a hard requirement" is absent from CONTRIBUTING.md** (C0-D3's evidence anchor broken) and the configureOutput anchor shifted 1133→1145 (+12 lines — possible content change in Readme). Investigating:
+
+===MSG===
+
+Both "discrepancies" resolve as non-issues: CONTRIBUTING.md:40 says "**isn't** a hard requirement" (my grep pattern demanded "not a hard requirement" — the claim's content holds), and the Readme anchors 1133-1134/1112-1120 are section intros that match exactly (1145 is just the code example inside configureOutput). Readme.md is 1176 lines, matching all C0-D2 anchors precisely. The evidence is now overwhelming that the tree content is unchanged. Closing the loop on the remaining anchors — test files, release policy, dependabot, security:
+
+===MSG===
+
+All remaining anchors verify (command.parse.test.js:14-17,82-95 ✓; options.env.test.js manual env cleanup ✓; esm-imports-test.mjs standalone ✓; release-policy.md ✓ incl. 13.x EOL 2026-05-18; dependabot.yml ✓; Option.conflicts is a real 12.0.0 feature ✓). The verification is nearly complete, but the middle of `lib/command.js` (~1900 lines) hasn't been read — the strongest place to hide a subtle behavioral change. Reading the parse-critical regions:
+
+===MSG===
+
+Canonical (parse/saveState/executable-subcommand dispatch all match v13/v14 features). Reading the remaining hot regions — `_parseCommand` + `parseOptions` + error path:
+
+===MSG===
+
+All canonical through _parseCommand. Reading the parseOptions body and the remaining tail regions:
+
+===MSG===
+
+**FOUND THE MUTATION.** Lines 2058-2062 of `lib/command.js`:
+
+```js
+missingMandatoryOptionValue(option) {
+  // MUT-06 (synthetic): message now includes option flags.
+  const message = `error: required option '${option.flags}' not specified (flags: ${option.flags()})`; // MUT-06 (synthetic)
+  this.error(message, { code: 'commander.missingMandatoryOptionValue' });
+}
+```
+
+The canonical v14 message is `error: required option '${option.flags}' not specified`. The mutation (a) appends `(flags: ${option.flags()})` — but `option.flags` is a **string property**, not a function, so this path now throws `TypeError: option.flags is not a function` whenever a mandatory option is missing — and (b) leaves explicit `MUT-06 (synthetic)` markers. This function sits in the region between the previous session's anchors (error() ends at 1958; unknownOption starts at 2114), which is why the anchor sweep missed it. Now checking whether this is the *only* injected change and what the tests expect:
+
+===MSG===
+
+The `MUT-06 (synthetic)` markers appear **only** at lib/command.js:2059-2060 — this is the single injected change, and no test or doc was adjusted to match it: `command.exitOverride.test.js:306` still expects the canonical `error: required option '...' not specified`, and Readme.md:359 / Readme_zh-CN.md:340 document the canonical message. Checking the mandatory-option tests that exercise this path, and completing the read of the remaining unread `command.js` regions to rule out any second change:
+
+===MSG===
+
+Constructor and early methods canonical; the `toThrow()`-style mandatory tests would pass even under the mutation (they don't check message/type), but the message-exact test at `command.exitOverride.test.js:306` should fail. Completing the file read (remaining chunks) and verifying that test:
+
+===MSG===
+
+Confirmed: `command.exitOverride.test.js:290-308` asserts the exact contract (`CommanderError`, exitCode 1, code `commander.missingMandatoryOptionValue`, canonical message) — this test **fails** under the mutation, which throws a raw `TypeError: option.flags is not a function` instead. Completing the final unread chunks of command.js to certify there is no second change:
+
+===MSG===
+
+
+
+===MSG===
+
+`lib/command.js` is now 100% read (2778 lines) — canonical v14.0.3 everywhere except the single mutation at 2058-2062. One last sweep: all test sites that exercise the mutated path, to enumerate the full failure surface:
+
+===MSG===
+
+Two tests assert the contract that the mutation breaks (exitOverride.test.js:306, showHelpAfterError.test.js:52), while the `toThrow()`-style mandatory tests would pass incidentally — an important test-robustness observation. Verifying the showHelpAfterError test before finalizing:
+
+===MSG===
+
+The showHelpAfterError test fails on both assertions (code + help-after-error output). The investigation is complete — the picture is decisive. Committing the research state:
+
+===MSG===
+
+State committed (24 claims, H3 active). **SELF-EVAL** before the report: (1) Runtime certificate produced first ✓; (2) prior state imported and re-exported ✓; (3) every imported claim re-verified against the current tree, not trusted blindly ✓; (4) disconfirmation search performed — mutation found precisely because I hunted for what would make "tree unchanged" wrong ✓; (5) full-file reads (command.js 2778/2778 lines, all other lib files, typings, tests, docs) ✓; (6) nothing modified, no escalation ✓; (7) findings classified ✓; (8) citations throughout; inferences labeled ✓; (9) honest disclosure: byte-level diff impossible (flattened history, no web_fetch) — C0-006 rests on exhaustive anchor verification, confidence 0.9 ✓.
+
+---
+
+# Project Cognition Report — commander.js snapshot `MUT-06`
+
+**Runtime Proof — Researcher Runtime Certificate, Run #2**: Preset PASS (researcher-deep), Sandbox PASS (read-only), Approval PASS (never), Write tools PASS (refusing stubs), Shell surface PASS (git_read only), Checkpoint PASS, Replay PASS → **Overall: SAFE**. Prior cognition state imported via `research_checkpoint` (21 claims, H1/H2) and re-exported; all claims re-verified against the current tree; 3 claims revised, 3 added; H3 (current-snapshot synthesis) active.
+
+## 0. Snapshot Delta — what changed since the previous snapshot, and which prior assumptions no longer hold
+
+| # | Previous snapshot (bf35c5f, 2026-02-02) | Current snapshot (e2ca3ed, 2026-08-23) | Verdict |
+|---|---|---|---|
+| 1 | Full git history (500+ commits, maintainer attribution, release commit 8247364 "14.0.3") | **History flattened to a single commit** `e2ca3ed` "ci repository snapshot" (2026-08-23); `git status` clean | **C0-002 invalidated → replaced** (C0-002 r2) |
+| 2 | Tree assumed pristine v14.0.3 | **One injected defect (MUT-06) in `lib/command.js:2058-2062`**, explicitly labeled `MUT-06 (synthetic)` | **New finding** (C0-004, C0-005) |
+| 3 | Maintainer/process claims from `git log` (500 commits) | git-log evidence **gone**; claims re-corroborated only by `package-support.json`, `.github/dependabot.yml`, `docs/release-policy.md` | **C2-004 evidence downgraded** (0.97 → 0.90) |
+| 4 | Upstream v15.0.0 released (session-external, C3-001, conf 0.85) | Re-affirmed via fresh web evidence: [openclaw/clawhub "bump commander from 14.0.3 to 15.0.0" (#2476)](https://github.com/openclaw/clawhub/commit/843f19e640b6f0caba603a36f75380a65906d37a), [renovatebot/renovate PR #40995 (14.0.3)](https://github.com/renovatebot/renovate/pull/40995#1) | **C3-001 stands** |
+| 5 | Release-policy table: 13.x maintenance until 2026-05-18 | Snapshot dated 2026-08-23 → 13.x now past EOL (consistent with policy, not a change) | Unchanged |
+
+**Assumptions that no longer hold:**
+1. **"HEAD is bf35c5f (2026-02-02)"** — false; HEAD is the squashed `e2ca3ed` (2026-08-23). All git forensics (blame, per-file history, author attribution) are now **impossible in-repo**.
+2. **"The tree is canonical v14.0.3"** — false. `missingMandatoryOptionValue()` in `lib/command.js` is corrupted (details §5-R1, §6).
+3. **"Changes clear the bar of no contract breakage"** (H2's change criterion) — this snapshot *contains* a contract breakage; it is injected and non-upstream, not an evolution decision.
+
+**What did NOT change** (verified, C0-006): version (14.0.3, `package.json:3`, `package-lock.json:3`), zero runtime deps (C0-001), library surface (C0-003), test estate (109 jest files + ts-imports + esm-imports, C2-006), typings exactly 1113 lines (C2-010), Readme 1176 lines with every prior anchor (C0-D2), CI matrix Node 20/22/24 × 3 OS, docs set, deprecation tail (C2-009), test style & hygiene gaps (C2-012/013).
+
+## 1. Project Identity
+
+**What it is:** `commander` — the de-facto standard CLI argument-parsing library for Node.js, **v14.0.3, MIT, Node ≥ 20, zero runtime dependencies** (C0-001, Known: `package.json:62-79` dev-only + engines; `package-lock.json:7-29`). CJS core with ESM wrapper (`index.js` + `esm.mjs`, exports map `package.json:45-61`).
+
+**Why it exists / value mechanism (H2, verified):** value = **ubiquity + stability + predictability**, not feature growth. The project's own release policy ([docs/release-policy.md](D:\AI_work_project\phase-a-snapshots\commander.js-cplus-t1\MUT-06\workspace\docs\release-policy.md):3-10) codifies semver, ~6-month majors aligned to Node LTS EOL, and 12-month security windows for old majors (C2-005). Strict-by-default parsing (unknown options error — C0-D1; excess-args error since 13.0 — CHANGELOG:82) trades lenience for predictable failure.
+
+**Who maintains it:** best-effort, ~2 maintainers (sponsors abetomo + shadowspawn, `package-support.json:13-14`; "time-permitting" response, C2-011), dependabot-driven dev-dep churn (`dependabot.yml`: npm monthly, GA weekly), commercial support via Tidelift (Readme.md:1174-1176).
+
+**Where it stands:** frozen 14.x-line artifact (snapshot commit 2026-08-23). Upstream has already released **v15.0.0** (C3-001, Likely→Known-by-ecosystem-evidence), making this snapshot the *last of the 14.x line* — and the 14.x security window is finite per policy.
+
+**Epistemic note:** npm download tier >10M weekly (C3-003, Likely, from [pkgpulse commander-vs-yargs analysis](https://www.pkgpulse.com/blog/commander-vs-yargs-2026)); no CVE found for the real package; typosquats exist around it (C3-002, Likely — [osv.dev MAL-2025-192687](https://osv.dev/vulnerability/MAL-2025-192687)). Absence-of-evidence, not proof.
+
+## 2. Architecture Map
+
+```
+                    ┌─────────────────── commander package (CJS core) ───────────────────┐
+  consumers (CJS) ─▶│ index.js ──▶ lib/command.js (Command, EventEmitter, ~2778 lines)  │
+  consumers (ESM) ─▶│ esm.mjs (named-export wrapper) ────────┘                           │
+  types (CJS/ESM) ─▶│ typings/index.d.ts (1113 lines, hand-written) + esm.d.mts (3)      │
+                    └─────────────────────────────────────────────────────────────────────┘
+```
+
+**Parsing pipeline** (verified line-for-line in `lib/command.js`):
+1. `parse()/parseAsync()` (1090-1125) → `_prepareForParse()` (save/restore state, 1127-1133) → `_prepareUserArgs()` (1001-1065; auto-detects `node`/`electron`/`eval`/`user` arg conventions).
+2. `_parseCommand()` (1550-1641): calls `parseOptions()` → `_parseOptionsEnv()` (1966-1989) → `_parseOptionsImplied()` (1996-2025) → subcommand/help-command/default-command dispatch → help-request check → mandatory/conflict checks → unknown-option check → action handler wrapped in `preAction`/`postAction` hooks, with legacy `command:<name>` / `command:*` / `*` fallbacks.
+3. **`parseOptions()` (1748-1895)** — the heart: single in-place loop; `--` literal; `option:<name>` **events** consumed by listeners registered in `addOption()` (720-733) — the documented value-flow (C2-007); combo short flags (`-abc`), `--flag=value`, variadic collection, negative-number guard (1757-1766), positional/passThrough options (1863-1888).
+4. **Error flow:** `error()` (1940-1958) → `_exit()` (533-539) → `process.exit` by default; `exitOverride()` (508-521) is the escape hatch (C2-008).
+5. **Executable subcommands:** `_executeSubCommand()` (1202-1346) — spawn with node-execArgv port increment, signal forwarding, ENOENT/EACCES handling.
+6. **Help:** `lib/help.js` `Help` class (747 lines) — `formatHelp` with option/command groups, `formatItem`/`boxWrap` wrapping, style-method overrides, `subcommandDescription()` falling back `summary() || description()` (help.js:313-316).
+
+Supporting classes: `Option` (380 lines — flags parsing incl. dual-long-flag `--ws, --workspace`, negate, choices/preset/env/conflicts/implies, `DualOptions`), `Argument` (150), `CommanderError`/`InvalidArgumentError` (`lib/error.js`), `suggestSimilar` (Damerau–Levenshtein, maxDistance=3, minSimilarity 0.4).
+
+## 3. Critical Components
+
+1. **`lib/command.js` — parse engine and error machinery.** **Contains the only defect in the snapshot** (§5-R1). Everything else in this 2778-line file verified canonical, including all prior session anchors.
+2. **`lib/option.js` — flag grammar.** `splitOptionFlags` rejects unsupported flag shapes loudly (13.0 strictness); `attributeName()` camelcases; `_collectValue` handles variadic; all verified canonical.
+3. **`lib/help.js` — the entire help-rendering surface** (14.0 helpGroup/optionsGroup/commandsGroup feature). Verified canonical.
+4. **`typings/index.d.ts` (1113 lines)** — hand-maintained public type contract, gated by tsd + tsc in CI (C2-010).
+5. **Test estate — 109 jest files + ts-imports + esm-imports** (C2-006) — the behavior lock that makes the project's stability promise credible; in-process style via exitOverride + configureOutput/jest mocks + spied spawn (C2-012).
+6. **Packaging: `package.json` exports map + `esm.mjs`** — dual CJS/ESM consumption without a build step.
+
+## 4. Design Decisions
+
+| Decision | Evidence | Verdict vs snapshot |
+|---|---|---|
+| Zero runtime dependencies (soft policy — "isn't a hard requirement", requests adding deps "much less likely to be accepted") | `CONTRIBUTING.md:40` (C0-D3) | Holds |
+| Strict by default: unknown options error (C0-D1), excess args error since 13.0, stricter flag grammar since 13.0/13.1 | `lib/command.js:27,1590-1594,2147-2155`; CHANGELOG:82-84 | Holds |
+| Event-driven option value flow (`option:<name>` events; env via `optionEnv:`) | `lib/command.js:720-733,1748-1895` (C2-007) | Holds |
+| Default `process.exit` with `exitOverride` escape hatch | `lib/command.js:508-539,1940-1958` (C2-008) | Holds |
+| Long deprecation tail kept for compat (~10-11 APIs: RegExp param, `noHelp`, `command('*')`, `on('command:*')`, `_args`, `outputHelp` callback, `InvalidOptionArgumentError`, `addHelpCommand` string form, esm.mjs import, `description(argDescriptions)`) | `docs/deprecated.md:1-258`; code sites (C2-009) | Holds |
+| Behavior-locked, regex-text tests; no golden files; no coverage gate | C2-012, C2-006 (`jest.config.js` collectCoverage, no threshold) | Holds |
+| Hand-maintained typings with tsd/tsc gates | C2-010 | Holds |
+| Majors aligned to Node LTS EOL; old majors 12-month security window | `docs/release-policy.md:3-15` (C2-005) | Holds |
+| Mandatory-option error contract: `error: required option '<flags>' not specified` + `CommanderError(1,'commander.missingMandatoryOptionValue')` | **BROKEN by MUT-06** — see §5-R1 | **Violated** |
+
+## 5. Risk Map
+
+**R1 — ACTIVE DEFECT (the only content change; severity: high, trigger: certain-on-user-error).**
+`lib/command.js:2058-2062`:
+```js
+missingMandatoryOptionValue(option) {
+  // MUT-06 (synthetic): message now includes option flags.
+  const message = `error: required option '${option.flags}' not specified (flags: ${option.flags()})`; // MUT-06 (synthetic)
+  this.error(message, { code: 'commander.missingMandatoryOptionValue' });
+}
+```
+- `option.flags` is a **string property** (`lib/option.js:12`), so `${option.flags()}` throws `TypeError: option.flags is not a function` **before** `this.error()` runs.
+- Consequence: whenever a user omits a mandatory option (`.requiredOption()` / `.makeOptionMandatory()`), the library **crashes with an internal TypeError** instead of printing `error: required option '...' not specified` and exiting 1. `exitOverride()` is bypassed (no `CommanderError` is ever constructed); `showHelpAfterError` output never happens. Embedding apps catch an uncaught TypeError, not a catchable CommanderError.
+- Provenance: explicitly labeled `MUT-06 (synthetic)`; grep across all 223 files finds the marker **only** here — injected, non-upstream (C0-004). Call site: `_checkForMissingMandatoryOptions()` (`lib/command.js:1675-1687`), which runs in both action-handler and executable-subcommand paths.
+- Detected by: `tests/command.exitOverride.test.js:290-308` (asserts type + exitCode 1 + code + exact message) and `tests/command.showHelpAfterError.test.js:43-54` (asserts code + help-after-error output) — both **fail**. `tests/options.mandatory.test.js:118-159` passes only incidentally (`toThrow()` accepts a TypeError).
+- Doc contradiction: `Readme.md:359` and `Readme_zh-CN.md:340` show the canonical message the code can no longer produce — undermining the project's core "documented predictability" value.
+
+**R2 — Test-robustness blind spot (pre-existing, exposed by R1):** only 2 of the ~110 test files assert message/type/code contracts on the mandatory-option path; the rest are throw-tolerant. The suite *does* catch this mutation, but a marker-free variant with a message-only change would slip past every test except the same two.
+
+**R3 — Provenance loss (environmental):** flattened git history (C0-002 r2). No blame, no diff, no audit trail; every future change is indistinguishable from upstream content except by content analysis. Any merge of upstream v15 code onto this snapshot would silently carry the defect forward.
+
+**R4 — Version drift:** snapshot frozen at 14.0.3 while upstream ships v15 (C3-001); 14.x is now the *old* major with a finite security window (release-policy). If this tree is ever used as a live codebase, it misses upstream fixes.
+
+**R5 — Pre-existing hygiene (unchanged):** manual env cleanup in tests (`options.env.test.js:16-20,44-48`), ESM smoke test outside jest (`esm-imports-test.mjs`), thin direct coverage of the executable-subcommand success path (C2-013, Likely); no coverage gate (C2-006).
+
+## 6. Change Impact Analysis
+
+**Scope of change:** 1 function, 2 lines, in one file (`lib/command.js:2058-2062`); no signature change; typings, tests, docs, packaging untouched (C0-006). Everything else in the tree is byte-consistent with the previous snapshot per exhaustive verification (100% of `command.js` and all other lib files read; all 60+ prior anchors match; inventory of 223 paths identical; typings 1113 lines exact).
+
+**Runtime impact:** default CLI mode — user error produces a raw stack trace on stderr instead of the canonical one-line error, exit code 1 via uncaught exception instead of the commander error path; `exitOverride` mode — embedding consumers receive an uncatchable-by-design TypeError, breaking programmatic parsing flows (test frameworks, wrappers); `showHelpAfterError` — help no longer displayed after this error.
+
+**Test impact:** 2 test cases fail (exitOverride contract test; showHelpAfterError test). 4+ mandatory-option tests pass incidentally. Total failing surface is narrow — which is exactly why the defect survived the snapshot process.
+
+**Doc impact:** 2 doc files contradict the code (Readme.md:359, Readme_zh-CN.md:340). A future merge from upstream would conflict at this site, which is a (weak) tripwire.
+
+**Downstream impact:** any CLI built with `.requiredOption()` — a large share of real commander consumers — regresses in exactly the error case the library exists to handle gracefully.
+
+**Fix impact (if applied — BUILD-01):** reverting the message line to `error: required option '${option.flags}' not specified` and removing the two marker comments restores the canonical contract; zero typings/doc/test changes required (they already assert canonical behavior); both failing tests pass; no dependency, API, or version changes.
+
+**Environmental impact (metadata):** git flattening makes future snapshot-to-snapshot comparisons content-based only; the 6.5-month gap (2026-02-02 → 2026-08-23) spans upstream's 14.0.3 → v15 transition.
+
+## 7. Decision Memo
+
+**The one decision that matters: fix the injected defect.** Classification: **BUILD** — evidence is complete, confidence high (0.95), blast radius small, fix is a 2-line revert to the canonical form.
+
+- **Problem:** `missingMandatoryOptionValue()` crashes with `TypeError` and breaks the documented error contract (message, `CommanderError` code `commander.missingMandatoryOptionValue`, exit code 1, `exitOverride` hook, `showHelpAfterError` display).
+- **Evidence:** in-code `MUT-06 (synthetic)` markers (lib/command.js:2059-2060); `option.flags` is a string (lib/option.js:12); two failing contract tests (command.exitOverride.test.js:290-308; command.showHelpAfterError.test.js:43-54); doc contradiction (Readme.md:359, Readme_zh-CN.md:340); canonical form corroborated by docs and tests alike.
+- **Do not touch:** everything else — verified canonical v14.0.3 (C0-006). No version bump, no dependency changes, no typings changes, no test edits.
+- **Non-decisions:** v15 migration is out of scope for this frozen 14.x snapshot (upstream's call; C3-001). The 14.x security window makes any long-term fork of this tree time-boxed. No INVESTIGATE items remain — the only open question is operational (whether the harness intends the defect to persist), which is not a research question.
+
+**Handoff brief (BUILD items only):**
+
+**Human-readable:**
+- **BUILD-01 — Restore canonical `missingMandatoryOptionValue` in `lib/command.js`.** In `lib/command.js` around lines 2058-2062, replace the mutated function body with the canonical implementation: `missingMandatoryOptionValue(option) { const message = \`error: required option '${option.flags}' not specified\`; this.error(message, { code: 'commander.missingMandatoryOptionValue' }); }` — i.e., delete the `// MUT-06 (synthetic)` comment line, delete the `(flags: ${option.flags()})` appendage and its trailing comment. Do not change signatures, other files, typings, docs, or tests. Run the jest suite; `command.exitOverride.test.js` and `command.showHelpAfterError.test.js` must go green.
+
+**Machine-readable:**
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "build_items": [
+    {
+      "id": "BUILD-01",
+      "problem": "Injected defect (labeled 'MUT-06 (synthetic)') in lib/command.js missingMandatoryOptionValue(): template literal calls option.flags() where flags is a string property, so the missing-mandatory-option path throws TypeError instead of the documented CommanderError(1, 'commander.missingMandatoryOptionValue') with message 'error: required option '<flags>' not specified'; bypasses error output, exitOverride, and showHelpAfterError; contradicts Readme.md:359 / Readme_zh-CN.md:340; breaks tests command.exitOverride.test.js:290-308 and command.showHelpAfterError.test.js:43-54.",
+      "evidence": [
+        "lib/command.js:2059-2060 (marker comments + mutated message)",
+        "lib/option.js:12 (this.flags = flags; string property, no flags() method)",
+        "tests/command.exitOverride.test.js:302-307 (asserts CommanderError, exitCode 1, code, exact message)",
+        "tests/command.showHelpAfterError.test.js:43-54 (asserts code + help output)",
+        "Readme.md:359; Readme_zh-CN.md:340 (canonical documented output)",
+        "grep 'MUT-06|synthetic' over all 223 files -> only lib/command.js:2059-2060 (single injected change)"
+      ],
+      "confidence": 0.95,
+      "scope": "lib/command.js lines ~2058-2062 only: restore canonical message `error: required option '${option.flags}' not specified`; remove both MUT-06 marker comments. No typings/docs/tests/package changes needed; no version bump; no dependencies.",
+      "do_not_touch": [
+        "All other lib files (option.js, argument.js, help.js, error.js, suggestSimilar.js) - verified canonical",
+        "typings/index.d.ts (1113 lines) and typings/esm.d.mts",
+        "package.json / package-lock.json (v14.0.3, zero runtime deps)",
+        "tests/ (109 jest files - assertions already encode canonical behavior)",
+        "Readme.md, docs/ - canonical; only the code must be reverted to match them",
+        "Do not add or remove any other behavior; do not attempt v15 migration"
+      ]
+    }
+  ]
+}
+```
+
+**Residual disclosures:** (1) byte-level diff vs. the previous tree was impossible (flattened history, no web_fetch provider) — C0-006 ("everything else unchanged") rests on exhaustive anchor verification and full-file reads, confidence 0.90, not on byte equality; (2) upstream-canonical knowledge of commander v14 is used as a weak prior only where prior-session anchors were absent — the mutation itself is proven independently by its markers, the TypeError mechanics, and test/doc contradictions; (3) all web claims re-checked this session via web_search only ([openclaw/clawhub #2476](https://github.com/openclaw/clawhub/commit/843f19e640b6f0caba603a36f75380a65906d37a), [renovatebot/renovate #40995](https://github.com/renovatebot/renovate/pull/40995#1)); web_fetch unavailable, so C3-002/C3-003 remain Likely, not Known.

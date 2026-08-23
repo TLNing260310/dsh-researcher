@@ -1,0 +1,388 @@
+{
+  "schema": "dsh-researcher/cognition-diff/v1",
+  "source_state": "exp-a-deep-02",
+  "generated_at": "2026-08-22T21:26:04.362Z",
+  "stale_claims": [
+    {
+      "id": "C13",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1202-1346",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C21",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1290-1301",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C24",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1748-1895",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C27",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1290-1301",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        }
+      ]
+    },
+    {
+      "id": "C7",
+      "stale_anchors": 2,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "463",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "2592",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "affected_hypotheses": [],
+  "affected_views": [
+    {
+      "name": "diagnosis",
+      "stale_dependencies": [
+        "C21",
+        "C24",
+        "C27"
+      ]
+    }
+  ],
+  "unchanged_claims": [
+    {
+      "id": "C1",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C10",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "556-572",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "Readme.md",
+          "line_span": "648-694",
+          "recorded_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "current_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "720-730",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "Readme.md",
+          "line_span": "956-964",
+          "recorded_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "current_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1127-1174",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "CHANGELOG.md",
+          "line_span": "73-85",
+          "recorded_sha": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "current_sha": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C15",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C18",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C19",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C2",
+      "note": "partial staleness",
+      "stale_anchors": 3,
+      "total_anchorable": 4,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "2114",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1403",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1675",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "Readme.md",
+          "line_span": "73",
+          "recorded_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "current_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C20",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1001-1065",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "CHANGELOG.md",
+          "line_span": "50",
+          "recorded_sha": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "current_sha": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C22",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C23",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C25",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C26",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "typings/index.d.ts",
+          "line_span": "20",
+          "recorded_sha": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "current_sha": "0237580177f1a858ab125992af8a6dfc29268fe7d4bac5308b9f462f88b0cd31",
+          "stale": false
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1339",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "tests/command.executableSubcommand.mock.test.js",
+          "line_span": "83",
+          "recorded_sha": "dbfcb74f14d6200e73d84380502173217b365c0615e3ee4439ecf1b34e22288f",
+          "current_sha": "dbfcb74f14d6200e73d84380502173217b365c0615e3ee4439ecf1b34e22288f",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C28",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C29",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C3",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C4",
+      "fresh_anchors": 3
+    },
+    {
+      "id": "C5",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C8",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 2,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "38-40",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "26c7b00c9375b2fe8dceffb7259dc510afc4f9c6b20073ed2bc51f08d7b58225",
+          "stale": true
+        },
+        {
+          "file": "Readme.md",
+          "line_span": "1023-1040",
+          "recorded_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "current_sha": "562e032d925cb72593662eddf42e11c87f9233637dc348d9fd18abec6fb55248",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C9",
+      "fresh_anchors": 2
+    }
+  ],
+  "unverifiable_claims": [
+    {
+      "id": "C16",
+      "reason": "git log 120 entries",
+      "anchor_count": 1
+    },
+    {
+      "id": "C17",
+      "reason": "git log tags 8247364, e6f56c8, d6bcb0b | CHANGELOG.md",
+      "anchor_count": 2
+    },
+    {
+      "id": "C30",
+      "reason": "https://osv.dev/vulnerability/MAL-2025-192687 | https://deps.dev/advisory/osv/MAL-2025-192687",
+      "anchor_count": 2
+    },
+    {
+      "id": "C31",
+      "reason": "github/FUNDING.yml:1-2",
+      "anchor_count": 1
+    },
+    {
+      "id": "C32",
+      "reason": "https://github.com/tj/commander.js/releases/tag/v15.0.0 | https://github.com/bitwarden/directory-connector/pull/1134 | https://newreleases.io/project/npm/commander/release/15.0.0-0",
+      "anchor_count": 3
+    },
+    {
+      "id": "C33",
+      "reason": "https://github.com/advisories/GHSA-2hqf-qqmq-pgpp | https://osv.dev/vulnerability/MAL-2025-192687 | https://deps.dev/advisory/osv/MAL-2025-192687",
+      "anchor_count": 3
+    },
+    {
+      "id": "C34",
+      "reason": "https://endoflife.date/nodejs | https://github.com/NousResearch/hermes-agent/issues/4876",
+      "anchor_count": 2
+    },
+    {
+      "id": "C35",
+      "reason": "https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0",
+      "anchor_count": 1
+    },
+    {
+      "id": "C36",
+      "reason": "https://depfixer.com/compare/commander-vs-meow-vs-yargs | https://www.pkgpulse.com/compare/commander-vs-yargs | https://github.com/threeal/nodejs-starter/issues/735",
+      "anchor_count": 3
+    },
+    {
+      "id": "C6",
+      "reason": "github/workflows/tests.yml:15-31",
+      "anchor_count": 1
+    }
+  ],
+  "metrics": {
+    "total_claims": 36,
+    "stale_candidates": 5,
+    "unchanged": 21,
+    "unverifiable": 10,
+    "affected_hypotheses": 0,
+    "affected_views": 1
+  }
+}

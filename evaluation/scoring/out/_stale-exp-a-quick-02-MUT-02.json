@@ -1,0 +1,170 @@
+{
+  "schema": "dsh-researcher/cognition-diff/v1",
+  "source_state": "exp-a-quick-02",
+  "generated_at": "2026-08-22T21:26:04.633Z",
+  "stale_claims": [
+    {
+      "id": "C3",
+      "stale_anchors": 3,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "692-732",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "07b52d311d7614f9bcedaf8fe7b27bbf74380ac0d84d84f5ad0e9c12eb66223f",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1966-2025",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "07b52d311d7614f9bcedaf8fe7b27bbf74380ac0d84d84f5ad0e9c12eb66223f",
+          "stale": true
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "953-993",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "07b52d311d7614f9bcedaf8fe7b27bbf74380ac0d84d84f5ad0e9c12eb66223f",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "affected_hypotheses": [],
+  "affected_views": [
+    {
+      "name": "project_model",
+      "stale_dependencies": [
+        "C3"
+      ]
+    }
+  ],
+  "unchanged_claims": [
+    {
+      "id": "C1",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C10",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C2",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "13-2777",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "07b52d311d7614f9bcedaf8fe7b27bbf74380ac0d84d84f5ad0e9c12eb66223f",
+          "stale": true
+        },
+        {
+          "file": "lib/option.js",
+          "line_span": "3-380",
+          "recorded_sha": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "current_sha": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "stale": false
+        },
+        {
+          "file": "lib/help.js",
+          "line_span": "12-747",
+          "recorded_sha": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "current_sha": "7d5757c053964023d45d82a4d4de01dadf32a2055f15d8ab58166914f035b9ea",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C4",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "CHANGELOG.md",
+          "line_span": "69-150",
+          "recorded_sha": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "current_sha": "27cc9a4fca2a90a24beeb52afa7d480c3783cd202579acf7a40d336ad011fe89",
+          "stale": false
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "619-662",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "07b52d311d7614f9bcedaf8fe7b27bbf74380ac0d84d84f5ad0e9c12eb66223f",
+          "stale": true
+        },
+        {
+          "file": "lib/option.js",
+          "line_span": "350-374",
+          "recorded_sha": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "current_sha": "b5cf136f3db9dd92654d3d3dfd82929079c3aef62584d7f11c9782e8576cec97",
+          "stale": false
+        }
+      ]
+    },
+    {
+      "id": "C6",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C9",
+      "note": "partial staleness",
+      "stale_anchors": 1,
+      "total_anchorable": 3,
+      "detail": [
+        {
+          "file": "docs/deprecated.md",
+          "line_span": "1-258",
+          "recorded_sha": "0388b904dd7b7439cc12a4fc3856d45a166ff1dc5b807a59d2b08f2c71057915",
+          "current_sha": "0388b904dd7b7439cc12a4fc3856d45a166ff1dc5b807a59d2b08f2c71057915",
+          "stale": false
+        },
+        {
+          "file": "index.js",
+          "line_span": "24",
+          "recorded_sha": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
+          "current_sha": "a1bb4f6511f3801f961ab3efe5b735e6f248dd52c3937b260fc6c0d85d1896b3",
+          "stale": false
+        },
+        {
+          "file": "lib/command.js",
+          "line_span": "1606-1625",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "07b52d311d7614f9bcedaf8fe7b27bbf74380ac0d84d84f5ad0e9c12eb66223f",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "unverifiable_claims": [
+    {
+      "id": "C5",
+      "reason": "glob tests/*.test.js (109) | jest.config.js | .github/workflows/tests.yml",
+      "anchor_count": 4
+    },
+    {
+      "id": "C7",
+      "reason": "dev.to audit of >10M weekly download packages | depfixer/pkgpulse comparisons",
+      "anchor_count": 2
+    },
+    {
+      "id": "C8",
+      "reason": "osv.dev/vulnerability/MAL-2025-192687 | vulert.com/vuln-db/npm-commmander-205709",
+      "anchor_count": 2
+    }
+  ],
+  "metrics": {
+    "total_claims": 10,
+    "stale_candidates": 1,
+    "unchanged": 6,
+    "unverifiable": 3,
+    "affected_hypotheses": 0,
+    "affected_views": 1
+  }
+}

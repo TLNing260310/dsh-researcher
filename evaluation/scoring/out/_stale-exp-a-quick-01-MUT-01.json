@@ -1,0 +1,113 @@
+{
+  "schema": "dsh-researcher/cognition-diff/v1",
+  "source_state": "exp-a-quick-01",
+  "generated_at": "2026-08-22T21:26:04.543Z",
+  "stale_claims": [
+    {
+      "id": "C06",
+      "stale_anchors": 1,
+      "total_anchorable": 1,
+      "detail": [
+        {
+          "file": "lib/command.js",
+          "line_span": "1-13",
+          "recorded_sha": "c161e3d99c26a125ec591a32f64f65975a7d7aac56dc29a5ff644d39d61c8831",
+          "current_sha": "b8bb7c4977949d4b9379a06034c7b4ab373d6b048810138178ed3f1bcea5e6bd",
+          "stale": true
+        }
+      ]
+    }
+  ],
+  "affected_hypotheses": [],
+  "affected_views": [
+    {
+      "name": "project_model",
+      "stale_dependencies": [
+        "C06"
+      ]
+    }
+  ],
+  "unchanged_claims": [
+    {
+      "id": "C01",
+      "fresh_anchors": 2
+    },
+    {
+      "id": "C02",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C04",
+      "fresh_anchors": 1
+    },
+    {
+      "id": "C09",
+      "fresh_anchors": 1
+    }
+  ],
+  "unverifiable_claims": [
+    {
+      "id": "C03",
+      "reason": "package.json: no 'dependencies' key | grep require( in lib/ (13 matches, all builtins/internal)",
+      "anchor_count": 2
+    },
+    {
+      "id": "C05",
+      "reason": "lib/command.js unknownOption/_excessArguments/negativeNumberArg | CHANGELOG.md 13.0.0, 14.0.0 | tests/command.unknownOption.test.js, command.allowExcessArguments.test.js, negatives.test.js",
+      "anchor_count": 3
+    },
+    {
+      "id": "C07",
+      "reason": "lib/help.js full read (747 lines) | lib/command.js useColor() 2752-2774 | CHANGELOG.md 14.0.0",
+      "anchor_count": 3
+    },
+    {
+      "id": "C08",
+      "reason": "lib/command.js _executeSubCommand 1202-1346 | tests/command.executableSubcommand*.test.js (6 files) | tests/fixtures-extensions/*",
+      "anchor_count": 3
+    },
+    {
+      "id": "C10a",
+      "reason": "glob tree listing (tests/) | samples: tests/command.parse.test.js, tests/options.variadic.test.js",
+      "anchor_count": 2
+    },
+    {
+      "id": "C10b",
+      "reason": "CI config .github/workflows/tests.yml runs npm test + npm run check",
+      "anchor_count": 1
+    },
+    {
+      "id": "C11",
+      "reason": "docs/release-policy.md | CHANGELOG.md | git log cadence (12.1 2024-05, 13.0 2024-12, 14.0 2025-05)",
+      "anchor_count": 3
+    },
+    {
+      "id": "C12",
+      "reason": "package-support.json | git log author names | SECURITY.md",
+      "anchor_count": 3
+    },
+    {
+      "id": "C13",
+      "reason": "web_search snippet (dev.to risk-map audit listing commander) | README npm badges (unverifiable this session)",
+      "anchor_count": 2
+    },
+    {
+      "id": "C14",
+      "reason": "docs/deprecated.md (258 lines) | CHANGELOG.md 13.0.0, 12.0.0",
+      "anchor_count": 2
+    },
+    {
+      "id": "C15",
+      "reason": "lib/command.js exitOverride/_exit | docs/deprecated.md | README custom event listeners",
+      "anchor_count": 4
+    }
+  ],
+  "metrics": {
+    "total_claims": 16,
+    "stale_candidates": 1,
+    "unchanged": 4,
+    "unverifiable": 11,
+    "affected_hypotheses": 0,
+    "affected_views": 1
+  }
+}

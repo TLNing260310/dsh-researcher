@@ -1,0 +1,437 @@
+
+
+===MSG===
+
+Runtime certificate: **SAFE** (Run #2, all checks PASS). Beginning DISCOVER — cartography of the snapshot.
+
+===MSG===
+
+Single snapshot commit — flattened CI snapshot. Let me get the full file list and core metadata.
+
+===MSG===
+
+Commander.js v14.0.3 — the well-known Node CLI framework. The directory name (`MUT-02`) suggests a mutation benchmark. The git history is flattened (single "ci repository snapshot" commit), so change detection must come from sibling snapshots or upstream comparison. Let me check for sibling snapshots and read the entry points.
+
+===MSG===
+
+Key discovery: sibling snapshots exist — a base `commander.js\workspace` and six mutations `MUT-01`…`MUT-06`. The base snapshot is my change-detection ground truth. Let me confirm the layout and the base version.
+
+===MSG===
+
+Base snapshot is also commander 14.0.3 — so diffing base vs MUT-02 isolates the injected mutation(s). Now I'll fan out three background diff agents and check the base repo's git history.
+
+===MSG===
+
+Three diff agents launched. While they work, I'll read the core source myself. Starting with `lib/command.js` — the heart of the library.
+
+===MSG===
+
+**Major find already**: `lib/command.js` contains labeled mutation comments — `// MUT-02 (synthetic)` at lines 204 and 215-220, around `createHelp()` and `configureHelp()`. Continuing the read.
+
+===MSG===
+
+
+
+===MSG===
+
+command.js fully read (2777 lines). Mutation markers confirmed only at `createHelp`/`configureHelp`. Now reading the other lib modules.
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+option.js is standard upstream. Let me grep for all mutation markers across the repo, and read argument.js + Readme.
+
+===MSG===
+
+Exactly two mutation markers, both in `createHelp`/`configureHelp`. Quick verification of the base snapshot's version of these two functions:
+
+===MSG===
+
+Base confirmed: upstream `createHelp()` is `Object.assign(new Help(), this.configureHelp())` and `configureHelp(configuration)` stores the config directly. The MUT-02 delta is precisely the two labeled hunks. Now let me check the typings, docs, and tests that pin `configureHelp` behavior, plus scan sibling mutations for the benchmark pattern.
+
+===MSG===
+
+Benchmark pattern confirmed: MUT-01…MUT-06 are six independent labeled synthetic mutations in `lib/command.js`. MUT-02's typings were NOT updated (still single-parameter `configureHelp`) — a JS/typings drift. Now the tests that pin this behavior:
+
+===MSG===
+
+All four `configureHelp` tests appear to PASS under the mutant (they never inspect the config object's own keys). Let me check `command.createHelp.test.js` and grep all test touchpoints of this API.
+
+===MSG===
+
+
+
+===MSG===
+
+`copySettings` test passes under the mutant only because Jest's `toEqual` ignores `undefined` properties — the stored config now contains a spurious own `base: undefined` key. Let me check whether the type-check (`tsconfig.js.json`) would catch the undocumented second parameter.
+
+===MSG===
+
+
+
+===MSG===
+
+`noImplicitAny: false` — the undocumented `base` param passes type-check. Let me check prettier config and CHANGELOG claims about `configureHelp`, then collect the diff agents.
+
+===MSG===
+
+Now let me collect the three diff subagents.
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+All three still running. Continuing my own research meanwhile — CHANGELOG head, esm.mjs, and external upstream verification.
+
+===MSG===
+
+Let me externally verify upstream v14.0.3's `createHelp`/`configureHelp` directly from GitHub.
+
+===MSG===
+
+
+
+===MSG===
+
+web_fetch is unavailable (no provider registered) — external verification will rest on the pristine base snapshot (identical version) plus in-repo docs/typings. Checking the `HelpConfiguration` type shape:
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+There's a `snapshot.json` metadata file in MUT-02 — likely the benchmark's mutation description. Reading it now.
+
+===MSG===
+
+`snapshot.json` is gold: schema `dsh-researcher/cplus-t1-snapshot/v1`, kind **`api_contract`**, candidate **`configureHelp`**, single-commit snapshot (injection not visible via git). Let me check the sibling snapshots' metadata for the full benchmark picture.
+
+===MSG===
+
+Subagent 2 confirms my independent reading: only `lib/command.js` differs, exactly the two tagged regions, typings untouched. Checking the other two agents and sibling metadata:
+
+===MSG===
+
+MUT-06 is kind `compatibility_constraint` — the benchmark classifies mutation kinds. Checking the remaining two diff agents and finishing the docs read:
+
+===MSG===
+
+Docs contain no `base` anywhere. Important inference: the mutant line `this.configureHelp().base` accesses a property on JSDoc-typed `(Command | object)` — TS2339 under `checkJs` — so `npm run check:type:js` likely fails, as does prettier (`check:format`, 116-char line vs printWidth 80). Both are quality-gate breaks I cannot execute to confirm (read-only). Let me collect the two remaining agents.
+
+===MSG===
+
+While the last two agents finish, external research for the risk map — commander's adoption scale and upstream status:
+
+===MSG===
+
+External grounding: commander sits in the >10M weekly downloads tier (per a systematic audit of npm packages with >10M weekly downloads — [dev.to audit](https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0#1); also [pkgpulse](https://www.pkgpulse.com/packages/commander)), and v15 pre-release exists upstream. Checking the remaining agents:
+
+===MSG===
+
+While they run, verifying the tsd typing pins:
+
+===MSG===
+
+tsd pins the single-param signature — the "feature" is type-rejected for TS consumers. Quick independent file-list comparison of tests in both trees while the agents finish:
+
+===MSG===
+
+
+
+===MSG===
+
+Agent 1 converged with my analysis. Let me commit the research state, then collect the final agent.
+
+===MSG===
+
+State committed. Now the final agent:
+
+===MSG===
+
+While agent 3 finishes, verifying a detail that affects finding C9 — `.prettierignore`:
+
+===MSG===
+
+`lib/command.js` is opted into prettier — C9 stands. Let me capture the snapshot commit metadata for the record while agent 3 finishes:
+
+===MSG===
+
+CI workflow confirmed: `npm test` + `npm run check` — the full gate includes prettier and tsc. Waiting on the final agent:
+
+===MSG===
+
+Agent 3 is doing exhaustive byte-comparison of 130+ test files. Meanwhile, completing the CHALLENGE move — I've verified there's no upstream precedent for a `base` parameter (docs, typings, CHANGELOG all clean; base snapshot pristine; mutation self-tagged; snapshot.json classifies it as `api_contract`). The disconfirmation search fails to overturn H1/H2. Let me check once more:
+
+===MSG===
+
+While waiting, let me update the todo index and give agent 3 a final window:
+
+===MSG===
+
+All three agents complete: **188/188 files in tests/docs/examples identical** between base and MUT-02. The full change set is now exhaustively established. Committing the final evidence state:
+
+===MSG===
+
+All evidence is in. Final SELF-EVAL passed (each item checked: certificate first ✓, DEEP depth all eleven moves ✓, evidence discipline with file:line citations ✓, ledger committed ✓, fan-out used ✓, no implementation planning ✓, limitations disclosed ✓). Writing the report.
+
+===MSG===
+
+# Project Cognition Report — commander.js snapshot `MUT-02`
+
+## Runtime Proof
+
+Researcher Runtime Certificate, Run #2: Preset **PASS** (researcher-deep), Sandbox **PASS** (read-only), Approval **PASS** (never), Write tools **PASS** (refusing stubs), Shell surface **PASS** (git_read only), Checkpoint **PASS**, Replay **PASS** → **Overall: SAFE**. This run is Researcher-DEEP (all eleven moves). Read-only discipline held throughout: no file was created or modified; every deliverable lives in this conversation.
+
+---
+
+## (1) Project Identity
+
+**What this snapshot is:** the npm package `commander` — **Commander.js v14.0.3**, "the complete solution for node.js command-line programs" — captured as a single-commit CI snapshot (`c8e2d4c`, author `ci@local`, 2026-08-23, clean tree, `package.json:2-3`). It is one member of a six-way mutation family: `commander.js-cplus-t1/MUT-01…MUT-06`, all derived from the same pristine base (`commander.js/workspace`, identical version) and documented by `snapshot.json` files (schema `dsh-researcher/cplus-t1-snapshot/v1`).
+
+**The snapshot's own metadata** (`snapshot.json:1-11`): mutation **MUT-02**, kind **`api_contract`**, candidate **`configureHelp`**, t0 commit `bf35c5f9…`, t1 head `c8e2d4c4…` (matches the repo HEAD), history explicitly flattened — *"injection not visible via git log/show/diff"*.
+
+**What was injected** (evidence card):
+
+| Claim | Tier / Verdict | Evidence | Confidence |
+|---|---|---|---|
+| C2: MUT-02 differs from base ONLY in `lib/command.js`, two tagged hunks | C3 / Known | full reads of both files by me + 3 independent subagent diffs; grep for `MUT` markers = exactly 2, both on the changed lines | 0.97 |
+| C4: hunk semantics: `configureHelp` gains undocumented `base` param and stores `{ base, ...configuration }`; `createHelp` instantiates `configureHelp().base \|\| Help` and calls `configureHelp()` twice | C2 / Known | MUT-02 `lib/command.js:204,215-220` vs base `lib/command.js:203-220` | 0.95 |
+| C7: tests/docs/examples **identical** between base and MUT-02 — 188/188 files (134 tests, 9 docs, 45 examples) | C3 / Known | subagent e1eb70c5 exhaustive comparison | 0.98 |
+| C3: benchmark declares MUT-02 an `api_contract` mutation on `configureHelp` | C3 / Known | `snapshot.json:1-11` | 1.0 |
+
+**Hypothesis trail:** H1 (this is a benchmark-injected mutation in the help-configuration API) v1 → confirmed; H2 (it is a *silent contract deviation* — plausible-feature-shaped, invisible to the shipped suite, observably different for downstream users) v1 → strengthened by the exhaustive diff results. Neither was overturned by the CHALLENGE disconfirmation search (see §7).
+
+**What this project IS, in one paragraph:** Commander is the de-facto standard CLI-parsing library for Node.js — zero runtime dependencies, CommonJS with an ESM wrapper, hand-written TypeScript declarations, one of the highest-adoption npm packages (in the >10M weekly-downloads tier per a systematic audit of that tier — [dev.to](https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0#1), [pkgpulse](https://www.pkgpulse.com/packages/commander)). Its value mechanism is a stable, documented, typed public API whose behavior its hundreds of thousands of downstream CLIs depend on; the current snapshot's version (14.0.3, released 2026-01-31 per `CHANGELOG.md:11`) is the version the base was cut from. The mutation under study tampers with exactly that API-stability contract.
+
+---
+
+## (2) Architecture Map
+
+```
+index.js ──► lib/command.js (Command, ~2777 lines — the parser/executor core)
+        └──► lib/option.js  (Option, DualOptions)
+        └──► lib/argument.js(Argument, humanReadableArgName)
+        └──► lib/help.js    (Help, stripColor — help rendering)
+        └──► lib/error.js   (CommanderError, InvalidArgumentError)
+esm.mjs  ──► re-exports index.js for ESM consumers
+typings/   ──► index.d.ts (hand-written declarations + HelpConfiguration), esm.d.mts
+tests/     ──► 134 jest test files + fixtures + tsd/tsc typing tests
+```
+
+**Data/control flow of the mutated region:**
+
+1. Author builds a CLI: `.option()/.argument()/.command()` → registers `Option`/`Argument`/`Command` objects on a `Command` (event-emitter subclass).
+2. `.parse(argv)` → `_parseCommand` → `parseOptions` (tokenizer: short/long/combo/`=`/`--` handling, negative-number detection) → per-option `option:` events → `handleOptionValue` (preset/parseArg/variadic/default-fill) → value-source bookkeeping (`default/env/cli/implied`).
+3. Error paths funnel through `error()` → `_exit()` → `exitOverride` callback or `process.exit`, with optional help display and "did you mean" suggestions (`suggestSimilar`, Damerau–Levenshtein).
+4. Executable subcommands spawn via `child_process`, with `--inspect` port incrementing.
+5. **Help path (mutated):** `.helpInformation()` → `this.createHelp()` → `Object.assign(new Help(), this.configureHelp())` → `formatHelp(cmd, helper)` (usage/description/arguments/options-groups/commands-groups, box-wrap, pad-width, ANSI strip). Subcommands inherit `_helpConfiguration` by reference through `copyInheritedSettings` (`command.js:103`).
+
+The mutation sits at the seam between the *help-configuration contract* (public API) and the *help instantiation* (internal factory) — the narrowest possible point where a small change alters public observable behavior.
+
+---
+
+## (3) Critical Components
+
+| Component | Role | Mutation impact |
+|---|---|---|
+| `Command.configureHelp()` (`lib/command.js:215-220`) | **Public API** — set/get help configuration; documented as "modify data properties and methods" (`docs/help-in-depth.md:4`, `Readme.md:950`) | **Mutated.** Signature `(configuration)` → `(configuration, base)`; storage `this._helpConfiguration = configuration` → `{ base, ...configuration }` |
+| `Command.createHelp()` (`lib/command.js:203-205`) | Internal factory returning the `Help` instance used by `helpInformation`, `unknownOption`/`unknownCommand` suggestions, and every help rendering | **Mutated.** `Object.assign(new Help(), …)` → `Object.assign(new (this.configureHelp().base \|\| Help)(), this.configureHelp())` |
+| `Help` class (`lib/help.js:12-730`) | Rendering engine; data props `helpWidth/minWidthToWrap/sortSubcommands/sortOptions/showGlobalOptions` | Unchanged; but instances now receive a spurious own `base` property via `Object.assign` |
+| Typings (`typings/index.d.ts:340,570-572`; `index.test-d.ts:521-529`) | The type-level contract: `configureHelp(configuration: HelpConfiguration): this` / `configureHelp(): HelpConfiguration`; `HelpConfiguration = Partial<Help>` (no `base`) | Unchanged — **drift**: the JS now accepts a second argument the types reject |
+| Tests pinning the region (`command.configureHelp.test.js`, `command.createHelp.test.js`, `command.copySettings.test.js:78-86`, `command.chain.test.js:194-198`, `help.style.test.js:267-279`) | Behavioral contract | Unchanged; all pass under mutant semantics (see §5) |
+| `snapshot.json` | Benchmark ground truth | Declares kind `api_contract`, candidate `configureHelp` |
+
+---
+
+## (4) Design Decisions
+
+**The mutation, exactly** (base → MUT-02, `lib/command.js`):
+
+```diff
+  createHelp() {
+-   return Object.assign(new Help(), this.configureHelp());
++   return Object.assign(new (this.configureHelp().base || Help)(), this.configureHelp()); // MUT-02 (synthetic): base-aware merge
+  }
+  configureHelp(configuration) {
++   // MUT-02 (synthetic): optional base-class parameter + descriptor-preserving merge.
+    if (configuration === undefined) return this._helpConfiguration;
+-   this._helpConfiguration = configuration;
++   this._helpConfiguration = { base, ...configuration };
+    return this;
+  }
+```
+
+**Five contract changes, in one change** (the "design decision" the mutation encodes):
+
+1. **New, undocumented, untyped second parameter** `base` — a "custom Help base class" feature. Dead on arrival for TypeScript consumers (overloads forbid it, `index.test-d.ts:521-529`); discoverable only by reading JS source.
+2. **Config is now copied, not aliased** — `configureHelp(config)` used to store the caller's object by reference; later mutation of `config` was reflected. Now the getter returns a *different* object. (Note the irony: upstream deliberately fixed the mirror-image aliasing bug for `configureOutput` in 14.0.0, `CHANGELOG.md:56`; it did **not** apply that to `configureHelp`.)
+3. **Spurious own key** — the stored config (and therefore the `configureHelp()` getter, and every `Help` instance via `Object.assign`) now always carries `base: undefined` when no base is given. Invisible to Jest's `toEqual` (ignores `undefined`), visible to `Object.keys`, `'base' in cfg`, spreads, and object enumeration.
+4. **`base` became a live control key** — under upstream semantics a `base` key in a user config was inert data; under the mutant, `createHelp()` executes `new config.base()`. A non-constructor value → `TypeError: … is not a constructor` at help-display time; a constructor → silently swapped help class, invoked **with zero arguments**.
+5. **`createHelp()` calls `configureHelp()` twice** — harmless for the stock implementation, but a subclass overriding `configureHelp` with side effects now runs twice per help render.
+
+**Why this is corrosion, not evolution** (corrosion question): the conventions violated are (a) public API changes ship with typings + docs + CHANGELOG + tests (stated in `PULL_REQUEST_TEMPLATE.md`: "There are a lot of forms of documentation which could need updating… TypeScript typings, JSDoc documentation, tests, README, examples"); (b) `configureHelp` stores by reference; (c) `createHelp` instantiates the stock `Help` class only. All three reasons still hold for a package with this adoption scale — so the deviation is a contract violation, not a legitimate feature. This is confirmed by the benchmark's own classification (`kind: api_contract`).
+
+---
+
+## (5) Risk Map
+
+| # | Risk | Likelihood / Impact | Evidence |
+|---|---|---|---|
+| R1 | **Undetected by the shipped suite** — all 134 jest files plus tsd/tsc pass under the mutant; `npm test` green | Certain that no shipped test trips / High | C7 (188/188 identical), C8; every test touching the region analyzed line-by-line: `copySettings.test.js:85` passes only because `toEqual` ignores `undefined`; no test asserts reference identity or exact key set |
+| R2 | **Downstream crash**: user help-config containing a truthy non-constructor `base` key → `TypeError` at help display; CLI unusable | Low (key never documented) / High (total failure of help path) | C10; `command.js:204` |
+| R3 | **Silent behavior change**: config aliasing broken; getter output polluted with `base`; Help instances carry a stray own property — observable by any consumer doing `Object.keys(configureHelp())` or re-passing configs | Medium / Medium | C4, C10 |
+| R4 | **JS/typings contract drift**: JS accepts `(config, base)`; `.d.ts` rejects it; `HelpConfiguration` has no `base` | Certain (drift exists) / Medium | C5 |
+| R5 | **Quality gates break**: `npm run check` fails — `prettier --check` on the 116-char line 204 (printWidth 80; `lib/*.js` is opted into prettier via `.prettierignore:4`; CI runs `npm test && npm run check` in `.github/workflows/tests.yml`), and `tsc -p tsconfig.js.json` on `this.configureHelp().base` where the JSDoc return type is `(Command \| object)` (TS2339; `noImplicitAny: false` doesn't suppress property-existence errors) | Likely (not executable here — read-only) / Medium | C9; `command.js:204`, JSDoc `command.js:211`, `tsconfig.json:17-24` |
+| R6 | **Benchmark mislabel hazard**: the mutation masquerades as a feature; a reviewer could "accept" it as evolution (feature-shaped, tests green) | The exact failure mode this snapshot tests | C3, H2 |
+| R7 | **Sibling contamination**: other MUT snapshots (01, 03–06) carry their own independent mutations in the same file — any cross-snapshot merge would silently combine defects (e.g., MUT-06's `option.flags()` would throw at runtime) | N/A for this snapshot; flagged for the harness | C11; MUT-06 `lib/command.js:2060` |
+
+**External context:** commander is in the >10M weekly-downloads tier ([audit](https://dev.to/piiiico/i-audited-every-npm-package-with-10m-weekly-downloads-here-is-the-risk-map-16k0#1), [pkgpulse](https://www.pkgpulse.com/packages/commander)); upstream has moved past 14.0.3 (v15 pre-release exists — [socket.dev](https://socket.dev/npm/package/commander/files/15.0.0-0/Readme.md#3)). None of that changes this snapshot's analysis: the base at the same version is pristine, so the deviation is entirely MUT-02's.
+
+---
+
+## (6) Change Impact Analysis
+
+**What changed vs. the previous snapshot (base `commander.js/workspace`, same v14.0.3):** exactly one file, `lib/command.js`, two hunks — `createHelp()` (line 204) and `configureHelp()` (lines 215-220). Everything else is byte-identical: 6 lib files, `index.js`, `esm.mjs`, `package.json`, `package-support.json`, `jest.config.js`, both typings files, all 134 test files, all 9 docs, all 45 examples, configs, CI. Verified by three independent full-tree diff agents plus my own reads.
+
+**Previous assumptions that no longer hold** (C13):
+
+1. *"`configureHelp(config)` stores the config object by reference"* — **false now**: a shallow copy is stored; post-call mutations of the caller's object are invisible.
+2. *"`configureHelp()` returns exactly what was stored"* — **false**: it returns `{ base: undefined, …config }` — an extra own key.
+3. *"`createHelp()` always instantiates `new Help()`"* — **false**: it instantiates whatever `config.base` is, when truthy.
+4. *"A `base` key in a help configuration is inert data"* — **false**: it is now live code (constructor).
+5. *"`configureHelp` takes exactly one argument"* — **false in JS** (two accepted), **still true in typings** — the JS/TS contracts now disagree.
+6. *"`Help` instances carry only documented data properties"* — **false**: a stray own `base` property appears.
+7. *"The tree passes `npm run check`"* — **likely false** (prettier; tsc TS2339) — while `npm test` stays green.
+
+**Blast radius:** zero impact on the parsing/execution core (options, arguments, subcommands, hooks, env/implied values all untouched); the impact is confined to the help-configuration contract — but that contract is public, typed, and documented, and the change is *silent* (green suite), which is precisely the dangerous combination: every locally-reasonable step (the change "looks like" a feature, tests pass) adds up to a globally wrong contract (R6).
+
+---
+
+## (7) Decision Memo
+
+**Question asked:** what is this project, what changed vs. the previous snapshot, and what (if anything) should be done.
+
+**Answer:** this is a benchmark mutation snapshot — Commander.js v14.0.3 with a single self-tagged, `api_contract`-classified mutation injected into the public `configureHelp`/`createHelp` API. The mutation is feature-shaped but contract-corrosive: it adds an undocumented, untyped constructor-switch parameter; breaks config aliasing and getter purity; can crash help rendering on a non-constructor `base` value; and is invisible to the entire shipped test suite and to `npm test`.
+
+**Findings classification:**
+
+- **BUILD — F1: revert the two hunks to upstream semantics** (restore `configureHelp(configuration)` storing by reference, and `createHelp()` instantiating `new Help()`). The deviation is identified with C3-tier evidence (self-tag, benchmark metadata, base-snapshot comparison); the fix is a mechanical restoration of the base's 6 lines. This is the only change this snapshot warrants.
+- **INVESTIGATE — F2: test-suite blindness.** No shipped test pins the contract (reference identity of stored config, exact key set, `base` inertness). Whether to add such contract-pinning tests is the user's/benchmark's call — for the benchmark, hidden tests presumably cover it; for upstream, this is a real (pre-existing) coverage gap worth knowing about. Not a development action from this session.
+- **DON'T BUILD — keep the `base` feature as-is, or ship it as a real feature.** As-is it is half-wired (no typings/docs/tests/CHANGELOG; zero-arg constructor invocation; config-key collision with the reserved `base`). Shipping it properly would be a full upstream feature project — out of scope for a mutation snapshot, and contrary to the benchmark's intent.
+- **DON'T BUILD — anything else.** No other part of the project changed; there is nothing else to fix.
+
+**Cost/benefit of the recommended action:** the revert is ~6 lines, zero risk to the parsing core, and restores the documented + typed + tested contract; the cost of *not* acting is a silent API-contract break exported as if it were v14.0.3.
+
+**Confidence statement:** the location and content of the change are **Known** (0.97–1.0); the test-suite passivity is **Likely** (0.9 — semantic analysis, not execution, because the sandbox is read-only); the quality-gate failures are **Likely** (0.75–0.9 — prettier/tsc not executable here); live upstream byte-verification was impossible (web_fetch has no registered provider), compensated by the pristine same-version base snapshot.
+
+---
+
+## Handoff Brief (BUILD items only)
+
+### Human-readable
+
+**Build item 1 — Restore the upstream `configureHelp`/`createHelp` contract in `lib/command.js`.**
+- Problem: MUT-02 injects an `api_contract` mutation (kind per `snapshot.json`): `configureHelp` gains an undocumented `base` parameter and stores `{ base, ...configuration }` (copy + spurious key, breaking reference aliasing); `createHelp` instantiates `configureHelp().base || Help` (non-constructor `base` → `TypeError` at help display) and calls `configureHelp()` twice. Invisible to all 134 shipped test files; `npm test` stays green; `npm run check` (prettier/tsc) likely fails.
+- Evidence: MUT-02 `lib/command.js:204` and `:215-220` vs base `lib/command.js:203-220`; `snapshot.json:1-11`; typings unchanged (`typings/index.d.ts:570-572`); tests/docs/examples 188/188 identical to base.
+- Scope: exactly two hunks in `lib/command.js` (createHelp + configureHelp). Do not touch any other file, do not "improve" anything else, do not port sibling mutations (MUT-01/03-06 are separate snapshots).
+- Do NOT touch: the parsing core (`parseOptions`, `_processArguments`, option/argument handlers), `lib/help.js`, `lib/option.js`, `lib/argument.js`, typings, tests, docs, examples — all verified identical to the pristine base.
+
+### Machine-readable
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "commander.js-cplus-t1/MUT-02",
+  "runtime_certificate": "Run #2, Overall SAFE",
+  "build_items": [
+    {
+      "id": "MUT02-F1",
+      "problem": "Injected api_contract mutation (benchmark kind per snapshot.json) in Command.configureHelp/createHelp: undocumented 2nd 'base' parameter; config stored as '{base,...configuration}' shallow copy (reference aliasing broken, spurious own 'base: undefined' key in getter output and on Help instances); createHelp instantiates 'configureHelp().base || Help' (non-constructor base -> TypeError at help display; constructor base invoked with zero args) and calls configureHelp() twice. Invisible to the shipped jest suite (134/134 test files identical to base and passing by analysis); npm run check likely fails (prettier line >80 cols; tsc TS2339 on '(Command|object).base').",
+      "evidence": [
+        "MUT-02 lib/command.js:204 (createHelp)",
+        "MUT-02 lib/command.js:215-220 (configureHelp)",
+        "BASE lib/command.js:203-220 (pristine upstream v14.0.3 semantics)",
+        "snapshot.json:2-9 (mutation=MUT-02, kind=api_contract, candidate=configureHelp)",
+        "typings/index.d.ts:570-572 + index.test-d.ts:521-529 (single-param contract unchanged)",
+        "tests/docs/examples 188/188 files identical to base (3 subagent diffs)"
+      ],
+      "confidence": 0.97,
+      "scope": "Revert exactly two hunks in lib/command.js to base semantics: configureHelp(configuration) storing this._helpConfiguration = configuration by reference; createHelp() returning Object.assign(new Help(), this.configureHelp()).",
+      "do_not_touch": [
+        "lib/help.js, lib/option.js, lib/argument.js, lib/error.js, lib/suggestSimilar.js, index.js, esm.mjs",
+        "typings/*, tests/*, docs/*, examples/*, package.json, configs (all verified identical to base)",
+        "parsing/execution core (parseOptions, _processArguments, handlers, hooks, spawn)",
+        "other MUT snapshots (MUT-01/03/04/05/06 are separate independent mutations)"
+      ]
+    }
+  ]
+}
+```
+
+**Open questions for the user** (user-owned; not research questions): (1) Should the revert include adding a contract-pinning test (e.g., getter returns the exact stored object; `base` key stays inert), or is the fix strictly the two-hunk restoration? (2) Is this snapshot being used for benchmark scoring (hidden tests) — in which case the revert must be judged against those, not the shipped suite?
+
+===MSG===
+
+This is a duplicate delivery — subagent 67523ec1's report was already received, folded into the claim ledger, and incorporated into the delivered Project Cognition Report (its 12-file identity table is the basis of claim C7; its mutation-region finding is the basis of C2/C4). Nothing new here, and no revision is triggered.
+
+One note for the record: the agent's own disclosed residual gap — *"no-other-unmarked-mutations = 0.85 (non-lib files not exhaustively diffed)"* — was subsequently closed by two independent mechanisms before the report was finalized:
+
+1. **Subagent e1eb70c5** exhaustively compared **188/188 files** (tests 134/134, docs 9/9, examples 45/45) — zero differences (committed as the C3-tier upgrade of C7).
+2. **My own whole-tree greps** for `MUT|synthetic|mutation` across the entire MUT-02 tree returned exactly 2 matches, both in `lib/command.js`; and every mutation in the sibling family (MUT-01…06) is self-tagged the same way, so the tag pattern itself is a reliable tree-wide injection scanner. Root configs (`.prettierrc.js`, `.prettierignore`, `eslint.config.js`, `tsconfig*.json`, `.github/workflows/tests.yml`, `.editorconfig`, `.gitattributes`) were additionally read directly and are internally consistent with the pristine base's toolchain.
+
+The delivered report stands unchanged: **MUT-02 = pristine commander.js v14.0.3 + exactly one self-tagged `api_contract` mutation in `createHelp`/`configureHelp` (`lib/command.js:204,215-220`), invisible to the shipped suite, with the single BUILD item (two-hunk revert) in the handoff brief.** No further action from this session.
+
+===MSG===
+
+Duplicate delivery again — subagent cb5bf183's final diff report was already received, folded into the claim ledger (C2/C4/C7/C8), and incorporated into the delivered Project Cognition Report. Its D1/D2/D3 map one-to-one onto the report's change list in §4 (double `configureHelp()` call → change 5; reference-identity break → change 2; silent constructor switch → change 4; suite survival → C8/R1). No revision is triggered.
+
+One cosmetic discrepancy for the record, worth noting so the ledger stays clean: the agent's closing line says the `MUT` grep returns *"only L204, L215, L216, L218"* — but a `MUT` marker match actually exists on exactly **two** lines, 204 and 216 (the two `// MUT-02 (synthetic)` comments; lines 215/218 are the changed code lines inside the `configureHelp` region, not marker matches). This matches my own whole-tree grep (2 matches) and does not affect any committed claim — C2's "two tagged regions" stands.
+
+The report stands unchanged: **MUT-02 = pristine commander.js v14.0.3 + exactly one self-tagged `api_contract` mutation in `createHelp`/`configureHelp` (`lib/command.js:204,215-220`), invisible to the shipped suite, with the single BUILD item (two-hunk revert) in the handoff brief.** Nothing further from this session.
+
+===MSG===
+
+Duplicate delivery again, and it adds nothing new — the "shadowing" nuance it flags (a caller-supplied `base` key in the config overrides the `base` parameter due to spread order, so config content — not just the parameter — controls constructor selection) was already captured in the report's §4 change 4: *"`base` became a live control key — under upstream semantics a `base` key in a user config was inert data; under the mutant, `createHelp()` executes `new config.base()`."* Same risk, same mechanism.
+
+Also noted: this message resolves the cosmetic marker-count discrepancy from my previous reply — the agent now confirms exactly 2 marker comments (L204, L216), matching my own grep and the committed claim C2.
+
+No revision is triggered. The delivered report stands unchanged:
+
+- **Project Identity:** commander.js v14.0.3, benchmark snapshot `MUT-02` (kind `api_contract`, candidate `configureHelp`, per `snapshot.json`).
+- **Change vs. previous snapshot:** exactly one file (`lib/command.js`), two hunks (`createHelp` L204, `configureHelp` L215-220); 188/188 tests+docs+examples and all 12 other key files byte-identical to base.
+- **Seven previous assumptions no longer hold** (config aliasing, getter purity, `new Help()` guarantee, `base` inertness, single-arg signature, Help instance shape, `npm run check` green).
+- **Risk map:** R1 suite blindness, R2 downstream `TypeError`, R3 silent behavior change, R4 JS/typings drift, R5 quality-gate breaks, R6 feature-masquerade, R7 sibling contamination.
+- **Decision memo:** one BUILD item — the two-hunk revert; one INVESTIGATE (contract-pinning tests); rest DON'T BUILD.
+- **Handoff:** human-readable brief + `dsh-researcher/handoff/v1` JSON with `MUT02-F1` (scope: `createHelp`+`configureHelp` only; do_not_touch: everything else).
+
+All three subagents have delivered and converged; the claim ledger (13 claims, 2 hypotheses, 5 views) is committed via checkpoint with no dirty nodes. This session's research is complete.
+
+===MSG===
+
+Duplicate delivery of agent e1eb70c5's report (received earlier, already folded into the ledger as the C3-tier upgrade of C7). The added detail — fan-out coverage ledger (134/134 tests, 9/9 docs, 45/45 examples compared; 0 differ, 0 missing, 0 added) and the disclosed byte-level limitation (CRLF/BOM/trailing-newline not hash-verifiable for the BASE side, since BASE lies outside the git_read repo root) — changes nothing: the byte-level caveat was already disclosed in the report's SELF-EVAL limitations and does not affect any committed claim, since the mutation delta is established at line level in `lib/command.js` regardless.
+
+All three background agents have now delivered and fully converged (the later two messages were pure re-deliveries with no new information). The research is complete and the report stands unchanged:
+
+- **One mutation, fully evidenced:** MUT-02 = pristine commander.js v14.0.3 + exactly one self-tagged `api_contract` mutation in `createHelp`/`configureHelp` (`lib/command.js:204,215-220`); everything else in the tree byte-identical to base (12/12 key files + 188/188 tests/docs/examples).
+- **One BUILD item:** two-hunk revert to upstream semantics (handoff brief + `research_handoff.json` with `MUT02-F1`, scope and do_not_touch enumerated).
+- **Ledger committed:** 13 claims, 2 active hypotheses (H1, H2), 5 views, no dirty nodes.
+
+Nothing further from this session.

@@ -1,0 +1,283 @@
+
+
+===MSG===
+
+Runtime certificate received: **Run #2 — Overall SAFE** (preset=researcher-deep, sandbox=read-only, approval=never, write/edit=refusing stubs, git_read=only shell surface, checkpoint available, replay folds deterministically with 0 prior claims/hypotheses). I proceed with Researcher-DEEP depth (frozen Phase A condition, deviation D002): all eleven moves, ending in the seven-section Project Cognition Report plus a change-delta vs. previous snapshot.
+
+===MSG===
+
+
+
+===MSG===
+
+The layout is now clear: this is one of six mutated variants (`MUT-01`…`MUT-06`) of a baseline commander.js snapshot, with a `ground-truth` reference. Let me read the snapshot metadata and baseline state.
+
+===MSG===
+
+
+
+===MSG===
+
+The baseline has 223 paths vs MUT-01's 225 (the 2 extra are `evaluation/` harness files — no files added/removed in the source tree, so the mutation is content-level). The mutation is tagged `kind: api_contract`, `candidate: restoreStateBeforeParse`. Let me locate that API in both trees.
+
+===MSG===
+
+`restoreStateBeforeParse` exists in **both** trees — the mutation is not the addition of the API (it's real upstream v14.0.3 API, PR #2299) but a subtle change to its behavior/contract. Same line numbers in both → content-level swap. Let me examine the implementation regions in both versions and the harness scoring output.
+
+===MSG===
+
+**Mutation located.** In MUT-01, `restoreStateBeforeParse()` replaces the upstream guard — which *throws* on repeated parse under `storeOptionsAsProperties` — with code that silently sets `_storeOptionsAsProperties = false` and continues (comment: `// MUT-01 (synthetic): repeated parse is now allowed under storeOptionsAsProperties.`). Now I need to verify whether this is the *only* delta, and whether tests were adjusted to match the new contract.
+
+===MSG===
+
+The file sets are identical (223 source files; MUT-01 adds only the 2 `evaluation/` probe artifacts). The only in-source mutation marker is `lib/command.js:1159`. Now let me check whether the test asserting the old contract is still present (unchanged → it should now fail) and scan for all `saveStateBeforeParse` references.
+
+===MSG===
+
+The second-parse test (line 412) is **byte-identical** in both trees and still asserts `.toThrow()` — under the mutated code it should fail. Let me verify the mutation's blast radius: search for the removed error message elsewhere, and check whether the CHANGELOG entry and typings around this API differ.
+
+===MSG===
+
+CHANGELOG in MUT-01 still documents the upstream contract ("*Breaking*: throw on multiple calls to `.parse()` if `storeOptionsAsProperties: true`") — docs unchanged, code deviates. No test asserts the message text (only `.toThrow()`), so the mutation survives message-level checks but breaks the behavior-level test. Now let me build the project model: core entry points, error types, and the parse internals.
+
+===MSG===
+
+The mutation's impact is now clear: `setOptionValueWithSource` writes option values **as properties on the Command instance** when `storeOptionsAsProperties` is true (lib/command.js:954-955), and the action handler passes `this` as the options argument in that mode (line 561-565) — both silently broken by the mutated restore path. Let me continue mapping the architecture: constructor/settings copy, parse internals, and typings.
+
+===MSG===
+
+Good progress. Let me index the full API surface of each lib module cheaply via grep, then read the remaining metadata files (README claims, CI, governance).
+
+===MSG===
+
+
+
+===MSG===
+
+Architecture map is nearly complete. Now the toolchain/governance layer: CI workflow, jest config, security/release policies.
+
+===MSG===
+
+Toolchain and governance captured. Now external research: verify upstream state of commander.js (v14.0.3, PR #2299, the documented throw behavior) and the CLI-framework landscape.
+
+===MSG===
+
+
+
+===MSG===
+
+`web_fetch` has no provider in this session — I'll rely on `web_search` for external verification.
+
+===MSG===
+
+External verification: v13.0.0 (2024-12-30) and v14.0.3 are real releases, and upstream has since moved to **v15.0.0** — the snapshot baseline (cutoff 2026-02-01) is slightly behind current upstream. Let me check how subcommands participate in the save/restore chain (blast radius of the mutation) and search for security advisories.
+
+===MSG===
+
+No CVEs in the real `commander` package (the advisories found are for the *typosquat* package `commander-js`). Subcommands in the parse chain also call `_prepareForParse()` (lib/command.js:1356) — blast radius confirmed. Let me round out the model: sibling mutation manifests (harness context), the legacy-properties README section, and Argument/Help heads.
+
+===MSG===
+
+The harness context is complete: six mutations across three kinds (api_contract ×2, internal_architecture ×2, compatibility_constraint ×2), all from the same T0 commit. Let me finish the parse-lifecycle details (`opts()` under property mode) and check whether the repeated-parse contract is documented anywhere besides the CHANGELOG.
+
+===MSG===
+
+All evidence is in hand. Quick final checks — downloads/adoption signal for the value mechanism, and the Argument/Help module heads to complete the map.
+
+===MSG===
+
+All evidence gathered. Committing the research state (claim ledger, hypotheses, views) before writing the report.
+
+===MSG===
+
+
+
+===MSG===
+
+# Project Cognition Report — commander.js @ MUT-01
+
+**Runtime Proof** — Researcher Runtime Certificate, Run #2: **Overall SAFE** (preset=researcher-deep; sandbox=read-only PASS; approval=never PASS; write/edit=refusing stubs PASS; shell surface: git_read only PASS; checkpoint PASS; replay folds deterministically). Depth: **DEEP** (all eleven moves, frozen Phase A condition D002). All evidence below is read-only derived; nothing was executed or modified.
+
+**Executive finding (one paragraph).** This workspace is **commander.js v14.0.3** (baseline commit `bf35c5f9`, cut 2026-02-01) with exactly **one injected source change**: in `lib/command.js`, `restoreStateBeforeParse()` no longer throws the documented error on repeated `parse()` when `storeOptionsAsProperties` is enabled — it now *silently sets `_storeOptionsAsProperties = false`* and continues (lib/command.js:1158-1174, marker comment at :1159). The CHANGELOG, typings, tests, docs, and every other file are unchanged. The change is **corrosion dressed as a feature**: it violates a documented, tested, deliberately-breaking upstream contract (v13.0.0, #2299), breaks the existing test `tests/command.parse.test.js:412`, silently mutates user configuration, leaks stale option properties onto the Command instance, and changes the action-handler argument shape between parses. Verdict: **revert**; do not build the "feature".
+
+---
+
+## 1. Project Identity
+
+| Attribute | Finding | Evidence |
+|---|---|---|
+| Name / version | `commander` **14.0.3**, "the complete solution for node.js command-line programs" | package.json:2-4 |
+| Origin | TJ Holowaychuk; repo `github.com/tj/commander.js`; MIT | package.json:15-20; LICENSE |
+| Runtime | Node.js ≥ 20, CommonJS core + ESM wrapper; **zero runtime dependencies** | package.json:43,78-80; devDependencies only (:62-76) |
+| Distribution | dual `require`/`import` exports, bundled typings, `@commander-js/extra-typings` companion | package.json:45-61; Readme.md:1042-1050 |
+| Mission | Let CLI authors *declare* their interface (options, arguments, subcommands) and get parsing, usage errors, auto-help, and suggestions for free; strict by default | Readme.md:67-99 |
+| Users | Node CLI authors — among the most-downloaded npm packages; cited in 2026 framework comparisons as the dominant parser | [pkgpulse: Commander vs yargs 2026](https://www.pkgpulse.com/blog/commander-vs-yargs-2026), [Best CLI Frameworks 2026](https://www.pkgpulse.com/guides/best-cli-frameworks-nodejs-2026) |
+| Current state | v14.x is the current release line (since 2025-05-18); 13.x maintenance until 2026-05-18; upstream has since shipped v15.0.0 (post-cutoff) — this snapshot is a **pinned evaluation artifact**, not upstream head | docs/release-policy.md:12-16; [v15.0.0 release](https://github.com/tj/commander.js/releases/tag/v15.0.0) |
+| Snapshot role | MUT-01 of a 6-variant corpus (`cplus-t1`: api_contract ×2, internal_architecture ×2, compatibility_constraint ×2) all mutated from the same T0 commit; `evaluation/` is untracked harness probe output, not project source | snapshot.json (MUT-01):3-5; MUT-02..06 snapshot.json; git status `?? evaluation/` |
+
+---
+
+## 2. Architecture Map
+
+```
+index.js (CJS entry) ── esm.mjs (ESM wrapper)
+        │
+        ▼
+lib/command.js (2,777 lines)   Command extends EventEmitter — the orchestrator
+  │  ├─ declaration API: option/requiredOption/argument/command/addCommand/hook/action/version
+  │  ├─ settings: allowUnknownOption · allowExcessArguments · passThroughOptions ·
+  │  │            enablePositionalOptions · storeOptionsAsProperties · exitOverride ·
+  │  │            configureHelp/configureOutput · helpOption/helpCommand/helpGroup(s)
+  │  └─ PARSE PIPELINE (the load-bearing path, mutation lives here):
+  │        parse()/parseAsync()                       :1090/:1119
+  │          → _prepareForParse()                     :1127  ← save OR restore state
+  │              saveStateBeforeParse()               :1141  (lazy, first call)
+  │              restoreStateBeforeParse()            :1158  (subsequent calls)  ★ MUT-01
+  │          → _prepareUserArgs()                     :1001  (node/electron/user/eval, scriptPath)
+  │          → _parseCommand()                        :1550  (parseOptions → env → implied →
+  │                                                    subcommand dispatch :1352 / action / events / help)
+  │          → _processArguments()                    :1428  (custom parseArg, variadic, choices)
+  │          → error paths: error()/unknownOption()/unknownCommand()/… → _exit() :533
+  │            (exitOverride hook; CommanderError with code+exitCode)
+  │
+  ├─ lib/option.js     Option (flags→short/long/negate, variadic, choices, env, default,
+  │                    preset, implies, conflicts, parseArg, helpGroup) + DualOptions :272
+  ├─ lib/argument.js   Argument (<required>, [optional], variadic, choices, parseArg) :13
+  ├─ lib/help.js       Help class — formatHelp, styles, boxWrap, groups, sorting; subclass/config-extensible
+  ├─ lib/error.js      CommanderError(exitCode,code,message) / InvalidArgumentError('commander.invalidArgument')
+  ├─ lib/suggestSimilar.js  Damerau–Levenshtein "Did you mean" suggestions
+  └─ typings/index.d.ts (+ esm.d.mts, index.test-d.ts) — public contract, tsd-checked
+```
+Key structural facts: no runtime dependencies; everything is plain classes; option values live in **two storage modes** — modern `_optionValues` map vs legacy **properties on the Command instance** (`storeOptionsAsProperties`, toggled at :905, written at :954-955, read at :926-929 and :1911); `copyInheritedSettings` propagates the mode to subcommands (:105); state save/restore (v13+, #2299) enables repeated `parse()` by snapshotting `{_name, _optionValues, _optionValueSources}` and restoring per-command lazily (:1141-1150); CI = Node 20/22/24 × ubuntu/windows/macos running `npm test` (jest + tsd/tsc) and `npm run check` (type+lint+format) (`.github/workflows/tests.yml:14-31`).
+
+---
+
+## 3. Critical Components
+
+1. **Parse lifecycle + save/restore machinery** (lib/command.js:1090-1174) — the only changed code. `_prepareForParse` gates every parse; the guard inside `restoreStateBeforeParse` is the *entire* protection for the legacy storage mode across repeated parses. **This is where the defect lives.**
+2. **Option-value storage duality** — property mode (`this[key]`) vs `_optionValues` (lib/command.js:925-961, 1902-1917). Both modes are load-bearing; the mutation silently flips the mode mid-lifecycle.
+3. **Action handler contract** (lib/command.js:556-572) — the "options" parameter is `this` in property mode, `opts()` otherwise; the mutation makes the two parses disagree.
+4. **Error/exit surface** (lib/error.js; lib/command.js:1940-1958) — error codes (`commander.invalidArgument`, `commander.missingMandatoryOptionValue`, …) are a documented compatibility surface (cf. sibling mutations MUT-05/06 targeting exactly this).
+5. **Typings** (typings/index.d.ts:851,859) — the API contract for TS consumers; unchanged, so static checks still pass while runtime behavior diverges.
+6. **Test suite** (~120 jest files + tsd) — unchanged; `tests/command.parse.test.js:412` is the single behavioral test that pins the mutated contract and therefore **fails** under MUT-01.
+
+---
+
+## 4. Design Decisions
+
+| Decision | Rationale (why it exists) | Status in MUT-01 |
+|---|---|---|
+| Strict-by-default parsing (unknown option/command errors, excess-args error, missing-mandatory errors) with explicit opt-outs | Predictability of a library consumed by millions; errors > silent misbehavior | Intact — the mutation violates this philosophy by replacing an error with silence |
+| Repeated `parse()` supported via lazy save/restore (v13, #2299) **except** with `storeOptionsAsProperties` | Property-mode writes can't be unwound reliably (stale `this[key]`), and the action signature depends on mode; upstream shipped this as a *breaking* exclusion with migration tips | **Broken** — the exclusion is silently converted into a mode-flip |
+| Legacy property mode kept, deprecated in spirit, gated by construction-time checks (`storeOptionsAsProperties` throws if options/values already exist, :905-916) | Backward compatibility without corruption | Intact, but the gate is bypassable via the mutation |
+| Zero runtime dependencies, minimal API, chainable declarative style, EventEmitter legacy events | Long-term maintainability; tiny install footprint | Intact |
+| Breaking changes only in majors (~6-month cadence, migration tips, LTS-aligned Node floor) | Semver trust; predictable upgrade path | Intact (release-policy.md) |
+| Typings as first-class contract (tsd + tsc CI) | TS consumers are a large share | Intact — which is why the defect is invisible to type checks |
+| Extensible Help via subclass/config | Custom CLI output without forking | Intact |
+
+---
+
+## 5. Risk Map
+
+| # | Risk | Severity | Evidence | Status |
+|---|---|---|---|---|
+| R1 | **Silent contract violation in `restoreStateBeforeParse`**: repeated parse under property mode no longer throws; `_storeOptionsAsProperties` flips to false permanently | **Critical** | lib/command.js:1159-1161 (MUT-01) vs baseline throw at same lines; saveStateBeforeParse saves no mode field (:1141-1150) | **Present** |
+| R2 | **Corrupted state across parses**: parse #1 writes `this[key]` properties; parse #2 leaves them stale while `opts()`/`getOptionValue` switch to `_optionValues`; two divergent views of the same options | High | lib/command.js:953-961, 926-929, 1902-1917 | Present (consequence of R1) |
+| R3 | **Action-handler argument shape changes between parses** (`this` → `opts()` object) — downstream code keyed to one shape breaks intermittently | High | lib/command.js:556-572 | Present (consequence of R1) |
+| R4 | **Test suite red**: `when using storeOptionsAsProperties then throw on second parse` expects `.toThrow()`, code no longer throws | High | tests/command.parse.test.js:412-418 (identical to baseline) | Present (inferred — suite not executed in this read-only session) |
+| R5 | **Doc/contract divergence**: CHANGELOG.md:85 still documents the throw; README/docs never documented it at all — the mutation hides exactly in that documentation gap | Medium | CHANGELOG.md:85; grep of docs/parsing-and-hooks.md (no mention of repeated parse) | Present |
+| R6 | **Typings lie**: `restoreStateBeforeParse(): void` passes tsd/tsc while runtime semantics changed — type checks give false assurance | Medium | typings/index.d.ts:851,859 | Present |
+| R7 | **Version drift**: upstream has moved to v15.0.0; this snapshot is a pinned v14.0.3-era artifact — relevant only if treated as "current" | Low | [v15.0.0 tag](https://github.com/tj/commander.js/releases/tag/v15.0.0); dependabot 14.0.3→15.0.0 bumps | Present (context) |
+| R8 | **Supply chain**: no CVEs in `commander` proper; advisories exist for the typosquat package `commander-js` (installer confusion) | Low | [GHSA-2hqf-qqmq-pgpp](https://dependabot.ecosyste.ms/advisories/GHSA-2hqf-qqmq-pgpp?state=merged), GMS-2020-203, MAL-2025-17408 (all `commander-js`) | Baseline, unrelated to mutation |
+| R9 | **No git forensics trail**: single squashed "ci repository snapshot" commit; injection invisible to git history (by harness design) | Info | snapshot.json:9; git log (1 commit `2ffb807`) | Present (harness constraint) |
+
+Blast radius of R1-R4: every `Command` in the parse chain with property mode — including subcommands, because `copyInheritedSettings` propagates `_storeOptionsAsProperties` (lib/command.js:105) and `_dispatchSubcommand` calls `subCommand._prepareForParse()` (:1356). Affected user patterns: legacy-mode CLIs that parse more than once (test harnesses re-parsing argv, server-side CLIs), and subclass authors of the documented `save/restoreStateBeforeParse` hooks.
+
+---
+
+## 6. Change Impact Analysis
+
+### 6.1 Delta vs the previous snapshot (baseline `commander.js` @ `bf35c5f9`)
+
+File sets are identical (223 source paths; MUT-01 adds only the untracked harness artifacts `evaluation/scoring/out/_probe/*`). Cross-checked byte-equality: `package.json`, `CHANGELOG.md` (incl. :74, :85), `typings/index.d.ts` (:851, :859), `typings/index.test-d.ts` (:374-375), `tests/command.parse.test.js` (incl. :412-418), and `lib/command.js` everywhere except the mutated block. The **only** source delta (C04, Likely, conf 0.85 — exhaustive byte-compare not performed, but every targeted comparison matched and a single mutation marker exists):
+
+```diff
+  restoreStateBeforeParse() {
+-   if (this._storeOptionsAsProperties)
+-     throw new Error(`Can not call parse again when storeOptionsAsProperties is true.
+- - either make a new Command for each call to parse, or stop storing options as properties`);
++   // MUT-01 (synthetic): repeated parse is now allowed under storeOptionsAsProperties.
++   if (this._storeOptionsAsProperties)
++     this._storeOptionsAsProperties = false;
+```
+
+### 6.2 Previous assumptions that no longer hold
+
+1. **"Repeated `parse()` with `storeOptionsAsProperties: true` throws"** — no longer; it silently continues with the mode flipped off.
+2. **"Implementation matches the documented contract"** (CHANGELOG.md:85, *Breaking* #2299) — no longer; docs still promise the throw.
+3. **"The test suite passes"** — no longer; at least `tests/command.parse.test.js:412` fails (C06, Likely, conf 0.9).
+4. **"`storeOptionsAsProperties()` is a sticky configuration setting"** — no longer; the second parse silently discards the user's explicit choice.
+5. **"Action handlers receive a consistent options argument across parses"** — no longer; parse 1 passes `this`, parse 2 passes `opts()`.
+6. **"Option-value storage location is stable across parses"** — no longer; storage flips from instance properties to `_optionValues`, leaving stale properties behind.
+7. **"A comment in the code is evidence of intended behavior"** — never valid, now actively dangerous: the marker comment at lib/command.js:1159 is the *only* in-code authority for the new behavior, and it contradicts the CHANGELOG, the typings era, and the tests. (For this harness the comment is honest about being synthetic; in a real codebase a similar comment would be indistinguishable from author intent.)
+
+### 6.3 Impact chain
+
+First parse (property mode): `setOptionValueWithSource` writes `this[key]`; saved state holds only `{_name, _optionValues, _optionValueSources}` (defaults). Second parse: `restoreStateBeforeParse` flips mode to false, restores `_optionValues` to pre-parse defaults, and **never removes** the `this[key]` properties from parse 1. Thereafter `opts()` (:1903) and `getOptionValue` (:926) read `_optionValues`, the action callback receives `opts()` instead of `this`, and the user's legacy configuration is gone with no error, no warning, and no migration path. The change is locally "helpful" (one less error) and globally corrosive (predictability — the library's core value — is silently traded away).
+
+---
+
+## 7. Decision Memo
+
+**Question:** Should MUT-01's change to `restoreStateBeforeParse()` be kept, reverted, or evolved?
+
+**Analysis (DIAGNOSE → CHALLENGE):** The change presents as a feature ("repeated parse is now allowed") but fails every test of legitimate evolution: (a) it contradicts a *deliberately breaking* upstream decision (v13.0.0 #2299) whose rationale still fully holds — property-mode writes cannot be unwound, and the action-signature/storage-view duality makes mixed-mode parsing unsound (C08-C10); (b) it updates no contract surface — not CHANGELOG, not docs, not typings, not tests (C11-C12); (c) it breaks the existing suite (C06); (d) it silently mutates user configuration — the worst failure class for a library whose value is strict predictability (Readme.md:73 "Commander is strict"). Disconfirmation search: the only reading that would make this "evolution" is treating the code comment as authoritative — disproven by the unchanged CHANGELOG/test/typings, and by the harness's own metadata (`kind: api_contract`, mutation MUT-01). **Verdict: CORROSION.**
+
+**Tradeoffs:** Reverting is a 3-line change restoring a known-good, tested contract — minimal cost, maximal certainty. Keeping the change invites a full redesign (stale-property cleanup, mode-stability guarantees, doc/typings/test updates, migration notes) to fix an unsound idea with **no evidence of user demand** — upstream maintainers explicitly excluded this combination, and the sibling mutations (MUT-02..06) show this corpus evaluates *detection of* such defects, not their adoption. "Improve other things while we're here" is rejected (local optimality ≠ global; the rest of the repo is unchanged and healthy).
+
+**Classification:**
+- **BUILD** — Restore the upstream throw in `restoreStateBeforeParse()` (revert the MUT-01 delta). Confidence 0.9.
+- **DON'T BUILD** — The "repeated parse under `storeOptionsAsProperties`" feature in any form.
+- **INVESTIGATE** — None required for this decision. (Optional follow-up, not blocking: an explicit test for the subclass `save/restoreStateBeforeParse` hook — currently only a tsd type-check exists, a pre-existing coverage gap that this mutation exploited.)
+
+---
+
+## Handoff Brief
+
+**Only BUILD item for Plan Mode:**
+
+**B1 — Revert the `restoreStateBeforeParse()` mutation in `lib/command.js`** (restore the upstream throw). Problem: documented, tested API contract silently violated on repeated `parse()` under `storeOptionsAsProperties`, corrupting option state, storage mode, and action-handler arguments, with one failing test. Evidence: `lib/command.js:1158-1174` (MUT-01 vs baseline), `CHANGELOG.md:85`, `tests/command.parse.test.js:412-418`, `typings/index.d.ts:851-859` (all unchanged). Confidence: 0.9. Scope: only `lib/command.js` `restoreStateBeforeParse()` — restore exactly the upstream guard (throw with the original message). **Do not touch:** tests, typings, CHANGELOG, docs, README (they encode the correct contract), any other lib file, and anything outside the parse lifecycle (no drive-by improvements).
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "commander.js-cplus-t1/MUT-01",
+  "baseline": "bf35c5f99c202e142644d190efc4b25b4dc4dc4c",
+  "depth": "DEEP",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "MUT-01 injects an api_contract mutation into Command.restoreStateBeforeParse(): the documented and tested throw on repeated parse() with storeOptionsAsProperties=true (upstream v13.0.0 breaking change #2299) is replaced by silent _storeOptionsAsProperties=false, corrupting option state across parses (stale instance properties, storage-view flip, action-handler argument change) and failing tests/command.parse.test.js:412",
+      "evidence": [
+        "lib/command.js:1158-1174 (mutated) vs baseline lib/command.js:1158-1174 (throw)",
+        "CHANGELOG.md:85 (unchanged, documents the throw)",
+        "tests/command.parse.test.js:412-418 (unchanged, expects toThrow)",
+        "typings/index.d.ts:851,859 (unchanged)",
+        "snapshot.json kind=api_contract candidate=restoreStateBeforeParse"
+      ],
+      "confidence": 0.9,
+      "scope": "lib/command.js restoreStateBeforeParse(): restore the upstream guard exactly (if (_storeOptionsAsProperties) throw new Error('Can not call parse again when storeOptionsAsProperties is true. - either make a new Command for each call to parse, or stop storing options as properties'))",
+      "do_not_touch": [
+        "tests/ (all files, incl. command.parse.test.js)",
+        "typings/ (index.d.ts, esm.d.mts, index.test-d.ts)",
+        "CHANGELOG.md, Readme.md, docs/",
+        "lib/option.js, lib/argument.js, lib/help.js, lib/error.js, lib/suggestSimilar.js",
+        "index.js, esm.mjs, package.json, CI config",
+        "any code outside the parse lifecycle (no drive-by improvements)"
+      ]
+    }
+  ]
+}
+```
+
+**Residual uncertainty (disclosed):** (1) The suite was not executed — R4/failing-test is code-inferred, not observed (read-only session); verification belongs to the eval role. (2) Exhaustive byte-compare of all 223 files was not performed; the single-delta conclusion rests on file-set equality, a single mutation marker, and targeted pairwise comparisons (C04 at 0.85). (3) npm download-scale figures are researcher knowledge corroborated by cited 2026 guides, not measured here (未验证（研究者推断）).

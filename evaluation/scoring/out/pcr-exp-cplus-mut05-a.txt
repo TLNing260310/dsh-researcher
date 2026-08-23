@@ -1,0 +1,194 @@
+# Project Cognition Report — commander.js v14.0.3 (Snapshot MUT-05)
+
+**Runtime Proof:** Researcher Runtime Certificate **Run #2**, Overall **SAFE** — preset `researcher-deep` bound, sandbox read-only, approval policy `never`, write/edit refusing stubs, `git_read` as the only code surface, checkpoint available, replay consistent. Depth: **DEEP** (all eleven moves; evaluation override D002). This session is read-only; no file was created or modified.
+
+**Executive finding:** MUT-05 contains exactly one synthetic mutation, self-marked `// MUT-05 (synthetic)` at `lib/command.js:605`, in `Command._callParseArg` — the choke point that converts `InvalidArgumentError` (code `commander.invalidArgument`) into the standard commander error pipeline. The mutation deletes the `this.error(...)` call, rethrows the raw error, and adds a new `else if` branch that wraps plain-Error/non-Error throws into a **new, undocumented error code** `commander.invalidArgumentValue` plus unreachable dead code. Everything else in the repository is pristine v14.0.3. Four sibling snapshots (MUT-01/02/04/06) built from the same t0 commit prove the pristine form. **The mutation is corrosion, not evolution**: it breaks documented contracts (Readme, semver-stable error codes), fails ≥6 pristine tests, and fails the project's own ESLint CI.
+
+---
+
+## 1. Project Identity
+
+| Attribute | Value | Evidence |
+|---|---|---|
+| Name | `commander` — "the complete solution for node.js command-line programs" | package.json:2-4 |
+| Version | 14.0.3 (released 2026-01-31; current release line) | package.json:3; CHANGELOG.md:11 |
+| Author / License | TJ Holowaychuk; MIT; repo tj/commander.js | package.json:15-20 |
+| Engine | Node.js ≥ 20 (14.x line requirement) | package.json:78-80 |
+| Module system | CommonJS core + ESM wrapper (`esm.mjs`); dual-package `exports` map with per-condition typings | package.json:43-61 |
+| Language surface | 6 JS lib files (2,781-line `command.js` core), 2 typings files, ~95 jest test files, tsd + tsc type checks | glob listing |
+| Snapshot identity | MUT-05 = synthetic mutation, kind `compatibility_constraint`, candidate **"error code: commander.invalidArgument"**, base t0 = upstream commit `bf35c5f9…`, single synthetic git commit (no history to diff) | snapshot.json:3-10 |
+| Position in corpus | One of six sibling snapshots (MUT-01…06), each an independent single-area injection over the same t0 | snapshot.json files, sibling workspaces |
+
+**Mission** (what it is for): a zero-dependency, batteries-included argument-parsing and command-dispatch library that lets Node CLI authors declare options/arguments/subcommands fluently, get professional help output, and get **stable, documented error codes** (`CommanderError.code`, `exitCode`) that downstream tooling can rely on across semver minor versions.
+
+**Users**: CLI application developers (via `program.option(...)`, `addCommand`, `exitOverride`, custom `parseArg`); indirectly every end user of those CLIs. commander.js is one of the most widely installed npm packages; this code is in millions of production CLIs. (Population claim is background knowledge — 未验证（研究者推断）, not needed for the decision.)
+
+**Value mechanism**: declarative command model → deterministic parse pipeline → uniform error/help/exit behavior. The error-code contract is the *value*: `tests/command.exitOverride.test.js:5-7` states it explicitly — "The important checks are the exitCode and code which are intended to be stable for semver minor versions."
+
+**Current state**: pristine v14.0.3 with a single injected defect in `_callParseArg`. Test suite and docs untouched (verified identical to sibling snapshots). The repository's own CI gates (`npm run check:lint`, `test`) would fail on this snapshot.
+
+---
+
+## 2. Architecture Map
+
+```
+index.js (CJS entry) ──┬── lib/command.js   (Command extends EventEmitter — the orchestrator, 2,781 lines)
+                       ├── lib/option.js    (Option + DualOptions; flag syntax, defaults, choices, env, conflicts, implies)
+                       ├── lib/argument.js  (Argument; <name>/[name]/variadic syntax, choices)
+                       ├── lib/help.js      (Help + stripColor; help text generation, styling hooks)
+                       ├── lib/error.js     (CommanderError, InvalidArgumentError — the error-code carriers)
+                       └── lib/suggestSimilar.js (Damerau–Levenshtein suggestion engine)
+esm.mjs (ESM wrapper re-exporting the CJS entry)
+typings/index.d.ts + esm.d.mts (hand-written public API types; checked by tsd + tsc)
+```
+
+**Parse pipeline** (all in `lib/command.js`): `parse()/parseAsync()` → `_prepareForParse()` (save/restore state, :1131) → `_prepareUserArgs()` (argv slicing, electron/eval/node detection, :1005) → `_parseCommand()` (:1554) → `parseOptions()` (token loop: literals, short combos, `--x=y`, negative-number detection, positional/pass-through modes, :1752) → option listeners (`addOption` registers `option:name` handler → `_callParseArg`, :696-727) → subcommand dispatch (`_dispatchSubcommand`/`_executeSubCommand` spawn, :1356/:1206) → argument processing (`_processArguments` → `_callParseArg` per value, :1432) → hooks chain (`preSubcommand`/`preAction`/`postAction`, :1485-1553).
+
+**Error pipeline** (the mutated seam): all user-facing failures converge on `error(message, {code, exitCode})` (:1944) → writes via `_outputConfiguration.outputError`, optionally shows help (`showHelpAfterError`) or suggestions (`showSuggestionAfterError`) → `_exit` (:533) → `_exitCallback(new CommanderError(...))` if `exitOverride()`, else `process.exit()`. `_callParseArg` (:599) is the adapter that converts a user's `InvalidArgumentError` from custom `parseArg`/choices into this pipeline, prefixing the contextual message (`error: option '…' argument '…' is invalid.` / `error: command-argument value '…' is invalid for argument '…'.`).
+
+**Three entry points into the mutated function** — all affected: option CLI values (:706), option env-var values (:731-733 → :706), command-argument values (:1438).
+
+**Help pipeline**: `helpInformation()` (:2454) → `createHelp()` (overridable factory) → `Help.prepareContext`/`formatHelp` (help.js:29/:443) with pluggable `style*` hooks, width/wrap calculations, grouping, color stripping. Version/help exits use the same `_exit` contract (`commander.version`, `commander.helpDisplayed`, :2210/:2696).
+
+---
+
+## 3. Critical Components
+
+1. **`Command._callParseArg`** (lib/command.js:599-613) — **the mutation site.** Conversion point for invalid-argument errors; the only place `commander.invalidArgument` is consumed (:603).
+2. **`CommanderError` / `InvalidArgumentError`** (lib/error.js:4-36) — the stable error-code carriers; `InvalidArgumentError` hard-codes `code = 'commander.invalidArgument'`, `exitCode = 1` (:31). Unchanged by the mutation.
+3. **`Command.error`/`_exit`/`exitOverride`** (lib/command.js:1944-1961, 508-554) — the documented error contract (Readme.md:1110-1131: "The default override throws a `CommanderError`").
+4. **`parseOptions` + option/argument value handlers** (:1752, :696-727, :1432-1474) — where user values flow into `_callParseArg`; includes negative-number detection, `--` literal handling, combined short flags, variadic collection.
+5. **`Option`/`Argument` parseArg + choices validation** (option.js:181, argument.js:98) — the producers of `InvalidArgumentError`; `choices()` installs a validating parseArg, so choice mismatches also flow through the mutated seam.
+6. **`Command._parseCommand`** (:1554-1645) — orchestration; notably has **no try/catch** around `_processArguments`/`parseOptions`, so the raw error escapes straight to the caller of `parse()`.
+7. **`Help`** (help.js) — overridable help generator; independent of the mutation but part of the error UX (`showHelpAfterError` renders through it).
+8. **`suggestSimilar`** (suggestSimilar.js) — Damerau–Levenshtein, similarity threshold >0.4, used for unknown option/command suggestions; independent of the mutation.
+
+---
+
+## 4. Design Decisions
+
+- **Stable error codes as semver contract** — codes like `commander.invalidArgument`, `commander.missingMandatoryOptionValue`, `commander.unknownOption` are public API, pinned by tests (exitOverride.test.js:5-7) and documented in CHANGELOG (e.g., CHANGELOG.md:461 documents the v7 rename `commander.invalidOptionArgument` → `commander.invalidArgument`). *This is the constraint the MUT-05 injection targets.*
+- **Single error funnel** — every failure goes through `error()` → `_exit()` so output, help-after-error, suggestions, and exit/override behavior stay consistent.
+- **`_callParseArg` as the adapter** — user `parseArg` may throw `InvalidArgumentError` (documented pattern, Readme.md:470-478) or anything else; the adapter prefixes context, converts to the funnel, and lets non-invalid errors propagate raw (plain errors must NOT become CommanderError — pinned by argument.custom-processing.test.js:168-187).
+- **Override factories** (`createCommand/createOption/createArgument/createHelp`, `.command()` inheritance via `copyInheritedSettings`) — extensibility without subclassing.
+- **Event-driven option values** (`option:name` / `optionEnv:name` events) with `setOptionValueWithSource` provenance tracking (default/env/cli/implied).
+- **Dual-package CJS/ESM + hand-written typings**, checked by tsd + tsc under `checkJs` (tsconfig.json:17-18) — the "type safety without TypeScript" decision.
+- **Executable subcommands** spawn with node-flag forwarding (`incrementNodeInspectorPort`), extension probing (.js/.ts/.mjs/.cjs), and signal relay (:1206-1350).
+- **Help as data** — `Help` methods are static-in-style for override; width/wrap/color all pluggable.
+
+---
+
+## 5. Risk Map
+
+| # | Risk | Evidence | Severity | Status |
+|---|---|---|---|---|
+| R1 | **Invalid-argument errors bypass the error pipeline (default mode): uncaught exception + stack trace instead of clean `error: …` message + exit(1)**. Root cause: deleted `this.error(...)` at the mutation site | MUT-05 command.js:603-611; pristine at MUT-01/02/04/06:603-606; `_parseCommand` has no catch (:1554-1645) | **High** — every end user of every commander-based CLI on a bad option value | **CONFIRMED (mutation)** |
+| R2 | **`exitOverride()` contract broken**: callers receive raw `InvalidArgumentError` (message without option/argument context) instead of the documented `CommanderError`; `showHelpAfterError`/`showSuggestionAfterError` never fire for this class | Readme.md:1110-1131; showHelpAfterError.test.js:94-105; error() path skipped | **High** — programmatic consumers | **CONFIRMED (mutation)** |
+| R3 | **New undocumented error code `commander.invalidArgumentValue`** (plain-Error/non-Error throws from parseArg now wrapped) — silent API expansion, violates code-stability contract; code exists nowhere in pristine lib, docs, or tests | command.js:608; grep MUT-04 lib: absent; CHANGELOG.md:461 | **Medium** — consumer code dispatching on codes | **CONFIRMED (mutation)** |
+| R4 | **CI failure**: `npm run check:lint` fails — `no-unreachable` (dead `this.error` after `throw`, :609) and `no-unused-vars` (`const message` never read, :604) under eslint:recommended + tseslint recommended | eslint.config.js:13-14, 39-42 | **High** — blocks any release pipeline | **CONFIRMED (mutation)** |
+| R5 | **≥6 pristine tests fail**: 4 in exitOverride.test.js:310-400 (exact-message mismatch; instanceof/exitCode/code still pass since raw `InvalidArgumentError` is a `CommanderError` subclass with the same code); 1 in showHelpAfterError.test.js:94-105 (writeMock never called); 1 in argument.custom-processing.test.js:168-187 (plain error wrongly wrapped, `not.toBeInstanceOf(CommanderError)` fails) | test files read; helper at exitOverride.test.js:11-16 | **High** — mutation is test-visible | **CONFIRMED (mutation, analysis-based: tests not executable here)** |
+| R6 | **`exitOverride.test.js:448-460` false-negative**: `toThrow('custom')` is a substring match; the wrapped message `… is invalid. custom` still contains 'custom' → this test passes under the mutation despite changed error type | exitOverride.test.js:448-460 | Low (informational) | Confirmed by analysis |
+| R7 | Residual unknowns: exact pass/fail count requires executing jest/eslint (read-only session — impossible); upstream web verification unavailable (no web provider registered) — pristine baseline instead proven by 4 sibling snapshots of the same t0 commit | C12; sibling reads | Low | Disclosed |
+| R8 | Environmental: Node ≥20 requirement (14.x), 13.x maintenance until 2026-05-18 (release-policy.md:12-16) — no impact on the mutation decision | package.json:78-80 | Informational | — |
+
+---
+
+## 6. Change Impact Analysis
+
+### 6.1 What changed vs the previous snapshot (MUT-04) and vs pristine t0
+
+| Area | Pristine t0 (all siblings) | MUT-04 (previous) | MUT-05 (this) |
+|---|---|---|---|
+| `_callParseArg` (command.js:599-613) | `this.error(message, {exitCode, code})` on `commander.invalidArgument`; raw rethrow otherwise | identical to pristine | **MUTATED**: `this.error` replaced by `// MUT-05 (synthetic)` comment; new `else if (!(err instanceof Error) \|\| err.code === undefined)` wrapping into `CommanderError(1, 'commander.invalidArgumentValue', …)`; unreachable `this.error(...)` after `throw` |
+| `_checkNumberOfArguments` / `_excessArguments` (command.js:1407-1424, 2150) | excess check in `_processArguments` | **MUTATED** (check moved to parseOptions exit; markers at :1418, :1750) | **restored to pristine** (:1422 `this._excessArguments(this.args)`) |
+| `parseOptions` (command.js:1752) | pristine | MUT-04 marker comment at :1750 | pristine |
+| lib/error.js:31 | `super(1, 'commander.invalidArgument', message)` | identical | identical |
+| Test suite (95 files) | — | pristine | **pristine** (same file set, same pinning assertions — verified against MUT-04) |
+| Docs / CHANGELOG / package.json | — | identical | identical (docs spot-verified; subagent verified deprecated.md/options-in-depth.md/help-in-depth.md) |
+| `instanceof Error` / `invalidArgumentValue` in lib | absent | absent | present **only** in the injected branch (single occurrence each) |
+
+### 6.2 Previous assumptions that no longer hold
+
+1. **"Invalid-argument failures always flow through `this.error()` and exit via `_exit`"** (true in t0 and MUT-04) — **no longer holds**: in MUT-05 the raw `InvalidArgumentError` escapes `parse()`; default mode yields an uncaught exception; override mode yields an unpiped error; help-after-error/suggestion never trigger.
+2. **"Error codes are produced exclusively by `error()`/`CommanderError` and the set of codes is closed"** — violated: `commander.invalidArgumentValue` appears from nowhere; the semver-stable code set is silently extended.
+3. **"Plain `Error` throws from custom `parseArg` propagate raw"** (pinned by argument.custom-processing.test.js:168-187 and exitOverride.test.js:448-460) — **no longer holds** for code-less errors: they are now wrapped as `CommanderError('commander.invalidArgumentValue')`.
+4. **"The snapshot passes its own CI"** (assumption carried from the pristine series) — **no longer holds**: eslint `no-unreachable`/`no-unused-vars` fail; 6 tests fail.
+5. **"MUT-04's area (excess-arguments timing) is the current deviation"** — no longer holds: MUT-04's injection is gone (restored to t0); the deviation moved to the error-code pipeline. (Each snapshot is an independent injection over the same t0 — MUT-05 does not *contain* MUT-04's change.)
+6. **Held assumptions confirmed**: tests are the untouched spec; docs/CHANGELOG/typings unchanged; `InvalidArgumentError` code string itself unchanged — the mutation attacks the *handling* of the code, not its production.
+
+### 6.3 Change impact (what a repair touches)
+
+- **Repair surface**: exactly one function, `_callParseArg` (lib/command.js:599-613) — restore the t0 form: reinstate `this.error(message, { exitCode: err.exitCode, code: err.code });` in the `commander.invalidArgument` branch; delete the `// MUT-05 (synthetic)` comment, the `else if` branch, and the unreachable `this.error`. No other file changes; no docs, typings, or tests change.
+- **Blast radius of the repair**: zero beyond the seam — all three call sites (:706, :731→:706, :1438) and both modes (sync/async parse) return to documented behavior; the 6 failing tests + full suite + `npm run check:lint` are the verification net.
+- **Explicitly do not touch**: `lib/error.js` (correct), the test suite (pristine spec), typings, `_checkNumberOfArguments`/`_excessArguments` (pristine in this snapshot), docs.
+
+---
+
+## 7. Decision Memo
+
+**Context.** This snapshot is commander.js v14.0.3 plus one synthetic, self-marked mutation (`compatibility_constraint`, candidate `error code: commander.invalidArgument`). The injected change sits at the single chokepoint that turns a user's `InvalidArgumentError` into commander's standardized error pipeline, and it replaces that conversion with a comment, a raw rethrow, a fabricated error code, and dead code. It violates the project's own documented, semver-stable error contract (exitOverride.test.js:5-7; Readme.md:1110-1131; CHANGELOG.md:461), degrades end-user CLI error UX to uncaught stack traces, silently changes plain-Error propagation, and breaks the project's lint gate.
+
+**Corrosion, not evolution** (CHALLENGE verdict): the marker comment admits synthetic origin; the unreachable statement and unused variable could not pass the project's own CI, which every upstream PR must pass; four independent siblings of the same t0 commit agree on the pristine form; no CHANGELOG entry, doc, or test references the new code. Every disconfirmation attempt (upstream source? adapted tests? intentional feature? different mutation site? changed `InvalidArgumentError` code?) failed; the evidence is uniform.
+
+**Classification:**
+- **BUILD** — Repair: restore `_callParseArg` (lib/command.js:599-613) to the t0 implementation. High confidence, near-zero risk, verified by the untouched 95-file suite + lint.
+- **DON'T BUILD** — anything else: no feature work, no "improvement" to keep the `else if` (the pristine suite pins the opposite behavior; keeping it would require changing the spec — forbidden here), no test changes, no docs changes, no dependency changes.
+- **INVESTIGATE** — one residual item, verification-only: execute `npm test` and `npm run check:lint` (impossible in this read-only session) to confirm the predicted 6 test failures and 2 lint errors; expected counts per R5/R4.
+
+**Verification net for the repair** (for Plan Mode): full jest suite (expect 0 failures after repair), `npm run check:lint` (expect clean), `npm run check:type` + `check:format` (expected unaffected). The repaired function must be byte-equivalent in behavior to MUT-01/02/04/06 `lib/command.js:599-609`.
+
+---
+
+### Handoff brief — BUILD items only
+
+**Human-readable:**
+
+| ID | Item | Problem it solves | Evidence | Confidence |
+|---|---|---|---|---|
+| B1 | Restore `Command._callParseArg` (lib/command.js:599-613) to pristine t0: reinstate `this.error(message, { exitCode: err.exitCode, code: err.code })` in the `commander.invalidArgument` branch; remove the `// MUT-05 (synthetic)` comment, the `else if (!(err instanceof Error) || err.code === undefined)` branch, the `throw new CommanderError(1, 'commander.invalidArgumentValue', message)` and the unreachable `this.error(...)` | Restores documented error-code contract (`commander.invalidArgument` pipeline, exitOverride behavior, message prefixes, showHelpAfterError/suggestions); removes undocumented code `commander.invalidArgumentValue`; restores raw propagation of plain errors; clears eslint `no-unreachable`/`no-unused-vars` | Mutation site vs 4 pristine siblings (MUT-01/02/04/06 command.js:599-609); 6 failing pristine tests; Readme.md:470-478 + 1110-1131; CHANGELOG.md:461 | 0.97 |
+
+Do-not-touch: `lib/error.js`, all tests, typings, docs, and the pristine `_checkNumberOfArguments`/`_excessArguments`/`parseOptions` in this snapshot.
+
+**Machine-readable:**
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "MUT-05",
+  "project": "commander.js v14.0.3 (tj/commander.js)",
+  "runtime_certificate": "Run #2 SAFE",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "Synthetic mutation in Command._callParseArg (lib/command.js:599-613) breaks the 'commander.invalidArgument' error-code pipeline: InvalidArgumentError bypasses this.error()/exitOverride/showHelpAfterError, raw errors escape parse() as uncaught exceptions, plain-Error throws are wrongly wrapped into new undocumented code 'commander.invalidArgumentValue', dead code fails eslint no-unreachable/no-unused-vars; >=6 pristine tests fail",
+      "evidence": [
+        "lib/command.js:599-613 (mutated) vs MUT-01/02/04/06 lib/command.js:599-609 (pristine, identical)",
+        "snapshot.json: kind=compatibility_constraint, candidate='error code: commander.invalidArgument'",
+        "tests/command.exitOverride.test.js:310-400 and :5-7 (semver-stable codes contract)",
+        "tests/command.showHelpAfterError.test.js:94-105",
+        "tests/argument.custom-processing.test.js:168-187 (plain errors must not become CommanderError)",
+        "Readme.md:470-478, 1110-1131; CHANGELOG.md:461",
+        "eslint.config.js:13-14 (eslint:recommended -> no-unreachable, no-unused-vars)",
+        "grep: 'commander.invalidArgumentValue' and 'instanceof Error' absent from pristine lib (MUT-04) and from all tests/docs"
+      ],
+      "confidence": 0.97,
+      "scope": {
+        "file": "lib/command.js",
+        "function": "_callParseArg",
+        "lines": "599-613",
+        "action": "restore exact t0 implementation: this.error(message, { exitCode: err.exitCode, code: err.code }) in the commander.invalidArgument branch; delete MUT-05 comment, else-if branch, CommanderError(1,'commander.invalidArgumentValue',...) throw, and unreachable this.error(...)",
+        "verify": "full jest suite (0 failures), npm run check:lint (clean), behavior parity with MUT-01/02/04/06 command.js:599-609"
+      },
+      "do_not_touch": [
+        "lib/error.js",
+        "tests/**",
+        "typings/**",
+        "docs/**",
+        "lib/command.js _checkNumberOfArguments/_excessArguments/parseOptions (pristine in this snapshot)"
+      ]
+    }
+  ]
+}
+```
+
+**Caveats disclosed (SELF-EVAL):** test/lint failure counts are C3 analysis, not C2 observation — execution is impossible in this read-only session; upstream web verification was unavailable (no web provider); the pristine baseline rests on four identical sibling snapshots of the same t0 commit plus absence of the injected strings everywhere else. All 15 graded claims and the H1→H2 hypothesis trail are committed to the research checkpoint log; the project filesystem was never touched.

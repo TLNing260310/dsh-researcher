@@ -1,0 +1,9 @@
+The optional full-tree diff subagent is stopped. The **Project Cognition Report stands as delivered**, complete and unchanged. Final state:
+
+- **Runtime Proof:** Research Doctor Run #2 — Overall SAFE (read-only, never-approval, refusing stubs, git_read-only shell).
+- **Central finding (Known, 0.97-0.99):** MUT-06 is commander.js v14.0.3 with exactly one injected mutation (`snapshot.json` kind `compatibility_constraint`, candidate `commander.missingMandatoryOptionValue`), explicitly marked at `lib/command.js:2059-2060`. The mutated `missingMandatoryOptionValue` calls `option.flags()` — a string property, with no `flags()` method anywhere in the repo (repo-wide grep) — so the documented `CommanderError` becomes an uncaught `TypeError`, bypassing stderr output, `showHelpAfterError`, `exitOverride`, and `process.exit(1)`.
+- **Detection:** 2 precise contract tests fail (`exitOverride.test.js:290`, `showHelpAfterError.test.js:43`); 3 CI gates trip (jest, prettier, tsc checkJs); 5 coarse `.toThrow()` tests in `options.mandatory.test.js` do **not** detect it.
+- **vs previous snapshot (MUT-05):** MUT-05's `_callParseArg` mutation is absent (pristine restored, verified against MUT-01/t0 reference + line-count arithmetic 2777/2778/2781); MUT-06's only delta is its own mutation. Assumptions from the MUT-05 analysis that no longer hold are listed in §6.
+- **Decision Memo / handoff:** BUILD — revert `lib/command.js:2058-2062` to the pristine message line and delete both `// MUT-06 (synthetic)` markers; nothing else changes; `research_handoff.json` block included in the report.
+
+The claim ledger (14 claims, C0-C4 graded), hypotheses (H1/H2, versioned), and view dependencies are committed via research_checkpoint; the report is the complete deliverable.

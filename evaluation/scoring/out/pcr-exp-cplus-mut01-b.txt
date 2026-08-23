@@ -1,0 +1,155 @@
+State committed (18 claims; H1/H2 invalidated with evolution trail; H3/H4 active; dirty views project_model/diagnosis/classification are recomputed by this report). Analysis complete — here is the report.
+
+---
+
+# Project Cognition Report — commander.js @ MUT-01 snapshot
+
+**Runtime Proof**: Researcher Runtime Certificate Run #2 — Preset PASS (researcher-deep), Sandbox PASS (read-only), Approval PASS (never), Write tools PASS (stubs), Shell surface PASS (git_read only), Checkpoint PASS, Replay PASS → **Overall: SAFE**. Prior cognition state imported (16 claims, H1/H2, 3 views) and re-exported; all verification below is against the current snapshot `2ffb807`.
+
+---
+
+## 0. What changed vs. the previous snapshot (and what no longer holds)
+
+**Previous snapshot**: HEAD `bf35c5f` (2026-02-02) — upstream commander.js **v14.0.3** tree with real git history (release commit `8247364`, two dependabot package-lock-only bumps on top).
+
+**Current snapshot**: HEAD `2ffb807` **"ci repository snapshot"** (2026-08-23), clean tree, **single squashed commit** (history rewritten — release commit, dependabot bumps, and all forensics beyond tree content are gone). Package version still `14.0.3` (package.json:3); CHANGELOG still tops at `[14.0.3] (2026-01-31)` (CHANGELOG.md:11).
+
+| Item | Previous (bf35c5f) | Current (2ffb807) | Verdict |
+|---|---|---|---|
+| Git history | Real upstream history | One squashed commit | Changed (metadata only) |
+| package.json version | 14.0.3 | 14.0.3 | Unchanged |
+| CHANGELOG head | 14.0.3 (2026-01-31) | 14.0.3 (2026-01-31) | Unchanged |
+| lib/command.js `restoreStateBeforeParse()` | Throws on repeated `.parse()` with `storeOptionsAsProperties` | **MUT-01: silently flips flag to false, no throw** | **CHANGED — the only content change** |
+| All other lib files, typings, docs, CI, tests, tree shape (223 paths) | upstream v14.0.3 | identical (anchors verified, below) | Unchanged |
+
+**Verification that MUT-01 is the only content change** (tier C2, confidence 0.9): the marker comment `// MUT-01 (synthetic): repeated parse is now allowed under storeOptionsAsProperties.` (lib/command.js:1159) is the only `MUT`/`synthetic` match in the entire tree; every prior-session line anchor still matches exactly (`_executeSubCommand` at 1202–1346, `useColor` at 2752–2774, `parseOptions` at 1748, `_parseCommand` at 1550, `option:`/`optionEnv:` events at 720/726, `unknownOption` at 2114, `_excessArguments` at 2146, `negativeNumberArg` at 1757); file lengths match (help.js:747, typings/index.d.ts:1113, docs/deprecated.md:258); 13 `require()` calls all Node builtins/internal (C03); CI matrix node 20/22/24 × ubuntu/windows/macos (tests.yml:15–16); sponsors shadowspawn/abetomo (package-support.json:13–14). Caveat: no web provider this session, so no upstream diff was possible — "only one change" rests on the explicit marker + local anchors (residual uncertainty ~0.1, see R3).
+
+**Previous assumptions that no longer hold:**
+
+1. **H1 "mature library at a maintenance plateau; requires no intervention" — INVALIDATED.** True for the upstream tree, false for this snapshot: it contains one real defect (H3 replaces it).
+2. **C15 "No corrosion found" — INVALIDATED.** MUT-01 is a deviation from the project's own documented contract (v13 breaking change, CHANGELOG.md:85) with no doc or test update — corrosion by the project's own standards.
+3. **C10b "Test suite passes on HEAD" (was C0/Claimed) — now CONTRADICTED.** `tests/command.parse.test.js:412-418` still asserts `expect(() => { program.parse(); }).toThrow();` on the second parse; MUT-01 removed the only throw on that path (verified against the full inventory of 18 `throw new` sites in command.js). The suite cannot pass on this tree (static inference, not executed — 未验证（研究者推断）that the run would fail, but the assertion logic is unambiguous).
+4. **C05 strict-by-default parsing — partially broken.** Unknown-option, excess-argument, and negative-number guards all intact; the *repeated-parse-with-storeOptionsAsProperties* guard is gone.
+5. **C02 snapshot metadata** — superseded (new HEAD, squashed history).
+6. **C10a test count** — corrected from ~91 to **111** test files (109 `.test.js` + `ts-imports.test.ts` + `esm-imports-test.mjs`); the prior figure was an artifact of a capped listing, not a real change.
+7. **Calendar note (not an assumption, but new context)**: 13.x reached EOL 2026-05-18 (docs/release-policy.md:15); the snapshot date (2026-08-23) is after it, so 14.x is the only supported line. The tree content itself predates this (frozen at 14.0.3).
+
+---
+
+## 1. Project Identity
+
+- **What it is**: commander.js, "the complete solution for node.js command-line interfaces" (Readme.md:8, package.json:4) — a declarative CLI framework for Node.js: options, arguments, subcommands, automated help, hooks, executable subcommands. (C01, Known, 0.9)
+- **Snapshot identity**: upstream **v14.0.3** + exactly one synthetic mutation, **MUT-01** (workspace `commander.js-cplus-t1/MUT-01`, marker lib/command.js:1159). (C02/C17, Known, 0.9)
+- **Non-negotiables**: zero runtime dependencies (C03, Known, 0.98); Node ≥ 20 (package.json:79); MIT license; CommonJS core with ESM wrapper and dual typings.
+- **Maintainers**: shadowspawn (John Gee), abetomo (Abe Tomoaki); time-permitting support, sponsor-funded (C12, Known, 0.9).
+
+## 2. Architecture Map
+
+Unchanged from prior model (C06, Known, 0.9) — verified anchors this session:
+
+- **Core**: `Command extends EventEmitter` (lib/command.js:1); option values flow through `option:`/`optionEnv:` events (720–726, 1787–1984) with per-value source tracking (default/env/cli/implied/config).
+- **Parse pipeline**: `parse()`/`parseAsync()` → `_prepareForParse()` (first call `saveStateBeforeParse()`, later calls `restoreStateBeforeParse()` — **the mutated function**) → `_prepareUserArgs()` (node/user/electron/eval origins, 1001–1055) → `_parseCommand()` recursive dispatch (1550) → single-pass `parseOptions()` state machine splitting operands/unknown (1748–1895) with negative-number disambiguation (1757).
+- **State restore contract (v13+, CHANGELOG.md:85)**: repeated `.parse()` is supported by saving/restoring `_name`, `_optionValues`, `_optionValueSources`, `args`, `processedArgs`, `rawArgs` (1141–1174) — *unless* `storeOptionsAsProperties` is enabled, in which case upstream **throws** rather than attempt a restore. **MUT-01 replaces that throw** (1159–1161).
+- **Help system**: extensible `Help` class with style*/format* methods, `configureHelp`/`configureOutput`, help groups (14.0.0), color conventions via `useColor()` (2752–2774, color off by default) (C07, Known, 0.9).
+- **Executable subcommands**: `child_process.spawn`, extension probing `.js/.ts/.tsx/.mjs/.cjs`, signal forwarding, inspector-port increment, Windows ENOENT/EACCES handling (1202–1346; C08, Known, 0.9).
+- **Packaging**: `index.js` facade; `exports` map with CJS/ESM branches + per-branch types (package.json:45–61); hand-maintained `typings/index.d.ts` (1113 lines) + `typings/esm.d.mts`; JSDoc type-checked via `tsc -p tsconfig.js.json`; tsd type tests (C09, Known, 0.9).
+- **Quality gates**: jest (111 test files), eslint/prettier, tsd/tsc, CodeQL; CI matrix 20/22/24 × 3 OS (C04, Known, 0.95).
+
+## 3. Critical Components
+
+| Component | Location | Status in this snapshot |
+|---|---|---|
+| `restoreStateBeforeParse()` | lib/command.js:1158–1174 | **MUTATED — defect** |
+| `_prepareForParse()` (save/restore dispatch) | lib/command.js:1127–1133 | Intact; invokes the mutated path on every parse after the first |
+| `storeOptionsAsProperties()` setter + guards | lib/command.js:905–916 | Intact (still throws if called after options added, :907) |
+| Option value plumbing (`setOptionValueWithSource` :953–959, `getOptionValue` :925–930, `opts()` :1902–1917, action dispatch :556–572) | lib/command.js | Intact — but behavior *depends on* the mutated flag, which is why MUT-01 corrupts them |
+| `parseOptions()` state machine / `_parseCommand` / `_excessArguments` / `unknownOption` | lib/command.js:1748, 1550, 2146, 2114 | Intact |
+| `Help` class / `useColor` / `stripColor` | lib/help.js (747 lines) | Intact |
+| Typings (index.d.ts, esm.d.mts) | typings/ | Intact — no typing reflects the removed error (the error is runtime-only, so typings cannot catch MUT-01) |
+| The guard test | tests/command.parse.test.js:412–418 | Intact — **now failing** |
+
+## 4. Design Decisions
+
+All prior decisions hold (C15 partially; verified this session):
+
+- **Zero runtime dependencies** — deliberate constraint; color handled by convention checks in `useColor()` rather than a dep (C03).
+- **EventEmitter parse pipeline** — public custom-listener API, kept deliberately (C15).
+- **`process.exit` control flow** — documented, with `exitOverride` escape hatch (C15).
+- **ESM wrapper + dual typings** — avoids the dual-package hazard without a build step (C15).
+- **Strict-by-default errors with opt-outs** — `allowUnknownOption`/`allowExcessArguments`/negative-number handling (C05).
+- **Repeated-parse support via state save/restore** (13.0.0, #2299) with the `storeOptionsAsProperties` incompatibility enforced by a hard throw — **this is the decision MUT-01 violates**.
+- **Compat-window policy** (docs/release-policy.md): semver; majors ~6 months; current line gets everything, previous major security-only for 12 months; 13.x EOL 2026-05-18 (now past; 14.x sole line).
+
+## 5. Risk Map
+
+| ID | Risk | Evidence | Severity |
+|---|---|---|---|
+| **R1 (NEW)** | **MUT-01 silent corruption**: second `.parse()` on a `storeOptionsAsProperties` command no longer errors; the flag is permanently flipped to `false`, so new values land in `_optionValues` (954–958) while **stale first-parse values remain on command properties** (restore never clears them, 1164–1173) → `program.foo` silently returns wrong data; `opts()` and property access diverge; the action handler's "options" parameter shape changes between parses (561–565: first parse passes `this`, second passes `this.opts()`). | lib/command.js:1158–1174 + trace sites | HIGH impact if hit (silent data corruption), LOW probability (rare combination), **silent failure mode** |
+| **R2 (NEW)** | **Suite red on this tree**: `command.parse.test.js:412-418` fails → `npm test`/CI green-ness cannot hold; any verification built on this snapshot inherits the failure. | C10b (Contradicted) | MEDIUM (blocks verification workflows) |
+| **R3 (NEW)** | Residual uncertainty that MUT-01 is the *only* deviation (~0.1): no web diff possible this session; unmarked second mutations in unexamined regions cannot be 100% excluded. | C17 caveat | LOW |
+| R4 (carried) | External evidence gap persists: downloads/dependents/advisory state unverifiable (no web provider). | C13 (Likely, 0.6) | LOW |
+| R5 (carried, updated) | Support-window pressure: 13.x EOL passed (2026-05-18); 14.x is the sole line; next major due on ~6-month cadence (last major 2025-05-18) — frozen tree contains no post-14.0.3 release work. | docs/release-policy.md:14–15 | LOW |
+| R6 (carried) | Bus factor: 2 maintainers, time-permitting support. | package-support.json | LOW |
+| R7 (carried) | Backward-compat debt: 10+ deprecations held since v7 (docs/deprecated.md, 258 lines); removal only at majors. | C14 (Known, 0.95) | LOW |
+
+## 6. Change Impact Analysis
+
+**Scope of change**: one function, `restoreStateBeforeParse()` (lib/command.js:1158–1174); 2–3 lines replaced; net-zero line shift (all downstream anchors unchanged).
+
+**Impact chain** (C16, Known, 0.9):
+1. **Contract break** — documented v13 breaking change (CHANGELOG.md:85) silently undone; no CHANGELOG entry, no docs/deprecated.md update, no version bump. Any consumer relying on the error now gets none.
+2. **Behavioral corruption** — irreversible flag flip (`storeOptionsAsProperties()` throws after options added, :907); stale property values vs. fresh `_optionValues` divergence; action-handler parameter shape inconsistency between parses.
+3. **Test impact** — exactly one failing test (`command.parse.test.js:412-418`). All other `storeOptionsAsProperties` tests (commander.configureCommand.test.js, options.getset/opts, command.copySettings, command.chain) do not do repeated parse → unaffected. The hooks-based repeated-parse test (command.parse.test.js:380–410) does not use the flag → unaffected.
+4. **Typings/docs/API surface** — untouched; the removed error was runtime-only, so no static signal exists anywhere for this defect. **No test, typing, or doc in this snapshot was updated to legitimize the new behavior** — strong evidence MUT-01 is an injected defect, not an evolution.
+5. **Artifact impact** — none beyond the workspace: no release, no npm artifact affected (version unchanged).
+
+**Direction of change**: corrosion, not evolution. The deviation violates the project's own documented contract, is silent, and is not accompanied by the project's normal evolution signals (CHANGELOG entry, test update, deprecation notice). The convention existed for a reason (restoring state with properties is unsafe: properties can't be reverted, hence the throw); that reason still holds.
+
+## 7. Decision Memo
+
+**For the upstream project (v14.0.3 content)**: no intervention — H1 holds for the upstream tree; maintenance-plateau conclusion stands.
+
+**For this snapshot**: it contains exactly one defect, MUT-01, fully characterized (mechanism, impact chain, failing test). Two coherent positions:
+
+- **Position A — fidelity (recommended if this workspace must mirror upstream v14.0.3 for later phases)**: restore the upstream guard — replace the flag flip (lib/command.js:1159–1161) with the throw (`if (this._storeOptionsAsProperties) throw new Error('...')`). The existing test already asserts the throw; no other change is needed anywhere. Zero risk, 1–2 lines, confidence 0.95 that this fully resolves the deviation, 0.9 that no other deviation exists.
+- **Position B — intentional mutation (if MUT-01 is a planted defect for evaluation)**: do not modify the tree; the deliverable is this report. Auto-"fixing" a planted mutation would destroy the evaluation's purpose. The marker comment and the `MUT-01` workspace name are consistent with this reading.
+
+**Classification**: the finding is fully evidenced (no INVESTIGATE residue). The only actionable item is the conditional BUILD below; everything else in the tree is classified **DON'T BUILD / no change** (mature, healthy, feature-complete upstream content).
+
+---
+
+## Handoff brief (BUILD items only)
+
+**Human-readable**: One conditional build item — restore the repeated-parse guard in `lib/command.js` `restoreStateBeforeParse()` (undo MUT-01) **if and only if** the workspace is meant to mirror upstream v14.0.3 (Position A). If the mutation is intentional (Position B), no build — the report is the deliverable. Do not touch anything else.
+
+**Machine-readable**:
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "build_items": [
+    {
+      "id": "MUT-01-restore-guard",
+      "problem": "restoreStateBeforeParse() no longer throws on repeated .parse() with storeOptionsAsProperties; it silently disables the flag, breaking the documented v13 breaking change (CHANGELOG.md:85), leaving stale first-parse values on command properties while fresh values go to _optionValues, and failing tests/command.parse.test.js:412-418",
+      "evidence": [
+        "lib/command.js:1158-1174 (marker at :1159; flag flip at :1160-1161)",
+        "lib/command.js:561-565, 925-930, 953-959, 1902-1917 (impact trace)",
+        "lib/command.js:907 (flip is irreversible)",
+        "CHANGELOG.md:85 (v13 breaking change: throw on multiple parse with storeOptionsAsProperties)",
+        "tests/command.parse.test.js:412-418 (unchanged test asserting the throw)",
+        "C17: all other files verified identical to previous snapshot (anchors, lengths, tree)"
+      ],
+      "confidence": 0.95,
+      "scope": "lib/command.js restoreStateBeforeParse() only: replace lines 1159-1161 with the upstream throw guard; run tests/command.parse.test.js; no version/CHANGELOG/docs change needed for a workspace-fidelity fix",
+      "do_not_touch": [
+        "tests/ (the guard test is correct and must stay)",
+        "typings/, docs/, lib/help.js, lib/option.js, lib/argument.js, lib/error.js, lib/suggestSimilar.js, index.js, esm.mjs",
+        "package.json, CI workflows, jest/eslint/tsconfig configs",
+        "Do not 'improve' the guard beyond restoring upstream behavior"
+      ],
+      "contingency": "If MUT-01 is an intentionally planted mutation for evaluation (Position B), this build item must be treated as DON'T BUILD and the tree left untouched"
+    }
+  ]
+}
+```
+
+**State committed**: 18 claims (C02, C05, C10a, C10b, C15 revised; C16, C17 added), H1/H2 invalidated with trail, H3/H4 active; dirty views (project_model, diagnosis, classification) recomputed by this report. Prior assumptions that no longer hold: H1 (no intervention needed), C15 (no corrosion), C10b (suite passes), C05 (all strict guards), C02 (snapshot metadata).

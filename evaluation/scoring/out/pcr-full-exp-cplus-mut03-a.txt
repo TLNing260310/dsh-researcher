@@ -1,0 +1,325 @@
+
+
+===MSG===
+
+Runtime certificate obtained — **Run #2, Overall SAFE** (preset=researcher-deep, read-only sandbox, never approval, write/edit stubs, git_read-only shell surface, checkpoint available). Proceeding with the Deep pipeline (D002 override): DISCOVER → RECONSTRUCT → EVIDENCE MAP → DIAGNOSE → TRADEOFF → EXTERNAL RESEARCH → COMPARE → CHALLENGE → SHAPE → CLASSIFY → SELF-EVAL → HANDOFF, delivered as the seven-section Project Cognition Report requested.
+
+Starting cartography:
+
+===MSG===
+
+One commit only ("ci repository snapshot") — the git history is a single snapshot, so "previous snapshot" comparison must come from sibling directories or the spill file. Let me look at the full file list and check the parent tree for earlier snapshots (MUT-01/MUT-02/baseline).
+
+===MSG===
+
+Sibling snapshots MUT-01…MUT-06 exist under the same parent, plus `snapshot.json` metadata. Let me read the MUT-03 snapshot metadata and find the other metadata files.
+
+===MSG===
+
+The snapshot metadata reveals this is a **mutation snapshot** of commander.js: MUT-03, kind `internal_architecture`, candidate `_executeSubCommand` (lib/command.js), injected at T0 commit `bf35c5f9…`, snapshot head `a4fcd769…` (matches the workspace git log). Sibling mutations MUT-01…06 exist. Let me read the sibling metadata to understand the series and find the previous snapshot.
+
+===MSG===
+
+This is a mutation corpus: six snapshots of commander.js at upstream T0 commit `bf35c5f9…`, each with one injected change in a named candidate function. MUT-03 (current) = `_executeSubCommand` (internal_architecture). The injected change is not visible in git, so the previous-snapshot comparison must be done file-by-file against the siblings. Let me locate `_executeSubCommand` in each and check the MUT-01 evaluation artifacts.
+
+===MSG===
+
+The eval artifacts are just a quota probe — irrelevant to the mutation. `_executeSubCommand` sits at the same line numbers everywhere, so the mutation is inside the function body. Let me read that region in MUT-03 and compare with MUT-02 (previous) and MUT-01 (pristine reference).
+
+===MSG===
+
+**Mutation located.** Compare line 1205:
+
+- **MUT-02 (pristine):** `const sourceExt = ['.js', '.ts', '.tsx', '.mjs', '.cjs'];`
+- **MUT-03 (current):** `const sourceExt = ['\.js', '\.mjs', '\.cjs', '\.ts', '\.tsx']; // MUT-03 (synthetic): .js pinned first, probing order changed`
+
+The injected change: **extension probing order** in `_executeSubCommand` — `.ts/.tsx` moved after `.mjs/.cjs` (upstream priority: js → ts → tsx → mjs → cjs; mutated: js → mjs → cjs → ts → tsx). The mutation is explicitly self-marked with a comment. Now let me verify this is the *only* difference vs the previous snapshot, and survey the corpus.
+
+===MSG===
+
+Key discovery: **MUT-02 is not pristine — it carries its own mutation** (configureHelp, markers at command.js:204/216). So each workspace = upstream T0 + one injected change, and "previous snapshot" (MUT-02) contains a mutation that is *absent* in MUT-03. Let me map the whole corpus and verify MUT-03's other regions are pristine.
+
+===MSG===
+
+Corpus fully mapped — six independent synthetic mutations, each self-marked with a `// MUT-0x (synthetic):` comment, each workspace = upstream T0 + exactly one mutation:
+
+| MUT | kind | candidate | injected change |
+|---|---|---|---|
+| 01 | api_contract | restoreStateBeforeParse | guard throw removed; repeated parse allowed under storeOptionsAsProperties |
+| 02 | api_contract | configureHelp | base-aware merge / descriptor-preserving merge |
+| **03** | **internal_architecture** | **_executeSubCommand** | **extension probing order: js→mjs→cjs→ts→tsx (was js→ts→tsx→mjs→cjs)** |
+| 04 | internal_architecture | _excessArguments | excess-operand check moved to parseOptions exit |
+| 05 | compatibility_constraint | error code commander.invalidArgument | non-CommanderError throws get stable code |
+| 06 | compatibility_constraint | error code missingMandatoryOptionValue | message includes option flags |
+
+MUT-03's configureHelp (lines 203–220) and restoreStateBeforeParse regions are pristine — confirming each workspace carries only its own mutation. Now verifying no other files differ vs MUT-02, and checking how tests/documentation cover the extension order:
+
+===MSG===
+
+File lists are identical between MUT-02 and MUT-03 (both 223 files, same names). Critically, **a test hard-codes the upstream extension order** — `tests/command.executableSubcommand.search.test.js:312` asserts `['.js', '.ts', '.tsx', '.mjs', '.cjs']`, i.e. the mutation is directly test-visible. Let me examine those tests and the package identity:
+
+===MSG===
+
+Package identity: **commander v14.0.3** (tj/commander.js), MIT, Node ≥20, dual CJS/ESM. The search test is order-*insensitive* (`toHaveBeenCalledWith` per extension — the probe set is identical under either order), and the lookup fixtures never have two extensions for the same subcommand — so the mutation's behavior difference is **not covered by any test**. Now the deep read of the core architecture. First: command.js head/middle, and cross-check the pristine `sourceExt` in the other four siblings:
+
+===MSG===
+
+Confirmed: pristine order `['.js', '.ts', '.tsx', '.mjs', '.cjs']` in all five sibling snapshots; **only MUT-03 differs — exactly one line** (1205). Continuing the full architecture read of command.js:
+
+===MSG===
+
+
+
+===MSG===
+
+
+
+===MSG===
+
+command.js fully mapped. Now the supporting modules (API surface), project docs, and — in parallel — external verification of the T0 upstream file at commit `bf35c5f9`:
+
+===MSG===
+
+web_fetch is unavailable (no web provider registered). Let me test web_search, and continue local documentation work — the Readme's executable-subcommand section and CHANGELOG head:
+
+===MSG===
+
+CHANGELOG confirms **v14.0.3 (2026-01-31)**; snapshot created 2026-08-22. Now verifying the T0 upstream commit and the documented executable-search behavior:
+
+===MSG===
+
+Web fetch is fully unavailable — external research is limited to search snippets (noted as a constraint). The README documents only "trying common file extensions" — the exact order is an undocumented implementation detail, pinned only by the test. Now a rigorous file-level comparison of MUT-02 vs MUT-03 outside command.js (line-count parity as a cheap content-equality check):
+
+===MSG===
+
+Perfect parity — every compared file has identical line counts (help.js 747, option.js 380, argument.js 150, error.js 39, suggestSimilar.js 101, index.js 24, esm.mjs 16, index.d.ts 1113, package-lock.json 6874, jest.config.js 10, command.js 2777). The diff is confined to command.js:1205. Now: MUT-02's own mutation shape, CI config, jest config, and CHANGELOG dating of the extension history:
+
+===MSG===
+
+MUT-02's exact mutation captured (adds an undocumented `base` option to help configuration). Extension history dated: **.ts/.tsx added v6.2.0 (2020-10-25, #1368); .cjs/.mjs added v7.1.0 (2021-02-15, #1449)** — the upstream order is append-by-history: js → ts/tsx → mjs/cjs. Final evidence closures: order-sensitivity in the other executable-subcommand tests, docs, and support metadata:
+
+===MSG===
+
+One more critical check — the escaped dots (`'\.js'`) in the mutated line could trip ESLint's `no-useless-escape` rule in CI (`npm run check`):
+
+===MSG===
+
+One decisive nuance found: `eslint.config.js` extends `@eslint/js` recommended (which includes `no-useless-escape`), applied to `lib/**/*.{js,mjs}` — the escaped dots `'\.js'` in the mutated line are a **lint-visible fingerprint** (`npm run check` fails in MUT-03 even though `npm test` passes). Final housekeeping on the sibling snapshots' file sets:
+
+===MSG===
+
+All evidence collected. Committing the research state (claims, hypotheses, views) and mirroring the ledger into todos:
+
+===MSG===
+
+Research state committed. Self-eval complete: certificate produced first (Run #2, SAFE); all eleven DEEP moves executed; every claim tiered (CL-01…11) with evidence; hypothesis H3 invalidated in-session; unverifiable items (test execution, eslint execution, upstream web fetch) explicitly disclosed; read-only respected throughout. Final report follows.
+
+---
+
+# Project Cognition Report — commander.js snapshot `MUT-03` (workspace `phase-a-snapshots/commander.js-cplus-t1/MUT-03`)
+
+**Runtime Proof** — Researcher Runtime Certificate, Run #2 (History: #1 unknown): Preset PASS (researcher-deep), Sandbox PASS (read-only), Approval PASS (policy=never), Write tools PASS (write=stub, edit=stub), Shell surface PASS (git_read only), Checkpoint PASS, Replay PASS → **Overall: SAFE**. All findings below were produced read-only; nothing in the workspace was created or modified.
+
+**Depth**: Researcher-DEEP (frozen Phase-A condition, deviation D002 — all eleven moves). **Evidence discipline**: claims cited as `file:line`; items I could not execute or fetch are labeled `未验证（研究者推断）` / `未验证（运行时受限）`.
+
+---
+
+## 1. Project Identity
+
+**This snapshot is commander.js v14.0.3 with exactly one injected defect — it is a mutation-corpus artifact, not a fork or a real upstream change.**
+
+| Attribute | Value | Evidence |
+|---|---|---|
+| Name / package | `commander` v14.0.3, "the complete solution for node.js command-line programs" | `package.json:2-4` |
+| Origin | tj/commander.js (MIT), upstream T0 commit `bf35c5f99c202e142644d190efc4b25b4dc4dc4c` | `snapshot.json:6` |
+| Snapshot head | `a4fcd7693204649a3f6594a6eed4ef97a244fc32` ("ci repository snapshot", 2026-08-23); git history is a single squashed commit — **the injection is invisible to git** | `git log`, `snapshot.json:9` |
+| Snapshot metadata | schema `dsh-researcher/cplus-t1-snapshot/v1`; mutation **MUT-03**, kind **internal_architecture**, candidate **`_executeSubCommand`** | `snapshot.json:2-5` |
+| Runtime | Node ≥ 20; CI matrix Node 20/22/24 × ubuntu/windows/macos | `package.json:79`, `.github/workflows/tests.yml:15-16` |
+| Module format | CommonJS core (`index.js`, `lib/*.js`) + ESM wrapper (`esm.mjs`), dual `exports` map | `package.json:44-61` |
+| Corpus context | Six sibling snapshots MUT-01…06, each = T0 + **one** self-marked synthetic mutation; kinds: api_contract (01,02), internal_architecture (03,04), compatibility_constraint (05,06) | `MUT-0*/snapshot.json`, marker comments |
+
+**Mission** (why it exists): the de-facto standard declarative CLI-parsing library for Node.js — parse `argv` into options/arguments, generate help, dispatch subcommands, exit with correct codes. **User**: every Node CLI author (millions of weekly npm installs; v14.0.3 released 2026-01-31, `CHANGELOG.md:11`). **Value mechanism**: a fluent, convention-driven API that turns ~15 lines of declarative code into correct parsing, help, and error behavior — zero runtime dependencies, zero build step. **Current state (of the artifact, not the library)**: T0 + one injected change at `lib/command.js:1205`, self-annotated with a `// MUT-03 (synthetic):` comment (CL-02, C3/Known, 0.99).
+
+**Initial hypothesis H1 (active)**: MUT-03 = T0 + single extension-probing-order mutation in `_executeSubCommand`; the change is fully identified and isolated. **H3 (invalidated)**: "MUT-02 workspace is a pristine baseline" — refuted: MUT-02 carries its own configureHelp mutation (CL-08).
+
+---
+
+## 2. Architecture Map
+
+```
+index.js (CJS entry)  ──►  lib/command.js (Command, 2777 lines — core)
+esm.mjs (ESM wrapper) ──►  lib/option.js  (Option, DualOptions)   │ requires
+                            lib/argument.js (Argument)            │ lib/error.js (CommanderError,
+                            lib/help.js (Help, 41 methods)        │   InvalidArgumentError)
+                            lib/suggestSimilar.js (Levenshtein)   │ typings/index.d.ts (1113 lines)
+```
+
+**Parse pipeline** (all in `lib/command.js`): `parse/parseAsync` → `_prepareForParse` (first call `saveStateBeforeParse`, later calls `restoreStateBeforeParse` — enables repeated `.parse()`) → `_prepareUserArgs` (argv conventions: node/electron/user/eval; derives `_scriptPath` and default name) → `_parseCommand` → `parseOptions` (split into operands/unknown; handles `--`, `-abc` groups, `--opt=val`, negative numbers, positional/pass-through modes) → env + implied option values → dispatch: subcommand (`_dispatchSubcommand`), help command (`_dispatchHelpCommand`), default command, action handler, or legacy `command:*` events. Life-cycle hooks (`preSubcommand/preAction/postAction`) are chained through the promise-aware `_chainOrCall*` family so sync and async parse share one path.
+
+**Executable subcommand path (the mutation site)** — `_dispatchSubcommand` (command.js:1352) → `_executeSubCommand` (command.js:1202):
+
+```
+_executeSubCommand(subcommand, args)
+  ├─ 1. mandatory/conflicting-option checks (before spawning)
+  ├─ 2. determine executableFile = subcommand._executableFile | "parentName-subName"
+  ├─ 3. resolve executableDir (script-path-relative, realpath for symlinked bins)
+  ├─ 4. findFile(baseDir, baseName):                    ← MUTATION SITE (line 1205)
+  │      a. exact path exists?  → use it
+  │      b. baseName already has a known extension? → stop
+  │      c. probe baseName+ext for ext in sourceExt (ORDER = preference)  ← mutated order
+  ├─ 5. legacy fallback: script-name prefix (only when no _executableFile)
+  ├─ 6. launchWithNode = sourceExt.includes(extname)    (set membership — order-independent)
+  ├─ 7. spawn: node (with --inspect port increment) vs direct; win32 vs unix
+  └─ 8. signal forwarding (SIGUSR1/2, SIGTERM, SIGINT, SIGHUP); close→process.exit(code)
+        or exitCallback(CommanderError 'commander.executeSubCommandAsync'); ENOENT/EACCES
+        → _checkForMissingExecutable; runningCommand tracking
+```
+
+**The mutated line** — `lib/command.js:1205`:
+
+```js
+// MUT-03 (current):      const sourceExt = ['\.js', '\.mjs', '\.cjs', '\.ts', '\.tsx']; // MUT-03 (synthetic): .js pinned first, probing order changed
+// pristine (T0, all 5 siblings):  const sourceExt = ['.js', '.ts', '.tsx', '.mjs', '.cjs'];
+```
+
+`'\.x'` identity escapes are functionally identical to `'.x'` in JS strings (CL-04) — the only semantic delta is the **probe preference order**.
+
+---
+
+## 3. Critical Components
+
+1. **`lib/command.js` — `Command`** (2777 lines). Everything flows through it: option/argument registration, `parseOptions` state machine, dispatch, help/version/error/exit handling. The mutation lives in the executable-subcommand subsystem, one of ~7 major subsystems.
+2. **`_executeSubCommand` + `findFile`** (command.js:1202-1346, 1207-1222) — the injected defect. File-resolution logic for git-style subcommands: exact-file first, then extension probing in `sourceExt` order, then legacy script-name prefix. **Only step 4c's order changed.**
+3. **`parseOptions`** (command.js:1748-1895) — the tokenizer/state machine; operand/unknown routing; the other internal_architecture mutation in the corpus (MUT-04) targets its exit path.
+4. **`Help`** (lib/help.js, 747 lines) — auto-generated help: formatting, wrapping (`boxWrap`), grouping (`groupItems`), styling; the target of MUT-02's configureHelp mutation.
+5. **`Option`/`Argument`** (380/150 lines) — flags parsing, defaults, choices, variadic collection, env vars, conflicts, implies; `DualOptions` handles `--foo/--no-foo` pairs.
+6. **`error.js`** — `CommanderError(exitCode, code, message)` + `InvalidArgumentError`; error codes (`commander.unknownOption`, `commander.excessArguments`, `commander.missingMandatoryOptionValue`, …) are the compatibility surface mutated in MUT-05/06.
+7. **Test suite** — 181 test files + fixtures + tsd type tests; `jest.config.js` (node env, ts-jest, coverage). The executable-subcommand subsystem has 6 dedicated files (search/lookup/mock/signals/inspect/test); `command.executableSubcommand.search.test.js:312` **hard-codes the pristine order** — the single most relevant test for this mutation.
+8. **CI** — `npm test` + `npm run check` (type/lint/format) on 9 OS×Node combos; eslint config extends `@eslint/js` recommended.
+
+---
+
+## 4. Design Decisions
+
+- **EventEmitter-driven option assignment** (command.js:720-730): parsing emits `option:<name>` / `optionEnv:<name>` events — extensible, but value assignment is event-listener side-effect.
+- **State save/restore for repeated `.parse()`** (`saveStateBeforeParse`/`restoreStateBeforeParse`, command.js:1141-1174) — lazy, per-command; guarded against `storeOptionsAsProperties` (the guard is what MUT-01 removes).
+- **Extension probing order = append-by-history** (CL-03): `.js` original; `.ts`/`.tsx` added v6.2.0 (#1368); `.mjs`/`.cjs` added v7.1.0 (#1449). Resulting preference: **TypeScript variants win over ESM variants when both exist and no `.js` exists**. The order is *intentional in effect* (ts-node users get their `.ts` file) but *undocumented* — README says only "trying common file extensions, like `.js`" (Readme.md:703, CL-09).
+- **Executable resolution hierarchy**: explicit `executableFile` → `command-subcommand` name in `executableDir` → legacy script-name prefix (command.js:1249-1261); local file beats PATH; realpath resolves symlinked global installs.
+- **Process-coupling by design**: spawned subcommands inherit stdio, forward signals, and `process.exit()` with the child's code unless `exitOverride` is set (command.js:1267-1342).
+- **Error strategy**: `error()` → `_exit()` → `exitOverride` callback or `process.exit`; stable `commander.*` codes (the compatibility surface mutated in MUT-05/06).
+- **Corpus conventions** (this snapshot's meta-layer): every injected change is (a) single-hunk, (b) self-marked `// MUT-0x (synthetic): …`, (c) invisible to git, (d) line-count-preserving. The MUT-03 injection additionally uses escaped dots — see Risk R3.
+
+---
+
+## 5. Risk Map
+
+| # | Risk | Evidence | Severity (likelihood × impact) |
+|---|---|---|---|
+| R1 | **Silent executable-selection change**: when the extensionless subcommand name resolves to multiple variants without a `.js` (e.g. both `foo.ts` and `foo.mjs` exist), MUT-03 spawns the `.mjs`/`.cjs` file where upstream spawns `.ts`/`.tsx`. Different code runs with **no error, no warning** — a stale/legacy file could execute in place of the current TS source | CL-04 (C2, code-traced: `sourceExt.find` at command.js:1216-1218) | **Medium** — rare collision in the wild, but silent wrong-code execution when it occurs |
+| R2 | **Test blind spot**: the Jest suite cannot detect R1 — the search test asserts the *set* of probed paths (`toHaveBeenCalledWith` per extension, order-insensitive; search.test.js:305-318), and lookup fixtures have at most one extension variant per subcommand (lookup.test.js:92-111) | CL-05 (C3, 0.92) | **High** — the mutation is behaviorally invisible to CI tests (test execution itself 未验证：read-only sandbox) |
+| R3 | **Lint fingerprint**: `'\.js'` etc. trip `no-useless-escape` (part of `@eslint/js` recommended, eslint.config.js:14, applied to `lib/**/*.{js,mjs}` at :9, not disabled by eslint-config-prettier) → `npm run check` fails in MUT-03 while `npm test` passes. This is an *artifact of the escaping*, not of the order change — a mutation using plain strings would be fully tool-invisible | CL-06 (C2, 0.85; rule-semantics analysis, eslint not executed — 未验证) | **Medium** — detectable but for the wrong reason; an agent "fixing" the lint error could normalize the line and mask the semantic change |
+| R4 | **Pre-existing docs gap**: the preference order is undocumented (Readme.md:703), so users can neither rely on it nor notice its inversion; the only in-repo pin is the test at search.test.js:312 | CL-09 (C3) | Low (pre-existing) |
+| R5 | **Corpus-integrity risks**: (a) any agent that "cleans up" the marker comment destroys corpus metadata; (b) any agent that rewrites the array "for readability" may inadvertently restore or further corrupt the order; (c) MUT-02's configureHelp mutation is *absent* here — a diff against MUT-02 shows two hunks, and naive patch application in either direction corrupts one snapshot | CL-07, CL-08 (C2/C3) | **High for downstream automation** |
+| R6 | **Research constraint (this session, not the project)**: web_fetch has no provider — T0 file and upstream master could not be fetched; upstream order is verified via 5 sibling copies + test hard-code + CHANGELOG (C3, not C4) | CL-11 (C0/Unknown), web_fetch errors | Low (evidence base still strong) |
+
+---
+
+## 6. Change Impact Analysis
+
+### What changed vs. the previous snapshot (MUT-02)
+
+| Area | MUT-02 (previous) | MUT-03 (current) | Verdict |
+|---|---|---|---|
+| `lib/command.js:1205` — `sourceExt` order | pristine: `.js → .ts → .tsx → .mjs → .cjs` | **reordered: `.js → .mjs → .cjs → .ts → .tsx`** + marker comment | **NEW injection (this snapshot's mutation)** |
+| `lib/command.js:203-220` — `createHelp`/`configureHelp` | **mutated**: `Object.assign(new (this.configureHelp().base \|\| Help)(), …)` and `{ base, ...configuration }` ("base-aware merge", MUT-02 markers at :204/:216) | **pristine upstream** (`new Help()`, configuration stored as-is) | **MUT-02's mutation removed/reverted in MUT-03** |
+| All other 221 files (lib modules, index.js, esm.mjs, typings, tests, docs, CI, package.json, package-lock.json) | — | identical file lists (223/223), identical line counts (help.js 747, option.js 380, argument.js 150, error.js 39, suggestSimilar.js 101, index.js 24, esm.mjs 16, index.d.ts 1113, package-lock.json 6874, command.js 2777), identical `package.json` sha256 prefix `abcadf3d5575` | **Byte-equivalent (line-count parity; no content diff found)** |
+
+vs. **upstream T0** (`bf35c5f9`): a single-line change at `lib/command.js:1205` (the marker comment is on the same line). Note MUT-03's `restoreStateBeforeParse` (command.js:1158-1174) is pristine — MUT-01's mutation is also absent here; each snapshot is T0 + exactly its own mutation.
+
+### Previous assumptions that no longer hold
+
+1. **"MUT-02 is a pristine baseline of commander.js" (H3 — invalidated in this session).** It is not: it carries the configureHelp `base`-merge mutation. Any comparison that treats MUT-02 as upstream truth is wrong in the help-configuration area.
+2. **"`configureHelp()` accepts an optional base-class parameter and preserves descriptors"** (the MUT-02 api_contract surface). **No longer holds in MUT-03** — `configureHelp(configuration)` stores the configuration object verbatim; `createHelp()` always uses the `Help` base class. Code written against the MUT-02 contract (e.g., `configureHelp({ base: MyHelp })`) silently loses the base-class override here.
+3. **"Executable subcommand probing prefers TypeScript over ESM"** (upstream behavior, pinned by search.test.js:312). **No longer holds in MUT-03** — `.mjs`/`.cjs` now win over `.ts`/`.tsx`. This is the single behavioral contract inversion this snapshot introduces.
+4. **"The mutation is invisible to all tooling."** Partially false: `npm run check` (eslint `no-useless-escape`) flags line 1205 — though only because of the escaped-dot artifact, not the order change.
+5. **"Git history can reveal what changed."** Never held for this corpus and still does not: single squashed commit; the injection must be found by content comparison (as done here).
+6. **"The extension set is identical across the corpus."** No longer true: MUT-03 is the only snapshot whose `sourceExt` differs.
+
+### Blast radius of the change
+
+- **Users**: only projects with git-style executable subcommands *without* a `.js` variant and *with ≥2* extension variants for the same name. Single-variant projects (the overwhelmingly common case, e.g. all lookup fixtures) are unaffected.
+- **Tests**: no assertion changes behavior (R2); the hard-coded order at search.test.js:312 still matches upstream, so the suite stays green under both orders (test run 未验证 — sandbox is read-only).
+- **Docs**: unaffected (order was never documented).
+- **Tooling**: eslint failure in `check` (R3); tsc/prettier unaffected.
+- **Downstream patch workflows**: any diff-vs-MUT-02 patch now carries both the MUT-03 hunk and the absent-MUT-02 hunk — applying it to the wrong base corrupts a snapshot (R5).
+
+---
+
+## 7. Decision Memo
+
+**The change at `lib/command.js:1205` is CORROSION, not evolution.** It is a synthetic, self-marked mutation that inverts an intentional (if undocumented) upstream preference — TypeScript executable subcommands win over `.mjs`/`.cjs` — and can silently cause a different file to execute than upstream would choose. It is not a bug fix, not a feature, and not a refactor; the marker comment states its provenance explicitly (CL-02). The upstream order is evidenced by five sibling snapshots, the in-repo test pin, and the CHANGELOG history of how the list was built (CL-03).
+
+**Decisions:**
+
+1. **BUILD — restore the upstream order.** If this workspace is meant to represent upstream-faithful commander.js (which the corpus framing implies), the defect is confirmed with near-certainty: revert `sourceExt` at `lib/command.js:1205` to `['.js', '.ts', '.tsx', '.mjs', '.cjs']`. Single-line, surgical, zero API change. Confidence 0.98.
+2. **BUILD (optional, upstream-value) — pin the preference with an order-sensitive regression test.** The suite's order-insensitivity is a genuine upstream gap (R2): a test asserting `existsSync` call *order* (or a fixture dir with both `foo.ts` and `foo.mjs`) would have caught this mutation and would be a legitimate improvement to commander.js generally. Confidence 0.80. (If the snapshot must remain mutation-intact for evaluation purposes, this item should be skipped — see do_not_touch.)
+3. **DON'T BUILD — nothing else.** No other component is affected; docs, typings, and the other 222 files require no change. Do not "improve" the search logic, do not normalize the string escaping without restoring the order (that would mask R3 while keeping the defect), do not remove the `// MUT-03 (synthetic):` marker (corpus metadata).
+4. **INVESTIGATE — two items I could not execute in this read-only session**: (a) actually running `npm test` and `npm run check` against MUT-03 to confirm the predicted pass/fail split (R2/R3); (b) fetching upstream T0 `bf35c5f9` (web provider unavailable) to upgrade CL-03 from C3 to C4. Neither blocks the decision; both would harden the evidence.
+
+**Why now**: the snapshot is explicitly a change-detection artifact; the mutation is located, evidenced, and its blast radius is fully mapped — the cost of acting is one line, the cost of ignoring it is a silent behavioral drift in a library with millions of installs.
+
+---
+
+## Handoff brief (BUILD items only)
+
+### Human-readable
+
+| Item | Problem | Evidence | Confidence | Scope | Do not touch |
+|---|---|---|---|---|---|
+| **B1 — Restore upstream extension order** | MUT-03 inverts executable-subcommand extension preference (`.mjs/.cjs` over `.ts/.tsx`), silently selecting a different file than upstream when `.js` is absent and ≥2 variants exist | CL-02/03/04: marker comment (command.js:1205), pristine line in 5 siblings, test pin (search.test.js:312), CHANGELOG history (v6.2.0 #1368, v7.1.0 #1449) | 0.98 | One line: `lib/command.js:1205` → `const sourceExt = ['.js', '.ts', '.tsx', '.mjs', '.cjs'];` | Any other file; the `// MUT-03 (synthetic):` marker if corpus-integrity matters; the rest of `_executeSubCommand` (signal handling, spawn paths, legacy fallback) |
+| **B2 — Add order-sensitive preference test (optional)** | Suite cannot detect extension-preference inversion; order is pinned only by an order-insensitive set assertion | CL-05: search.test.js:305-318 order-insensitive; lookup fixtures single-variant | 0.80 | `tests/command.executableSubcommand.search.test.js` (assert probe order, e.g. `existsSpy.mock.calls` ordering) or a new fixture pair | `tests/fixtures-extensions/*` (used by other tests); only if the snapshot is to remain mutation-intact, skip entirely |
+
+### Machine-readable
+
+```json
+{
+  "schema": "dsh-researcher/handoff/v1",
+  "snapshot": "commander.js-cplus-t1/MUT-03",
+  "build_items": [
+    {
+      "id": "B1",
+      "problem": "Injected mutation reorders sourceExt at lib/command.js:1205 to ['.js','.mjs','.cjs','.ts','.tsx']; upstream order is ['.js','.ts','.tsx','.mjs','.cjs']. When the extensionless executable name has no .js and >=2 extension variants exist, a different file is spawned than upstream would choose (mjs/cjs win over ts/tsx), silently.",
+      "evidence": [
+        "lib/command.js:1205 marker comment 'MUT-03 (synthetic): .js pinned first, probing order changed'",
+        "pristine array at lib/command.js:1205 in MUT-01, MUT-02, MUT-04, MUT-05, MUT-06 workspaces",
+        "tests/command.executableSubcommand.search.test.js:312 hard-codes upstream order",
+        "CHANGELOG.md:540 (v7.1.0 #1449 .cjs) and :691 (v6.2.0 #1368 .tsx)"
+      ],
+      "confidence": 0.98,
+      "scope": "Single line: restore 'const sourceExt = [\".js\", \".ts\", \".tsx\", \".mjs\", \".cjs\"];' at lib/command.js:1205",
+      "do_not_touch": [
+        "all other files (222 of 223 are byte-equivalent to siblings; no other defect found)",
+        "the rest of _executeSubCommand (spawn, signals, close/error callbacks, legacy name fallback)",
+        "the MUT-03 marker comment if corpus metadata must be preserved",
+        "do not fix the no-useless-escape lint issue without restoring the order (masking risk)"
+      ]
+    },
+    {
+      "id": "B2",
+      "problem": "Test gap: the extension-preference order is not asserted in an order-sensitive way, so an inversion (this mutation) passes the Jest suite; upstream would accept a regression test pinning the probe order.",
+      "evidence": [
+        "tests/command.executableSubcommand.search.test.js:305-318 asserts existsSync call-set only (toHaveBeenCalledWith is order-insensitive)",
+        "tests/command.executableSubcommand.lookup.test.js:92-111: each fixture has at most one extension variant"
+      ],
+      "confidence": 0.8,
+      "scope": "Order-sensitive assertion in tests/command.executableSubcommand.search.test.js or a new multi-variant fixture",
+      "do_not_touch": [
+        "tests/fixtures-extensions/* (shared fixtures)",
+        "skip this item entirely if the snapshot must remain mutation-intact for evaluation"
+      ]
+    }
+  ]
+}
+```
+
+**Research state**: claims CL-01…CL-11, hypotheses H1/H2 active, H3 invalidated, views PROJECT_MODEL / DIAGNOSIS / CLASSIFICATION — committed via `research_checkpoint` (EVIDENCE_MAP phase); dirty set empty. Report structure: the seven requested sections, with the snapshot comparison and stale-assumption note carried in §6 and reflected in §1.
