@@ -9,11 +9,26 @@
 
 ### 1.1 当前 AI Agent 的 context loss 问题
 
-现代 AI coding agent 每次会话的工作方式:
+传统 Agent 的工作方式:
 
 ```
-session N:  Read code → 修改 → session 结束(上下文丢弃)
-session N+1: 重新读 code → 重新理解 → 修改(再次丢弃)
+read repository
+    ↓
+generate answer
+    ↓
+forget(会话结束,上下文丢弃)
+```
+
+dsh-researcher 的工作方式(研究方向):
+
+```
+observe project
+    ↓
+create cognition state(claims/evidence/依赖图,版本化)
+    ↓
+maintain understanding(证据锚定,局部失效)
+    ↓
+continue future reasoning(export/import 跨会话迁移)
 ```
 
 **Context loss 的三个层面**:
@@ -141,7 +156,7 @@ Research Mode(应用层,产生认知)      Project Cognition Infrastructure(基�
 
 ## 6. 一句话定位
 
-> **dsh-researcher 正在从"更强的 Research Agent"演化为"Project Cognition Infrastructure Prototype":认知的生产(Research Mode)与承载(状态/迁移/治理)分离,前者优越性未验证,后者工程能力已验证 —— 当前真实状态是"基础设施原型 + 未验证的应用层",不是"已完成的基础设施",也不是"更强的 agent"。**
+> **dsh-researcher 正在向项目认知基础设施方向发展,目前已验证认知状态建模和迁移能力,但应用层收益仍需进一步验证。** 认知的生产(Research Mode)与承载(状态/迁移/治理)分离:前者优越性未验证,后者工程能力已验证 —— 这是研究方向,不是已完成产品。
 
 ---
 

@@ -27,7 +27,7 @@
 
 ---
 
-## Unvalidated(未验证 —— 必须如实标注,不得宣称)
+## Invalidated / Not Admissible(已证伪或不可采信 —— 必须如实标注,不得宣称)
 
 ### U1. Researcher superiority over normal agents(未验证)
 
@@ -45,6 +45,18 @@
 ### U4. Mutation Recall improvement(未验证)
 
 - 12/12 饱和(matched)是 marker 注释可搜索 + 泄漏的产物,非认知继承能力的度量。
+
+---
+
+## Unknown(未知 —— 需后续实验)
+
+### K1. Maintenance productivity(维护生产力)
+
+- 隔离重跑(R1)与长期维护评估(R3)之前,认知继承是否提升长期开发效率**不可知**。
+
+### K2. Long-term developer value(长期开发者价值)
+
+- 多阶段维护(而非单跳继承)的真实收益**不可知**;需 R3 测量 Maintenance Recall / Consistency Drift / Rebuild Cost Ratio。
 
 ---
 
