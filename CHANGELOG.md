@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0-alpha.7 (2026-08-25) — Safe Trial and Guided Governance
+
+- Replaced the three drifting installer implementations with one cross-platform lifecycle manager. `--dry-run` does not write installer-owned paths; strict compatibility accepts exact DSH `0.1.0-rc.7` from CLI output or constrained package metadata and refuses missing/unknown versions by default. Automatic CLI detection may still start external `dsh --version`.
+- Added content-hashed backup, safe force-upgrade, uninstall and rollback. Every mutating lifecycle action snapshots both managed preset states; corrupt, incomplete, contradictory or aliased backup trees fail closed, and failed replacement attempts restore the pre-operation snapshot when possible.
+- Added a release-artifact installation guide covering `SHA256SUMS`, `package-manifest.json`, local tarball execution, backup retention and recovery. GitHub-generated source archives are explicitly not treated as verified npm artifacts.
+- Added `project-cognition quickstart` and `quickstart sync`. They generate an external owner-review workspace and bind Cognition, Verifier Registry and Git revision without copying hashes, but never approve a goal, install a verifier or seal/install canonical Project Cognition.
+- Added `npm run demo`, an isolated real-process walkthrough in which assistant confidence and a verifier child process exiting `1` both yield `CONTINUE`; after a bounded fixture repair, a second process exits `0` and matching captured evidence yields `DONE`. The DSH event envelope is explicitly simulated; this is not Live E1.
+- Rewrote the README around user problems, a clear Project Research versus experimental Goal Governor split, safe trial instructions, truthful evidence boundaries and a five-minute review-first path.
+- Audited Live E1 publication readiness. The current environment lacks final-candidate capture/run-lock inputs, a pinned readable rc.7 module root, dedicated cost controls and a real interactive TTY for the human gate, so no E1 model run or public bundle was fabricated.
+- Ran two real DSH Web Project Research probes through local Ollama only. Qwen3 14B reached SAFE but failed task/tool adherence; local DeepSeek R1 14B emitted unsupported conclusions and was rejected by the terminal gate. The failure is retained publicly and outcome value remains unproven.
+
+Release boundary: **safe install lifecycle: PASS / guided scaffold: PASS / real-process offline Governor demo: PASS / local Researcher output probe: FAIL / Goal Governor live E1: NOT RUN / outcome value and multi-client portability: NOT PROVEN**.
+
 ## 0.8.0-alpha.6 (2026-08-24) — Truthful DSH Web Onboarding
 
 - Post-release alpha.5 acceptance installed the exact GitHub release tarball into a fresh DSH_HOME and launched it through PowerShell `dsh web`. The published runtime obtained a full SAFE certificate and rejected post-certificate Workspace Write drift before another model response; the workspace stayed clean.

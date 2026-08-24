@@ -9,11 +9,14 @@ const {
   validateGoalEvent, decideGoal, validateAdapterManifest, EVENT_SCHEMA,
 } = require('../lib/goal-core/index.js')
 const { validateRegistry, sealRegistry } = require('../lib/verifier-core/index.js')
+const { createQuickstartScaffold, syncQuickstartScaffold } = require('../lib/quickstart/index.js')
 
 const usage = () => `project-cognition
 
   init [root]
   doctor [root]
+  quickstart --root <root> --out <external-review-dir> [--goal-id <id>] [--mode simple|governed] [--verify-command <command>] [--verify-tool <tool>] [--verifier-id <id>] [--repo-revision <revision>]
+  quickstart sync <external-review-dir> --root <root> [--repo-revision <revision>]
   cognition validate [state-file]
   cognition draft [root] --out <draft-state.json>
   cognition diff <draft-or-sealed.json> [--root <root>]
@@ -23,7 +26,7 @@ const usage = () => `project-cognition
   cognition freshness <fingerprints.json> [root]
   verifier validate <registry.json>
   verifier seal <draft-registry.json>
-  verifier install <draft-or-sealed.json> [--root <root>] [--replace]
+  verifier install <draft-or-sealed.json> --root <root> --replace --expect-current-hash <sha256>
   goal validate <contract.json>
   goal recommend <risk.json>
   goal approve <draft.json> --actor <name> [--root <root>]
@@ -256,6 +259,31 @@ const main = () => {
     return
   }
 
+  if (group === 'quickstart' && !command) {
+    const output = flagValue('--out')
+    if (!output) throw new Error('--out <external-review-dir> is required')
+    print(createQuickstartScaffold({
+      root: flagValue('--root'),
+      output,
+      goalId: flagValue('--goal-id'),
+      mode: flagValue('--mode'),
+      verifyCommand: flagValue('--verify-command'),
+      verifyTool: flagValue('--verify-tool'),
+      verifierId: flagValue('--verifier-id'),
+      repoRevision: flagValue('--repo-revision'),
+    }))
+    return
+  }
+  if (group === 'quickstart' && command === 'sync') {
+    if (!positional[2]) throw new Error('external review directory is required')
+    print(syncQuickstartScaffold({
+      root: flagValue('--root'),
+      reviewDir: positional[2],
+      repoRevision: flagValue('--repo-revision'),
+    }))
+    return
+  }
+
   if (group === 'cognition' && command === 'validate') {
     const file = positional[2] ? path.resolve(positional[2]) : pathsFor().state
     const state = readJson(file)
@@ -356,10 +384,17 @@ const main = () => {
   if (group === 'verifier' && command === 'install') {
     if (!positional[2]) throw new Error('draft-or-sealed registry file is required')
     const locations = pathsFor(flagValue('--root'))
+    if (!fs.existsSync(locations.verifiers)) throw new Error('canonical verifier registry is missing; run project-cognition init first')
+    if (!args.includes('--replace')) throw new Error('verifier registry exists; pass --replace for an explicit revision change')
+    const expectedHash = flagValue('--expect-current-hash')
+    if (!expectedHash) throw new Error('--expect-current-hash <sha256> is required for a reviewed verifier revision change')
     const registry = withExclusiveLock(governanceLockFor(locations), () => {
+      const current = readJson(locations.verifiers)
+      validateRegistry(current)
+      if (expectedHash !== current.registry_hash) throw new Error('expected current verifier registry hash does not match the installed registry')
       const input = readJson(positional[2])
       const next = input.registry_hash ? (validateRegistry(input), input) : sealRegistry(input)
-      if (fs.existsSync(locations.verifiers) && !args.includes('--replace')) throw new Error('verifier registry exists; pass --replace for an explicit revision change')
+      if (next.revision !== current.revision + 1) throw new Error('verifier registry revision must equal the installed revision plus one')
       atomicWrite(locations.verifiers, JSON.stringify(next, null, 2) + '\n')
       return next
     })

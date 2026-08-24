@@ -69,6 +69,8 @@ test('CLI seals and explicitly installs a verifier registry revision', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'project-cognition-verifier-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   assert.equal(run(['init', root], root).status, 0)
+  const registryFile = path.join(root, '.project-cognition', 'verifiers.json')
+  const current = JSON.parse(fs.readFileSync(registryFile, 'utf8'))
   const draftFile = path.join(root, 'verifier-draft.json')
   fs.writeFileSync(draftFile, JSON.stringify({
     schema: 'project-cognition/verifier-registry/v1', revision: 2, registry_hash: null,
@@ -81,7 +83,23 @@ test('CLI seals and explicitly installs a verifier registry revision', (t) => {
   const refused = run(['verifier', 'install', draftFile, '--root', root], root)
   assert.equal(refused.status, 1)
   assert.match(refused.stderr, /--replace/)
-  const installed = run(['verifier', 'install', draftFile, '--root', root, '--replace'], root)
+  const missingCas = run(['verifier', 'install', draftFile, '--root', root, '--replace'], root)
+  assert.equal(missingCas.status, 1)
+  assert.match(missingCas.stderr, /--expect-current-hash/)
+  const wrongCas = run(['verifier', 'install', draftFile, '--root', root, '--replace', '--expect-current-hash', 'f'.repeat(64)], root)
+  assert.equal(wrongCas.status, 1)
+  assert.match(wrongCas.stderr, /does not match the installed registry/)
+  assert.equal(JSON.parse(fs.readFileSync(registryFile, 'utf8')).registry_hash, current.registry_hash)
+  const skippedFile = path.join(root, 'verifier-skipped.json')
+  fs.writeFileSync(skippedFile, JSON.stringify({
+    schema: 'project-cognition/verifier-registry/v1', revision: 3, registry_hash: null,
+    entries: [{ id: 'tests.core', invocations: [{ tool_name: 'pwsh', arguments: { command: 'npm test' }, arguments_hash: null }], result_policy: { kind: 'tool_success' } }],
+  }))
+  const skipped = run(['verifier', 'install', skippedFile, '--root', root, '--replace', '--expect-current-hash', current.registry_hash], root)
+  assert.equal(skipped.status, 1)
+  assert.match(skipped.stderr, /revision must equal.*plus one/)
+  assert.equal(JSON.parse(fs.readFileSync(registryFile, 'utf8')).registry_hash, current.registry_hash)
+  const installed = run(['verifier', 'install', draftFile, '--root', root, '--replace', '--expect-current-hash', current.registry_hash], root)
   assert.equal(installed.status, 0, installed.stderr)
   assert.equal(JSON.parse(installed.stdout).revision, 2)
 })

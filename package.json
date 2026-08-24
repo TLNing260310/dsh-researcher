@@ -1,6 +1,6 @@
 {
   "name": "dsh-researcher",
-  "version": "0.8.0-alpha.6",
+  "version": "0.8.0-alpha.7",
   "description": "Evidence-backed project cognition and host-governed definitions of done for DeepSeek Harness.",
   "author": "TLNing260310",
   "license": "MIT",
@@ -40,6 +40,7 @@
     "LICENSE"
   ],
   "scripts": {
+    "demo": "node scripts/demo-governor.js",
     "test": "node --test tests/*.test.js",
     "doctor": "node bin/project-cognition.js doctor . && node bin/project-cognition.js adapter doctor governed/adapter-manifest.json",
     "eval:e1:capture-tools": "node evaluation/goal-governor-e1/capture-visible-tools.js",

@@ -17,20 +17,36 @@ const readJson = (...parts) => JSON.parse(read(...parts))
 test('declared Node floor, public quickstart, and CI matrix cover the floor and current LTS', () => {
   const pkg = readJson('package.json')
   const readme = read('README.md')
+  const quickstart = read('docs', 'quickstart.md')
   const workflow = read('.github', 'workflows', 'test.yml')
   assert.equal(pkg.engines.node, '>=22.12.0')
   assert.match(readme, /Node\.js[^\n]*`>=22\.12\.0`/)
   assert.match(workflow, /node:\s*\[22\.12\.0,\s*24\.x\]/)
   assert.doesNotMatch(workflow, /node:\s*\[[^\]]*(?:16|18|20)(?:\.|,|\])/)
+  const initAt = readme.indexOf('project-cognition init .')
+  const scaffoldAt = readme.indexOf('project-cognition quickstart --root')
+  assert.ok(initAt >= 0 && scaffoldAt > initAt, 'homepage quickstart must initialize canonical state before the first scaffold')
+  assert.doesNotMatch(quickstart, /project-cognition quickstart[^\n]*\\\s*$/m, 'public quickstart must remain pasteable in PowerShell')
 })
 
 test('every installer describes the actual DSH Web permission transition', () => {
-  for (const relative of ['bin/install.js', 'install.ps1', 'install.sh']) {
-    const content = read(...relative.split('/'))
-    assert.match(content, /Certified research:[^\n]*Read Only[^\n]*Project Research/, relative + ' lost the real UI selection order')
-    assert.match(content, /tightens approval to never[^\n]*Custom/, relative + ' must explain the one-way approval reduction and Custom UI state')
-    assert.doesNotMatch(content, /Project Research[^\n]*(?:permission )?read-only \+ approval never/, relative + ' still asks for a UI combination DSH Web does not expose')
-  }
+  const installer = read('bin', 'install.js')
+  assert.match(installer, /Certified research:[^\n]*Read Only[^\n]*Project Research/, 'canonical installer lost the real UI selection order')
+  assert.match(installer, /tightens approval to never[^\n]*Custom/, 'canonical installer must explain the one-way approval reduction and Custom UI state')
+  assert.doesNotMatch(installer, /Project Research[^\n]*(?:permission )?read-only \+ approval never/, 'canonical installer asks for a UI combination DSH Web does not expose')
+  assert.match(installer, /detected !== VERIFIED_DSH/)
+  assert.match(installer, /Installation refused/)
+  assert.match(installer, /UNSAFE OVERRIDE/)
+  assert.match(installer, /@deepseek-ai\/dsh/)
+  assert.match(installer, /--dsh-package/)
+  for (const action of ['install', 'backup', 'uninstall', 'rollback']) assert.match(installer, new RegExp("'" + action + "'"))
+
+  const powershell = read('install.ps1')
+  const bash = read('install.sh')
+  assert.match(powershell, /bin\\install\.js/)
+  assert.match(powershell, /@args/)
+  assert.match(bash, /bin\/install\.js/)
+  assert.match(bash, /"\$@"/)
 })
 
 test('canonical cognition state carries the verified runtime and protocol-owned live E1 P1, and its projection has not drifted', () => {

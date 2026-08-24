@@ -1,8 +1,8 @@
 # Validation Status — dsh-researcher
 
-> 更新时间：2026-08-24（`0.8.0-alpha.6`）。本文件是公开证据账本：准确区分机械实现、Researcher smoke、Goal Governor E1、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
+> 更新时间：2026-08-25（`0.8.0-alpha.7`）。本文件是公开证据账本：准确区分机械实现、Researcher smoke、Goal Governor E1、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
 
-alpha.5 的本地 smoke 是 provisional evidence；在 owner review、seal、install 前，它不会自动改写 canonical Project Cognition。这是 promotion 边界的实际应用，不是第二份规范真相。
+alpha.5 与 alpha.7 candidate 的本地 smoke 是 provisional evidence；在 owner review、seal、install 前，它们不会自动改写 canonical Project Cognition。这是 promotion 边界的实际应用，不是第二份规范真相。
 
 ## 证据层级
 
@@ -27,8 +27,11 @@ alpha.5 的本地 smoke 是 provisional evidence；在 owner review、seal、ins
 | E1 model cost admission | 协议/manifest/run lock 冻结的北京时间黑窗与 `base_url`；remote 精确为 official Flash + `https://api.deepseek.com`；local 为 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback；冻结 settings（`watch=false`）、`DEEPSEEK_BASE_URL` 与 DSH 公共 resolver 边界复验 | 离线测试表明官方 runner 会在输出、spawn、resume 与 model boundary 拒绝高峰远程调用、resolved-base-URL 漂移与跨窗预算 | 不能宣称 alpha.5 的 Researcher smoke 已完成 E1 route 验证、loopback 服务没有代理远程、操作系统无外连、provider 实际计费身份真实，或不存在绕开 runner 的调用 |
 | Researcher 启动方式 | one-shot、guarded mode、certified preset 的权限/状态机测试 | 研究与执行权限面可分离；certified preset 提供更强环境边界 | 所有客户端都有相同的 OS/host enforcement |
 | DSH Web Researcher smoke | alpha.5 candidate 在 DSH `0.1.0-rc.7` Web + 本地 Ollama 中真实运行；SAFE 证书逐项 PASS，workspace-write 漂移在下一模型响应前拒绝 | 当前 Researcher preset 的 recompose、只读收紧、doctor、replay 与漂移拒绝路径在该环境可运行 | Goal Governor E1 已运行；研究输出有价值；所有 DSH 路径或客户端都等价 |
-| Researcher local-model outcome | 相同冻结任务下，DeepSeek-R1 14B 未调用 doctor；Qwen3 14B 可达 SAFE，但忘记原任务并虚构 Rust 路径 | 模型与客户端生命周期/上下文都能实质影响结果；host gate 能拒绝部分失败 | 已量化 model/client 效应；Researcher outcome value 已证明 |
-| DSH packaging | alpha.5 candidate 成功安装 `researcher`/`governed`，Web 菜单发现两者并真实运行 Researcher | 当前发布布局可被目标 DSH 版本加载 | Governed Coding 的协议定义 live E1 已通过 |
+| Researcher local-model outcome | alpha.5 与 alpha.7 candidate 的本地 14B probes 均未得到合格项目报告；alpha.7 Qwen 可达 SAFE 但丢失任务/误用工具，R1 的无证据报告被 terminal gate 拒绝 | 模型与客户端生命周期/上下文都能实质影响结果；host gate 能拒绝部分失败；SAFE 不等于有价值输出 | 已量化 model/client 效应；Researcher outcome value 已证明 |
+| DSH packaging | alpha.5 与 alpha.7 pre-release candidate 均成功安装 `researcher`/`governed`，Web 菜单发现两者并真实运行 Researcher | 当前候选布局可被目标 DSH 版本加载 | 最终 alpha.7 release asset 已发布；Governed Coding 的协议定义 live E1 已通过 |
+| Safe installer lifecycle | alpha.7 对 dry-run、精确 DSH 元数据 fallback、content-hashed backup、force upgrade、uninstall、rollback 与损坏快照拒绝提供跨平台测试 | 两个受管 preset 的本地安装操作可预览并恢复；release tarball 可绑定 SHA-256 后执行 | 操作系统级事务、恶意本机管理员下的备份真实性，或未知 DSH 版本兼容性 |
+| Guided Quickstart | alpha.7 生成仓库外 Cognition/Verifier/Goal review workspace；未审核 marker、零 hash、陈旧 binding 和路径逃逸均被测试拒绝 | 可避免手抄 hash，同时保持 verifier install、Goal approval 与 Cognition promotion 为显式 owner action | 引导器理解用户意图、自动批准合同、或证明治理带来净生产力增益 |
+| Deterministic public demo | `npm run demo` 在隔离 fixture 中真实启动两个 verifier 子进程，并将捕获的退出码经模拟 DSH event envelope 交给发布 adapter/reducer，得到 `CONTINUE → CONTINUE → DONE` | Agent 文字和真实失败 verifier 不能满足 MUST；匹配的真实进程结果可以形成 DONE | 真实 DSH event envelope、真实模型或 Live E1 已运行 |
 | Portable Core | DSH 无关的 cognition/goal/verifier core、schemas、CLI、adapter contract | 核心抽象具备适配缝 | Codex、Claude Code、Zed/Zcode、OpenClaw 已兼容 |
 
 当前 `npm test` 覆盖 unit、replay、integration 与 isolated package smoke；具体数量以当次测试输出为准，避免文档复制数字后漂移。
@@ -85,7 +88,7 @@ Experiment A 表明同一模型下 orchestration 会显著改变成本和输出�
 
 轨迹、样本、estimand、阈值和 invalidity rule 只以冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 为准。E1 包含协议定义的全部轨迹；本文件不另存一份清单。Project Cognition 的 V3A 使用独立 longitudinal protocol，不由 E2 代替。
 
-`alpha.5` 运行了独立的 Researcher Web 本地 smoke，但没有运行 Goal Governor live E1 或远程 API。当前 candidate 仍须完成协议要求的 DSH-dependent Gate 0，尤其是冻结 settings、`watch=false`、`DEEPSEEK_BASE_URL` 与公共 DeepSeek resolver 的 remote/local 精确解析；Researcher smoke 不能替代这些 E1 准入项。历史 Phase A runtime 和 locks 只用于审计，不能用于新的模型运行。
+`alpha.5` 与 `alpha.7` pre-release candidate 运行了独立的 Researcher Web 本地 smoke，但没有运行 Goal Governor live E1 或远程 API；最新两次输出 probes 均失败，记录见 [Project Research local-output smoke](./evidence/project-research-local-output-smoke-2026-08-25.md)。当前 candidate 仍须完成协议要求的 DSH-dependent Gate 0，尤其是冻结 settings、`watch=false`、`DEEPSEEK_BASE_URL` 与公共 DeepSeek resolver 的 remote/local 精确解析；Researcher smoke 不能替代这些 E1 准入项。历史 Phase A runtime 和 locks 只用于审计，不能用于新的模型运行。
 
 北京时间模型成本规则已在协议 v1.1、manifest、run lock 和 scorer 中冻结：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁止远程 DeepSeek；周末只免时段禁令，远程仍须 official Flash + 精确 `https://api.deepseek.com`，其他 gate 不免。它对官方 E1 runner 是 fail-closed 机械边界，但不是 OS 级网络隔离或计费证明；字面 loopback 也只证明 adapter 第一跳本机，不能证明本地服务不代理远程。正式 live E1 还应使用服务端限额、独立 key、账单告警及必要的出口控制。
 

@@ -51,12 +51,37 @@ test('release tarball installs both presets and resolves the governed portable c
   const installed = runNpm(['install', '--ignore-scripts', '--no-audit', '--no-fund', '--prefix', prefix, '--cache', cache, tarball])
   assert.equal(installed.status, 0, installed.stdout + installed.stderr)
   const packageRoot = path.join(prefix, 'node_modules', 'dsh-researcher')
+  const projectRoot = path.join(temp, 'quickstart-project')
+  const reviewRoot = path.join(temp, 'quickstart-review')
+  fs.mkdirSync(projectRoot)
+  fs.writeFileSync(path.join(projectRoot, 'package.json'), JSON.stringify({ scripts: { test: 'node --test' } }))
+  const cognitionCli = path.join(packageRoot, 'bin', 'project-cognition.js')
+  const initialized = run(process.execPath, [cognitionCli, 'init', projectRoot], { cwd: projectRoot })
+  assert.equal(initialized.status, 0, initialized.stdout + initialized.stderr)
+  const quickstart = run(process.execPath, [
+    cognitionCli, 'quickstart', '--root', projectRoot, '--out', reviewRoot,
+    '--goal-id', 'package-smoke-goal', '--repo-revision', 'package-smoke-revision',
+  ], { cwd: projectRoot })
+  assert.equal(quickstart.status, 0, quickstart.stdout + quickstart.stderr)
+  const quickstartOutput = JSON.parse(quickstart.stdout)
+  assert.equal(quickstartOutput.approval_ready, false)
+  assert.equal(fs.existsSync(path.join(reviewRoot, 'REVIEW.md')), true)
+  assert.equal(fs.existsSync(path.join(reviewRoot, quickstartOutput.files.goal_draft)), true)
+
   const dshHome = path.join(temp, 'dsh-home')
-  const installer = run(process.execPath, [path.join(packageRoot, 'bin', 'install.js')], {
+  const installerEnv = { ...process.env, DSH_HOME: dshHome }
+  for (const key of Object.keys(installerEnv)) if (key.toLowerCase() === 'path') delete installerEnv[key]
+  installerEnv.PATH = path.join(temp, 'intentionally-empty-path')
+  const installer = run(process.execPath, [
+    path.join(packageRoot, 'bin', 'install.js'),
+    '--dsh-package', path.join(packageRoot, 'package.json'),
+    '--allow-unsupported-dsh',
+  ], {
     cwd: packageRoot,
-    env: { ...process.env, DSH_HOME: dshHome },
+    env: installerEnv,
   })
   assert.equal(installer.status, 0, installer.stdout + installer.stderr)
+  assert.match(installer.stderr, /UNSAFE OVERRIDE:[^\n]*NOT certified/)
 
   const presetRoot = path.join(dshHome, '.agent-presets')
   assert.equal(fs.existsSync(path.join(presetRoot, 'researcher', 'agent.cordis.yml')), true)

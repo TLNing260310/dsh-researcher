@@ -127,7 +127,7 @@ project-cognition cognition install <unique-review-dir-outside-repo>/state.r<N>.
 
 # 4. verifier draft 同时写 tool_name + 完整 arguments；seal 自动计算 arguments_hash 与 registry_hash
 project-cognition verifier seal <unique-review-dir-outside-repo>/verifiers.r<N>.draft.json
-project-cognition verifier install <unique-review-dir-outside-repo>/verifiers.r<N>.draft.json --root . --replace
+project-cognition verifier install <unique-review-dir-outside-repo>/verifiers.r<N>.draft.json --root . --replace --expect-current-hash <reviewed-base-verifier-registry-hash>
 
 # 5. 根据风险输入获得 Simple/Governed 建议；最终 mode 由批准者确认
 project-cognition goal recommend risk.json

@@ -5,194 +5,251 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)](./docs/validation-status.md)
 
-**让 AI coding 先恢复项目认知，再冻结完成条件，并在证据满足时停止。**<br>
-**Recover project cognition, freeze what “done” means, and let evidence—not agent confidence—end the loop.**
+**让 AI coding 先理解项目现实，再冻结“什么算完成”，最后由证据而不是 Agent 的自信结束工作。**<br>
+*Recover project reality, freeze what “done” means, and let evidence—not agent confidence—stop the loop.*
 
-`dsh-researcher` 是面向 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的开源原型，包含两个互补部分：
+`dsh-researcher` 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的开源研究型扩展。它提供两个可以分开使用的产品层：
 
-- **Project Research**：制度性只读的项目研究 preset，从代码、文档、历史和测试中重建项目目的、架构、约束、矛盾与未知。
-- **Project Cognition + Goal Governor**：把项目认知、Goal Contract、验证器和真实执行事件分开保存；模型可以执行和报告证据，但只有宿主可以判定目标完成。
+- **Project Research**：现在即可隔离试用的制度性只读研究模式。
+- **Goal Governor**：更高级的目标与完成条件治理；工程机制已经实现，净生产力收益仍在验证。
 
-> **Alpha boundary / 边界**：DSH adapter 已实现并有仓库内机械测试；长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。它不是“Researcher 比普通 Agent 更强”的广告，也不是通用自动编码框架。
+> **当前边界**：DSH adapter、只读运行时和离线验证设施已有机械测试与真实 Web smoke；长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。本项目不是“更聪明的 Agent”，也不承诺自动消除模型幻觉。
 
-## 为什么存在
+## 你可能正遇到这个问题
 
-AI coding 降低了单次修改的成本，却没有自动解决三个项目级问题：
+第一次让 Agent 修改仓库时，结果通常很好。第五次、第十次之后，问题开始改变：
 
-1. **Context loss**：新会话重新推导旧会话已经理解的内容。
-2. **Architecture drift**：每个局部 diff 都合理，累积结果却偏离原始目的和边界。
-3. **Endless polishing**：没有事先约定 Definition of Done，Agent 会继续寻找“还能改什么”。
+1. 新会话重新猜测项目目的，旧结论无法区分事实、推断和过期假设。
+2. 每个局部改动都看似合理，累积结果却越过原来的架构、安全或迁移边界。
+3. 测试已经通过，Agent 仍继续“顺便优化”；或者测试没有通过，它却先宣布 DONE。
+4. 人也不知道什么状态算完成，于是不断修改，直到时间耗尽或项目偏离初衷。
 
-本项目把这三类事实拆开：
+普通 Plan 记录“准备做哪些步骤”。本项目额外冻结：
 
 ```text
-.project-cognition/state.json       唯一 canonical 项目真相：目的、主张、证据与不变量
-        +
-.project-cognition/goals/*.json     这一次做到什么算完成、范围与预算
-        +
-DSH durable session events          实际调用过什么工具、得到什么结果
-        ↓
-host Goal Governor                  CONTINUE / NEEDS_HUMAN / DONE / STOPPED / ...
+项目为何存在、哪些事实可信
+             +
+本次任务做到什么算结束、不能碰什么、最多尝试多少次
+             +
+宿主真实观察到的工具调用、参数、结果和工作树
+             ↓
+CONTINUE / NEEDS_HUMAN / DONE / STOPPED
 ```
 
-`PROJECT_COGNITION.md` 是由 JSON 确定性生成的人类视图，不是第二份可以悄悄漂移的真相。Researcher 的 session-log `research-state` 是 **Research Session Ledger**：它保存当前研究中的候选 claims、假设和证据线索，但始终是 provisional，不会自动改变 canonical state 或授权执行。提升流程见 [Project Cognition Governance](./docs/cognition-governance.md)。
+## 60 秒看懂 Goal Governor
 
-## 适合什么场景
+仓库内置一个零网络、零模型费用的可运行演示。它创建隔离临时 fixture，真实启动两次冻结 verifier 子进程，并把进程退出码交给发布代码中的 DSH replay adapter 和 host reducer：
 
-适合：接手陌生仓库、重大重构前、AI 已连续修改多轮、架构/安全/迁移边界敏感、团队需要明确停止条件。
+```bash
+npm run demo
+```
 
-不适合：一个明显的小 bug、简单 CRUD、一次性脚本，或只需要常规 spec/plan/tasks 的工作；这些场景直接使用现有 Coding Agent、Spec Kit 或 OpenSpec 通常更轻。
+```text
+1. Assistant says DONE, but supplied no trusted verifier evidence.
+   Host decision: CONTINUE
 
-## 两种研究入口
+2. The matching host tool ran and returned exit_code=1.
+   Host decision: CONTINUE
 
-| 入口 | 权限与生命周期 | 用途 |
+3. The same frozen host tool ran after the change and returned exit_code=0.
+   Host decision: DONE
+```
+
+Agent 的最终文字不是证据。只有与已批准 verifier 的工具名、完整参数、参数哈希和结果策略匹配的宿主事件，才能满足完成条件。演示中的文件修改和 verifier 进程是真实的；DSH-shaped event envelope 与 call ID 由离线 harness 构造。演示源码见 [`scripts/demo-governor.js`](./scripts/demo-governor.js)。它证明真实进程结果可被 reducer 正确裁决，不是 Live DSH、Live E1 或生产力实验。
+
+## 先选你需要的层
+
+| 你的场景 | 建议 | 当前成熟度 |
 |---|---|---|
-| `/researcher <question>` | Governed Coding 中一次只读 turn，结束后自动退出 | 编码过程中临时核对项目事实 |
-| `项目研究 Project Research` preset | 持续模式；要求 sandbox=`read-only`、approval=`never`，无通用 shell，并由 Runtime Certificate 自证 | 高风险或完整项目研究 |
+| 接手陌生仓库、重构前核对架构、只想让 Agent 只读研究 | **Project Research** | 可隔离试用；安全边界有真实 DSH Web smoke |
+| 编码中临时核对一个项目事实 | Governed Coding 中运行 `/researcher <question>` | 可隔离试用；一次只读 turn |
+| 需要冻结验收条件、预算、人工 gate 和停止状态 | **Goal Governor** | 高级 alpha；机制有测试，结果增益未证明 |
+| 一个明显的小 bug、简单 CRUD、一次性脚本 | 继续使用普通 Agent / Plan | 本项目通常过重 |
+| 只使用 Codex、Claude Code、Zed/Zcode 或 OpenClaw | 暂不安装 | Portable Core 存在，但相应 adapter 未交付 |
 
-Governed Coding 还支持 `/researcher on|off` 持久 guarded mode；它有工具白名单保护，但不等同于独立 preset 的环境级只读证明。`/researcher goal <task>` 只提出 Goal Contract 草案，不批准、不执行。
+Project Research 与 Goal Governor 并不捆绑。你可以只安装后试用前者，不创建任何 Goal Contract。
 
-## 快速开始
+## 安全试装
 
-安装已发布的 alpha（同时安装 `researcher`、`governed` 和 portable core）：
+### 前置条件
+
+- DeepSeek Harness：精确验证版本 `0.1.0-rc.7`。
+- Node.js：`>=22.12.0`。
+- 建议使用独立 `DSH_HOME` 和非关键仓库副本首次试用。
+- 当前版本：`0.8.0-alpha.7`，不承诺稳定 API。
+
+先预览操作，不写入 preset：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.6
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 --dry-run
 ```
 
-只读研究：新建 DSH 会话，先选 `Read Only`，再选「项目研究 Project Research」，然后描述仓库和你真正想判断的问题。DSH Web 的 `Read Only` 当前带 `approval=ask`；preset 会把它单向收紧为 `never`（UI 显示 `Custom`），不会放宽任何权限。若选择 writable 模式则拒绝运行。`research_doctor` 是强制首个工具调用；证书不是 SAFE 时研究不会开始。
-
-Goal Governor 最小入口：
+确认后安装：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.6 project-cognition init .
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.7
 ```
 
-随后人工维护 Project Cognition、冻结 Verifier Registry、批准 Goal Contract，并在「目标治理编码 Governed Coding」中运行：
+安装器默认不会覆盖已有 preset，并严格核对 DSH 版本。备份、升级、卸载、回滚以及从 GitHub Release 校验 SHA-256 后安装的完整流程见 [安全安装与恢复](./docs/installation.md)。不要在不了解现有 preset 内容时使用覆盖选项。
+
+## 路径 A：只读研究
+
+1. 新建 DSH Web 会话，先选择 `Read Only`。
+2. 再选择「项目研究 Project Research」。preset 会把 `approval=ask` 单向收紧为 `never`，因此 UI 显示 `Custom`。
+3. 给出具体问题，而不是只说“看看项目”：
+
+```text
+先运行 research_doctor。只读审阅本仓库，并用 path:line 证据回答：
+1. 项目真正目的是什么？
+2. 哪些架构约束不可改变？
+3. README、实现和测试有哪些矛盾？
+4. 下一项最值得验证的假设是什么？
+无法验证的内容标记 UNKNOWN，不要写文件。
+```
+
+`research_doctor` 必须是首个工具调用；Runtime Certificate 不是 `SAFE` 时研究不会开始。切换到 writable 权限会撤销旧证书，并在下一次模型调用前拒绝继续。
+
+真实 smoke 的结论并非“模型研究得很好”：发布包确实达到了 `SAFE` 并拒绝权限漂移，但早期本地模型也曾忘记任务、虚构 Rust 路径。这份完整记录见 [DSH Web local smoke](./docs/evidence/dsh-web-local-smoke-2026-08-24.md)。alpha.7 候选又用 Qwen3 14B 与 DeepSeek R1 14B 做了两次本地探测：前者经纠正后仍未完成报告，后者的无证据报告被 terminal gate 拒绝。见 [Project Research local-output smoke](./docs/evidence/project-research-local-output-smoke-2026-08-25.md)。它们证明安全门有用，同时反证了“SAFE 就等于研究质量已证明”。
+
+### 两种研究入口
+
+| 入口 | 生命周期 | 用途 |
+|---|---|---|
+| `项目研究 Project Research` preset | 持续模式；环境级 read-only、approval never、无通用 shell | 完整或高风险项目研究 |
+| `/researcher <question>` | Governed Coding 中一次只读 turn，结束后自动退出 | 编码中临时核对事实 |
+
+Governed Coding 还支持 `/researcher on|off` 持久 guarded mode。它有工具白名单保护，但不等同于独立 preset 的环境级只读证明。
+
+## 路径 B：五分钟建立 Goal Contract
+
+引导器一次生成 Project Cognition、Verifier Registry、Goal Contract 的**待审核草稿**和 `REVIEW.md`，并自动绑定当前 cognition hash、Git revision 与 verifier hash：
+
+```bash
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
+```
+
+第一条只在项目尚未建立 `.project-cognition/state.json` 时执行；已有 canonical state 的项目直接运行第二条。命令均为单行，可直接用于 PowerShell 或 POSIX shell。
+
+若无法从 `package.json`、`Cargo.toml`、`pyproject.toml` 或 `go.mod` 推断测试命令，则显式提供：
+
+```bash
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout --verify-command "npm test"
+```
+
+省略 `--verify-tool` 时，Windows 默认 `pwsh`，Unix 默认 `bash`；只有 verifier 必须由其他宿主工具执行时才显式指定。
+
+编辑生成的草稿后同步冻结引用：
+
+```bash
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart sync ../my-goal-review --root .
+```
+
+引导器**不会**替你批准 Goal、seal 项目事实或安装 canonical state。打开生成的 `REVIEW.md`，审核目的、边界、MUST 条件、预算与 verifier 后，再执行其中列出的批准命令。完整说明见 [五分钟 Quickstart](./docs/quickstart.md)。
+
+批准后，在「目标治理编码 Governed Coding」中运行：
 
 ```text
 /researcher run .project-cognition/goals/<goal>.r1.json
 ```
 
-完整命令见 [Goal Governor 指南](./docs/goal-governor.md#8-最小可运行流程)，可复制的完整合同见 [Minimal Simple Goal](./examples/simple-goal/README.md)。安装脚本也支持 clone 后运行 `install.ps1` / `install.sh`。
+## 什么算完成
 
-## 什么算 DONE
-
-- 每个 MUST criterion 都由冻结的 verifier 证明；不能引用模型编造的 call ID。
-- tool name、完整 arguments、arguments hash 和结果策略必须与批准时一致。
-- 最终一次 attempt 必须重新证明全部 MUST，不能继承旧 attempt 的成功。
-- 主观或架构判断必须经过直接 human gate。
+- 每个 MUST criterion 都必须由冻结 verifier 或直接 human gate 证明。
+- 最终 attempt 必须重新证明全部 MUST，不能继承旧 attempt 的成功。
 - SHOULD 未完成不会成为继续消耗尝试的理由。
-- baseline 已满足时返回 `ALREADY_SATISFIED`，不得为了“显得有工作”而改代码。
-- Simple 最多 2 次修改尝试，Governed 最多 5 次；连续 2 次无 MUST 进展返回 `STOPPED`。
-- 合同、认知或验证器漂移会 `NEEDS_HUMAN`；只有真实外部阻塞才是 `BLOCKED`。
+- baseline 已满足时返回 `ALREADY_SATISFIED`，不得为了显得有工作而修改代码。
+- 达到尝试、时间、token 或连续无进展预算时返回 `STOPPED`。
+- 合同、认知、权限或验证器漂移时返回 `NEEDS_HUMAN`。
+- 模型不能写入或覆盖自己的终态；宿主从可信事件前缀复算决定。
 
-模型无权写入终态。DSH 宿主重放 session log 后，才可调用 `complete / pause / block`。
+Goal Contract v1 的 `in_scope / out_of_scope / do_not_touch` 当前是冻结的语义约束，不是通用文件路径 allowlist。E1 runner 对实验 fixture 的允许路径另有机械检查；通用 hard path enforcement 需要未来显式 schema，不在本版本能力内。
 
-Goal Contract v1 的 `boundaries.in_scope / out_of_scope / do_not_touch` 是冻结的**语义约束文字**。当前通用 DSH runtime 会拒绝宿主已经记录的 scope guard violation，但不会把这些任意字符串自动编译为文件系统 allowlist，也不会自行比较工作树路径。E1 是更窄的实验例外：冻结 manifest 的 `allowed_changes` 由 E1 runner/scorer 机械检查，并与 fixture 合同边界一同裁决。通用、机器可执行的路径 scope 需要未来显式的 Goal Contract schema v2；在此之前不能把 v1 文本描述成 hard path enforcement。
+## Project Cognition 如何防止架构漂移
 
-## 与相近方案的简要比较
+```text
+.project-cognition/state.json       唯一 canonical 项目真相
+.project-cognition/goals/*.json     本次目标、边界、预算和完成条件
+DSH durable session events          宿主观察到的真实执行
+PROJECT_COGNITION.md                 由 state.json 确定性生成的人类投影
+```
 
-Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到了什么”，task 工具保存“还有什么没做”。本项目尝试保存的是：**关于项目现实的主张、为什么相信它、何时证据已经陈旧，以及目标是否有结果证据。**
+Research Session Ledger 只保存候选 claims、假设和证据线索。模型不能把会话结论自动晋升为项目事实。唯一提升流程是：
 
-| 方案 | 用户获得的主要价值 | 与本项目的关系 |
+```text
+session ledger → draft revision → owner review → seal → regenerate projection
+```
+
+这条边界刻意保留人工责任：自动生成草稿可以降低摩擦，但不能让同一个模型既提出事实、又批准事实、再依据自己批准的事实完成任务。
+
+## 证据现状
+
+| 层级 | 当前结论 | 它真正说明什么 |
 |---|---|---|
-| [GitHub Spec Kit](https://github.github.com/spec-kit/) | Constitution → Spec → Plan → Tasks → Implement → Converge | 目标治理的直接部分替代；本项目额外绑定 observed evidence、认知约束和通用终态 |
-| [Kiro](https://kiro.dev/docs/) | Steering、Specs、任务执行、Hooks、权限与完整客户端体验 | 用户体验重叠最高；本项目更窄，强调独立只读研究和宿主终态裁决 |
-| [OpenSpec](https://github.com/Fission-AI/OpenSpec) | 轻量 proposal/spec/design/tasks、delta 和归档 | 很适合作为 BUILD 结论的下游；它保存约定变化，本项目核对观察现实与矛盾 |
-| [Serena](https://github.com/oraios/serena/blob/main/docs/02-usage/045_memories.md) | 语义代码工具、onboarding、可版本化 Markdown memories | 项目记忆层的强替代；本项目增量是 typed claims、证据、依赖和 freshness |
-| [Beads](https://github.com/gastownhall/beads) | 持久依赖任务图、ready/claim/close、gates 与多 Agent 协调 | 任务状态部分替代且可能互补：Beads 管工作项，Governor 裁决结果是否真的达成 |
-| [Claude Code](https://code.claude.com/docs/en/memory) | CLAUDE.md、auto memory 和只读 Plan mode | 单客户端最容易获得的替代；本项目目标是客户端无关、证据化和可失效协议 |
+| 单元、replay、集成与 package smoke | PASS | 哈希、revision、预算、人工 gate、伪证据拒绝、host completion 和隔离安装按设计工作 |
+| `project-cognition doctor .` | PASS | canonical state、schema、hash、projection、Goal 与 registry 当前一致；不证明引用证据仍新鲜 |
+| DSH Web Project Research smoke | PASS（运行时边界）；本地输出 probe FAIL | 精确发布 runtime 可达 SAFE 并拒绝权限漂移/未认证终态；两个本地 14B probe 未产出合格报告 |
+| Goal Governor E1 infrastructure | READY；Live E1 NOT RUN | preflight、run lock、成本准入、bundle、replay 与 scorer 已存在；不证明真实模型 conformance |
+| Experiment C+ | causal-invalid，永久保留 | 基础设施能运行，同时评测会拒绝 snapshot leakage 和伪正向结论 |
 
-更详细、带官方来源的边界见 [竞争与集成地图](./docs/landscape.md)。这里不主张“没有竞品”：每个单项能力都有成熟替代，项目是否值得继续取决于“证据失效 + 结果完成裁决”的组合能否产生真实维护增量。
-
-## 有价值的测试证据
-
-| 证据 | 当前结果 | 能说明什么 |
-|---|---|---|
-| Node unit/replay/integration/package tests | 当前仓库测试套件 PASS | sealed-only cognition promotion、hash/revision/replay、预算、人工 gate、伪终态/伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作；具体数量以当次 `npm test` 输出为准 |
-| `project-cognition doctor .` | governance lock、cognition schema/hash、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 检测 active/stale governance lock，以及 canonical state/projection 缺失或不匹配；**不枚举所有 `.tmp-*` / `.bak-*`，不执行 crash recovery，不提供跨文件断电原子性，也不证明代码或引用证据仍新鲜**，freshness 需单独使用 fingerprint report |
-| DSH Web Researcher runtime smoke | alpha.5 candidate 在 `0.1.0-rc.7` Web 中完成本地模型实测：重组后 Runtime Certificate SAFE；权限从 read-only 漂移到 workspace-write 时在下一 model call 前拒绝 | 证明当前 Researcher preset 的 Web 重组、只读收紧、doctor 与漂移拒绝路径可运行；不是 Goal Governor live E1，也不证明研究输出价值 |
-| Goal Governor E1 infrastructure | **READY；Live E1 NOT RUN** | 协议定义的 fixture、冻结 manifest/run lock、离线 preflight、fail-closed live runner、成本准入与对抗 scorer 已具备；**不证明**真实模型结果价值或多客户端可移植性 |
-| Experiment A（12 runs） | 同一模型下编排显著改变成本与输出，但未证明 Researcher 更优 | 客户端/工作流重要，不等于本项目有净收益 |
-| Experiment C+（12 runs） | 状态迁移链可运行；A/B 因 snapshot leakage 被判定为 causal-invalid | 证明基础设施存在，也证明评测会保留失败并拒绝夸大结论 |
-
-本地复核：
+本地复核不会调用模型或网络：
 
 ```bash
-npm test
-npm run doctor
+npm run check
+npm run demo
 npm run eval:e1:preflight
 ```
 
-`eval:e1:preflight` 只执行本地结构、hash、合同和 fixture verifier 检查，网络调用与模型调用均为 0。未来产生外部 live evidence bundle 后，离线评分入口为：
+公开证明顺序固定为：`Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`。轨迹、阈值和 invalidity rules 只以冻结的 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md) 为准，README 不复制实验定义。
 
-```bash
-npm run eval:e1:score -- --run <external-bundle-dir>
-```
+### Live 模型成本边界
 
-该命令生成 bundle 内的 `score.json`；`PASS | FAIL | INVALID` 只由宿主事件、真实 call ID/参数、冻结对象与工作树证据决定，不采用助手最终文字。有效但未达到协议终态的包会明确得到 `FAIL_UNDER_TRUSTED_HOST`，不会再出现 verdict=FAIL、causal status=PASS 的冲突。
+北京时间工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁止 DeepSeek 远程 API；这些时段只允许锁定到字面 loopback 地址的本地路由。其他时段和周末的远程 E1 也只能使用 official `deepseek-v4-flash`、精确 `https://api.deepseek.com`、完整 run lock、预算和显式费用确认。loopback 只证明第一跳在本机，不能证明本地服务没有再代理远程。
 
-默认真实性边界仍是：实验操作者与模型不可写的外部 bundle root 可信。可以用 bundle 外的 Ed25519 key 对原始文件 commitment 签名，再让 scorer 使用 bundle 外的公钥验签：
+## 与 Plan、Spec 和 Memory 的区别
 
-```bash
-npm run eval:e1:attest -- create --run <external-bundle-dir> --private-key <external-private.pem> --out <external-attestation.json>
-npm run eval:e1:score -- --run <external-bundle-dir> --attestation <external-attestation.json> --trusted-public-key <external-public.pem>
-```
-
-验签只证明“与所给公钥对应的私钥签过这些字节，且其后未被修改”，不能证明密钥持有人身份、签署者诚实、DSH 确实运行、TTY 操作者身份或产品因果价值；代表“无需信任宿主即可独立证明 live 来源”的 `valid_for_live_conformance_claim` 因而始终为 `false`。完整、非 synthetic 的 PASS 会另将 `valid_for_protocol_conformance_under_trusted_host` 设为 `true`，表示在预注册 trusted-host 与外部 bundle-root 假设下支持条件式 E1 conformance，而不是独立来源证明。未提供外部签名时，成功状态仍是 `PASS_UNDER_TRUSTED_HOST`。live runner 默认拒绝启动，只有完整 run lock、固定 DSH 版本和显式 `--ack-live-cost` 同时存在才可能进入真实执行；本版本没有运行 live E1。
-
-### Live 模型成本规则
-
-北京时间周一至周五 `[09:00,12:00)`、`[14:00,18:00)` 禁止 DeepSeek API。官方 E1 run lock 冻结 `base_url`：远程路由只能是 `provider=deepseek-official`、`model=deepseek-v4-flash`、`base_url=https://api.deepseek.com`；黑窗内只能选择 `local-loopback`，并且仍须使用 DSH 的 `deepseek-official` DeepSeek-compatible adapter 和一个无尾斜杠、显式端口、字面 loopback 的 `base_url`。周末只免时段禁令，不免 run lock、预算、费用确认、官方 Flash 或其精确远程 `base_url` 约束。
-
-每个 child 启动前，外层 runner 强制生成冻结 settings 文件（`watch=false`）并设置锁定的 `DEEPSEEK_BASE_URL`；child 使用 DSH 公共 DeepSeek resolver，在 create/resume 以及每次模型 followup 的前后重新解析并核对 resolved base URL。runner 还在 pre-output、pre-spawn 和每个 resume 进程重算准入，按 `max_time_sec + 60` 秒预约，并将 pre-spawn 的绝对 deadline 传入 child；child timeout 不超过 `max_time_sec` 且随启动延迟缩短。完整规范只以 [v1.1 协议](./docs/goal-governor-evaluation-protocol.md#e1-model-route-与成本准入) 为准。
-
-这只能约束官方 runner。loopback 只证明 DSH adapter 的第一跳落在本机，不能证明该本地服务没有再代理到远程 API；它也不能证明宿主时钟/调度可信、操作系统无外连、provider 计费身份、TTY 操作者身份，或阻止绕开 runner。真实运行还应配置可信时间源、服务端限额、独立 E1 key、账单告警和必要的出口控制。alpha.5 只运行了独立的本地 Researcher Web smoke，没有运行 Goal Governor live E1 或远程 API；E1 的 `local-loopback` route 仍须在 DSH-dependent Gate 0 验证。
-
-公开验证边界见 [Validation Status](./docs/validation-status.md)，预注册的下一阶段实验见 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md)。证明顺序固定为 `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`；轨迹、estimand 与阈值只以冻结协议为准。
-
-alpha.5 的 Researcher Web smoke 不替代冻结协议中的 Goal Governor DSH-dependent Gate 0 checks；当前 candidate 仍须先完成 Gate 0，之后才进入 live E1。历史 Phase A runtime 仅供审计，不得用于新模型运行。
-
-## 已证明、未证明与不允许静默改变
-
-**仓库内已证明**：canonical hashing、sealed-only 且防 stale review / revision 回退的安装、确定性重放、只读工具面、真实 verifier call 绑定、attempt/no-progress 限制、证据前缀终态复算和 host-owned completion。
-
-**仍是待验证假设**：Project Cognition 的纵向维护价值；Goal Governor 相对等内容 Research-only 的增量价值；不同模型/客户端的 effect size；Codex/Claude Code/Kiro/OpenClaw/Zed adapter 可行性。前两项是不同 claim，不能由同一个对照静默合并证明。
-
-**硬不变量**：Certified Researcher 保持只读；JSON 是 Project Cognition 唯一规范事实，Research Session Ledger 只是非权威输入；模型不能批准、削弱或完成自己的 Goal Contract；失败或无效实验不能被改写成正向产品证据；已记录的目标终态必须等于从其先前可信证据复算出的 host reducer 结果，终态文字或标签不能覆盖 reducer。后续有效实验可以建立新 claim，但不能洗白历史 Experiment C+。改变这些内容需要新的 owner-reviewed cognition revision、seal 和重新审查。
-
-## 架构与可移植性
-
-Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas、CLI）不依赖 DSH。客户端 adapter 必须证明五项能力才能标记为 `governed`：host-owned approval channel（并明示 identity assurance）、hard stop/pause、durable ordered events、trusted verifier binding、project-root confinement。缺少其中任何一项时只能称为 advisory。E1 的 headless gate 只证明模型进程外的交互式 TTY 输入与命令链，不证明操作者的密码学身份。
-
-当前只有 DSH adapter；不要把“核心可移植”误读成“其他客户端已经兼容”。
-
-## 仓库入口
-
-| 入口 | 内容 |
+| 工具层 | 主要回答 |
 |---|---|
-| [PROJECT_COGNITION.md](./PROJECT_COGNITION.md) | 本项目目的、架构、不变量、已证/未证价值和下一步证明 |
-| [docs/architecture.md](./docs/architecture.md) | 当前真实架构与权限面 |
-| [docs/goal-governor.md](./docs/goal-governor.md) | 合同、验证器、状态机、两种 Researcher 入口和 CLI |
-| [docs/cognition-governance.md](./docs/cognition-governance.md) | 唯一 canonical state、Session Ledger 边界、promotion 与证明顺序 |
-| [docs/validation-status.md](./docs/validation-status.md) | Validated / Unknown / Invalidated 边界 |
-| [docs/landscape.md](./docs/landscape.md) | 相近方案、替代关系与集成边界 |
-| [evaluation/](./evaluation/) | 协议、锁、原始运行、失败记录和评分产物 |
-| [schemas/](./schemas/) | Portable JSON contracts |
+| Plan / Tasks | 接下来准备做哪些步骤？ |
+| Spec | 准备构建或改变什么？ |
+| Memory | Agent 曾经学到了什么？ |
+| Project Cognition | 关于项目现实的主张是什么，为什么相信，何时失效？ |
+| Goal Governor | 什么状态算完成，谁有权证明，何时必须停止？ |
 
-## 参与和反馈
+GitHub Spec Kit、OpenSpec、Kiro、Serena、Beads 和客户端自带 Plan/Memory 都可能是更合适的选择。本项目的差异仅在于“可失效的项目认知 + 宿主拥有的终态裁决”这一组合；每个单项能力都有成熟替代。详细边界见 [竞争与集成地图](./docs/landscape.md)。
 
-- 真实报告、误判和“没有产生价值”的结果都欢迎提交到 [Show us your Researcher report](https://github.com/TLNing260310/dsh-researcher/discussions/1)。
-- Bug 请使用 [issue template](https://github.com/TLNing260310/dsh-researcher/issues/new/choose)。
-- 开始贡献前阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)；安全问题按 [SECURITY.md](./SECURITY.md) 私下报告。
+## 可移植性
+
+Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas、CLI）不依赖 DSH。但客户端 adapter 只有机械证明以下能力后才能称为 `governed`：host-owned approval、hard stop/pause、durable ordered events、trusted verifier binding、project-root confinement。缺少任一项时只能称为 advisory。
+
+当前只有 DSH adapter。Codex、Claude Code、Kiro、OpenClaw 和 Zed/Zcode 的 effect size 与 adapter 可行性仍是待验证假设，不是已交付兼容性。
+
+## 仓库地图
+
+| 入口 | 从这里得到什么 |
+|---|---|
+| [安全安装与恢复](./docs/installation.md) | dry-run、安装、备份、卸载、回滚与制品校验 |
+| [五分钟 Quickstart](./docs/quickstart.md) | 从任务描述到可人工审核的 Goal 草稿 |
+| [成熟项目介绍](./docs/project-introduction.md) | 可复用的一句话、用户叙事、能力与诚实边界 |
+| [Validation Status](./docs/validation-status.md) | Validated / Unknown / Invalidated 的正式边界 |
+| [Project Cognition](./PROJECT_COGNITION.md) | 项目目的、不变量、已证/未证价值与下一证明 |
+| [架构](./docs/architecture.md) | runtime、portable core、权限面和信任边界 |
+| [Goal Governor 指南](./docs/goal-governor.md) | 合同、验证器、状态机与完整 CLI |
+| [Cognition Governance](./docs/cognition-governance.md) | canonical truth、Session Ledger 与 promotion |
+| [E1 harness](./evaluation/goal-governor-e1/README.md) | run lock、成本准入、证据包和离线评分 |
+| [失败与真实 smoke](./docs/evidence/dsh-web-local-smoke-2026-08-24.md) | 每轮运行结果、缺陷和不能推出的结论 |
+| [alpha.7 本地输出 smoke](./docs/evidence/project-research-local-output-smoke-2026-08-25.md) | 两个本地模型为何未产出可发布 Researcher 报告 |
+
+## 反馈与安全
+
+- 有价值、无价值、误阻塞和错误 DONE 都欢迎提交到 [Show us your Researcher report](https://github.com/TLNing260310/dsh-researcher/discussions/1)。
+- Bug 使用 [issue template](https://github.com/TLNing260310/dsh-researcher/issues/new/choose)。
+- 贡献前阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+- 安全问题按 [SECURITY.md](./SECURITY.md) 私下报告。
 
 ## Compatibility
 
-- DeepSeek Harness：目标版本为 `0.1.0-rc.7`；alpha.5 已完成 Researcher Web 本地 smoke，但未运行 Goal Governor E1 的 DSH-dependent Gate 0 / live trajectories。
-- Node.js：`>=22.12.0`；仓库/CI 机械测试不能替代 live E1。
-- 当前版本：`0.8.0-alpha.6`，不承诺稳定 API。alpha.6 仅修正三种安装器的 DSH Web 真实操作指引；运行时与已通过发布 tarball 验收的 alpha.5 相同。
-
-## License
-
-[MIT](./LICENSE) © 2026 TLNing260310
+- DeepSeek Harness：目标且精确验证版本 `0.1.0-rc.7`。
+- Node.js：`>=22.12.0`。
+- 当前版本：`0.8.0-alpha.7`；Researcher/Goal runtime 的权限与终态逻辑沿用已通过发布 tarball smoke 的 alpha.6，本版增加安全安装生命周期、review-first Quickstart 和可运行演示。
+- License：MIT。

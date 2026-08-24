@@ -7,7 +7,7 @@ From the target repository:
 ```bash
 project-cognition init .
 project-cognition goal recommend examples/simple-goal/risk.json
-project-cognition verifier install examples/simple-goal/verifier-draft.json --root . --replace
+project-cognition verifier install examples/simple-goal/verifier-draft.json --root . --replace --expect-current-hash <reviewed-base-verifier-registry-hash>
 ```
 
 The verifier install command prints the sealed `registry_hash`. Read `.project-cognition/state.json` for `state_hash`, then copy `goal-draft.json` into your own project and replace:
