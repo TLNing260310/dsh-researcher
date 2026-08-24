@@ -1,6 +1,6 @@
 # Goal Governor Value Evaluation Protocol v1
 
-Status: freeze candidate. 本协议在 live value runs 之前确定主张、对照、无效条件和继续/停止阈值。修改主指标、任务或阈值后必须 bump protocol 并重跑，不能追着结果改口径。
+Status: **frozen v1 for E1-ready infrastructure (2026-08-24)**. 尚未运行 live E1。本文在 live runs 之前固定主张、对照、无效条件和继续/停止阈值；修改轨迹、主指标、任务或阈值必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
 
 ## 1. 要区分的三类主张
 
@@ -37,6 +37,20 @@ Gate 0 失败时不得开始价值实验。
 6. **Resume/replay**：在 observation 后重启并恢复 session；期望 replay events、decision、diagnostics 与 live 状态完全相同。
 
 通过阈值：6/6 轨迹满足期望，false terminal=0，绕过通用 `dsh-tool-goal`=0。任何安全/authority 失败都是 release blocker，不取平均。
+
+Resume/replay 的“相同”冻结为三次比较：进程退出前的 observation-prefix fold；`agents.resume()` 后、发送任何新 followup 前对同一 prefix 的 fold；最终 live 状态与完整原始日志的离线 fold。恢复必然新增 session lifecycle 和后续事件，因此不得要求恢复前后的完整 session event 数组字节相同。
+
+E1 结果只允许三种状态：
+
+- `PASS`：证据完整，轨迹形状、宿主终态、边界和 replay 全部符合预期；
+- `FAIL`：证据足以裁决，但模型未完成冻结轨迹，或出现 false terminal、越界写入、STOPPED 后继续修改等真实 conformance 失败；
+- `INVALID`：缺原始日志/hash、运行配置漂移、gate command 未绑定到外部交互式 TTY 与 native command 链、错误 session resume、ground truth/fixture 污染、provider/quota/network 在轨迹开始前使运行不可裁决。TTY 证据不等于操作者的密码学身份认证。
+
+不得用 reducer 单测替代模型未执行的 live 轨迹，也不得删除 FAIL/INVALID bundle 后只报告成功运行。
+
+### E1 后的 non-inferential pilot
+
+E1 通过后先用少量、可恢复的真实仓库验证安装、合同准备、telemetry、blinding、scoring 与人工流程。Pilot 只回答“正式实验能否按协议执行”，不产生产品效果结论；已暴露的 pilot 任务不得复用于盲测 E2。若 pilot 导致任务、指标、阈值或流程改变，必须 bump protocol 并重新冻结后才能开始 E2。
 
 ## 4. E2 — 真实维护价值（三臂对照）
 
@@ -93,4 +107,4 @@ C 相对 B 必须同时满足：
 
 以下任一发生则 run 无效，不计入正向结论：ground truth 可读、不同 arm 获得额外 meta-instruction、verifier invocation 不等价、失败 run 被删除、人工裁决不盲、任务/指标在见结果后改变、terminal 只由助手文本推断。
 
-每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。
+每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据，不声称能在没有外部 attestation 时识别恶意宿主整体伪造的自洽 bundle。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。

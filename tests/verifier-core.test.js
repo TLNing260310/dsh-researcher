@@ -40,6 +40,34 @@ test('runtime errors cannot become passing verifier evidence', () => {
   assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'fail')
 })
 
+test('duplicate result events cannot overwrite an earlier result for the same call ID', () => {
+  const value = events(undefined, { exit_code: 1 })
+  value.push({ seq: 3, type: 'tool/result', data: { message: { callId: 'call-1', content: [{ type: 'text', text: JSON.stringify({ exit_code: 0 }) }] } } })
+  const verified = verifyEvidence(registry(), 'tests.core', ['call-1'], value, 4)
+  assert.equal(verified.result, 'unknown')
+  assert.match(verified.diagnostics.join('; '), /duplicate tool\/result events/)
+})
+
+test('a result event before its corresponding call cannot become verifier evidence', () => {
+  const value = events()
+  value.reverse()
+  const verified = verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3)
+  assert.equal(verified.result, 'unknown')
+  assert.match(verified.diagnostics.join('; '), /does not occur after its tool\/call event/)
+})
+
+test('duplicate call IDs and duplicate evidence references are rejected as ambiguous', () => {
+  const duplicateCall = events()
+  duplicateCall.splice(1, 0, { seq: 1.5, type: 'tool/call', data: { callId: 'call-1', name: 'pwsh', arguments: JSON.stringify({ command: 'npm test' }) } })
+  const duplicateCallResult = verifyEvidence(registry(), 'tests.core', ['call-1'], duplicateCall, 3)
+  assert.equal(duplicateCallResult.result, 'unknown')
+  assert.match(duplicateCallResult.diagnostics.join('; '), /duplicate tool\/call events/)
+
+  const duplicateRefResult = verifyEvidence(registry(), 'tests.core', ['tool:call-1', 'call-1'], events(), 3)
+  assert.equal(duplicateRefResult.result, 'unknown')
+  assert.match(duplicateRefResult.diagnostics.join('; '), /duplicate evidence reference/)
+})
+
 test('rendered shell failure markers are enforceable without structured result leakage', () => {
   const shellRegistry = sealRegistry({
     schema: 'project-cognition/verifier-registry/v1', revision: 1, registry_hash: null,

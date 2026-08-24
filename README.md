@@ -26,7 +26,7 @@ AI coding 降低了单次修改的成本，却没有自动解决三个项目级�
 本项目把这三类事实拆开：
 
 ```text
-.project-cognition/state.json       项目为何存在、当前相信什么、证据与不变量
+.project-cognition/state.json       唯一 canonical 项目真相：目的、主张、证据与不变量
         +
 .project-cognition/goals/*.json     这一次做到什么算完成、范围与预算
         +
@@ -35,7 +35,7 @@ DSH durable session events          实际调用过什么工具、得到什么�
 host Goal Governor                  CONTINUE / NEEDS_HUMAN / DONE / STOPPED / ...
 ```
 
-`PROJECT_COGNITION.md` 是由 JSON 确定性生成的人类视图，不是第二份可以悄悄漂移的真相。
+`PROJECT_COGNITION.md` 是由 JSON 确定性生成的人类视图，不是第二份可以悄悄漂移的真相。Researcher 的 session-log `research-state` 是 **Research Session Ledger**：它保存当前研究中的候选 claims、假设和证据线索，但始终是 provisional，不会自动改变 canonical state 或授权执行。提升流程见 [Project Cognition Governance](./docs/cognition-governance.md)。
 
 ## 适合什么场景
 
@@ -57,7 +57,7 @@ Governed Coding 还支持 `/researcher on|off` 持久 guarded mode；它有工�
 安装已发布的 alpha（同时安装 `researcher`、`governed` 和 portable core）：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.1
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.2
 ```
 
 只读研究：新建 DSH 会话，选择「项目研究 Project Research」，确认 read-only + never，然后描述仓库和你真正想判断的问题。`research_doctor` 是强制首个工具调用；证书不是 SAFE 时研究不会开始。
@@ -65,7 +65,7 @@ npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.1
 Goal Governor 最小入口：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.1 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.2 project-cognition init .
 ```
 
 随后人工维护 Project Cognition、冻结 Verifier Registry、批准 Goal Contract，并在「目标治理编码 Governed Coding」中运行：
@@ -108,9 +108,10 @@ Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到�
 
 | 证据 | 当前结果 | 能说明什么 |
 |---|---|---|
-| Node unit/replay/integration/package tests | **83/83 pass** | hash/revision/replay、预算、人工 gate、伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作 |
-| `project-cognition doctor .` | cognition、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 本仓库自己的规范状态与投影未漂移 |
+| Node unit/replay/integration/package tests | 当前仓库测试套件 PASS | hash/revision/replay、预算、人工 gate、伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作；具体数量以当次 `npm test` 输出为准 |
+| `project-cognition doctor .` | cognition schema/hash、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 规范对象的表示完整性与投影一致；**不证明代码或引用证据仍新鲜**，freshness 需单独使用 fingerprint report |
 | DSH preset discovery | `researcher` 与 `governed` 在 DSH `0.1.0-rc.7` 临时安装后均 `broken=null` | 发布布局和本地插件路径可由目标 DSH 版本加载 |
+| Goal Governor E1 infrastructure | **READY；Live E1 NOT RUN** | 协议定义的 fixture、冻结 manifest/run lock、离线 preflight、fail-closed live runner 与对抗 scorer 已具备；**不证明**真实模型结果价值或多客户端可移植性 |
 | Experiment A（12 runs） | 同一模型下编排显著改变成本与输出，但未证明 Researcher 更优 | 客户端/工作流重要，不等于本项目有净收益 |
 | Experiment C+（12 runs） | 状态迁移链可运行；A/B 因 snapshot leakage 被判定为 causal-invalid | 证明基础设施存在，也证明评测会保留失败并拒绝夸大结论 |
 
@@ -119,21 +120,30 @@ Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到�
 ```bash
 npm test
 npm run doctor
+npm run eval:e1:preflight
 ```
 
-公开验证边界见 [Validation Status](./docs/validation-status.md)，预注册的下一阶段实验见 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md)。
+`eval:e1:preflight` 只执行本地结构、hash、合同和 fixture verifier 检查，网络调用与模型调用均为 0。未来产生外部 live evidence bundle 后，离线评分入口为：
+
+```bash
+npm run eval:e1:score -- --run <external-bundle-dir>
+```
+
+该命令生成 bundle 内的 `score.json`；`PASS | FAIL | INVALID` 只由宿主事件、真实 call ID/参数、冻结对象与工作树证据决定，不采用助手最终文字。这里的真实性边界是：实验操作者与模型不可写的外部 bundle root 可信；scorer 能拒绝会话内伪证据和包内漂移，但没有外部 attestation，不能鉴别恶意宿主从零伪造的一整套自洽 bundle。因此 `causal_validity` 只会给出 `PASS_UNDER_TRUSTED_HOST`，不会自动生成无条件的 live 因果结论。live runner 默认拒绝启动，只有完整 run lock、固定 DSH 版本和显式 `--ack-live-cost` 同时存在才可能进入真实执行；本版本没有运行 live E1。
+
+公开验证边界见 [Validation Status](./docs/validation-status.md)，预注册的下一阶段实验见 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md)。证明顺序固定为 `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`；轨迹、estimand 与阈值只以冻结协议为准。
 
 ## 已证明、未证明与不允许静默改变
 
 **仓库内已证明**：canonical hashing、严格 schema、revision、确定性重放、只读工具面、真实 verifier call 绑定、attempt/no-progress 限制和 host-owned completion。
 
-**仍是待验证假设**：长期维护效率提升、架构漂移减少、不同模型/客户端的 effect size、Codex/Claude Code/Kiro/OpenClaw/Zed adapter 可行性。
+**仍是待验证假设**：Project Cognition 的纵向维护价值；Goal Governor 相对等内容 Research-only 的增量价值；不同模型/客户端的 effect size；Codex/Claude Code/Kiro/OpenClaw/Zed adapter 可行性。前两项是不同 claim，不能由同一个对照静默合并证明。
 
-**硬不变量**：Certified Researcher 保持只读；JSON 是 Project Cognition 唯一规范事实；模型不能批准、削弱或完成自己的 Goal Contract；失败或无效实验不能被改写成正向产品证据。改变这些内容需要新的 owner-approved cognition revision 和重新审查。
+**硬不变量**：Certified Researcher 保持只读；JSON 是 Project Cognition 唯一规范事实，Research Session Ledger 只是非权威输入；模型不能批准、削弱或完成自己的 Goal Contract；失败或无效实验不能被改写成正向产品证据。后续有效实验可以建立新 claim，但不能洗白历史 Experiment C+。改变这些内容需要新的 owner-reviewed cognition revision、seal 和重新审查。
 
 ## 架构与可移植性
 
-Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas、CLI）不依赖 DSH。客户端 adapter 必须证明五项能力才能标记为 `governed`：human approval identity、hard stop/pause、durable ordered events、trusted verifier binding、project-root confinement。缺少其中任何一项时只能称为 advisory。
+Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas、CLI）不依赖 DSH。客户端 adapter 必须证明五项能力才能标记为 `governed`：host-owned approval channel（并明示 identity assurance）、hard stop/pause、durable ordered events、trusted verifier binding、project-root confinement。缺少其中任何一项时只能称为 advisory。E1 的 headless gate 只证明模型进程外的交互式 TTY 输入与命令链，不证明操作者的密码学身份。
 
 当前只有 DSH adapter；不要把“核心可移植”误读成“其他客户端已经兼容”。
 
@@ -144,6 +154,7 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 | [PROJECT_COGNITION.md](./PROJECT_COGNITION.md) | 本项目目的、架构、不变量、已证/未证价值和下一步证明 |
 | [docs/architecture.md](./docs/architecture.md) | 当前真实架构与权限面 |
 | [docs/goal-governor.md](./docs/goal-governor.md) | 合同、验证器、状态机、两种 Researcher 入口和 CLI |
+| [docs/cognition-governance.md](./docs/cognition-governance.md) | 唯一 canonical state、Session Ledger 边界、promotion 与证明顺序 |
 | [docs/validation-status.md](./docs/validation-status.md) | Validated / Unknown / Invalidated 边界 |
 | [docs/landscape.md](./docs/landscape.md) | 相近方案、替代关系与集成边界 |
 | [evaluation/](./evaluation/) | 协议、锁、原始运行、失败记录和评分产物 |
@@ -158,8 +169,8 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 ## Compatibility
 
 - DeepSeek Harness：已验证 `0.1.0-rc.7`。
-- Node.js：`>=22.12`（与已验证的 DSH `0.1.0-rc.7` 运行时一致）。
-- 当前版本：`0.8.0-alpha.1`，不承诺稳定 API。
+- Node.js：`>=22.12.0`（与已验证的 DSH `0.1.0-rc.7` 运行时一致）。
+- 当前版本：`0.8.0-alpha.2`，不承诺稳定 API。
 
 ## License
 

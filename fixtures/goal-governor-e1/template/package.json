@@ -1,0 +1,9 @@
+{
+  "name": "dsh-goal-governor-e1-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node verify.mjs"
+  }
+}

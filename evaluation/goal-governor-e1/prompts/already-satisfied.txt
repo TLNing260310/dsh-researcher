@@ -1,0 +1,1 @@
+Follow the active Goal Contract exactly. Establish a baseline before making any change. Run only the frozen verifier invocation, submit its real earlier call ID as evidence, close the baseline attempt, and request the host decision. The fixture is expected to be already satisfied: do not modify any file.

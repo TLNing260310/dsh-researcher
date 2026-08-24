@@ -27,7 +27,23 @@ test('release tarball installs both presets and resolves the governed portable c
   const tarball = path.join(temp, manifest.filename)
   assert.equal(fs.existsSync(tarball), true)
   assert.equal(manifest.files.some((entry) => entry.path.startsWith('evaluation/runs/')), false)
-  for (const required of ['lib/index.js', 'schemas/goal-contract-v1.schema.json', 'researcher/agent.cordis.yml', 'governed/agent.cordis.yml', 'SECURITY.md']) {
+  for (const required of [
+    'lib/index.js',
+    'schemas/goal-contract-v1.schema.json',
+    'researcher/agent.cordis.yml',
+    'governed/agent.cordis.yml',
+    'evaluation/goal-governor-e1/manifest.json',
+    'evaluation/goal-governor-e1/preflight.js',
+    'evaluation/goal-governor-e1/score-e1.js',
+    'evaluation/goal-governor-e1/run-e1.js',
+    'evaluation/goal-governor-e1/external-verifier.js',
+    'evaluation/goal-governor-e1/stage1-seal.js',
+    'evaluation/goal-governor-e1/runner/e1.patch.yml',
+    'evaluation/goal-governor-e1/runner/e1-headless.mjs',
+    'evaluation/goal-governor-e1/runner/e1-host-tool.js',
+    'fixtures/goal-governor-e1/materialize.js',
+    'SECURITY.md',
+  ]) {
     assert.equal(manifest.files.some((entry) => entry.path === required), true, 'missing packaged file: ' + required)
   }
 

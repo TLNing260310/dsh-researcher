@@ -2,7 +2,10 @@ const test = require('node:test')
 const assert = require('node:assert')
 const { approveContract } = require('../lib/goal-core/index.js')
 const { sealRegistry, argumentsHash } = require('../lib/verifier-core/index.js')
-const { makeGoalPointer, parseGoalPointer, researchModeState, scopeGoalEvents, usageTokens, foldDshGoalEvents } = require('../lib/dsh-adapter/index.js')
+const {
+  makeGoalPointer, parseGoalPointer, researchModeState, scopeGoalEvents,
+  usageTokens, summarizeNativeUsage, foldDshGoalEvents,
+} = require('../lib/dsh-adapter/index.js')
 
 const fixture = (humanGates = [], overrides = {}) => {
   const registry = sealRegistry({
@@ -92,16 +95,111 @@ test('replay is scoped after the current DSH goal creation, excluding an older c
 test('host-derived DSH usage enforces token budgets', () => {
   const { goal, registry } = fixture([], { limits: { max_attempts: 2, max_no_progress_attempts: 2, max_time_sec: null, max_tokens: 10 } })
   const events = [
-    { seq: 1, time: 1000, type: 'assistant/message', data: { usage: { inputTokens: 8, outputTokens: 4 }, message: {} } },
-    call(2, 'begin-1', 'begin_goal_attempt', { attempt_id: 'baseline', baseline: true, target_criteria: ['C1'], repo_revision: 'abc' }),
-    call(3, 'complete-1', 'complete_goal_attempt', { attempt_id: 'baseline' }),
-    call(4, 'decision-1', 'request_goal_decision', {}),
+    { seq: 0, time: 1000, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'usage', usage: { inputTokens: 8, outputTokens: 4 } } } },
+    { seq: 1, time: 1050, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'finish', reason: { kind: 'stop' } } } },
+    { seq: 2, time: 1100, type: 'assistant/message', sourceEventSeqs: [0, 1], data: { turn: 1, step: 1, usage: { inputTokens: 8, outputTokens: 4 }, message: {} } },
+    call(3, 'begin-1', 'begin_goal_attempt', { attempt_id: 'baseline', baseline: true, target_criteria: ['C1'], repo_revision: 'abc' }),
+    call(4, 'complete-1', 'complete_goal_attempt', { attempt_id: 'baseline' }),
+    call(5, 'decision-1', 'request_goal_decision', {}),
   ]
-  events[1].time = 1100
-  events[2].time = 1200
-  events[3].time = 1300
+  events[3].time = 1200
+  events[4].time = 1300
+  events[5].time = 1400
   const replay = foldDshGoalEvents(goal, registry, events)
-  assert.equal(usageTokens(events[0].data.usage), 12)
+  assert.equal(usageTokens(events[0].data.chunk.usage), 12)
   assert.equal(replay.decision.decision, 'STOPPED')
   assert.match(replay.decision.reason, /token budget/)
+})
+
+test('host-derived usage cannot turn an over-budget passing baseline into success', () => {
+  const { goal, registry } = fixture([], { limits: { max_attempts: 2, max_no_progress_attempts: 2, max_time_sec: null, max_tokens: 10 } })
+  const events = [
+    { seq: 0, time: 1000, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'usage', usage: { inputTokens: 8, outputTokens: 4 } } } },
+    { seq: 1, time: 1050, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'finish', reason: { kind: 'stop' } } } },
+    { seq: 2, time: 1100, type: 'assistant/message', sourceEventSeqs: [0, 1], data: { turn: 1, step: 1, usage: { inputTokens: 8, outputTokens: 4 }, message: {} } },
+    ...passingBaseline().map((event, index) => ({ ...event, seq: index + 3, time: 1200 + index * 100 })),
+  ]
+  const replay = foldDshGoalEvents(goal, registry, events)
+  assert.equal(replay.decision.decision, 'STOPPED')
+  assert.match(replay.decision.reason, /token budget/)
+})
+
+test('native usage counts failed retries separately and never double-counts reasoning detail', () => {
+  const events = [
+    { seq: 0, type: 'assistant/chunk', data: { turn: 2, step: 3, chunk: { type: 'usage', usage: { inputTokens: 5, outputTokens: 2, reasoningTokens: 2 } } } },
+    { seq: 1, type: 'assistant/chunk', data: { turn: 2, step: 3, chunk: { type: 'finish', reason: { kind: 'error', failure: { code: 'TIMEOUT' } } } } },
+    { seq: 2, type: 'llm/retry', data: { retryId: 'retry-1', turn: 2, step: 3, provider: 'fixture', mode: 'normal', policyKey: 'fixture', retry: 1, maxRetries: 2, delayMs: 1, failure: { code: 'TIMEOUT' } } },
+    { seq: 3, type: 'llm/retry-started', data: { retryId: 'retry-1', turn: 2, step: 3, retry: 1 } },
+    { seq: 4, type: 'assistant/chunk', data: { turn: 2, step: 3, chunk: { type: 'usage', usage: { inputTokens: 7, outputTokens: 3, cacheReadTokens: 1, reasoningTokens: 3 } } } },
+    { seq: 5, type: 'assistant/chunk', data: { turn: 2, step: 3, chunk: { type: 'finish', reason: { kind: 'stop' } } } },
+    { seq: 6, type: 'assistant/message', sourceEventSeqs: [4, 5], data: { turn: 2, step: 3, usage: { inputTokens: 7, outputTokens: 3, cacheReadTokens: 1, reasoningTokens: 3 }, message: {} } },
+  ]
+  const summary = summarizeNativeUsage(events, { strict: true })
+  assert.equal(summary.coverage_complete, true)
+  assert.equal(summary.request_attempts, 2)
+  assert.equal(summary.covered_attempts, 2)
+  assert.equal(summary.failed_or_retried_attempts, 1)
+  assert.equal(summary.cumulative_tokens, 18)
+  assert.deepEqual(summary.attempts.map((attempt) => attempt.usage_source), ['assistant/chunk', 'assistant/message'])
+  assert.equal(usageTokens({ inputTokens: 1, outputTokens: 2, cacheReadTokens: 3, cacheWriteTokens: 4, reasoningTokens: 2 }), 10)
+})
+
+test('native usage exposes a proved retry whose usage coverage is missing', () => {
+  const summary = summarizeNativeUsage([
+    { seq: 0, type: 'assistant/chunk', data: { turn: 4, step: 1, chunk: { type: 'finish', reason: { kind: 'error', failure: { code: 'UPSTREAM' } } } } },
+    { seq: 1, type: 'llm/retry', data: { retryId: 'retry-2', turn: 4, step: 1, provider: 'fixture', mode: 'normal', policyKey: 'fixture', retry: 1, maxRetries: 2, delayMs: 1, failure: { code: 'UPSTREAM' } } },
+  ], { strict: true })
+  assert.equal(summary.request_attempts, 1)
+  assert.equal(summary.covered_attempts, 0)
+  assert.equal(summary.coverage_complete, false)
+  assert.ok(summary.diagnostics.some((item) => /no complete usage sample/.test(item.detail)))
+})
+
+test('retry-started proves a new provider attempt and requires its own usage coverage', () => {
+  const summary = summarizeNativeUsage([
+    { seq: 0, type: 'assistant/chunk', data: { turn: 5, step: 1, chunk: { type: 'usage', usage: { inputTokens: 2, outputTokens: 1 } } } },
+    { seq: 1, type: 'assistant/chunk', data: { turn: 5, step: 1, chunk: { type: 'finish', reason: { kind: 'error', failure: { code: 'UPSTREAM' } } } } },
+    { seq: 2, type: 'llm/retry', data: { retryId: 'retry-3', turn: 5, step: 1, provider: 'fixture', mode: 'normal', policyKey: 'fixture', retry: 1, maxRetries: 2, delayMs: 1, failure: { code: 'UPSTREAM' } } },
+    { seq: 3, type: 'llm/retry-started', data: { retryId: 'retry-3', turn: 5, step: 1, retry: 1 } },
+  ], { strict: true })
+  assert.equal(summary.request_attempts, 1)
+  assert.equal(summary.covered_attempts, 1)
+  assert.equal(summary.coverage_complete, false)
+  assert.ok(summary.diagnostics.some((item) => /retry-started has no subsequent/.test(item.detail)))
+})
+
+test('compaction summary usage is an independent billable call', () => {
+  const summary = summarizeNativeUsage([
+    { seq: 0, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'usage', usage: { inputTokens: 3, outputTokens: 2 } } } },
+    { seq: 1, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'finish', reason: { kind: 'stop' } } } },
+    { seq: 2, type: 'assistant/message', sourceEventSeqs: [0, 1], data: { turn: 1, step: 1, usage: { inputTokens: 3, outputTokens: 2 }, message: {} } },
+    { seq: 3, type: 'compaction/start', data: { compactionId: 'compact-1', turn: 1 } },
+    { seq: 4, type: 'compaction/summary', data: { compactionId: 'compact-1', llmStreamCall: true, rawOutput: [], usage: { inputTokens: 7, outputTokens: 4, reasoningTokens: 4 } } },
+    { seq: 5, type: 'compaction/end', data: { compactionId: 'compact-1', turn: 1 } },
+  ], { strict: true })
+  assert.equal(summary.coverage_complete, true)
+  assert.equal(summary.request_attempts, 1)
+  assert.equal(summary.independent_calls, 1)
+  assert.equal(summary.cumulative_tokens, 16)
+})
+
+test('unmetered auxiliary title and failed compaction calls make usage coverage incomplete', () => {
+  const summary = summarizeNativeUsage([
+    { seq: 0, type: 'session/title-llm-request', data: { provider: 'fixture', model: 'fixture' } },
+    { seq: 1, type: 'compaction/start', data: { compactionId: 'compact-failed', turn: 1 } },
+    { seq: 2, type: 'compaction/end', data: { compactionId: 'compact-failed', turn: 1, error: 'provider failed' } },
+  ], { strict: true })
+  assert.equal(summary.coverage_complete, false)
+  assert.ok(summary.diagnostics.some((item) => /title LLM request/.test(item.detail)))
+  assert.ok(summary.diagnostics.some((item) => /failed compaction/.test(item.detail)))
+})
+
+test('strict usage rejects a smaller message sample that would undercount its chunk', () => {
+  const summary = summarizeNativeUsage([
+    { seq: 0, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'usage', usage: { inputTokens: 100, outputTokens: 20 } } } },
+    { seq: 1, type: 'assistant/chunk', data: { turn: 1, step: 1, chunk: { type: 'finish', reason: { kind: 'stop' } } } },
+    { seq: 2, type: 'assistant/message', sourceEventSeqs: [0, 1], data: { turn: 1, step: 1, usage: { inputTokens: 1, outputTokens: 1 }, message: {} } },
+  ], { strict: true })
+  assert.equal(summary.coverage_complete, false)
+  assert.ok(summary.diagnostics.some((item) => /usage differs/.test(item.detail)))
 })

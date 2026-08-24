@@ -37,7 +37,7 @@ body:
     id: version
     attributes:
       label: DSH version and preset version
-      placeholder: e.g. DSH 0.1.0-rc.7, dsh-researcher v0.8.0-alpha.1 (installed via npx / clone / ZIP)
+      placeholder: e.g. DSH 0.1.0-rc.7, dsh-researcher v0.8.0-alpha.2 (installed via npx / clone / ZIP)
     validations:
       required: true
   - type: textarea

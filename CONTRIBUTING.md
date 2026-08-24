@@ -11,13 +11,16 @@ Thanks for helping test a deliberately narrow alpha. The highest-value contribut
 
 ## Local verification
 
-Requirements: Node.js `>=22.12` and Git.
+Requirements: Node.js `>=22.12.0` and Git.
 
 ```bash
 npm test
 npm run doctor
+npm run eval:e1:preflight
 npm pack --dry-run
 ```
+
+The E1 preflight is offline: it validates the protocol-defined frozen manifest, materializes each fixture twice and performs no network or model calls. Live E1 is a separate, explicitly acknowledged evaluation and must never be substituted for preflight in routine CI.
 
 The current suite covers portable reducers, CLI behavior, DSH event replay, verifier evidence, Researcher restrictions and host-owned completion. A pull request that changes a public contract must add or update a failure-case test.
 

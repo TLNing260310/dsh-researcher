@@ -1,0 +1,60 @@
+# Goal Governor E1 live-only DSH overlay.
+# Every path is supplied by the fail-closed outer runner; no workstation path
+# or model default is embedded here.
+
+- id: headless-runner
+  disabled: true
+
+# rc.7's first-prompt title provider performs an auxiliary LLM request whose
+# usage is not persisted. E1 disables both the plugin id and provider-shaped
+# id fail-closed; unknown disabled ids are inert under the patch merger.
+- id: session-title-llm
+  disabled: true
+
+- id: session-title-first-prompt-llm
+  disabled: true
+
+- id: approval
+  name: '@deepseek-ai/dsh-user-approval'
+  config:
+    policy: never
+
+- id: permission
+  name: '@deepseek-ai/dsh-permission-presets'
+  config:
+    defaultPreset: e1-workspace-write
+    presets:
+      read-only:
+        sandbox: read-only
+        approval: ask
+      workspace-write:
+        sandbox: workspace-write
+        approval: ask
+      danger-full-access:
+        sandbox: danger-full-access
+        approval: never
+      e1-workspace-write:
+        sandbox: workspace-write
+        approval: never
+
+- id: session-persistence-jsonl
+  name: '@deepseek-ai/dsh-session-persistence-jsonl'
+  config:
+    root: !!js process.env.DSH_E1_SESSION_ROOT
+    packChunks: false
+    compression: none
+
+- insert:
+    - id: e1-agent-presets
+      name: '@deepseek-ai/dsh-agent-presets'
+      config:
+        default: governed
+        roots:
+          - path: !!js process.env.DSH_E1_PRESET_ROOT
+            trust: system
+
+    - id: e1-host-tool
+      name: !!js process.env.DSH_E1_HOST_TOOL
+
+    - id: e1-live-runner
+      name: !!js process.env.DSH_E1_DRIVER

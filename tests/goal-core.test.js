@@ -93,6 +93,27 @@ test('baseline evidence can prove ALREADY_SATISFIED without a change attempt', (
   assert.equal(decideGoal(goal, events).decision, 'ALREADY_SATISFIED')
 })
 
+test('hard time and token budgets take precedence over an otherwise passing terminal', () => {
+  const tokenGoal = approvedGoal({ limits: { max_attempts: 2, max_no_progress_attempts: 2, max_time_sec: null, max_tokens: 10 } })
+  const tokenEvents = eventFactory(tokenGoal)
+  assert.deepEqual(
+    decideGoal(tokenGoal, [
+      ...tokenEvents.attempt('baseline', true, { C1: 'pass' }),
+      tokenEvents.event('usage_recorded', { elapsed_sec: 1, tokens: 10 }),
+    ]).decision,
+    'STOPPED',
+  )
+
+  const timeGoal = approvedGoal({ limits: { max_attempts: 2, max_no_progress_attempts: 2, max_time_sec: 30, max_tokens: null } })
+  const timeEvents = eventFactory(timeGoal)
+  const decision = decideGoal(timeGoal, [
+    ...timeEvents.attempt('baseline', true, { C1: 'pass' }),
+    timeEvents.event('usage_recorded', { elapsed_sec: 30, tokens: 1 }),
+  ])
+  assert.equal(decision.decision, 'STOPPED')
+  assert.match(decision.reason, /time budget/)
+})
+
 test('should failures never keep a satisfied goal alive', () => {
   const goal = approvedGoal()
   const f = eventFactory(goal)

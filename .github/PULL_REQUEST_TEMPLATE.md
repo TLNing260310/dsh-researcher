@@ -17,4 +17,5 @@
 
 - [ ] `npm test`
 - [ ] `npm run doctor`
+- [ ] `npm run eval:e1:preflight` (offline; zero model/network calls)
 - [ ] `npm pack --dry-run`

@@ -1,0 +1,152 @@
+'use strict'
+
+const test = require('node:test')
+const assert = require('node:assert')
+const fs = require('node:fs')
+const path = require('node:path')
+const { spawnSync } = require('node:child_process')
+
+const { CASE_PROTOCOL, CASE_IDS, MANIFEST_SCHEMA, RUN_SCHEMA, validateManifest } = require('../evaluation/goal-governor-e1/score-e1.js')
+const { validateCapturePaths } = require('../evaluation/goal-governor-e1/capture-visible-tools.js')
+const { renderMarkdown } = require('../lib/cognition-core/index.js')
+
+const root = path.join(__dirname, '..')
+const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8')
+const readJson = (...parts) => JSON.parse(read(...parts))
+
+test('declared Node floor, public quickstart, and CI matrix stay on the verified Node 22 runtime', () => {
+  const pkg = readJson('package.json')
+  const readme = read('README.md')
+  const workflow = read('.github', 'workflows', 'test.yml')
+  assert.equal(pkg.engines.node, '>=22.12.0')
+  assert.match(readme, /Node\.js[^\n]*`>=22\.12\.0`/)
+  assert.match(workflow, /node:\s*\[22\.12\.0,\s*22\.x\]/)
+  assert.doesNotMatch(workflow, /node:\s*\[[^\]]*(?:16|18|20)(?:\.|,|\])/)
+})
+
+test('canonical cognition state carries the verified runtime and protocol-owned live E1 P1, and its projection has not drifted', () => {
+  const state = readJson('.project-cognition', 'state.json')
+  assert.ok(state.mission.environment.some((item) => /Node\.js 22\.12/.test(item)), 'canonical environment lost the Node.js 22.12 floor')
+
+  const p1 = state.next_proofs.find((item) => item.id === 'P1')
+  assert.ok(p1, 'canonical state lost next proof P1')
+  assert.match(p1.statement, /every live DSH E1 trajectory/)
+  assert.match(p1.statement, /frozen Goal Governor Evaluation Protocol/)
+
+  assert.equal(read('PROJECT_COGNITION.md'), renderMarkdown(state) + '\n')
+})
+
+test('public/current guidance points to the frozen protocol without copying E1 counts or thresholds', () => {
+  for (const relative of [
+    'README.md',
+    path.join('docs', 'goal-governor.md'),
+    path.join('docs', 'roadmap.md'),
+    path.join('docs', 'validation-status.md'),
+    path.join('docs', 'cognition-governance.md'),
+  ]) {
+    const content = read(...relative.split(path.sep))
+    assert.match(content, /goal-governor-evaluation-protocol\.md|Goal Governor Evaluation Protocol|frozen evaluation protocol/i, relative + ' lost the canonical protocol reference')
+    assert.doesNotMatch(content, /E1[^\n]{0,80}(?:all six|six cases|6\s*(?:cases|tracks|trajectories)|六(?:个|条|项)?轨迹)/i, relative + ' copied the E1 case count')
+    assert.doesNotMatch(content, /E1[^\n]{0,120}(?:3\s*\/\s*5|≥\s*3|threshold\s*[:=]\s*\d)/i, relative + ' copied an E1 threshold')
+  }
+})
+
+test('E1 manifest contains exactly the frozen six case identities and terminals', () => {
+  const manifest = readJson('evaluation', 'goal-governor-e1', 'manifest.json')
+  assert.deepEqual(validateManifest(manifest), [])
+  assert.equal(manifest.schema, MANIFEST_SCHEMA)
+  assert.equal(manifest.cases.length, 6)
+  assert.deepEqual(manifest.cases.map((item) => item.id), CASE_IDS)
+  assert.deepEqual(
+    manifest.cases.map((item) => item.expected_terminal),
+    CASE_PROTOCOL.map((item) => item.expected_terminal),
+  )
+  assert.equal(new Set(manifest.cases.map((item) => item.artifact)).size, 6)
+  for (const item of manifest.cases) {
+    assert.equal(path.isAbsolute(item.artifact), false)
+    assert.equal(path.normalize(item.artifact).startsWith('..'), false)
+  }
+  assert.equal(manifest.artifacts.schema, RUN_SCHEMA)
+  const required = new Set(manifest.artifacts.required_raw_fields)
+  for (const field of ['run_lock', 'fixture_baseline', 'cognition_state', 'goal_contract', 'verifier_registry', 'session_events', 'visible_tools', 'visible_tool_schemas', 'worktree', 'replay_checkpoints', 'host_verifier', 'budget_evidence', 'runtime_provenance', 'attempt_identity']) {
+    assert.equal(required.has(field), true, 'missing E1 raw artifact field: ' + field)
+  }
+})
+
+test('E1 runner defaults to offline preflight and live mode fails before launch without cost acknowledgement', () => {
+  const entry = path.join(root, 'evaluation', 'goal-governor-e1', 'run-e1.js')
+  const offline = spawnSync(process.execPath, [entry], { cwd: root, encoding: 'utf8', windowsHide: true })
+  assert.equal(offline.status, 0, offline.stderr)
+  const report = JSON.parse(offline.stdout)
+  assert.equal(report.offline, true)
+  assert.equal(report.model_calls, 0)
+  assert.equal(report.network_calls, 0)
+
+  const refused = spawnSync(process.execPath, [entry, '--mode', 'live'], { cwd: root, encoding: 'utf8', windowsHide: true })
+  assert.equal(refused.status, 1)
+  assert.match(refused.stderr, /requires the literal flag --ack-live-cost/)
+})
+
+test('E1 runner and scorer share the honest external-TTY evidence contract', () => {
+  const runner = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
+  const scorer = read('evaluation', 'goal-governor-e1', 'score-e1.js')
+  for (const token of [
+    'external-interactive-tty-input',
+    'interactive-tty-input',
+    'not-cryptographic-human-identity',
+  ]) {
+    assert.match(runner, new RegExp(token), 'runner lost TTY evidence token ' + token)
+    assert.match(scorer, new RegExp(token), 'scorer drifted from runner TTY evidence token ' + token)
+  }
+  assert.doesNotMatch(runner, /external-tty-human/, 'runner must not claim cryptographic human identity from a TTY')
+  assert.doesNotMatch(scorer, /external-tty-human/, 'scorer must not require an identity claim the runner cannot prove')
+})
+
+test('capture output cannot be hidden inside any measured or runtime-controlled path', () => {
+  const parent = path.dirname(root)
+  const paths = {
+    output: path.join(parent, 'e1-capture-output', 'visible-tools.json'),
+    workspace: path.join(parent, 'e1-capture-workspace'),
+    dshModuleRoot: path.join(parent, 'e1-capture-modules'),
+    dshHome: path.join(parent, 'e1-capture-home'),
+    presetRoot: path.join(parent, 'e1-capture-candidate'),
+  }
+  assert.doesNotThrow(() => validateCapturePaths(paths))
+  for (const key of ['workspace', 'dshModuleRoot', 'dshHome', 'presetRoot']) {
+    assert.throws(
+      () => validateCapturePaths({ ...paths, output: path.join(paths[key], 'visible-tools.json') }),
+      /output\/(?:workspace|modules|DSH_HOME|candidate) paths must be disjoint/,
+    )
+  }
+})
+
+test('the public proof order cannot skip E1, the non-inferential pilot, or E2', () => {
+  const canonicalOrder = 'Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3'
+  assert.match(read('README.md'), new RegExp(canonicalOrder))
+  assert.match(read('docs', 'cognition-governance.md'), new RegExp(canonicalOrder))
+  const protocol = read('docs', 'goal-governor-evaluation-protocol.md')
+  const gate0 = protocol.indexOf('Gate 0')
+  const e1 = protocol.indexOf('E1 —')
+  const e2 = protocol.indexOf('E2 —')
+  const e3 = protocol.indexOf('E3 —')
+  assert.ok(gate0 >= 0 && gate0 < e1 && e1 < e2 && e2 < e3, 'protocol sections changed proof order')
+})
+
+test('current release identity and public evidence-status language do not drift', () => {
+  const pkg = readJson('package.json')
+  const readme = read('README.md')
+  const changelog = read('CHANGELOG.md')
+  const validation = read('docs', 'validation-status.md')
+  const governor = read('docs', 'goal-governor.md')
+  const currentVersion = new RegExp('当前版本：`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`')
+  const pinnedInstall = new RegExp('#v' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const firstRelease = changelog.match(/^##\s+([^\s(]+)/m)
+  assert.match(readme, currentVersion)
+  assert.match(readme, pinnedInstall)
+  assert.equal(firstRelease && firstRelease[1], pkg.version)
+  assert.match(readme, /真实模型端到端成功率[^\n]*尚未证明|真实模型端到端[^\n]*尚未证明/)
+  assert.match(validation, /Live conformance[^\n]*\*\*未完成 E1\*\*/)
+  assert.match(validation, /不得宣称[^\n]*真实 DSH E2E 已通过/)
+  assert.match(governor, /尚未证明：真实 DSH 模型会话端到端成功率/)
+  assert.doesNotMatch(governor, /\d+\s*项测试通过/)
+})

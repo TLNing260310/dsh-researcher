@@ -1,0 +1,1 @@
+This is the direct user's continuation after a durable session resume. Inspect the active contract/replay, close the existing change-1 attempt without making another edit or verifier call, then request the host decision. Obey the host result.

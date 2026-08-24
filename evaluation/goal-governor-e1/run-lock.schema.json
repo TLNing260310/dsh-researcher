@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TLNing260310/dsh-researcher/evaluation/goal-governor-e1/run-lock.schema.json",
+  "title": "Goal Governor E1 immutable run lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_sha256", "inputs", "candidate", "runtime", "model", "budget", "host_runtime", "dsh_home_policy", "visible_tool_contract", "lock_hash"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/goal-governor-e1/run-lock/v1" },
+    "manifest_sha256": { "$ref": "#/$defs/sha256" },
+    "inputs": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/sha256" } },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo_revision", "package_path", "package_sha256", "package_version"],
+      "properties": {
+        "repo_revision": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+        "package_path": { "type": "string", "minLength": 1 },
+        "package_sha256": { "$ref": "#/$defs/sha256" },
+        "package_version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client", "version", "profile", "preset", "permission_mode", "session_persistence", "pack_chunks", "compression", "title_llm", "model_compaction", "tool_result_pruning", "extra_local_tools"],
+      "properties": {
+        "client": { "const": "dsh" },
+        "version": { "const": "0.1.0-rc.7" },
+        "profile": { "const": "headless" },
+        "preset": { "const": "governed" },
+        "permission_mode": { "const": "workspace-write" },
+        "session_persistence": { "const": "jsonl" },
+        "pack_chunks": { "const": false },
+        "compression": { "const": "none" },
+        "title_llm": { "const": false },
+        "model_compaction": { "const": false },
+        "tool_result_pruning": { "const": true },
+        "extra_local_tools": { "const": false }
+      }
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "reasoning_effort"],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "reasoning_effort": { "type": "string", "minLength": 1 }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_tokens", "max_time_sec"],
+      "properties": {
+        "max_tokens": { "type": "integer", "minimum": 1 },
+        "max_time_sec": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "host_runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "dsh", "environment"],
+      "properties": {
+        "node": {
+          "type": "object", "additionalProperties": false,
+          "required": ["version", "platform", "arch", "executable_sha256"],
+          "properties": {
+            "version": { "type": "string", "minLength": 1 },
+            "platform": { "type": "string", "minLength": 1 },
+            "arch": { "type": "string", "minLength": 1 },
+            "executable_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "dsh": {
+          "type": "object", "additionalProperties": false,
+          "required": ["package_name", "package_version", "package_json_sha256", "cli_relative", "cli_sha256", "dependency_inventory_sha256", "dependencies"],
+          "properties": {
+            "package_name": { "const": "@deepseek-ai/dsh" },
+            "package_version": { "const": "0.1.0-rc.7" },
+            "package_json_sha256": { "$ref": "#/$defs/sha256" },
+            "cli_relative": { "type": "string", "minLength": 1 },
+            "cli_sha256": { "$ref": "#/$defs/sha256" },
+            "dependency_inventory_sha256": { "$ref": "#/$defs/sha256" },
+            "dependencies": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/packageInventory" } }
+          }
+        },
+        "environment": {
+          "type": "object", "additionalProperties": false,
+          "required": ["policy", "removed_names"],
+          "properties": {
+            "policy": { "const": "sanitized-node-spawn-environment/v1" },
+            "removed_names": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true }
+          }
+        }
+      }
+    },
+    "dsh_home_policy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "initial_inventory_sha256", "initial_file_count"],
+      "properties": {
+        "mode": { "const": "fresh-empty-per-case" },
+        "initial_inventory_sha256": { "$ref": "#/$defs/sha256" },
+        "initial_file_count": { "const": 0 }
+      }
+    },
+    "visible_tool_contract": {
+      "type": "object", "additionalProperties": false,
+      "required": ["mode", "names", "schema_hash", "schemas"],
+      "properties": {
+        "mode": { "const": "exact" },
+        "names": { "const": ["ask_user_question", "begin_goal_attempt", "complete_goal_attempt", "e1_verify", "edit", "get_goal_contract", "glob", "grep", "read", "read_image", "report_goal_blocker", "request_goal_decision", "researcher_mode_status", "submit_goal_observation", "todo_write", "write"] },
+        "schema_hash": { "$ref": "#/$defs/sha256" },
+        "schemas": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+      }
+    },
+    "lock_hash": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "packageInventory": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "version", "root_relative", "package_json_sha256", "content_tree_sha256", "file_count"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "root_relative": { "type": "string", "minLength": 1 },
+        "package_json_sha256": { "$ref": "#/$defs/sha256" },
+        "content_tree_sha256": { "$ref": "#/$defs/sha256" },
+        "file_count": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

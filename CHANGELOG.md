@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0-alpha.2 (2026-08-24) — Truth and Evidence Governance
+
+- 明确 `.project-cognition/state.json` 是唯一 canonical project truth；`PROJECT_COGNITION.md` 仅由 CLI 生成，历史 `research-state` 重命名为 provisional Research Session Ledger。
+- 新增 owner promotion 流程：ledger/handoff → draft revision → authority/proof/evidence review → seal/install → doctor；doctor 与 evidence freshness 明确分离。
+- 将长期价值拆为 V3A（Project Cognition longitudinal value）与 V3B（Goal Governor 在等内容 Research-only 对照上的增量价值），避免一个实验替两个机制归因。
+- 固定证明顺序 `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`；E1 轨迹、estimand 与阈值只由冻结协议定义。
+- 保留 Experiment C+ 的历史 causal-invalid 结论：新实验可建立新 claim，但不能洗白或改写历史 validity。
+- 统一 Node.js `>=22.12.0`、verifier result policy 和当前路线/验证文档；移除易漂移的测试总数与过强 doctor 表述。
+- 新增独立的 `evaluation/goal-governor-e1/`：冻结 manifest/fixture hashes/run lock、零网络零模型 preflight、外部 live runner、原始 evidence bundle 与 `PASS | FAIL | INVALID` 离线 scorer；旧 Phase A runtime 保持不变。
+- Scorer 强制 canonical manifest、每轨 live/offline replay、唯一且有序的 call/result 配对，以及 resume stage-one seal 绑定；合规结论明确为 `PASS_UNDER_TRUSTED_HOST`，不把无外部 attestation 的自洽 bundle 误称为无条件 live 因果证明。
+- 发布边界固定为 **E1 infrastructure: READY / Live E1: NOT RUN / outcome value and multi-client portability: NOT PROVEN**；缺费用确认、固定 DSH `0.1.0-rc.7`、run lock 或外部交互式 TTY gate 时 live runner fail closed；TTY 只证明输入通道，不冒充密码学真人身份。
+
 ## 0.8.0-alpha.1 (2026-08-24) — Project Cognition + Goal Governor
 
 - 新增 portable Cognition / Goal / Verifier Core、严格 JSON schemas、canonical hashing、revision 与确定性 Markdown projection。

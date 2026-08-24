@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TLNing260310/dsh-researcher/evaluation/goal-governor-e1/manifest.schema.json",
+  "title": "Goal Governor E1 experiment manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol", "status", "runtime", "budget", "fixture", "trusted_verifier", "visible_tool_contract", "attempt_ledger", "cases", "artifacts", "invalidity_rules", "replay_semantics", "lock_inputs"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/goal-governor-e1/manifest/v1" },
+    "protocol": { "const": "docs/goal-governor-evaluation-protocol.md" },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["infrastructure", "live_e1", "outcome", "portability"],
+      "properties": {
+        "infrastructure": { "const": "READY" },
+        "live_e1": { "const": "NOT_RUN" },
+        "outcome": { "const": "NOT_PROVEN" },
+        "portability": { "const": "NOT_PROVEN" }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["client", "version", "profile", "preset", "permission_mode", "session_persistence", "pack_chunks", "compression", "title_llm", "model_compaction", "tool_result_pruning", "extra_local_tools"],
+      "properties": {
+        "client": { "const": "dsh" },
+        "version": { "const": "0.1.0-rc.7" },
+        "profile": { "const": "headless" },
+        "preset": { "const": "governed" },
+        "permission_mode": { "const": "workspace-write" },
+        "session_persistence": { "const": "jsonl" },
+        "pack_chunks": { "const": false },
+        "compression": { "const": "none" },
+        "title_llm": { "const": false },
+        "model_compaction": { "const": false },
+        "tool_result_pruning": { "const": true },
+        "extra_local_tools": { "const": false }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_tokens", "max_time_sec", "same_for_all_cases"],
+      "properties": {
+        "max_tokens": { "const": 40000 },
+        "max_time_sec": { "const": 900 },
+        "same_for_all_cases": { "const": true }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["template", "materializer", "t0_revision"],
+      "properties": {
+        "template": { "const": "fixtures/goal-governor-e1/template" },
+        "materializer": { "const": "fixtures/goal-governor-e1/materialize.js" },
+        "t0_revision": { "const": "e1-fixture-t0-v1" }
+      }
+    },
+    "trusted_verifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_name", "arguments", "source", "sha256"],
+      "properties": {
+        "tool_name": { "const": "e1_verify" },
+        "arguments": { "type": "object", "maxProperties": 0 },
+        "source": { "const": "fixtures/goal-governor-e1/template/verify.mjs" },
+        "sha256": { "const": "e01bc0c7494a854f669eec6c876570f2e484e1d670d4a46d37bbec8da8b4af41" }
+      }
+    },
+    "visible_tool_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "names", "schema_hash_binding"],
+      "properties": {
+        "mode": { "const": "exact" },
+        "names": { "const": ["ask_user_question", "begin_goal_attempt", "complete_goal_attempt", "e1_verify", "edit", "get_goal_contract", "glob", "grep", "read", "read_image", "report_goal_blocker", "request_goal_decision", "researcher_mode_status", "submit_goal_observation", "todo_write", "write"] },
+        "schema_hash_binding": { "const": "run-lock.visible_tool_contract.schema_hash" }
+      }
+    },
+    "attempt_ledger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "mode", "receipt_schema", "terminal_statuses", "incomplete_policy"],
+      "properties": {
+        "path": { "const": "attempt-ledger.jsonl" },
+        "mode": { "const": "append-only-hash-chain" },
+        "receipt_schema": { "const": "dsh-researcher/goal-governor-e1/attempt-receipt/v1" },
+        "terminal_statuses": { "const": ["FINALIZED", "FAILED"] },
+        "incomplete_policy": { "const": "unresolved-started-is-invalid" }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "artifact", "expected_terminal", "fixture_tree_sha256", "contract_hash", "registry_hash", "cognition_hash", "contract", "prompts", "allowed_changes", "baseline_exit", "final_verifier_exit"],
+        "properties": {
+          "id": { "enum": ["already-satisfied", "simple-done", "governed-gate", "forged-evidence", "no-progress", "resume-replay"] },
+          "artifact": { "type": "string" },
+          "expected_terminal": { "enum": ["ALREADY_SATISFIED", "DONE", "NEEDS_HUMAN", "STOPPED"] },
+          "fixture_tree_sha256": { "$ref": "#/$defs/sha256" },
+          "contract_hash": { "$ref": "#/$defs/sha256" },
+          "registry_hash": { "$ref": "#/$defs/sha256" },
+          "cognition_hash": { "$ref": "#/$defs/sha256" },
+          "contract": { "type": "string" },
+          "prompts": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["initial"],
+            "properties": { "initial": { "type": "string" }, "after_gate": { "type": "string" }, "resume": { "type": "string" } }
+          },
+          "allowed_changes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "baseline_exit": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "final_verifier_exit": { "type": "integer", "minimum": 0, "maximum": 255 }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "required_raw_fields", "retention"],
+      "properties": {
+        "schema": { "const": "dsh-researcher/goal-governor-e1/run-artifact/v1" },
+        "required_raw_fields": {
+          "const": ["run_lock", "fixture_baseline", "cognition_state", "goal_contract", "verifier_registry", "session_events", "visible_tools", "visible_tool_schemas", "worktree", "replay_checkpoints", "host_verifier", "budget_evidence", "runtime_provenance", "attempt_identity"]
+        },
+        "retention": { "const": "preserve-success-and-failure-bundles" }
+      }
+    },
+    "invalidity_rules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]+$" }
+    },
+    "replay_semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prefix_checkpoint", "final_checkpoint", "event_array_comparison", "compare"],
+      "properties": {
+        "prefix_checkpoint": { "const": "prefix-before-exit-equals-resumed-state-before-followup" },
+        "final_checkpoint": { "const": "final-live-fold-equals-offline-full-replay" },
+        "event_array_comparison": { "const": "do-not-compare-post-resume-full-event-arrays" },
+        "compare": {
+          "type": "array",
+          "const": ["state_hash", "decision", "diagnostics_hash", "goal_id", "runtime_goal_id", "contract_hash"]
+        }
+      }
+    },
+    "lock_inputs": {
+      "const": ["docs/goal-governor-evaluation-protocol.md", "evaluation/goal-governor-e1", "fixtures/goal-governor-e1", "governed", "researcher/plugins/goal-governor", "researcher/plugins/tool-restrict", "lib/cognition-core", "lib/goal-core", "lib/verifier-core", "lib/dsh-adapter", "lib/canonical-json.js"]
+    }
+  },
+  "$defs": { "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+}

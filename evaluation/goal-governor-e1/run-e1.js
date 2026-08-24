@@ -1,0 +1,607 @@
+#!/usr/bin/env node
+'use strict'
+
+// Portable outer entry. With no live mode this performs only the offline
+// preflight. It cannot spawn DSH until every explicit live gate has passed.
+const fs = require('node:fs')
+const path = require('node:path')
+const crypto = require('node:crypto')
+const { spawnSync } = require('node:child_process')
+const {
+  CASE_IDS,
+  REQUIRED_DSH_VERSION,
+  RUN_ARTIFACT_SCHEMA,
+  TRUSTED_VERIFIER,
+  canonicalize,
+  parseArgs,
+  readJson,
+  requireString,
+  snapshotTree,
+  sha256File,
+  treeHash,
+  validateManifest,
+  walkFiles,
+} = require('./lib.js')
+const { verifyRunLock } = require('./lock.js')
+const { runPreflight } = require('./preflight.js')
+const { createStage1Seal, validateStage1Seal } = require('./stage1-seal.js')
+const { immutableSnapshot, runExternalVerifier } = require('./external-verifier.js')
+const {
+  NODE_ENV_DENYLIST,
+  sanitizeNodeEnvironment,
+  currentNodeProvenance,
+  dshRuntimeProvenance,
+  publicDshProvenance,
+  directoryInventory,
+  assertSameProvenance,
+} = require('./runtime-provenance.js')
+const { beginAttempt, finishAttempt, assertClosedLedger } = require('./attempt-ledger.js')
+const { materialize } = require('../../fixtures/goal-governor-e1/materialize.js')
+
+const EVAL_ROOT = __dirname
+const REPO_ROOT = path.resolve(EVAL_ROOT, '..', '..')
+const FIXTURE_ROOT = path.join(REPO_ROOT, 'fixtures', 'goal-governor-e1')
+const MANIFEST_PATH = path.join(EVAL_ROOT, 'manifest.json')
+const PATCH_PATH = path.join(EVAL_ROOT, 'runner', 'e1.patch.yml')
+const DRIVER_PATH = path.join(EVAL_ROOT, 'runner', 'e1-headless.mjs')
+const HOST_TOOL_PATH = path.join(EVAL_ROOT, 'runner', 'e1-host-tool.js')
+const EXTERNAL_VERIFIER_PATH = path.resolve(REPO_ROOT, TRUSTED_VERIFIER.source)
+const VISIBLE_TOOL_CONTRACT_PATH = path.join(EVAL_ROOT, 'visible-tool-contract.js')
+let pendingAttempt = null
+
+const writeJson = (file, value) => fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n')
+const ensureExactCopy = (file, source) => {
+  const bytes = fs.readFileSync(source)
+  if (fs.existsSync(file)) {
+    if (!fs.readFileSync(file).equals(bytes)) throw new Error('shared E1 bundle bytes drifted: ' + file)
+  } else fs.writeFileSync(file, bytes, { flag: 'wx' })
+}
+const assertExactCopy = (file, source) => {
+  if (!fs.existsSync(file) || !fs.readFileSync(file).equals(fs.readFileSync(source))) throw new Error('shared E1 bundle bytes drifted or are missing: ' + file)
+}
+const slash = (value) => value.split(path.sep).join('/')
+const canonicalWithMissingTail = (value) => {
+  let cursor = path.resolve(value)
+  const missing = []
+  while (!fs.existsSync(cursor)) {
+    const parent = path.dirname(cursor)
+    if (parent === cursor) break
+    missing.unshift(path.basename(cursor))
+    cursor = parent
+  }
+  const real = fs.realpathSync.native ? fs.realpathSync.native(cursor) : fs.realpathSync(cursor)
+  return path.resolve(real, ...missing)
+}
+const isWithin = (root, target) => {
+  const relative = path.relative(path.resolve(root), path.resolve(target))
+  return relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))
+}
+const assertDisjoint = (left, right, label) => {
+  if (isWithin(left, right) || isWithin(right, left)) throw new Error(label + ' paths must be disjoint: ' + left + ' and ' + right)
+}
+
+const runGit = (workspace, args, allowExit = [0]) => {
+  const result = spawnSync('git', args, { cwd: workspace, encoding: 'utf8', windowsHide: true })
+  if (result.error) throw result.error
+  if (!allowExit.includes(result.status)) throw new Error('git ' + args.join(' ') + ' failed: ' + String(result.stderr || result.stdout).trim())
+  return String(result.stdout || '')
+}
+
+const workspaceSnapshot = (workspace) => snapshotTree(workspace, { exclude: ['.git', 'materialization.json'] })
+const changedPaths = (before, after) => {
+  const left = new Map(before.map((entry) => [entry.path, entry.sha256]))
+  const right = new Map(after.map((entry) => [entry.path, entry.sha256]))
+  return [...new Set([...left.keys(), ...right.keys()])].filter((file) => left.get(file) !== right.get(file)).sort()
+}
+const digestMap = (entries) => Object.fromEntries(entries.map((entry) => [entry.path, entry.sha256]))
+
+const installedPathFor = (presetRoot, repoPath) => path.join(presetRoot, ...repoPath.split('/'))
+
+const verifyInstalledCandidate = (presetRoot, lock) => {
+  const root = path.resolve(presetRoot)
+  const packageJson = readJson(path.join(root, 'package.json'))
+  if (packageJson.name !== 'dsh-researcher' || packageJson.version !== lock.candidate.package_version) throw new Error('installed candidate identity/version does not match the run-lock')
+  const directories = ['governed', 'researcher/plugins/goal-governor', 'researcher/plugins/tool-restrict', 'lib/cognition-core', 'lib/goal-core', 'lib/verifier-core', 'lib/dsh-adapter']
+  const inClosure = (file) => file === 'lib/canonical-json.js' || directories.some((directory) => file.startsWith(directory + '/'))
+  const expected = Object.fromEntries(Object.entries(lock.inputs).filter(([file]) => inClosure(file)))
+  if (Object.keys(expected).length === 0 || expected['lib/canonical-json.js'] === undefined) throw new Error('run-lock runtime closure is incomplete')
+  const actual = {}
+  for (const directory of directories) {
+    const installedDirectory = installedPathFor(root, directory)
+    if (!fs.existsSync(installedDirectory) || !fs.statSync(installedDirectory).isDirectory()) throw new Error('installed candidate is missing runtime directory ' + directory)
+    for (const entry of walkFiles(installedDirectory)) actual[directory + '/' + entry.path] = entry.sha256
+  }
+  const canonicalFile = installedPathFor(root, 'lib/canonical-json.js')
+  if (!fs.existsSync(canonicalFile) || !fs.statSync(canonicalFile).isFile()) throw new Error('installed candidate is missing lib/canonical-json.js')
+  actual['lib/canonical-json.js'] = sha256File(canonicalFile)
+  if (canonicalize(Object.keys(actual).sort()) !== canonicalize(Object.keys(expected).sort())) throw new Error('installed candidate runtime closure inventory differs from the run-lock')
+  for (const [file, digest] of Object.entries(expected)) if (actual[file] !== digest) throw new Error('installed candidate file drifted: ' + file)
+  return root
+}
+
+const verifyDshRuntime = (dshModuleRoot, dshHome, expected) => {
+  const provenance = dshRuntimeProvenance(dshModuleRoot)
+  const publicEvidence = publicDshProvenance(provenance)
+  assertSameProvenance(publicEvidence, expected, 'DSH dependency closure')
+  if (provenance.package_name !== '@deepseek-ai/dsh' || provenance.package_version !== REQUIRED_DSH_VERSION) throw new Error('DSH module identity/version must equal @deepseek-ai/dsh@' + REQUIRED_DSH_VERSION)
+  const sanitized = sanitizeNodeEnvironment({ ...process.env, DSH_HOME: dshHome })
+  const result = spawnSync(process.execPath, [provenance.cli_file, '--version'], {
+    cwd: REPO_ROOT,
+    env: sanitized.env,
+    encoding: 'utf8',
+    windowsHide: true,
+    timeout: 10000,
+  })
+  if (result.error) throw new Error('could not execute the pinned DSH CLI: ' + result.error.message)
+  if (result.status !== 0) throw new Error('DSH --version failed: ' + String(result.stderr || result.stdout).trim())
+  const found = String(result.stdout || result.stderr).match(/\b\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?\b/)
+  if (!found || found[0] !== REQUIRED_DSH_VERSION) throw new Error('DSH CLI version must equal ' + REQUIRED_DSH_VERSION)
+  return {
+    ...publicEvidence,
+    invocation: { runtime: 'node', argv_prefix: [provenance.cli_relative] },
+    environment: { policy: 'sanitized-node-spawn-environment/v1', denied_names: [...NODE_ENV_DENYLIST], removed_present_names: sanitized.removed },
+    package_root: provenance.package_root,
+    cli_file: provenance.cli_file,
+  }
+}
+
+const ensureEvidenceSkeleton = (caseDir) => {
+  for (const directory of ['pre', 'post']) fs.mkdirSync(path.join(caseDir, directory), { recursive: true })
+  for (const [relative, content] of [
+    ['stdout.txt', ''], ['stderr.txt', ''], ['session.jsonl', ''],
+    ['session.events.json', '[]\n'], ['visible-tools.json', '[]\n'], ['visible-tool-schemas.json', '[]\n'], ['replay-checkpoints.json', '{}\n'],
+  ]) {
+    const file = path.join(caseDir, relative)
+    if (!fs.existsSync(file)) fs.writeFileSync(file, content, { flag: 'wx' })
+  }
+}
+
+const staticArtifact = ({ runtime, manifest, lock, fixtureBaseline, state, contract, registry, before, after, entry, hostVerifier, runtimeProvenance, budgetEvidence, attemptIdentity }) => ({
+  schema: RUN_ARTIFACT_SCHEMA,
+  case_id: entry.id,
+  run_lock: lock,
+  fixture_baseline: fixtureBaseline,
+  cognition_state: state,
+  goal_contract: contract,
+  verifier_registry: registry,
+  session_id: runtime.session_id,
+  runtime_goal_id: runtime.runtime_goal_id,
+  session_events: runtime.session_events || [],
+  visible_tools: runtime.visible_tools || [],
+  visible_tool_schemas: runtime.visible_tool_schemas || [],
+  visible_tool_contract_hash: runtime.visible_tool_contract_hash || null,
+  replay_checkpoints: runtime.replay_checkpoints || {},
+  ...(runtime.stage1_seal_sha256 ? { stage1_seal_sha256: runtime.stage1_seal_sha256 } : {}),
+  host_verifier: hostVerifier,
+  runtime_provenance: runtimeProvenance,
+  budget_evidence: budgetEvidence,
+  attempt_identity: attemptIdentity,
+  worktree: {
+    before,
+    after,
+    allowed_changes: entry.allowed_changes,
+    before_tree_sha256: treeHash(before),
+    after_tree_sha256: treeHash(after),
+  },
+  manifest_identity: { schema: manifest.schema, sha256: lock.manifest_sha256 },
+})
+
+const usage = () => [
+  'Goal Governor E1:',
+  '  node run-e1.js                         # offline preflight only',
+  '  node run-e1.js --mode preflight        # offline preflight only',
+  '  node run-e1.js --mode live --case <id> --run-lock <file> --ack-live-cost --workspace <isolated-dir> --output <external-root> --dsh-module-root <node_modules> --dsh-home <dir> --preset-root <installed-dsh-researcher>',
+  '  resume-replay additionally requires --stage observe, then --stage continue --resume-session <id>.',
+  '  governed-gate additionally requires --human-gate-stdin and external interactive TTY input (not cryptographic identity).',
+].join('\n')
+
+const main = () => {
+  const args = parseArgs(process.argv.slice(2))
+  const mode = args.mode || (args.live === true ? 'live' : 'preflight')
+  if (args.help === true) {
+    process.stdout.write(usage() + '\n')
+    return
+  }
+  if (mode === 'preflight') {
+    if (args.live === true || args['ack-live-cost'] === true) throw new Error('live flags are not valid in offline preflight mode')
+    process.stdout.write(JSON.stringify(runPreflight(), null, 2) + '\n')
+    return
+  }
+  if (mode !== 'live') throw new Error('unknown --mode; expected preflight or live')
+
+  // Cost/state gates are checked before any DSH process or output mutation.
+  if (args['ack-live-cost'] !== true) throw new Error('live mode requires the literal flag --ack-live-cost')
+  for (const forbidden of ['auto-approve', 'approve', 'gate-input', 'gate-command']) if (args[forbidden] !== undefined) throw new Error('--' + forbidden + ' is forbidden; gate input must come from external interactive stdin')
+  const caseId = requireString(args.case, '--case')
+  if (!CASE_IDS.includes(caseId)) throw new Error('unknown --case; expected one of: ' + CASE_IDS.join(', '))
+  const runLockPath = canonicalWithMissingTail(requireString(args['run-lock'], '--run-lock'))
+  const workspace = canonicalWithMissingTail(requireString(args.workspace, '--workspace'))
+  const outputRoot = canonicalWithMissingTail(requireString(args.output, '--output'))
+  if (args['dsh-bin'] !== undefined) throw new Error('--dsh-bin is forbidden; the CLI is derived from the pinned @deepseek-ai/dsh package')
+  const dshModuleRoot = canonicalWithMissingTail(requireString(args['dsh-module-root'], '--dsh-module-root'))
+  const dshHome = canonicalWithMissingTail(requireString(args['dsh-home'], '--dsh-home'))
+  const presetRoot = canonicalWithMissingTail(requireString(args['preset-root'], '--preset-root'))
+  if (!fs.existsSync(dshHome) || !fs.statSync(dshHome).isDirectory()) throw new Error('--dsh-home must be an existing directory')
+  if (!fs.existsSync(dshModuleRoot) || !fs.statSync(dshModuleRoot).isDirectory()) throw new Error('--dsh-module-root must be an existing directory')
+  if (!fs.existsSync(presetRoot) || !fs.statSync(presetRoot).isDirectory()) throw new Error('--preset-root must be an existing directory')
+  for (const [left, right, label] of [
+    [outputRoot, REPO_ROOT, 'output/repository'],
+    [outputRoot, FIXTURE_ROOT, 'output/fixture'],
+    [outputRoot, workspace, 'output/workspace'],
+    [workspace, REPO_ROOT, 'workspace/repository'],
+    [workspace, FIXTURE_ROOT, 'workspace/fixture'],
+    [workspace, dshHome, 'workspace/DSH home'],
+    [workspace, presetRoot, 'workspace/candidate preset'],
+    [workspace, dshModuleRoot, 'workspace/DSH modules'],
+    [outputRoot, dshHome, 'output/DSH home'],
+    [outputRoot, presetRoot, 'output/candidate preset'],
+    [outputRoot, dshModuleRoot, 'output/DSH modules'],
+    [presetRoot, REPO_ROOT, 'installed candidate/repository'],
+    [dshHome, dshModuleRoot, 'DSH home/modules'],
+    [dshHome, presetRoot, 'DSH home/candidate preset'],
+    [dshModuleRoot, presetRoot, 'DSH modules/candidate preset'],
+    [dshHome, REPO_ROOT, 'DSH home/repository'],
+    [dshModuleRoot, REPO_ROOT, 'DSH modules/repository'],
+  ]) assertDisjoint(left, right, label)
+
+  const manifest = validateManifest(readJson(MANIFEST_PATH))
+  const entry = manifest.cases.find((item) => item.id === caseId)
+  const lockResult = verifyRunLock(runLockPath, { dshModuleRoot })
+  if (canonicalize(lockResult.manifest) !== canonicalize(manifest)) throw new Error('verified run-lock manifest differs from live manifest')
+  if (lockResult.lock.inputs[TRUSTED_VERIFIER.source] !== TRUSTED_VERIFIER.sha256 || sha256File(EXTERNAL_VERIFIER_PATH) !== TRUSTED_VERIFIER.sha256) throw new Error('TRUSTED_VERIFIER_DRIFT: manifest, run lock, and external verifier do not agree')
+  runPreflight()
+
+  const stage = caseId === 'resume-replay' ? requireString(args.stage, '--stage') : (args.stage || 'full')
+  if (caseId === 'resume-replay' && !['observe', 'continue'].includes(stage)) throw new Error('resume-replay --stage must be observe or continue')
+  if (caseId !== 'resume-replay' && stage !== 'full') throw new Error('--stage is only valid for resume-replay')
+  if (caseId === 'governed-gate') {
+    if (args['human-gate-stdin'] !== true) throw new Error('governed-gate requires --human-gate-stdin')
+    if (process.stdin.isTTY !== true || process.stdout.isTTY !== true) throw new Error('governed-gate requires an interactive stdin/stdout TTY')
+  }
+
+  const caseDir = path.join(outputRoot, caseId)
+  const continuing = stage === 'continue'
+  let stage1Verification = null
+  if (continuing) {
+    if (!fs.existsSync(caseDir) || !fs.existsSync(path.join(caseDir, 'resume-token.json'))) throw new Error('resume continuation requires the preserved stage-one case directory and token')
+    if (!fs.existsSync(workspace) || !fs.statSync(workspace).isDirectory()) throw new Error('resume continuation requires the same preserved workspace')
+    const token = readJson(path.join(caseDir, 'resume-token.json'))
+    const requested = requireString(args['resume-session'], '--resume-session')
+    if (requested !== token.session_id) throw new Error('--resume-session does not match the preserved stage-one token')
+    if (token.run_lock_hash !== lockResult.lock.lock_hash || token.contract_hash !== entry.contract_hash) throw new Error('stage-one token does not match the current run-lock/contract')
+    stage1Verification = validateStage1Seal({ caseDir, workspace, dshHome, runLockHash: lockResult.lock.lock_hash, contractHash: entry.contract_hash, sessionId: requested })
+    if (runGit(workspace, ['status', '--porcelain=v1', '--untracked-files=all']) !== stage1Verification.expected_git_status) throw new Error('current git status differs from the sealed stage-one boundary')
+    if (runGit(workspace, ['diff', '--no-ext-diff', '--binary', '--']) !== stage1Verification.expected_diff) throw new Error('current git diff differs from the sealed stage-one boundary')
+  } else {
+    if (args['resume-session'] !== undefined) throw new Error('--resume-session is valid only with --stage continue')
+    if (fs.existsSync(caseDir)) throw new Error('refusing to overwrite an existing case evidence directory: ' + caseDir)
+    if (fs.existsSync(workspace) && (!fs.statSync(workspace).isDirectory() || fs.readdirSync(workspace).length !== 0)) throw new Error('new live run --workspace must be absent or empty')
+  }
+  if (fs.existsSync(outputRoot) && fs.readdirSync(outputRoot).length > 0) {
+    assertExactCopy(path.join(outputRoot, 'manifest.json'), MANIFEST_PATH)
+    assertExactCopy(path.join(outputRoot, 'run-lock.json'), runLockPath)
+    if (!fs.existsSync(path.join(outputRoot, manifest.attempt_ledger.path))) throw new Error('non-empty E1 output root is missing its append-only attempt ledger')
+    const priorReceipts = assertClosedLedger(path.join(outputRoot, manifest.attempt_ledger.path))
+    if (continuing && !priorReceipts.some((receipt) =>
+      receipt.case_id === 'resume-replay' && receipt.stage === 'observe' && receipt.status === 'FINALIZED' && receipt.outer_finalized === true)) {
+      throw new Error('resume continuation requires a closed FINALIZED observe receipt')
+    }
+  }
+  verifyInstalledCandidate(presetRoot, lockResult.lock)
+  const dshHomeBefore = directoryInventory(dshHome)
+  if (!continuing && (dshHomeBefore.file_count !== lockResult.lock.dsh_home_policy.initial_file_count || dshHomeBefore.inventory_sha256 !== lockResult.lock.dsh_home_policy.initial_inventory_sha256)) throw new Error('DSH_HOME_DRIFT: each new E1 case requires a fresh empty DSH_HOME')
+  if (continuing && canonicalize(dshHomeBefore) !== canonicalize(stage1Verification.dsh_home_inventory)) throw new Error('DSH_HOME_DRIFT: continuation DSH_HOME differs from the sealed stage-one inventory')
+  const runtimeProvenance = verifyDshRuntime(dshModuleRoot, dshHome, lockResult.lock.host_runtime.dsh)
+  if (canonicalize(directoryInventory(dshHome)) !== canonicalize(dshHomeBefore)) throw new Error('DSH_HOME_DRIFT: DSH --version mutated the frozen pre-run home')
+
+  // No mutation above this line. The explicit live contract is now complete.
+  fs.mkdirSync(outputRoot, { recursive: true })
+  ensureExactCopy(path.join(outputRoot, 'manifest.json'), MANIFEST_PATH)
+  ensureExactCopy(path.join(outputRoot, 'run-lock.json'), runLockPath)
+  const ledgerFile = path.join(outputRoot, manifest.attempt_ledger.path)
+  const startedReceipt = beginAttempt(ledgerFile, {
+    attempt_id: crypto.randomUUID(),
+    case_id: caseId,
+    stage,
+    run_lock_hash: lockResult.lock.lock_hash,
+  })
+  pendingAttempt = { file: ledgerFile, receipt: startedReceipt, artifact: null }
+  if (!continuing) {
+    fs.mkdirSync(caseDir, { recursive: false })
+    materialize({ caseId, output: workspace, initGit: true })
+  }
+  ensureEvidenceSkeleton(caseDir)
+  if (continuing) {
+    fs.appendFileSync(path.join(caseDir, 'stdout.txt'), '\n--- E1 durable resume process ---\n')
+    fs.appendFileSync(path.join(caseDir, 'stderr.txt'), '\n--- E1 durable resume process ---\n')
+  }
+
+  const fixtureCase = readJson(path.join(workspace, 'fixture-case.json'))
+  if (fixtureCase.case_id !== caseId || fixtureCase.t0_revision !== manifest.fixture.t0_revision) throw new Error('workspace is not the selected frozen E1 fixture')
+  runGit(workspace, ['rev-parse', '--is-inside-work-tree'])
+  const materialization = readJson(path.join(workspace, 'materialization.json'))
+  let before
+  let fixtureBaseline
+  let expectedImmutableFiles
+  if (!continuing) {
+    const status = runGit(workspace, ['status', '--porcelain=v1', '--untracked-files=all'])
+    if (status !== '') throw new Error('fresh fixture git worktree is not clean before the first model message')
+    before = workspaceSnapshot(workspace)
+    const beforeHash = treeHash(before)
+    if (beforeHash !== materialization.content_tree_sha256 || beforeHash !== entry.fixture_tree_sha256) throw new Error('WORKTREE_BASELINE_DRIFT: manifest/materialization hash differs before the first model message')
+    fixtureBaseline = { case_id: caseId, t0_revision: fixtureCase.t0_revision, content_tree_sha256: materialization.content_tree_sha256, pre_tree_sha256: beforeHash }
+    fs.mkdirSync(path.join(caseDir, 'pre'), { recursive: true })
+    fs.writeFileSync(path.join(caseDir, 'pre', 'git-status.txt'), status)
+    fs.writeFileSync(path.join(caseDir, 'pre', 'tree-hash.txt'), beforeHash + '\n')
+    writeJson(path.join(caseDir, 'pre', 'worktree.json'), before)
+    writeJson(path.join(caseDir, 'pre', 'dsh-home-inventory.json'), dshHomeBefore)
+    writeJson(path.join(caseDir, 'fixture-baseline.json'), fixtureBaseline)
+    ensureExactCopy(path.join(caseDir, 'manifest.json'), MANIFEST_PATH)
+    ensureExactCopy(path.join(caseDir, 'run-lock.json'), runLockPath)
+    writeJson(path.join(caseDir, 'contract.json'), readJson(path.join(workspace, entry.contract)))
+    writeJson(path.join(caseDir, 'cognition.json'), readJson(path.join(workspace, '.project-cognition', 'state.json')))
+    writeJson(path.join(caseDir, 'verifiers.json'), readJson(path.join(workspace, '.project-cognition', 'verifiers.json')))
+    expectedImmutableFiles = digestMap(immutableSnapshot(workspace, entry.allowed_changes))
+    writeJson(path.join(caseDir, 'immutable-inputs.json'), expectedImmutableFiles)
+  } else {
+    before = readJson(path.join(caseDir, 'pre', 'worktree.json'))
+    fixtureBaseline = readJson(path.join(caseDir, 'fixture-baseline.json'))
+    expectedImmutableFiles = readJson(path.join(caseDir, 'immutable-inputs.json'))
+    // For the final continuation artifact, "pre DSH_HOME" means the sealed
+    // stage-one resume boundary. The stage-one artifact already preserves its
+    // own initial empty-home evidence under the seal.
+    writeJson(path.join(caseDir, 'pre', 'dsh-home-inventory.json'), dshHomeBefore)
+    if (treeHash(before) !== fixtureBaseline.pre_tree_sha256 || fixtureBaseline.pre_tree_sha256 !== fixtureBaseline.content_tree_sha256) throw new Error('preserved fixture baseline evidence is inconsistent')
+    const current = workspaceSnapshot(workspace)
+    const illegal = changedPaths(before, current).filter((file) => !entry.allowed_changes.some((allowed) => file === allowed || file.startsWith(allowed.replace(/\/$/, '') + '/')))
+    if (illegal.length > 0) throw new Error('WORKTREE_BASELINE_DRIFT: resume stage one changed out-of-scope paths: ' + illegal.join(', '))
+    for (const [workspaceFile, evidenceFile] of [
+      [entry.contract, 'contract.json'],
+      ['.project-cognition/state.json', 'cognition.json'],
+      ['.project-cognition/verifiers.json', 'verifiers.json'],
+    ]) {
+      if (canonicalize(readJson(path.join(workspace, workspaceFile))) !== canonicalize(readJson(path.join(caseDir, evidenceFile)))) throw new Error('resume immutable evidence drifted: ' + workspaceFile)
+    }
+    if (canonicalize(digestMap(immutableSnapshot(workspace, entry.allowed_changes))) !== canonicalize(expectedImmutableFiles)) throw new Error('resume workspace immutable inventory drifted')
+  }
+
+  const promptKey = continuing ? 'resume' : 'initial'
+  const priorTimingProcesses = continuing
+    ? readJson(path.join(caseDir, 'resume-stage1.json')).budget_evidence?.outer_monotonic?.processes || []
+    : []
+  const sanitizedLaunch = sanitizeNodeEnvironment(process.env)
+  const environment = {
+    ...sanitizedLaunch.env,
+    DSH_HOME: dshHome,
+    DSH_PERMISSION_MODE: 'workspace-write',
+    DSH_E1_CASE: caseId,
+    DSH_E1_STAGE: stage,
+    DSH_E1_CASE_OUT: caseDir,
+    DSH_E1_PRESET_ROOT: presetRoot,
+    DSH_E1_DSH_MODULE_ROOT: dshModuleRoot,
+    DSH_E1_DRIVER: DRIVER_PATH,
+    DSH_E1_HOST_TOOL: HOST_TOOL_PATH,
+    DSH_E1_WORKSPACE: workspace,
+    DSH_E1_EXTERNAL_VERIFIER: EXTERNAL_VERIFIER_PATH,
+    DSH_E1_EXTERNAL_VERIFIER_SOURCE: TRUSTED_VERIFIER.source,
+    DSH_E1_EXTERNAL_VERIFIER_SHA256: TRUSTED_VERIFIER.sha256,
+    DSH_E1_IMMUTABLE_FILES: JSON.stringify(expectedImmutableFiles),
+    DSH_E1_ALLOWED_CHANGES: JSON.stringify(entry.allowed_changes),
+    DSH_E1_SESSION_ROOT: path.join(dshHome, 'e1-session-store'),
+    DSH_E1_PROMPT_FILE: path.resolve(REPO_ROOT, entry.prompts[promptKey]),
+    DSH_E1_AFTER_GATE_PROMPT_FILE: entry.prompts.after_gate ? path.resolve(REPO_ROOT, entry.prompts.after_gate) : '',
+    DSH_E1_CONTRACT_FILE: path.resolve(workspace, entry.contract),
+    DSH_E1_CONTRACT_RELATIVE: slash(entry.contract),
+    DSH_E1_RUN_LOCK: runLockPath,
+    DSH_E1_EXPECTED_TERMINAL: entry.expected_terminal,
+    DSH_E1_STDOUT_FILE: path.join(caseDir, 'stdout.txt'),
+    DSH_E1_STDERR_FILE: path.join(caseDir, 'stderr.txt'),
+    DSH_E1_RESUME_SESSION: continuing ? args['resume-session'] : '',
+    DSH_E1_STAGE1_SEAL_HASH: continuing ? stage1Verification.seal_sha256 : '',
+    DSH_E1_VISIBLE_TOOL_CONTRACT_MODULE: VISIBLE_TOOL_CONTRACT_PATH,
+    DSH_E1_NODE_PROVENANCE: JSON.stringify(lockResult.lock.host_runtime.node),
+    DSH_E1_DISABLE_MODEL_COMPACTION: '1',
+    DSH_E1_RESTRICT_TOOL_SURFACE: '1',
+  }
+  fs.appendFileSync(path.join(caseDir, 'stdout.txt'), '[outer/launch] ' + JSON.stringify({ case_id: caseId, stage, dsh_version: REQUIRED_DSH_VERSION, run_lock_hash: lockResult.lock.lock_hash }) + '\n')
+  const processStartedAt = new Date().toISOString()
+  const processStartedMonotonic = process.hrtime.bigint()
+  const child = spawnSync(process.execPath, [runtimeProvenance.cli_file, '--profile', 'headless', '--patch', PATCH_PATH, 'e1-' + caseId], {
+    cwd: workspace,
+    env: environment,
+    stdio: 'inherit',
+    windowsHide: false,
+    timeout: (lockResult.lock.budget.max_time_sec + 60) * 1000,
+  })
+  const processElapsedSec = Number(process.hrtime.bigint() - processStartedMonotonic) / 1e9
+  const processTiming = {
+    stage,
+    started_at: processStartedAt,
+    ended_at: new Date().toISOString(),
+    elapsed_sec: processElapsedSec,
+    timeout_sec: lockResult.lock.budget.max_time_sec + 60,
+  }
+  fs.appendFileSync(path.join(caseDir, 'stdout.txt'), '[outer/exit] ' + JSON.stringify({ status: child.status, signal: child.signal || null }) + '\n')
+  if (child.error) fs.appendFileSync(path.join(caseDir, 'stderr.txt'), '[outer/error] ' + JSON.stringify({ code: child.error.code || 'SPAWN_ERROR', message: child.error.message }) + '\n')
+
+  const hostVerifier = runExternalVerifier({
+    workspace,
+    verifierPath: EXTERNAL_VERIFIER_PATH,
+    verifierSource: TRUSTED_VERIFIER.source,
+    expectedVerifierSha256: TRUSTED_VERIFIER.sha256,
+    expectedImmutableFiles,
+    allowedChanges: entry.allowed_changes,
+    expectedNodeProvenance: lockResult.lock.host_runtime.node,
+  })
+  const dshHomeAfter = directoryInventory(dshHome)
+  const postStatus = runGit(workspace, ['status', '--porcelain=v1', '--untracked-files=all'])
+  const diff = runGit(workspace, ['diff', '--no-ext-diff', '--binary', '--'])
+  const after = workspaceSnapshot(workspace)
+  const afterHash = treeHash(after)
+  fs.writeFileSync(path.join(caseDir, 'post', 'git-status.txt'), postStatus)
+  fs.writeFileSync(path.join(caseDir, 'post', 'diff.patch'), diff)
+  fs.writeFileSync(path.join(caseDir, 'post', 'tree-hash.txt'), afterHash + '\n')
+  writeJson(path.join(caseDir, 'post', 'worktree.json'), after)
+  writeJson(path.join(caseDir, 'post', 'verifier.json'), hostVerifier)
+  writeJson(path.join(caseDir, 'post', 'dsh-home-inventory.json'), dshHomeAfter)
+
+  ensureEvidenceSkeleton(caseDir)
+  const runtimeFile = path.join(caseDir, continuing || stage === 'full' ? 'runtime-artifact.json' : 'resume-stage1.json')
+  const runtime = fs.existsSync(runtimeFile) ? readJson(runtimeFile) : {
+    session_events: readJson(path.join(caseDir, 'session.events.json')),
+    visible_tools: readJson(path.join(caseDir, 'visible-tools.json')),
+    visible_tool_schemas: readJson(path.join(caseDir, 'visible-tool-schemas.json')),
+    replay_checkpoints: readJson(path.join(caseDir, 'replay-checkpoints.json')),
+  }
+  const timingProcesses = [...priorTimingProcesses, processTiming]
+  const wallElapsedSec = timingProcesses.reduce((sum, item) => sum + Number(item.elapsed_sec || 0), 0)
+  const budgetEvidence = {
+    schema: 'dsh-researcher/goal-governor-e1/budget-evidence/v1',
+    limits: { max_tokens: lockResult.lock.budget.max_tokens, max_time_sec: lockResult.lock.budget.max_time_sec },
+    outer_monotonic: {
+      source: 'process.hrtime.bigint',
+      processes: timingProcesses,
+      elapsed_sec: wallElapsedSec,
+      within_limit: wallElapsedSec < lockResult.lock.budget.max_time_sec,
+    },
+    host_folded_usage: runtime.host_folded_usage || null,
+  }
+  const staticFields = staticArtifact({
+    runtime,
+    manifest,
+    lock: lockResult.lock,
+    fixtureBaseline,
+    state: readJson(path.join(caseDir, 'cognition.json')),
+    contract: readJson(path.join(caseDir, 'contract.json')),
+    registry: readJson(path.join(caseDir, 'verifiers.json')),
+    before,
+    after,
+    entry,
+    hostVerifier,
+    runtimeProvenance: {
+      schema: 'dsh-researcher/goal-governor-e1/runtime-provenance/v1',
+      node: currentNodeProvenance(),
+      dsh: publicDshProvenance(runtimeProvenance),
+      package_name: runtimeProvenance.package_name,
+      package_version: runtimeProvenance.package_version,
+      package_json_sha256: runtimeProvenance.package_json_sha256,
+      cli_relative: runtimeProvenance.cli_relative,
+      cli_sha256: runtimeProvenance.cli_sha256,
+      invocation: runtimeProvenance.invocation,
+      environment: {
+        policy: 'sanitized-node-spawn-environment/v1',
+        denied_names: [...NODE_ENV_DENYLIST],
+        removed_present_names: sanitizedLaunch.removed,
+      },
+      dsh_home: { before: dshHomeBefore, after: dshHomeAfter },
+      session_persistence: { kind: 'jsonl', pack_chunks: false, compression: 'none' },
+      auxiliary_model_policy: { title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false },
+    },
+    budgetEvidence,
+    attemptIdentity: {
+      ledger: manifest.attempt_ledger.path,
+      attempt_id: startedReceipt.attempt_id,
+      case_id: caseId,
+      stage,
+      run_lock_hash: lockResult.lock.lock_hash,
+      start_sequence: startedReceipt.sequence,
+      start_receipt_hash: startedReceipt.receipt_hash,
+    },
+  })
+  staticFields.runner_exit_code = child.status
+  staticFields.runner_signal = child.signal || null
+  staticFields.runner_timed_out = Boolean(child.error && child.error.code === 'ETIMEDOUT')
+  staticFields.runner_error = child.error ? { code: child.error.code || 'SPAWN_ERROR', message: child.error.message } : null
+  const expectedVerifierExit = stage === 'observe' ? entry.baseline_exit : entry.final_verifier_exit
+  const outerErrors = []
+  const reject = (code, message) => outerErrors.push({ code, message })
+  if (!hostVerifier.integrity.ok || !hostVerifier.workspace.unchanged || hostVerifier.spawn_error || hostVerifier.timed_out) reject('TRUSTED_VERIFIER_DRIFT', 'external verifier integrity or execution failed')
+  if (hostVerifier.exit_code !== expectedVerifierExit) reject('HOST_VERIFIER_EXIT_MISMATCH', 'expected exit ' + expectedVerifierExit + ', received ' + hostVerifier.exit_code)
+  if (child.error) reject(child.error.code === 'ETIMEDOUT' ? 'DSH_CHILD_TIMEOUT' : 'DSH_CHILD_ERROR', child.error.message)
+  if (child.status !== 0) reject('DSH_CHILD_NONZERO', 'DSH child exit was ' + child.status)
+  if (!budgetEvidence.outer_monotonic.within_limit) reject('WALL_BUDGET_EXHAUSTED', 'host-monotonic execution time reached the frozen limit')
+  if (runtime.visible_tool_contract_hash !== lockResult.lock.visible_tool_contract.schema_hash || canonicalize(runtime.visible_tool_schemas || []) !== canonicalize(lockResult.lock.visible_tool_contract.schemas)) reject('VISIBLE_TOOL_CONTRACT_DRIFT', 'runtime visible tool schemas differ from run-lock')
+  const foldedUsage = budgetEvidence.host_folded_usage
+  if (!foldedUsage || !Number.isFinite(foldedUsage.cumulative_tokens) || !Number.isFinite(foldedUsage.elapsed_sec)) reject('HOST_USAGE_MISSING', 'host-folded token/time usage is unavailable')
+  else {
+    if (foldedUsage.cumulative_tokens >= lockResult.lock.budget.max_tokens) reject('TOKEN_BUDGET_EXHAUSTED', 'host-folded usage reached the frozen token limit')
+    if (foldedUsage.elapsed_sec >= lockResult.lock.budget.max_time_sec) reject('EVENT_TIME_BUDGET_EXHAUSTED', 'host-folded elapsed time reached the frozen time limit')
+  }
+  const outerFinalization = {
+    schema: 'dsh-researcher/goal-governor-e1/outer-finalization/v1',
+    finalized: outerErrors.length === 0,
+    stage,
+    expected_host_verifier_exit: expectedVerifierExit,
+    dsh_child: {
+      exit_code: child.status,
+      signal: child.signal || null,
+      timed_out: staticFields.runner_timed_out,
+      error: staticFields.runner_error,
+    },
+    host_verifier: {
+      actual_exit_code: hostVerifier.exit_code,
+      integrity_ok: hostVerifier.integrity.ok,
+      workspace_unchanged: hostVerifier.workspace.unchanged,
+      timed_out: hostVerifier.timed_out,
+      spawn_error: hostVerifier.spawn_error,
+    },
+    budget: {
+      wall_elapsed_sec: budgetEvidence.outer_monotonic.elapsed_sec,
+      wall_within_limit: budgetEvidence.outer_monotonic.within_limit,
+      cumulative_tokens: foldedUsage?.cumulative_tokens ?? null,
+      folded_elapsed_sec: foldedUsage?.elapsed_sec ?? null,
+      token_within_limit: Boolean(foldedUsage && foldedUsage.cumulative_tokens < lockResult.lock.budget.max_tokens),
+      event_time_within_limit: Boolean(foldedUsage && foldedUsage.elapsed_sec < lockResult.lock.budget.max_time_sec),
+    },
+    errors: outerErrors,
+  }
+  staticFields.outer_finalization = outerFinalization
+  staticFields.outer_finalized = outerFinalization.finalized
+  if (stage === 'observe') {
+    writeJson(path.join(caseDir, 'resume-stage1.json'), { ...runtime, ...staticFields, stage: 'observe', final_outcome: 'NOT_RUN' })
+    if (outerFinalization.finalized) {
+      const stagePost = path.join(caseDir, 'stage1', 'post')
+      fs.mkdirSync(stagePost, { recursive: true })
+      for (const file of ['git-status.txt', 'diff.patch', 'tree-hash.txt', 'worktree.json', 'verifier.json', 'dsh-home-inventory.json']) fs.copyFileSync(path.join(caseDir, 'post', file), path.join(stagePost, file), fs.constants.COPYFILE_EXCL)
+      const sealed = createStage1Seal({ caseDir, runLockHash: lockResult.lock.lock_hash, contractHash: entry.contract_hash })
+      fs.appendFileSync(path.join(caseDir, 'stdout.txt'), '[outer/stage1-seal] ' + JSON.stringify({ sha256: sealed.seal_sha256, resume_after_sequence: sealed.seal.resume_after_sequence }) + '\n')
+    }
+  } else writeJson(path.join(caseDir, 'artifact.json'), { ...runtime, ...staticFields })
+
+  const artifactRelative = stage === 'observe' ? caseId + '/resume-stage1.json' : caseId + '/artifact.json'
+  pendingAttempt.artifact = path.join(outputRoot, ...artifactRelative.split('/'))
+  if (!outerFinalization.finalized) throw new Error('outer finalization refused: ' + outerErrors.map((entry) => entry.code).join(', ') + '; failure evidence preserved at ' + caseDir)
+  finishAttempt(ledgerFile, startedReceipt, {
+    status: 'FINALIZED',
+    artifact_relative: artifactRelative,
+    artifact_sha256: sha256File(pendingAttempt.artifact),
+    outer_finalized: true,
+    error_code: null,
+  })
+  pendingAttempt = null
+  process.stdout.write(JSON.stringify({ ok: true, case_id: caseId, stage, output: caseDir, session_id: runtime.session_id || null }, null, 2) + '\n')
+}
+
+if (require.main === module) {
+  try { main() } catch (error) {
+    if (pendingAttempt) {
+      try {
+        const artifact = pendingAttempt.artifact && fs.existsSync(pendingAttempt.artifact) ? pendingAttempt.artifact : null
+        finishAttempt(pendingAttempt.file, pendingAttempt.receipt, {
+          status: 'FAILED',
+          artifact_relative: artifact ? slash(path.relative(path.dirname(pendingAttempt.file), artifact)) : null,
+          artifact_sha256: artifact ? sha256File(artifact) : null,
+          outer_finalized: false,
+          error_code: String(error.code || String(error.message || '').match(/^[A-Z][A-Z0-9_]+/)?.[0] || 'RUNNER_ERROR'),
+        })
+      } catch (ledgerError) {
+        process.stderr.write('E1 attempt ledger finalization failed: ' + ledgerError.message + '\n')
+      }
+      pendingAttempt = null
+    }
+    process.stderr.write('E1 runner: ' + error.message + '\n')
+    process.exitCode = 1
+  }
+}
+
+module.exports = { main, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail }
