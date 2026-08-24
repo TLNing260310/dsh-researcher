@@ -7,6 +7,8 @@ const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 
 const { collectInputs, assertFrozenInputsClean, assertExternalRunLockOutput } = require('../evaluation/goal-governor-e1/lock.js')
+const { validateRunLockShape } = require('../evaluation/goal-governor-e1/lib.js')
+const { trustedBundle } = require('./helpers/e1-fixtures.js')
 
 const git = (root, args) => {
   const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', windowsHide: true })
@@ -118,4 +120,48 @@ test('E1 run-lock output is lexically and canonically outside the repository', (
       /symlink|junction|resolves inside/,
     )
   }
+})
+
+const syntheticRunLock = () => JSON.parse(JSON.stringify(trustedBundle().artifacts['simple-done'].run_lock))
+
+test('E1 run-lock accepts the frozen synthetic loopback route', () => {
+  const lock = syntheticRunLock()
+  assert.equal(lock.model.base_url, 'http://127.0.0.1:11434/v1')
+  assert.doesNotThrow(() => validateRunLockShape(lock))
+})
+
+test('E1 run-lock accepts only the frozen DeepSeek Flash API identity', () => {
+  const lock = syntheticRunLock()
+  lock.model = {
+    route: 'deepseek-api',
+    provider: 'deepseek-official',
+    model: 'deepseek-v4-flash',
+    reasoning_effort: 'low',
+    base_url: 'https://api.deepseek.com',
+  }
+  assert.doesNotThrow(() => validateRunLockShape(lock))
+
+  lock.model.model = 'deepseek-v4-pro'
+  assert.throws(() => validateRunLockShape(lock), /flash|remote execution|cost policy/i)
+})
+
+test('E1 run-lock rejects a local route whose resolved adapter base_url is not loopback', () => {
+  const lock = syntheticRunLock()
+  lock.model.base_url = 'https://api.deepseek.com'
+  assert.throws(() => validateRunLockShape(lock), /loopback|base_url|cost policy/i)
+})
+
+test('E1 run-lock rejects endpoint aliases and a non-DeepSeek local provider', () => {
+  const lock = syntheticRunLock()
+  lock.model.endpoint = lock.model.base_url
+  assert.throws(() => validateRunLockShape(lock), /exactly.*base_url|run-lock model/i)
+  delete lock.model.endpoint
+  lock.model.provider = 'local'
+  assert.throws(() => validateRunLockShape(lock), /official DeepSeek adapter|provider/i)
+})
+
+test('E1 run-lock rejects a cost policy that drifts from protocol v1.1', () => {
+  const lock = syntheticRunLock()
+  lock.cost_policy.restricted_windows[0].end = '12:01'
+  assert.throws(() => validateRunLockShape(lock), /cost policy|restricted_windows|12:00/i)
 })

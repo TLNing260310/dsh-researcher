@@ -1,6 +1,7 @@
 {
-  "schema": "dsh-researcher/goal-governor-e1/manifest/v1",
+  "schema": "dsh-researcher/goal-governor-e1/manifest/v2",
   "protocol": "docs/goal-governor-evaluation-protocol.md",
+  "protocol_version": "1.1",
   "status": {
     "infrastructure": "READY",
     "live_e1": "NOT_RUN",
@@ -20,6 +21,28 @@
     "model_compaction": false,
     "tool_result_pruning": true,
     "extra_local_tools": false
+  },
+  "cost_policy": {
+    "schema": "dsh-researcher/model-cost-policy/v1",
+    "timezone": "Asia/Shanghai",
+    "utc_offset_minutes": 480,
+    "restricted_weekdays": [1, 2, 3, 4, 5],
+    "restricted_windows": [
+      { "start": "09:00", "end": "12:00" },
+      { "start": "14:00", "end": "18:00" }
+    ],
+    "remote": {
+      "route": "deepseek-api",
+      "provider": "deepseek-official",
+      "model": "deepseek-v4-flash",
+      "base_url": "https://api.deepseek.com"
+    },
+    "local": {
+      "route": "local-loopback",
+      "provider": "deepseek-official",
+      "endpoint_assurance": "resolved-adapter-base-url-loopback"
+    },
+    "unknown_route": "deny"
   },
   "budget": {
     "max_tokens": 40000,
@@ -159,9 +182,10 @@
     }
   ],
   "artifacts": {
-    "schema": "dsh-researcher/goal-governor-e1/run-artifact/v1",
+    "schema": "dsh-researcher/goal-governor-e1/run-artifact/v2",
     "required_raw_fields": [
       "run_lock",
+      "cost_admissions",
       "fixture_baseline",
       "cognition_state",
       "goal_contract",
@@ -182,6 +206,7 @@
     "RUN_LOCK_MISSING_OR_DRIFTED",
     "DSH_VERSION_MISMATCH",
     "MODEL_OR_BUDGET_DRIFT",
+    "MODEL_COST_POLICY_DENIED_OR_DRIFTED",
     "RAW_SESSION_MISSING",
     "AMBIGUOUS_TOOL_EVENT_PAIRING",
     "FINAL_REPLAY_MISSING_OR_DRIFTED",

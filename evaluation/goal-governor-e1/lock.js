@@ -236,10 +236,13 @@ const createRunLock = (options) => {
       package_version: repoPackage.version,
     },
     runtime: JSON.parse(JSON.stringify(manifest.runtime)),
+    cost_policy: JSON.parse(JSON.stringify(manifest.cost_policy)),
     model: {
+      route: requireString(options.route, '--route'),
       provider: requireString(options.provider, '--provider'),
       model: requireString(options.model, '--model'),
       reasoning_effort: requireString(options.reasoningEffort, '--reasoning-effort'),
+      base_url: requireString(options.baseUrl, '--base-url'),
     },
     budget: {
       max_tokens: manifest.budget.max_tokens,
@@ -277,6 +280,7 @@ const verifyRunLock = (lockPath, options = {}) => {
   if (sha256File(MANIFEST_PATH) !== lock.manifest_sha256) throw new Error('run-lock manifest hash drifted')
   if (canonicalize(frozenInputs) !== canonicalize(lock.inputs)) throw new Error('run-lock frozen input hashes drifted')
   if (canonicalize(lock.runtime) !== canonicalize(manifest.runtime)) throw new Error('run-lock runtime drifted from manifest')
+  if (canonicalize(lock.cost_policy) !== canonicalize(manifest.cost_policy)) throw new Error('run-lock cost policy drifted from manifest')
   const frozenBudget = { max_tokens: manifest.budget.max_tokens, max_time_sec: manifest.budget.max_time_sec }
   if (canonicalize(lock.budget) !== canonicalize(frozenBudget)) throw new Error('run-lock budget drifted from manifest')
   const candidatePackage = candidatePathFromLock(lock)
@@ -295,7 +299,7 @@ const verifyRunLock = (lockPath, options = {}) => {
 
 const usage = () => [
   'Offline E1 run-lock utility:',
-  '  node lock.js create --out <external-file> --candidate-package <tgz> --candidate-revision <git-revision> --provider <id> --model <id> --reasoning-effort <level> --dsh-module-root <node_modules> --visible-tools-snapshot <json>',
+  '  node lock.js create --out <external-file> --candidate-package <tgz> --candidate-revision <git-revision> --route <deepseek-api|local-loopback> --provider <id> --model <id> --reasoning-effort <level> --base-url <resolved-adapter-base-url> --dsh-module-root <node_modules> --visible-tools-snapshot <json>',
   '  node lock.js verify --run-lock <file> --dsh-module-root <node_modules>',
 ].join('\n')
 
@@ -311,9 +315,11 @@ const main = () => {
     const lock = createRunLock({
       candidatePackage: args['candidate-package'],
       candidateRevision: args['candidate-revision'],
+      route: args.route,
       provider: args.provider,
       model: args.model,
       reasoningEffort: args['reasoning-effort'],
+      baseUrl: args['base-url'],
       dshModuleRoot: args['dsh-module-root'],
       visibleToolsSnapshot: args['visible-tools-snapshot'],
     })

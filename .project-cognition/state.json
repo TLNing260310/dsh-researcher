@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 4,
+  "revision": 6,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -26,7 +26,8 @@
       "Verifier Core: frozen invocation hashes and trusted session evidence evaluation",
       "DSH Adapter: /researcher entryways, session-log replay, human gates, hard stop/pause/complete authority",
       "Evaluation Governance: blind snapshots, locks, validity gates, feedback telemetry",
-      "Evidence Bundle Integrity: deterministic raw-byte commitment, external Ed25519 signature verification, and verdict-aware offline scoring"
+      "Evidence Bundle Integrity: deterministic raw-byte commitment, external Ed25519 signature verification, and verdict-aware offline scoring",
+      "Model Cost Admission: frozen provider/model/resolved DeepSeek base URL, Beijing-time blackout windows, immutable settings, absolute deadlines, and independently recomputed host receipts"
     ],
     "boundaries": [
       "JSON state is normative; PROJECT_COGNITION.md is generated and must not be edited as a second truth",
@@ -36,7 +37,8 @@
       "Models may execute and report observations but only the host governor may choose a terminal state",
       "Client adapters must not weaken portable contract, verifier, project-root, or human-approval semantics",
       "Recorded goal terminal events must equal the decision independently derived from their preceding evidence; labels and signatures cannot replace host or worktree evidence",
-      "Goal Contract v1 scope fields are semantic constraints, not a generic filesystem allowlist; only E1 allowed_changes currently has hard path enforcement"
+      "Goal Contract v1 scope fields are semantic constraints, not a generic filesystem allowlist; only E1 allowed_changes currently has hard path enforcement",
+      "Model cost admission constrains only the official E1 runner; it does not prove OS-wide egress isolation, provider billing identity, or the absence of out-of-band calls"
     ]
   },
   "value_claims": [
@@ -67,13 +69,14 @@
       "statement": "The DSH adapter can mechanically reject in-session fabricated or verifier-drifted evidence and reserves goal terminal authority for the host plugin.",
       "authority": "repository_observed",
       "proof_status": "supported",
-      "scope": "pure replay tests plus historical DSH rc.7 preset discovery under a trusted host operator and model-inaccessible evidence root; optional external bundle signatures prove retained bytes against a supplied trust root, not that a live run occurred; DSH was not rerun for alpha.3",
+      "scope": "pure replay tests plus historical DSH rc.7 preset discovery under a trusted host operator and model-inaccessible evidence root; optional external bundle signatures prove retained bytes against a supplied trust root, not that a live run occurred; DSH was not rerun for alpha.4",
       "confidence": 0.9,
       "evidence_refs": [
         "E1",
         "E2",
         "E3",
-        "E7"
+        "E7",
+        "E9"
       ],
       "invalidation_conditions": [
         "a live DSH model can complete through an ungoverned tool",
@@ -221,6 +224,18 @@
         "E7"
       ],
       "change_policy": "Requires an explicit owner-approved cognition revision plus runtime and evidence-integrity review."
+    },
+    {
+      "id": "I6",
+      "statement": "Model-backed repository evaluations must not invoke the DeepSeek API on Monday through Friday during [09:00,12:00) or [14:00,18:00) Asia/Shanghai; only an explicitly run-locked local loopback model is permitted in those windows.",
+      "lifecycle": "ratified",
+      "strength": "hard",
+      "authority": "owner_ratified",
+      "evidence_refs": [
+        "E8",
+        "E9"
+      ],
+      "change_policy": "Requires an explicit owner-approved cognition revision plus model-cost policy, runtime, and scorer review."
     }
   ],
   "decisions": [
@@ -288,6 +303,17 @@
         "E5",
         "E7"
       ]
+    },
+    {
+      "id": "D7",
+      "statement": "Outside the weekday API blackout windows, DeepSeek API evaluation is permitted only with deepseek-official/deepseek-v4-flash; weekends waive only the clock blackout, never the run lock, budget, explicit cost acknowledgement, or Flash-only rule.",
+      "rationale": "This preserves the owner's cost boundary while allowing reproducible remote evaluation in admitted periods; local labels alone are insufficient, so local runs require the deepseek-official adapter, a frozen literal loopback base_url, generated settings with watch=false, and exact DSH resolver checks at every model-call boundary.",
+      "status": "active",
+      "authority": "owner_ratified",
+      "evidence_refs": [
+        "E8",
+        "E9"
+      ]
     }
   ],
   "evidence": [
@@ -306,7 +332,7 @@
     {
       "id": "E3",
       "kind": "test",
-      "ref": "Historical pre-alpha.3 DSH 0.1.0-rc.7 scanRoot over temporary installation: researcher and governed presets both broken=null; alpha.3 did not rerun this check",
+      "ref": "Historical pre-alpha.3 DSH 0.1.0-rc.7 scanRoot over temporary installation: researcher and governed presets both broken=null; alpha.4 did not rerun this check",
       "observed_at": "2026-08-24"
     },
     {
@@ -332,6 +358,18 @@
       "kind": "test",
       "ref": "alpha.3 offline verification: distinct cognition schemas and refutation preservation; bound draft/diff/seal/install; complete goal-revision lineage; terminal-prefix recomputation; exact DSH goal/create scoping, human blocker authority and paused mutation gate; multi-reference verifier rejection; self-contained E1 bundle commitment/signature/path-alias defenses; revision-bound run-lock and isolated HEAD-blob release packaging",
       "observed_at": "2026-08-24"
+    },
+    {
+      "id": "E8",
+      "kind": "human",
+      "ref": "Owner requirement on 2026-08-24: during Beijing weekday 09:00-12:00 and 14:00-18:00 model-backed testing may use only local models; admitted DeepSeek API testing must use the lower-cost Flash model, while weekends remove only the time restriction.",
+      "observed_at": "2026-08-24"
+    },
+    {
+      "id": "E9",
+      "kind": "test",
+      "ref": "alpha.4 offline verification on 2026-08-24: npm run check passed 209/209 tests, cognition and adapter doctor, and E1 preflight with model_calls=0/network_calls=0; boundary, cross-window, Flash-only, loopback base_url, run-lock drift, missing/tampered admission, resolved-route/settings drift, forged timing, and over-budget timeout attacks fail closed.",
+      "observed_at": "2026-08-24"
     }
   ],
   "known_unknowns": [
@@ -352,15 +390,25 @@
       "id": "U3",
       "statement": "Longitudinal Project Cognition value, Goal Governor value, adoption cost, and cross-client portability remain unmeasured.",
       "evidence_refs": []
+    },
+    {
+      "id": "U4",
+      "statement": "DSH rc.7 has not been rerun to prove that the generated watch=false settings and public DeepSeek resolver produce the exact locked local base_url throughout a live E1 run; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
+      "evidence_refs": [
+        "E3",
+        "E9"
+      ]
     }
   ],
   "next_proofs": [
     {
       "id": "P0",
-      "statement": "Complete every Gate 0 integrity check for the current release candidate, including DSH-dependent checks, and freeze the evaluation artifacts defined by the Goal Governor Evaluation Protocol.",
+      "statement": "Before any live DSH/model run, complete current-candidate Gate 0 including DSH-dependent checks; prove the generated immutable settings, locked provider/model/reasoning effort/base_url, public DeepSeek resolver, and absolute deadline behave as protocol v1.1 requires; then freeze a compatible external run lock and evidence root.",
       "evidence_refs": [
         "E1",
-        "E2"
+        "E2",
+        "E8",
+        "E9"
       ]
     },
     {
@@ -396,5 +444,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "0cfefb037ee5607bd910114072e3adba97230973ed7206ebca0c134acd41d2dd"
+  "state_hash": "9543fa49af7817b35021bb6a038a473738ebf8ca670dd56e2b99020d0db9f9c8"
 }

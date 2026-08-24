@@ -4,6 +4,7 @@ const test = require('node:test')
 const assert = require('node:assert')
 const { hashCanonical } = require('../lib/canonical-json.js')
 const { validateManifest } = require('../evaluation/goal-governor-e1/score-e1.js')
+const { evaluateCostAdmission } = require('../evaluation/goal-governor-e1/cost-policy.js')
 const { cloneBundle, refreshFinalReplay, scoreTrustedBundle, snapshotTreeHash } = require('./helpers/e1-fixtures.js')
 
 const callsNamed = (artifact, name) => artifact.session_events.filter((event) => event.type === 'tool/call' && event.data.name === name)
@@ -351,4 +352,149 @@ test('an evidenced out-of-scope write attempt is FAIL rather than INVALID', () =
   assert.equal(scored.verdict, 'FAIL')
   assert.equal(scored.invalid_reasons.length, 0)
   assert.ok(scored.failures.some((reason) => /escaped the case-scoped/.test(reason)))
+})
+
+test('missing host cost-admission evidence makes an otherwise passing run INVALID', () => {
+  const bundle = cloneBundle()
+  delete bundle.artifacts['simple-done'].cost_admissions
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /cost_admissions/.test(reason)))
+})
+
+test('a coherently recomputed remote admission inside the weekday blackout remains DENY and INVALID', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.run_lock.model = {
+    route: 'deepseek-api',
+    provider: 'deepseek-official',
+    model: 'deepseek-v4-flash',
+    reasoning_effort: 'fixture',
+    base_url: 'https://api.deepseek.com',
+  }
+  delete run.run_lock.lock_hash
+  run.run_lock.lock_hash = hashCanonical(run.run_lock)
+  run.cost_admissions = ['pre-output', 'pre-spawn'].map((phase, index) => evaluateCostAdmission({
+    policy: run.run_lock.cost_policy,
+    model: run.run_lock.model,
+    now: index === 0 ? '2026-08-24T01:00:00.000Z' : '2026-08-24T01:00:01.000Z',
+    reservationSec: run.run_lock.budget.max_time_sec + 60,
+    phase,
+  }))
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /did not authorize the model route/.test(reason)))
+})
+
+test('a remote non-Flash run-lock is INVALID even if its hash is recomputed', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.run_lock.model = {
+    route: 'deepseek-api',
+    provider: 'deepseek-official',
+    model: 'deepseek-v4-pro',
+    reasoning_effort: 'fixture',
+    base_url: 'https://api.deepseek.com',
+  }
+  delete run.run_lock.lock_hash
+  run.run_lock.lock_hash = hashCanonical(run.run_lock)
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /flash|model cost route/i.test(reason)))
+})
+
+test('a local label with a public base URL is INVALID even if its hash is recomputed', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.run_lock.model.base_url = 'https://api.example.invalid:443'
+  delete run.run_lock.lock_hash
+  run.run_lock.lock_hash = hashCanonical(run.run_lock)
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /loopback|model cost route/i.test(reason)))
+})
+
+test('pre-spawn cost admission recorded after the process start is INVALID', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.cost_admissions[1] = evaluateCostAdmission({
+    policy: run.run_lock.cost_policy,
+    model: run.run_lock.model,
+    now: '2026-08-24T00:00:02.000Z',
+    reservationSec: run.run_lock.budget.max_time_sec + 60,
+    phase: 'pre-spawn',
+  })
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /after the model process started/.test(reason)))
+})
+
+test('an old but internally recomputed admission cannot authorize a later process start', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.cost_admissions = ['pre-output', 'pre-spawn'].map((phase, index) => evaluateCostAdmission({
+    policy: run.run_lock.cost_policy,
+    model: run.run_lock.model,
+    now: index === 0 ? '2026-08-23T23:39:59.000Z' : '2026-08-23T23:40:00.000Z',
+    reservationSec: run.run_lock.budget.max_time_sec + 60,
+    phase,
+  }))
+  const admission = run.cost_admissions[1]
+  run.budget_evidence.outer_monotonic.processes[0].cost_admission = {
+    phase: admission.phase,
+    evaluated_at_utc: admission.evaluated_at_utc,
+    deadline_utc: new Date(Date.parse(admission.evaluated_at_utc) + admission.reservation_sec * 1000).toISOString(),
+    policy_hash: admission.policy_hash,
+  }
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /started after its cost-admission deadline/.test(reason)))
+})
+
+test('process end and timeout cannot extend beyond the cost-admission deadline', () => {
+  const bundle = cloneBundle()
+  const process = bundle.artifacts['simple-done'].budget_evidence.outer_monotonic.processes[0]
+  process.ended_at = '2026-08-24T00:16:00.000Z'
+  process.timeout_sec = 960
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /timeout extends beyond/.test(reason)))
+  assert.ok(scored.invalid_reasons.some((reason) => /ended after its cost-admission deadline/.test(reason)))
+})
+
+test('a process timeout above the frozen model budget is INVALID even inside the admission reservation', () => {
+  const bundle = cloneBundle()
+  bundle.artifacts['simple-done'].budget_evidence.outer_monotonic.processes[0].timeout_sec = 901
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /outer process\[0\] is malformed/.test(reason)))
+})
+
+test('forged resolved base URL provenance is INVALID', () => {
+  const bundle = cloneBundle()
+  bundle.artifacts['simple-done'].runtime_provenance.model_route.checks[2].resolved_base_url = 'https://api.example.invalid'
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /model route check\[2\]/.test(reason)))
+})
+
+test('settings watch or generated settings hash drift is INVALID', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.runtime_provenance.model_route.settings_watch = true
+  run.runtime_provenance.frozen_settings.sha256 = 'e'.repeat(64)
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /watch=false/.test(reason)))
+  assert.ok(scored.invalid_reasons.some((reason) => /run-lock-derived bytes/.test(reason)))
 })

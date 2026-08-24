@@ -14,6 +14,15 @@
 - id: session-title-first-prompt-llm
   disabled: true
 
+# The outer runner generates this settings file from the signed run lock.
+# Disabling watch closes the rc.7 live-settings TOCTOU: provider, model,
+# reasoning effort, and DeepSeek baseURL cannot change between requests.
+- id: settings
+  name: '@deepseek-ai/dsh-settings-file'
+  config:
+    path: !!js process.env.DSH_E1_SETTINGS_FILE
+    watch: false
+
 - id: approval
   name: '@deepseek-ai/dsh-user-approval'
   config:

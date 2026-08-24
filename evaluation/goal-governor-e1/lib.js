@@ -2,9 +2,9 @@ const crypto = require('node:crypto')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const MANIFEST_SCHEMA = 'dsh-researcher/goal-governor-e1/manifest/v1'
-const RUN_LOCK_SCHEMA = 'dsh-researcher/goal-governor-e1/run-lock/v1'
-const RUN_ARTIFACT_SCHEMA = 'dsh-researcher/goal-governor-e1/run-artifact/v1'
+const MANIFEST_SCHEMA = 'dsh-researcher/goal-governor-e1/manifest/v2'
+const RUN_LOCK_SCHEMA = 'dsh-researcher/goal-governor-e1/run-lock/v2'
+const RUN_ARTIFACT_SCHEMA = 'dsh-researcher/goal-governor-e1/run-artifact/v2'
 const REQUIRED_DSH_VERSION = '0.1.0-rc.7'
 const TRUSTED_VERIFIER = Object.freeze({
   tool_name: 'e1_verify',
@@ -30,7 +30,7 @@ const CASE_SPECS = Object.freeze({
 })
 const REGISTRY_HASH = '659d31f4b77c60866ed5a46460e5b2dd06e875cd803c6523180f0cd2e2f70f42'
 const COGNITION_HASH = '0782decc922442bdd8cdf9c19bd32ceb0044637d3c5b5a48668c082c13ced44a'
-const ARTIFACT_RAW_FIELDS = Object.freeze(['run_lock', 'fixture_baseline', 'cognition_state', 'goal_contract', 'verifier_registry', 'session_events', 'visible_tools', 'visible_tool_schemas', 'worktree', 'replay_checkpoints', 'host_verifier', 'budget_evidence', 'runtime_provenance', 'attempt_identity'])
+const ARTIFACT_RAW_FIELDS = Object.freeze(['run_lock', 'cost_admissions', 'fixture_baseline', 'cognition_state', 'goal_contract', 'verifier_registry', 'session_events', 'visible_tools', 'visible_tool_schemas', 'worktree', 'replay_checkpoints', 'host_verifier', 'budget_evidence', 'runtime_provenance', 'attempt_identity'])
 const LOCK_INPUTS = Object.freeze([
   'docs/goal-governor-evaluation-protocol.md',
   'evaluation/goal-governor-e1',
@@ -48,6 +48,7 @@ const INVALIDITY_RULES = Object.freeze([
   'RUN_LOCK_MISSING_OR_DRIFTED',
   'DSH_VERSION_MISMATCH',
   'MODEL_OR_BUDGET_DRIFT',
+  'MODEL_COST_POLICY_DENIED_OR_DRIFTED',
   'RAW_SESSION_MISSING',
   'AMBIGUOUS_TOOL_EVENT_PAIRING',
   'FINAL_REPLAY_MISSING_OR_DRIFTED',
@@ -169,8 +170,9 @@ const requireString = (value, label) => {
 
 const validateManifest = (manifest) => {
   if (!isPlainObject(manifest) || manifest.schema !== MANIFEST_SCHEMA) throw new Error('invalid E1 manifest schema')
-  assertExactKeys(manifest, ['schema', 'protocol', 'status', 'runtime', 'budget', 'fixture', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'cases', 'artifacts', 'invalidity_rules', 'replay_semantics', 'lock_inputs'], 'manifest')
+  assertExactKeys(manifest, ['schema', 'protocol', 'protocol_version', 'status', 'runtime', 'cost_policy', 'budget', 'fixture', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'cases', 'artifacts', 'invalidity_rules', 'replay_semantics', 'lock_inputs'], 'manifest')
   if (manifest.protocol !== 'docs/goal-governor-evaluation-protocol.md') throw new Error('manifest must bind the canonical E1 protocol path')
+  if (manifest.protocol_version !== '1.1') throw new Error('manifest must bind E1 protocol version 1.1')
   const status = manifest.status
   assertExactKeys(status, ['infrastructure', 'live_e1', 'outcome', 'portability'], 'manifest.status')
   if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'NOT_RUN' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {
@@ -180,6 +182,7 @@ const validateManifest = (manifest) => {
   if (manifest.runtime.client !== 'dsh' || manifest.runtime.version !== REQUIRED_DSH_VERSION || manifest.runtime.profile !== 'headless' || manifest.runtime.preset !== 'governed' || manifest.runtime.permission_mode !== 'workspace-write' || manifest.runtime.session_persistence !== 'jsonl' || manifest.runtime.pack_chunks !== false || manifest.runtime.compression !== 'none' || manifest.runtime.title_llm !== false || manifest.runtime.model_compaction !== false || manifest.runtime.tool_result_pruning !== true || manifest.runtime.extra_local_tools !== false) {
     throw new Error('manifest runtime must be dsh ' + REQUIRED_DSH_VERSION + ' with governed preset')
   }
+  require('./cost-policy.js').validateCostPolicy(manifest.cost_policy)
   assertExactKeys(manifest.budget, ['max_tokens', 'max_time_sec', 'same_for_all_cases'], 'manifest.budget')
   if (manifest.budget.max_tokens !== 40000 || manifest.budget.max_time_sec !== 900 || manifest.budget.same_for_all_cases !== true) {
     throw new Error('manifest must freeze the E1 40000-token/900-second budget for all cases')
@@ -232,7 +235,7 @@ const validateManifest = (manifest) => {
 
 const validateRunLockShape = (lock) => {
   if (!isPlainObject(lock) || lock.schema !== RUN_LOCK_SCHEMA) throw new Error('invalid E1 run-lock schema')
-  assertExactKeys(lock, ['schema', 'manifest_sha256', 'inputs', 'candidate', 'runtime', 'model', 'budget', 'host_runtime', 'dsh_home_policy', 'visible_tool_contract', 'lock_hash'], 'run-lock')
+  assertExactKeys(lock, ['schema', 'manifest_sha256', 'inputs', 'candidate', 'runtime', 'cost_policy', 'model', 'budget', 'host_runtime', 'dsh_home_policy', 'visible_tool_contract', 'lock_hash'], 'run-lock')
   for (const key of ['manifest_sha256', 'lock_hash']) if (!/^[a-f0-9]{64}$/.test(String(lock[key] || ''))) throw new Error('run-lock ' + key + ' must be sha256')
   if (!isPlainObject(lock.inputs) || Object.keys(lock.inputs).length === 0) throw new Error('run-lock inputs must not be empty')
   for (const [file, digest] of Object.entries(lock.inputs)) {
@@ -246,8 +249,10 @@ const validateRunLockShape = (lock) => {
   requireString(lock.candidate.package_version, 'run-lock candidate package_version')
   assertExactKeys(lock.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools'], 'run-lock runtime')
   if (lock.runtime.version !== REQUIRED_DSH_VERSION || lock.runtime.client !== 'dsh' || lock.runtime.profile !== 'headless' || lock.runtime.preset !== 'governed' || lock.runtime.permission_mode !== 'workspace-write' || lock.runtime.session_persistence !== 'jsonl' || lock.runtime.pack_chunks !== false || lock.runtime.compression !== 'none' || lock.runtime.title_llm !== false || lock.runtime.model_compaction !== false || lock.runtime.tool_result_pruning !== true || lock.runtime.extra_local_tools !== false) throw new Error('run-lock runtime is not the frozen DSH runtime')
-  assertExactKeys(lock.model, ['provider', 'model', 'reasoning_effort'], 'run-lock model')
-  for (const key of ['provider', 'model', 'reasoning_effort']) requireString(lock.model[key], 'run-lock model.' + key)
+  require('./cost-policy.js').validateCostPolicy(lock.cost_policy)
+  assertExactKeys(lock.model, ['route', 'provider', 'model', 'reasoning_effort', 'base_url'], 'run-lock model')
+  for (const key of ['route', 'provider', 'model', 'reasoning_effort', 'base_url']) requireString(lock.model[key], 'run-lock model.' + key)
+  require('./cost-policy.js').validateModelRoute(lock.model, lock.cost_policy)
   assertExactKeys(lock.budget, ['max_tokens', 'max_time_sec'], 'run-lock budget')
   if (!Number.isInteger(lock.budget.max_tokens) || lock.budget.max_tokens <= 0 || !Number.isInteger(lock.budget.max_time_sec) || lock.budget.max_time_sec <= 0) throw new Error('run-lock budget is invalid')
   assertExactKeys(lock.host_runtime, ['node', 'dsh', 'environment'], 'run-lock host_runtime')

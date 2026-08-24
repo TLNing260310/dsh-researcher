@@ -29,8 +29,9 @@ not execute this DSH process.
 
 `node evaluation/goal-governor-e1/lock.js create --out
 <external-run-lock.json> --candidate-package <candidate.tgz>
---candidate-revision <exact-git-head> --provider <provider> --model <model>
---reasoning-effort <level> --dsh-module-root <node-modules-root>
+--candidate-revision <exact-git-head> --route <route> --provider <provider>
+--model <model> --reasoning-effort <level> --base-url <locked-base-url>
+--dsh-module-root <node-modules-root>
 --visible-tools-snapshot <external-visible-tools.json>` creates a lock only
 when all frozen inputs are committed, `HEAD` matches, and capture provenance
 matches the current Node executable and complete DSH dependency inventory.
@@ -61,6 +62,45 @@ preload/search variables. The E1 overlay disables the unmetered first-prompt
 title LLM and model compaction while retaining deterministic result pruning.
 The same E1-only environment disables preset-local shell/jobs/skill/plan/
 delegation/web components; ordinary governed sessions remain unchanged.
+For every child, the outer runner also materializes a run-specific frozen DSH
+settings file, forces settings watching off (`watch=false`), and sets the
+locked `DEEPSEEK_BASE_URL`. The child resolves the effective connection with
+DSH's public `@deepseek-ai/dsh-llm-deepseek` resolver; it does not infer an
+effective connection URL from model-selection metadata.
+
+### Model cost admission
+
+The manifest and run lock freeze protocol v1.1's `Asia/Shanghai` policy. On
+Monday through Friday, DeepSeek API is denied during `[09:00,12:00)` and
+`[14:00,18:00)` Beijing time. Those windows admit only `local-loopback`, with
+a literal loopback `--base-url` frozen in the lock. This route still uses the
+DSH `deepseek-official` DeepSeek-compatible adapter. Its URL must use a literal
+`127/8` or `[::1]` address, an explicit port, no authentication/query/fragment,
+and no trailing slash. A provider or model label containing “local” is not
+evidence of locality.
+
+Outside the weekday blackout and on weekends, the only remote route is
+`--route deepseek-api --provider deepseek-official --model deepseek-v4-flash --base-url https://api.deepseek.com`.
+Weekends remove only the time blackout; the immutable run lock, budget,
+`--ack-live-cost`, official Flash, and exact remote base URL still apply. Every process, including
+each resume process, re-evaluates admission before creating or mutating output
+and before spawning DSH. Admission reserves `max_time_sec + 60` seconds and fails if that
+interval overlaps a restricted window. The pre-spawn receipt becomes an absolute
+deadline passed to the child; child timeout is capped at `max_time_sec`, shortened
+for launch delay, and rechecked together with the DSH-resolved base URL before
+create/resume and before and after every model followup.
+The bundle binds process start, end and timeout to that deadline, and the offline
+scorer recomputes them from the frozen policy and timestamps.
+
+This enforcement covers only the official E1 runner. It cannot prove host-clock
+or scheduler integrity, OS-wide network isolation, provider billing identity, the identity behind a TTY, or
+the absence of calls made by bypassing the runner. A loopback base URL proves only
+that the adapter's first hop is local; it does not prove that the local service
+does not proxy to a remote API. Use a dedicated E1 API key,
+trusted time, server-side spend limits and alerts, and host/process egress controls when those
+assurances are required. Alpha.4 ran no DSH, live E1, model, or API call. In
+particular, `local-loopback` remains pending the DSH-dependent Gate 0 checks;
+offline tests are not evidence that this route has run successfully under rc.7.
 
 The frozen registry binds only `e1_verify {}`. That host tool executes the
 run-lock-bound template verifier outside the model-writable workspace, while
@@ -107,7 +147,7 @@ worktree violations, and incomplete host receipts. A valid failed trajectory is
 `FAIL_UNDER_TRUSTED_HOST`; only a conforming package can be
 `PASS_UNDER_TRUSTED_HOST`.
 
-alpha.3 also computes a deterministic byte-level bundle commitment. It inventories
+The harness also computes a deterministic byte-level bundle commitment. It inventories
 portable relative paths, sizes, and SHA-256 digests for every regular file while
 excluding only the scorer-generated top-level `score.json`; symbolic links are
 refused. An optional Ed25519 signature can authenticate that commitment against a

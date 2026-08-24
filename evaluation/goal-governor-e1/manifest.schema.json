@@ -4,10 +4,11 @@
   "title": "Goal Governor E1 experiment manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "protocol", "status", "runtime", "budget", "fixture", "trusted_verifier", "visible_tool_contract", "attempt_ledger", "cases", "artifacts", "invalidity_rules", "replay_semantics", "lock_inputs"],
+  "required": ["schema", "protocol", "protocol_version", "status", "runtime", "cost_policy", "budget", "fixture", "trusted_verifier", "visible_tool_contract", "attempt_ledger", "cases", "artifacts", "invalidity_rules", "replay_semantics", "lock_inputs"],
   "properties": {
-    "schema": { "const": "dsh-researcher/goal-governor-e1/manifest/v1" },
+    "schema": { "const": "dsh-researcher/goal-governor-e1/manifest/v2" },
     "protocol": { "const": "docs/goal-governor-evaluation-protocol.md" },
+    "protocol_version": { "const": "1.1" },
     "status": {
       "type": "object",
       "additionalProperties": false,
@@ -38,6 +39,7 @@
         "extra_local_tools": { "const": false }
       }
     },
+    "cost_policy": { "$ref": "#/$defs/costPolicy" },
     "budget": {
       "type": "object",
       "additionalProperties": false,
@@ -125,9 +127,9 @@
       "additionalProperties": false,
       "required": ["schema", "required_raw_fields", "retention"],
       "properties": {
-        "schema": { "const": "dsh-researcher/goal-governor-e1/run-artifact/v1" },
+        "schema": { "const": "dsh-researcher/goal-governor-e1/run-artifact/v2" },
         "required_raw_fields": {
-          "const": ["run_lock", "fixture_baseline", "cognition_state", "goal_contract", "verifier_registry", "session_events", "visible_tools", "visible_tool_schemas", "worktree", "replay_checkpoints", "host_verifier", "budget_evidence", "runtime_provenance", "attempt_identity"]
+          "const": ["run_lock", "cost_admissions", "fixture_baseline", "cognition_state", "goal_contract", "verifier_registry", "session_events", "visible_tools", "visible_tool_schemas", "worktree", "replay_checkpoints", "host_verifier", "budget_evidence", "runtime_provenance", "attempt_identity"]
         },
         "retention": { "const": "preserve-success-and-failure-bundles" }
       }
@@ -156,5 +158,46 @@
       "const": ["docs/goal-governor-evaluation-protocol.md", "evaluation/goal-governor-e1", "fixtures/goal-governor-e1", "governed", "researcher/plugins/goal-governor", "researcher/plugins/tool-restrict", "lib/cognition-core", "lib/goal-core", "lib/verifier-core", "lib/dsh-adapter", "lib/canonical-json.js"]
     }
   },
-  "$defs": { "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "costPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "timezone", "utc_offset_minutes", "restricted_weekdays", "restricted_windows", "remote", "local", "unknown_route"],
+      "properties": {
+        "schema": { "const": "dsh-researcher/model-cost-policy/v1" },
+        "timezone": { "const": "Asia/Shanghai" },
+        "utc_offset_minutes": { "const": 480 },
+        "restricted_weekdays": { "const": [1, 2, 3, 4, 5] },
+        "restricted_windows": {
+          "const": [
+            { "start": "09:00", "end": "12:00" },
+            { "start": "14:00", "end": "18:00" }
+          ]
+        },
+        "remote": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["route", "provider", "model", "base_url"],
+          "properties": {
+            "route": { "const": "deepseek-api" },
+            "provider": { "const": "deepseek-official" },
+            "model": { "const": "deepseek-v4-flash" },
+            "base_url": { "const": "https://api.deepseek.com" }
+          }
+        },
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["route", "provider", "endpoint_assurance"],
+          "properties": {
+            "route": { "const": "local-loopback" },
+            "provider": { "const": "deepseek-official" },
+            "endpoint_assurance": { "const": "resolved-adapter-base-url-loopback" }
+          }
+        },
+        "unknown_route": { "const": "deny" }
+      }
+    }
+  }
 }

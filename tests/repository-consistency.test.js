@@ -55,6 +55,17 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   const manifest = readJson('evaluation', 'goal-governor-e1', 'manifest.json')
   assert.deepEqual(validateManifest(manifest), [])
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
+  assert.equal(manifest.protocol_version, '1.1')
+  assert.deepEqual(manifest.cost_policy, {
+    schema: 'dsh-researcher/model-cost-policy/v1',
+    timezone: 'Asia/Shanghai',
+    utc_offset_minutes: 480,
+    restricted_weekdays: [1, 2, 3, 4, 5],
+    restricted_windows: [{ start: '09:00', end: '12:00' }, { start: '14:00', end: '18:00' }],
+    remote: { route: 'deepseek-api', provider: 'deepseek-official', model: 'deepseek-v4-flash', base_url: 'https://api.deepseek.com' },
+    local: { route: 'local-loopback', provider: 'deepseek-official', endpoint_assurance: 'resolved-adapter-base-url-loopback' },
+    unknown_route: 'deny',
+  })
   assert.equal(manifest.cases.length, 6)
   assert.deepEqual(manifest.cases.map((item) => item.id), CASE_IDS)
   assert.deepEqual(
@@ -68,9 +79,29 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   }
   assert.equal(manifest.artifacts.schema, RUN_SCHEMA)
   const required = new Set(manifest.artifacts.required_raw_fields)
-  for (const field of ['run_lock', 'fixture_baseline', 'cognition_state', 'goal_contract', 'verifier_registry', 'session_events', 'visible_tools', 'visible_tool_schemas', 'worktree', 'replay_checkpoints', 'host_verifier', 'budget_evidence', 'runtime_provenance', 'attempt_identity']) {
+  for (const field of ['run_lock', 'cost_admissions', 'fixture_baseline', 'cognition_state', 'goal_contract', 'verifier_registry', 'session_events', 'visible_tools', 'visible_tool_schemas', 'worktree', 'replay_checkpoints', 'host_verifier', 'budget_evidence', 'runtime_provenance', 'attempt_identity']) {
     assert.equal(required.has(field), true, 'missing E1 raw artifact field: ' + field)
   }
+})
+
+test('protocol v1.1 cost enforcement and the superseded v1 provenance record cannot drift silently', () => {
+  const runner = read('evaluation', 'goal-governor-e1', 'run-e1.js')
+  const child = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
+  const scorer = read('evaluation', 'goal-governor-e1', 'score-e1.js')
+  const archive = read('docs', 'goal-governor-evaluation-protocol-v1.md')
+  for (const phase of ['pre-output', 'pre-spawn']) assert.match(runner, new RegExp("phase: '" + phase + "'"))
+  assert.match(child, /resolveAdapterOptions/)
+  assert.match(child, /resolved DSH DeepSeek baseURL differs from the frozen run-lock/)
+  assert.match(child, /before-model-followup/)
+  assert.match(child, /after-model-followup/)
+  assert.match(runner, /DEEPSEEK_BASE_URL:\s*lockResult\.lock\.model\.base_url/)
+  assert.match(runner, /frozen-dsh-settings\.yaml/)
+  assert.match(runner, /cost-admission-denied\.json/)
+  assert.match(read('evaluation', 'goal-governor-e1', 'runner', 'e1.patch.yml'), /watch:\s*false/)
+  assert.match(scorer, /independently recomputed policy decision/)
+  assert.match(archive, /Live runs under v1 \| `0`/)
+  assert.match(archive, /86691ec89951b1d5319760856d21e58ef7d98a04/)
+  assert.match(archive, /ce8047a4c569ebeda07be5d1882a820da7efbfac392dabb24123503bf01ea856/)
 })
 
 test('E1 runner defaults to offline preflight and live mode fails before launch without cost acknowledgement', () => {

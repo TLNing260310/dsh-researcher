@@ -1,5 +1,7 @@
 # Evaluation Framework（评测框架）
 
+> **Historical / audit-only boundary（2026-08-24）**：本文件所述 Phase A 框架及其既有协议、锁与运行包只用于审计历史结论。不得再用 `evaluation/runtime/eval-headless.mjs` 或 Phase A lock 发起任何新的本地/远程模型运行。新的 live 证据只能按当前 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 使用独立 E1 runner、冻结 `base_url` 的 run lock、冻结且 `watch=false` 的 settings、DSH 公共 resolver 复验、成本准入与 scorer；这一声明不改变或洗白任何历史结果。alpha.4 没有运行 DSH/live/model/API，local route 仍须 Gate 0 验证。
+
 核心问题不是"Researcher 聪不聪明"，而是：**在当时不知道未来的情况下，它能不能提前发现后来真实开发者也认为是问题的问题？** 三条证据线并行，各有边界：
 
 ## 线 A — 自己跑（开发者测试）

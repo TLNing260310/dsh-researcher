@@ -13,7 +13,7 @@ const { createStage1Seal } = require('../evaluation/goal-governor-e1/stage1-seal
 const { beginAttempt, finishAttempt } = require('../evaluation/goal-governor-e1/attempt-ledger.js')
 const { sha256File } = require('../evaluation/goal-governor-e1/lib.js')
 const { createAttestation } = require('../evaluation/goal-governor-e1/bundle-integrity.js')
-const { trustedBundle, cloneBundle, scoreTrustedBundle, snapshotTreeHash } = require('./helpers/e1-fixtures.js')
+const { trustedBundle, cloneBundle, costAdmissions, scoreTrustedBundle, snapshotTreeHash } = require('./helpers/e1-fixtures.js')
 
 test('synthetic E1 scorer passes six trajectory shapes without claiming live conformance', () => {
   const bundle = trustedBundle()
@@ -248,6 +248,7 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
           ...JSON.parse(JSON.stringify(artifact)),
           schema: 'dsh-researcher/goal-governor-e1/resume-stage1/v1',
           session_events: stageEvents,
+          cost_admissions: costAdmissions(artifact.run_lock, 'observe'),
           replay_checkpoints: stageReplay,
           host_verifier: stageVerifier,
           budget_evidence: stageBudget,

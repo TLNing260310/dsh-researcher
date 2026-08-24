@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0-alpha.4 (2026-08-24) — Fail-Closed Model Cost Admission
+
+- E1 protocol is now frozen as v1.1. Protocol v1 is preserved by exact alpha.3 commit/blob identity and SHA-256, and is explicitly superseded with `0` live runs; no old outcome is rewritten.
+- The official E1 manifest/run lock freezes `base_url` and rejects unknown or drifted routes. Remote execution is exactly `deepseek-official/deepseek-v4-flash` at `https://api.deepseek.com`. During Beijing weekday windows `[09:00,12:00)` and `[14:00,18:00)`, DeepSeek API is denied; the only admissible route uses the DSH `deepseek-official` DeepSeek-compatible adapter with a literal, explicit-port loopback `base_url` and no trailing slash.
+- Before each child launch, the outer runner writes a frozen DSH settings file with `watch=false` and injects the locked `DEEPSEEK_BASE_URL`. The child uses DSH's public DeepSeek resolver to re-check the resolved base URL before create/resume and before and after every model followup. Cost admission is also re-evaluated before output, before DSH spawn and in every resumed process, reserving `max_time_sec + 60` seconds; the absolute deadline caps child runtime and is bound to offline evidence.
+- Weekends waive only the time blackout: run lock, fixed budget, explicit cost acknowledgement, official Flash and its exact remote base URL remain mandatory. A loopback base URL proves only the adapter's first hop is local, not that the local service does not proxy remotely. Repository enforcement applies only to the official runner; host clock/scheduler integrity, egress, provider billing identity, human identity and out-of-band calls require separate operational controls.
+- Historical Phase A protocols, locks, bundles and `evaluation/runtime/eval-headless.mjs` are audit-only and must not be used for new model runs.
+- Release boundary remains **E1 infrastructure: READY / Live E1 and DSH re-scan: NOT RUN / outcome value and multi-client portability: NOT PROVEN**. This release performs no DSH or model/API call; the local route remains pending DSH-dependent Gate 0 validation.
+
 ## 0.8.0-alpha.3 (2026-08-24) — Auditable Promotion and Stop Discipline
 
 - Canonical cognition now fails closed without `state_hash`; the CLI adds `draft → diff → seal --out → install` and refuses draft installation, stale base hashes, rollback/skipped revisions, and sealed artifact overwrite. Install uses best-effort rollback for in-process write failures. `doctor` detects an active/stale governance lock and a missing or mismatched canonical state/projection pair; it does not enumerate all temporary/backup residue, recover a crash, or claim cross-file power-loss atomicity.

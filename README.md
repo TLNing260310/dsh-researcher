@@ -57,7 +57,7 @@ Governed Coding 还支持 `/researcher on|off` 持久 guarded mode；它有工�
 安装已发布的 alpha（同时安装 `researcher`、`governed` 和 portable core）：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.3
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.4
 ```
 
 只读研究：新建 DSH 会话，选择「项目研究 Project Research」，确认 read-only + never，然后描述仓库和你真正想判断的问题。`research_doctor` 是强制首个工具调用；证书不是 SAFE 时研究不会开始。
@@ -65,7 +65,7 @@ npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.3
 Goal Governor 最小入口：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.3 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.4 project-cognition init .
 ```
 
 随后人工维护 Project Cognition、冻结 Verifier Registry、批准 Goal Contract，并在「目标治理编码 Governed Coding」中运行：
@@ -112,8 +112,8 @@ Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到�
 |---|---|---|
 | Node unit/replay/integration/package tests | 当前仓库测试套件 PASS | sealed-only cognition promotion、hash/revision/replay、预算、人工 gate、伪终态/伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作；具体数量以当次 `npm test` 输出为准 |
 | `project-cognition doctor .` | governance lock、cognition schema/hash、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 检测 active/stale governance lock，以及 canonical state/projection 缺失或不匹配；**不枚举所有 `.tmp-*` / `.bak-*`，不执行 crash recovery，不提供跨文件断电原子性，也不证明代码或引用证据仍新鲜**，freshness 需单独使用 fingerprint report |
-| DSH preset discovery | 既有 `0.1.0-rc.7` 临时安装记录中 `researcher` 与 `governed` 均 `broken=null`；alpha.3 未重跑 DSH | 该历史发布布局曾可被目标版本加载；不是本版 live E1 结果 |
-| Goal Governor E1 infrastructure | **READY；Live E1 NOT RUN** | 协议定义的 fixture、冻结 manifest/run lock、离线 preflight、fail-closed live runner 与对抗 scorer 已具备；**不证明**真实模型结果价值或多客户端可移植性 |
+| DSH preset discovery | 既有 `0.1.0-rc.7` 临时安装记录中 `researcher` 与 `governed` 均 `broken=null`；alpha.4 未重跑 DSH | 该历史发布布局曾可被目标版本加载；不是本版 live E1 结果 |
+| Goal Governor E1 infrastructure | **READY；Live E1 NOT RUN** | 协议定义的 fixture、冻结 manifest/run lock、离线 preflight、fail-closed live runner、成本准入与对抗 scorer 已具备；**不证明**真实模型结果价值或多客户端可移植性 |
 | Experiment A（12 runs） | 同一模型下编排显著改变成本与输出，但未证明 Researcher 更优 | 客户端/工作流重要，不等于本项目有净收益 |
 | Experiment C+（12 runs） | 状态迁移链可运行；A/B 因 snapshot leakage 被判定为 causal-invalid | 证明基础设施存在，也证明评测会保留失败并拒绝夸大结论 |
 
@@ -133,7 +133,7 @@ npm run eval:e1:score -- --run <external-bundle-dir>
 
 该命令生成 bundle 内的 `score.json`；`PASS | FAIL | INVALID` 只由宿主事件、真实 call ID/参数、冻结对象与工作树证据决定，不采用助手最终文字。有效但未达到协议终态的包会明确得到 `FAIL_UNDER_TRUSTED_HOST`，不会再出现 verdict=FAIL、causal status=PASS 的冲突。
 
-默认真实性边界仍是：实验操作者与模型不可写的外部 bundle root 可信。alpha.3 可选择用 bundle 外的 Ed25519 key 对原始文件 commitment 签名，再让 scorer 使用 bundle 外的公钥验签：
+默认真实性边界仍是：实验操作者与模型不可写的外部 bundle root 可信。可以用 bundle 外的 Ed25519 key 对原始文件 commitment 签名，再让 scorer 使用 bundle 外的公钥验签：
 
 ```bash
 npm run eval:e1:attest -- create --run <external-bundle-dir> --private-key <external-private.pem> --out <external-attestation.json>
@@ -142,9 +142,17 @@ npm run eval:e1:score -- --run <external-bundle-dir> --attestation <external-att
 
 验签只证明“与所给公钥对应的私钥签过这些字节，且其后未被修改”，不能证明密钥持有人身份、签署者诚实、DSH 确实运行、TTY 操作者身份或产品因果价值；代表“无需信任宿主即可独立证明 live 来源”的 `valid_for_live_conformance_claim` 因而始终为 `false`。完整、非 synthetic 的 PASS 会另将 `valid_for_protocol_conformance_under_trusted_host` 设为 `true`，表示在预注册 trusted-host 与外部 bundle-root 假设下支持条件式 E1 conformance，而不是独立来源证明。未提供外部签名时，成功状态仍是 `PASS_UNDER_TRUSTED_HOST`。live runner 默认拒绝启动，只有完整 run lock、固定 DSH 版本和显式 `--ack-live-cost` 同时存在才可能进入真实执行；本版本没有运行 live E1。
 
+### Live 模型成本规则
+
+北京时间周一至周五 `[09:00,12:00)`、`[14:00,18:00)` 禁止 DeepSeek API。官方 E1 run lock 冻结 `base_url`：远程路由只能是 `provider=deepseek-official`、`model=deepseek-v4-flash`、`base_url=https://api.deepseek.com`；黑窗内只能选择 `local-loopback`，并且仍须使用 DSH 的 `deepseek-official` DeepSeek-compatible adapter 和一个无尾斜杠、显式端口、字面 loopback 的 `base_url`。周末只免时段禁令，不免 run lock、预算、费用确认、官方 Flash 或其精确远程 `base_url` 约束。
+
+每个 child 启动前，外层 runner 强制生成冻结 settings 文件（`watch=false`）并设置锁定的 `DEEPSEEK_BASE_URL`；child 使用 DSH 公共 DeepSeek resolver，在 create/resume 以及每次模型 followup 的前后重新解析并核对 resolved base URL。runner 还在 pre-output、pre-spawn 和每个 resume 进程重算准入，按 `max_time_sec + 60` 秒预约，并将 pre-spawn 的绝对 deadline 传入 child；child timeout 不超过 `max_time_sec` 且随启动延迟缩短。完整规范只以 [v1.1 协议](./docs/goal-governor-evaluation-protocol.md#e1-model-route-与成本准入) 为准。
+
+这只能约束官方 runner。loopback 只证明 DSH adapter 的第一跳落在本机，不能证明该本地服务没有再代理到远程 API；它也不能证明宿主时钟/调度可信、操作系统无外连、provider 计费身份、TTY 操作者身份，或阻止绕开 runner。真实运行还应配置可信时间源、服务端限额、独立 E1 key、账单告警和必要的出口控制。alpha.4 没有运行 DSH、live E1、模型或 API；尤其 `local-loopback` route 仍须在 DSH-dependent Gate 0 验证，不能把离线实现当成可运行证明。
+
 公开验证边界见 [Validation Status](./docs/validation-status.md)，预注册的下一阶段实验见 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md)。证明顺序固定为 `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`；轨迹、estimand 与阈值只以冻结协议为准。
 
-由于 alpha.3 按范围未重跑 DSH，当前 candidate 还需先完成冻结协议中的 DSH-dependent Gate 0 checks，之后才进入 live E1；历史 preset scan 不替代当前 candidate 的 Gate 0。
+由于 alpha.4 按范围未重跑 DSH，当前 candidate 还需先完成冻结协议中的 DSH-dependent Gate 0 checks，之后才进入 live E1；历史 preset scan 不替代当前 candidate 的 Gate 0。历史 Phase A runtime 仅供审计，不得用于新模型运行。
 
 ## 已证明、未证明与不允许静默改变
 
@@ -181,9 +189,9 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 ## Compatibility
 
-- DeepSeek Harness：目标版本为 `0.1.0-rc.7`；先前 candidate 有 preset scanner PASS 记录，但 alpha.3 尚未重跑该 DSH-dependent Gate 0 检查。
-- Node.js：`>=22.12.0`；alpha.3 的仓库/CI 机械测试覆盖该下限，不能替代待完成的 DSH rc.7 scanner 与 live E1。
-- 当前版本：`0.8.0-alpha.3`，不承诺稳定 API。
+- DeepSeek Harness：目标版本为 `0.1.0-rc.7`；先前 candidate 有 preset scanner PASS 记录，但 alpha.4 尚未重跑该 DSH-dependent Gate 0 检查。
+- Node.js：`>=22.12.0`；alpha.4 的仓库/CI 机械测试覆盖该下限，不能替代待完成的 DSH rc.7 scanner 与 live E1。
+- 当前版本：`0.8.0-alpha.4`，不承诺稳定 API。
 
 ## License
 

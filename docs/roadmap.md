@@ -1,12 +1,13 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.3` 已把 canonical promotion、终态复算、证据包签名和发布产物校验机械化；由于本版按范围未重跑 DSH，下一步是先完成当前 candidate 的 DSH-dependent Gate 0 checks，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和历史实验见 [CHANGELOG](../CHANGELOG.md) 与 [Validation Status](./validation-status.md)。任何失败都保留为证据，不以增加功能绕过失败门。
+> 当前阶段（2026-08）：`0.8.0-alpha.4` 已把 canonical promotion、终态复算、证据包签名、发布产物校验以及北京时间模型成本准入机械化；由于本版按范围未重跑 DSH，下一步是先完成当前 candidate 的 DSH-dependent Gate 0 checks，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和历史实验见 [CHANGELOG](../CHANGELOG.md) 与 [Validation Status](./validation-status.md)。任何失败都保留为证据，不以增加功能绕过失败门。
 
 ## 路线纪律
 
 - `.project-cognition/state.json` 是唯一 canonical project truth；Research Session Ledger、报告和 handoff 只是 provisional 输入，必须经 [owner promotion](./cognition-governance.md) 才能进入新 revision。
 - 冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 是 E1/E2/E3 轨迹、样本、estimand、阈值和 invalidity rule 的唯一来源。本路线不复制这些定义。
 - mechanical PASS 只说明实现按设计工作；不能替代 live conformance、outcome validation 或 portability validation。
+- live E1 必须通过协议 v1.1 的模型路由与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A runtime 仅供审计，不得复用于新模型运行。
 - Project Cognition 的 longitudinal value 与 Goal Governor 的 incremental value 是两个 claim，必须分开识别。
 - 未通过前一 gate，不开发后一 gate 所需的产品扩展。
 
@@ -32,13 +33,15 @@ productization decision
 
 **目的**：确认 canonical state、projection、Goal Contracts、Verifier Registry、adapter capability 与实验冻结产物完整。
 
-**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。
+**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。alpha.4 还需在不发起模型请求的 DSH-dependent Gate 0 中确认：外层冻结 settings 文件且 `watch=false`、锁定值进入 `DEEPSEEK_BASE_URL`，rc.7 公共 DeepSeek resolver 对 remote/local 都得到与 run lock 相同的 resolved base URL。此前没有运行 DSH，local route 仍未被证明可运行。
 
 ### E1 — Live DSH conformance
 
 **目的**：在真实 DSH 模型会话中证明 host authority、证据绑定、终态和 resume/replay 行为与 reducer 一致。
 
 **通过条件**：完成冻结协议定义的全部轨迹并满足其有效性规则。失败先修 conformance 或协议基础设施，不进入价值实验。
+
+**网络边界**：loopback 仅证明 DSH adapter 第一跳位于本机，不能证明本地服务未代理远程；E1 操作还需按所需保证配置可信时间、服务端限额、账单告警与出口控制。
 
 ### Pilot — Measurement readiness
 

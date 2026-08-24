@@ -20,7 +20,9 @@ const { validateGoalContract, foldGoalEvents } = require('../../lib/goal-core/in
 const { foldDshGoalEvents, summarizeNativeUsage } = require('../../lib/dsh-adapter/index.js')
 const { validateRegistry, toolResultCallId } = require('../../lib/verifier-core/index.js')
 const {
+  MANIFEST_SCHEMA,
   RUN_LOCK_SCHEMA,
+  RUN_ARTIFACT_SCHEMA,
   ARTIFACT_RAW_FIELDS,
   validateManifest: validateFrozenManifest,
   validateRunLockShape,
@@ -34,9 +36,13 @@ const {
   validateVisibleToolContract,
 } = require('./visible-tool-contract.js')
 const { createBundleCommitment, createCommittedSnapshot, verifyAttestation } = require('./bundle-integrity.js')
+const {
+  evaluateCostAdmission,
+  validateCostPolicy,
+  validateModelRoute,
+} = require('./cost-policy.js')
 
-const MANIFEST_SCHEMA = 'dsh-researcher/goal-governor-e1/manifest/v1'
-const RUN_SCHEMA = 'dsh-researcher/goal-governor-e1/run-artifact/v1'
+const RUN_SCHEMA = RUN_ARTIFACT_SCHEMA
 const SIGNATURE_VERIFICATION_TOKEN = Symbol('verified E1 bundle signature')
 
 const CASE_PROTOCOL = Object.freeze([
@@ -88,6 +94,14 @@ const HUMAN_SOURCES = new Set([
 ])
 
 const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+const frozenSettingsBytes = (model) => Buffer.from(JSON.stringify({
+  'agent-default-model': {
+    provider: model && model.provider,
+    model: model && model.model,
+    reasoningEffort: model && model.reasoning_effort,
+  },
+  'llm-deepseek': { baseURL: model && model.base_url },
+}, null, 2) + '\n')
 const eventSequence = (event, fallback = 0) => Number.isFinite(event && event.seq)
   ? event.seq
   : Number.isFinite(event && event.sequence) ? event.sequence : fallback
@@ -338,6 +352,101 @@ const validateRunLockEvidence = (artifact, manifest, manifestSha256, invalid) =>
   return lock.lock_hash
 }
 
+const validateCostAdmissionEvidence = (artifact, manifest, invalid) => {
+  const admissions = artifact.cost_admissions
+  const lock = artifact.run_lock
+  const policy = manifest && manifest.cost_policy
+  const model = lock && lock.model
+  const budget = lock && lock.budget
+  if (!Array.isArray(admissions) || admissions.length !== 2) {
+    invalid.push('cost_admissions must contain exactly the pre-output and pre-spawn host decisions')
+    return null
+  }
+  try { validateCostPolicy(policy) } catch (error) {
+    invalid.push('manifest cost policy: ' + error.message)
+    return null
+  }
+  if (!isPlainObject(lock) || !canonicalEquivalent(lock.cost_policy, policy)) {
+    invalid.push('run-lock cost policy drifted from the frozen manifest')
+  }
+  try { validateModelRoute(model, policy) } catch (error) {
+    invalid.push('run-lock model cost route: ' + error.message)
+    return null
+  }
+  if (!isPlainObject(budget) || !Number.isInteger(budget.max_time_sec) || budget.max_time_sec <= 0) {
+    invalid.push('run-lock cost reservation cannot be derived from max_time_sec')
+    return null
+  }
+
+  const expectedPhases = ['pre-output', 'pre-spawn']
+  const reservationSec = budget.max_time_sec + 60
+  const normalized = []
+  let previousMs = null
+  for (let index = 0; index < admissions.length; index++) {
+    const admission = admissions[index]
+    if (!isPlainObject(admission)) {
+      invalid.push('cost_admissions[' + index + '] must be an object')
+      continue
+    }
+    const timestamp = new Date(admission.evaluated_at_utc)
+    const timestampMs = timestamp.getTime()
+    if (!Number.isFinite(timestampMs) || timestamp.toISOString() !== admission.evaluated_at_utc) {
+      invalid.push('cost_admissions[' + index + '] evaluated_at_utc must be a canonical UTC instant')
+      continue
+    }
+    if (previousMs !== null && timestampMs < previousMs) invalid.push('cost admissions are not time ordered')
+    previousMs = timestampMs
+    const expected = evaluateCostAdmission({
+      policy,
+      model,
+      now: timestamp,
+      reservationSec,
+      phase: expectedPhases[index],
+    })
+    if (!canonicalEquivalent(admission, expected)) {
+      invalid.push('cost_admissions[' + index + '] differs from the independently recomputed policy decision')
+    }
+    if (admission.phase !== expectedPhases[index]) invalid.push('cost_admissions[' + index + '] phase drifted from ' + expectedPhases[index])
+    if (admission.decision !== 'ALLOW') invalid.push('cost_admissions[' + index + '] did not authorize the model route')
+    normalized.push(expected)
+  }
+
+  const processes = artifact.budget_evidence && artifact.budget_evidence.outer_monotonic && artifact.budget_evidence.outer_monotonic.processes
+  if (normalized.length === 2 && Array.isArray(processes) && processes.length > 0) {
+    const current = processes.at(-1)
+    const admission = normalized[1]
+    const admittedAtMs = Date.parse(admission.evaluated_at_utc)
+    const deadlineMs = admittedAtMs + reservationSec * 1000
+    const expectedBinding = {
+      phase: admission.phase,
+      evaluated_at_utc: admission.evaluated_at_utc,
+      deadline_utc: new Date(deadlineMs).toISOString(),
+      policy_hash: admission.policy_hash,
+    }
+    if (!isPlainObject(current) || !canonicalEquivalent(current.cost_admission, expectedBinding)) {
+      invalid.push('current model process cost_admission binding differs from the pre-spawn receipt and absolute deadline')
+    }
+    const startedMs = Date.parse(current && current.started_at)
+    const endedMs = Date.parse(current && current.ended_at)
+    if (!Number.isFinite(startedMs)) invalid.push('current model process started_at is not a valid instant')
+    else {
+      if (startedMs < admittedAtMs) invalid.push('pre-spawn cost admission was recorded after the model process started')
+      if (startedMs > deadlineMs) invalid.push('current model process started after its cost-admission deadline')
+      if (Number.isFinite(current.timeout_sec) && startedMs + current.timeout_sec * 1000 > deadlineMs) invalid.push('current model process timeout extends beyond its cost-admission deadline')
+    }
+    if (Number.isFinite(endedMs) && endedMs > deadlineMs) invalid.push('current model process ended after its cost-admission deadline')
+  }
+  return {
+    policy_hash: normalized[0] && normalized[0].policy_hash || null,
+    route: model && model.route || null,
+    model: model && model.model || null,
+    base_url: model && model.base_url || null,
+    reservation_sec: reservationSec,
+    admission_count: admissions.length,
+    phases: admissions.map((item) => item && item.phase),
+  }
+}
+
 const validateFixtureBaseline = (artifact, contract, manifest, manifestCase, worktree, invalid) => {
   const fixture = artifact.fixture_baseline
   if (!isPlainObject(fixture)) {
@@ -499,12 +608,50 @@ const validateRuntimeProvenance = (artifact, manifest, invalid) => {
       auxiliary.model_compaction !== runtime.model_compaction || auxiliary.tool_result_pruning !== runtime.tool_result_pruning) {
     invalid.push('runtime_provenance auxiliary model policy differs from the frozen manifest runtime')
   }
+  const lockedModel = artifact.run_lock && artifact.run_lock.model
+  const route = value.model_route
+  if (!isPlainObject(route) || route.schema !== 'dsh-researcher/goal-governor-e1/model-route-provenance/v1') {
+    invalid.push('runtime_provenance model-route evidence is missing or has the wrong schema')
+  } else {
+    for (const field of ['route', 'provider', 'model', 'reasoning_effort', 'base_url']) {
+      if (!isPlainObject(lockedModel) || route[field] !== lockedModel[field]) invalid.push('runtime_provenance model route drifted at ' + field)
+    }
+    if (route.settings_watch !== false) invalid.push('runtime_provenance did not prove settings watch=false')
+    if (!Array.isArray(route.checks) || route.checks.length < 4) {
+      invalid.push('runtime_provenance model route lacks boundary rechecks')
+    } else {
+      const phases = new Set()
+      for (const [index, check] of route.checks.entries()) {
+        if (!isPlainObject(check) || typeof check.phase !== 'string' || check.phase === '' || phases.has(check.phase) ||
+            check.settings_namespace !== 'llm-deepseek' || check.resolved_base_url !== lockedModel?.base_url ||
+            check.launch_base_url !== lockedModel?.base_url || (check.launch_source !== null && typeof check.launch_source !== 'string')) {
+          invalid.push('runtime_provenance model route check[' + index + '] is malformed or drifted')
+        }
+        if (isPlainObject(check)) phases.add(check.phase)
+      }
+      for (const required of ['before-agent', 'after-agent-idle', 'before-model-followup', 'after-model-followup']) {
+        if (!phases.has(required)) invalid.push('runtime_provenance model route is missing boundary check ' + required)
+      }
+      if (artifact.case_id === 'governed-gate') for (const required of ['before-governed-gate-followup', 'after-governed-gate-followup']) {
+        if (!phases.has(required)) invalid.push('runtime_provenance model route is missing boundary check ' + required)
+      }
+    }
+  }
+  const frozenSettings = value.frozen_settings
+  const expectedSettingsHash = isPlainObject(lockedModel)
+    ? crypto.createHash('sha256').update(frozenSettingsBytes(lockedModel)).digest('hex')
+    : null
+  if (!isPlainObject(frozenSettings) || frozenSettings.schema !== 'dsh-researcher/goal-governor-e1/frozen-settings/v1' ||
+      frozenSettings.watch !== false || frozenSettings.sha256 !== expectedSettingsHash) {
+    invalid.push('runtime_provenance frozen settings are missing or differ from the run-lock-derived bytes')
+  }
   return {
     node_executable_sha256: locked.node && locked.node.executable_sha256 || null,
     dsh_dependency_inventory_sha256: locked.dsh.dependency_inventory_sha256 || null,
     dsh_cli_sha256: locked.dsh.cli_sha256 || null,
     dsh_home_before_sha256: beforeHomeHash,
     dsh_home_after_sha256: afterHomeHash,
+    resolved_model_base_url: route && Array.isArray(route.checks) && route.checks.at(-1)?.resolved_base_url || null,
   }
 }
 
@@ -530,9 +677,16 @@ const validateBudgetEvidence = (artifact, manifest, contract, replay, invalid, f
     for (let index = 0; index < outer.processes.length; index++) {
       const process = outer.processes[index]
       if (!isPlainObject(process) || typeof process.stage !== 'string' || typeof process.started_at !== 'string' || typeof process.ended_at !== 'string' ||
-          !Number.isFinite(process.elapsed_sec) || process.elapsed_sec < 0 || process.timeout_sec !== limits.max_time_sec + 60) {
+      !Number.isFinite(process.elapsed_sec) || process.elapsed_sec < 0 || !Number.isFinite(process.timeout_sec) ||
+          process.timeout_sec <= 0 || process.timeout_sec > limits.max_time_sec) {
         invalid.push('budget_evidence outer process[' + index + '] is malformed')
         continue
+      }
+      const startedMs = Date.parse(process.started_at)
+      const endedMs = Date.parse(process.ended_at)
+      if (!Number.isFinite(startedMs) || !Number.isFinite(endedMs) || new Date(startedMs).toISOString() !== process.started_at ||
+          new Date(endedMs).toISOString() !== process.ended_at || endedMs < startedMs) {
+        invalid.push('budget_evidence outer process[' + index + '] wall-clock interval is malformed')
       }
       summed += process.elapsed_sec
     }
@@ -1140,6 +1294,7 @@ const scoreRun = (artifact, manifestCase, context = {}) => {
   if (isPlainObject(registry) && registry.registry_hash !== manifestCase.registry_hash) invalid.push('verifier registry hash differs from the frozen manifest case')
   if (isPlainObject(contract)) validateFrozenCaseContract(contract, context.manifest || {}, manifestCase, invalid)
   const lockHash = validateRunLockEvidence(artifact, context.manifest || {}, context.manifest_sha256, invalid)
+  const costPolicyProof = validateCostAdmissionEvidence(artifact, context.manifest || {}, invalid)
   if (isPlainObject(contract)) validateCognitionBinding(artifact, contract, manifestCase, invalid)
   if (isPlainObject(contract) && isPlainObject(registry)) validateFrozenVerifierBinding(artifact, context.manifest || {}, contract, registry, invalid)
   const runtimeProvenanceProof = validateRuntimeProvenance(artifact, context.manifest || {}, invalid)
@@ -1218,6 +1373,7 @@ const scoreRun = (artifact, manifestCase, context = {}) => {
       diagnostic_count: replay.diagnostics.length,
       runtime_goal_id: host.runtime_goal_id,
       run_lock_hash: lockHash,
+      cost_policy: costPolicyProof,
       runtime_provenance: runtimeProvenanceProof,
       fixture_tree_sha256: fixtureTreeHash,
       raw_session: isPlainObject(artifact.__bundle_raw_proof) ? artifact.__bundle_raw_proof : null,
@@ -1246,6 +1402,8 @@ const validateManifest = (manifest, options = {}) => {
   }
   if (!isPlainObject(manifest)) return ['manifest must be an object']
   if (manifest.schema !== MANIFEST_SCHEMA) invalid.push('manifest schema must equal ' + MANIFEST_SCHEMA)
+  if (manifest.protocol_version !== '1.1') invalid.push('manifest.protocol_version must equal 1.1')
+  try { validateCostPolicy(manifest.cost_policy) } catch (error) { invalid.push('manifest cost policy: ' + error.message) }
   if (!isPlainObject(manifest.runtime)) invalid.push('manifest.runtime must be an object')
   else {
     if (manifest.runtime.pack_chunks !== false) invalid.push('manifest.runtime.pack_chunks must remain false for complete raw-event adjudication')
@@ -1890,6 +2048,7 @@ const verifyResumeStage1 = ({ caseDir, artifact, finalRaw, manifest, manifestCas
       after_tree_sha256: null,
     }
     validateRunnerOutcome(stageArtifact, Array.isArray(stageEvents) ? stageEvents : [], invalid, stageFailures)
+    validateCostAdmissionEvidence(stageArtifact, manifest, invalid)
     validateRuntimeProvenance(stageArtifact, manifest, invalid)
     validateHostVerifier(stageArtifact, manifest, stagePolicy, stageTree, invalid, stageFailures)
     if (prefixReplay && isPlainObject(stageArtifact.goal_contract)) {

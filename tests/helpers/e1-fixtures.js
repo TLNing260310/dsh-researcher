@@ -7,9 +7,10 @@ const { sealState } = require('../../lib/cognition-core/index.js')
 const { approveContract } = require('../../lib/goal-core/index.js')
 const { foldDshGoalEvents, summarizeNativeUsage } = require('../../lib/dsh-adapter/index.js')
 const { sealRegistry } = require('../../lib/verifier-core/index.js')
-const { INVALIDITY_RULES, REPLAY_COMPARE_FIELDS, TRUSTED_VERIFIER, VISIBLE_TOOL_POLICY } = require('../../evaluation/goal-governor-e1/lib.js')
+const { INVALIDITY_RULES, REPLAY_COMPARE_FIELDS, RUN_LOCK_SCHEMA, TRUSTED_VERIFIER, VISIBLE_TOOL_POLICY } = require('../../evaluation/goal-governor-e1/lib.js')
 const { EXACT_VISIBLE_TOOL_NAMES, createVisibleToolContract } = require('../../evaluation/goal-governor-e1/visible-tool-contract.js')
 const { NODE_ENV_DENYLIST } = require('../../evaluation/goal-governor-e1/runtime-provenance.js')
+const { evaluateCostAdmission } = require('../../evaluation/goal-governor-e1/cost-policy.js')
 const {
   MANIFEST_SCHEMA,
   RUN_SCHEMA,
@@ -34,6 +35,32 @@ const SYNTHETIC_DSH_DEPENDENCIES = [{
 }]
 const manifestBytes = (manifest) => Buffer.from(JSON.stringify(manifest, null, 2) + '\n')
 const manifestDigest = (manifest) => crypto.createHash('sha256').update(manifestBytes(manifest)).digest('hex')
+const SYNTHETIC_COST_POLICY = Object.freeze({
+  schema: 'dsh-researcher/model-cost-policy/v1',
+  timezone: 'Asia/Shanghai',
+  utc_offset_minutes: 480,
+  restricted_weekdays: Object.freeze([1, 2, 3, 4, 5]),
+  restricted_windows: Object.freeze([
+    Object.freeze({ start: '09:00', end: '12:00' }),
+    Object.freeze({ start: '14:00', end: '18:00' }),
+  ]),
+  remote: Object.freeze({ route: 'deepseek-api', provider: 'deepseek-official', model: 'deepseek-v4-flash', base_url: 'https://api.deepseek.com' }),
+  local: Object.freeze({ route: 'local-loopback', provider: 'deepseek-official', endpoint_assurance: 'resolved-adapter-base-url-loopback' }),
+  unknown_route: 'deny',
+})
+
+const costAdmissions = (runLock, stage = 'full') => {
+  const instants = stage === 'continue'
+    ? ['2026-08-24T00:00:00.100Z', '2026-08-24T00:00:00.500Z']
+    : ['2026-08-23T23:59:58.000Z', '2026-08-23T23:59:59.000Z']
+  return ['pre-output', 'pre-spawn'].map((phase, index) => evaluateCostAdmission({
+    policy: runLock.cost_policy,
+    model: runLock.model,
+    now: instants[index],
+    reservationSec: runLock.budget.max_time_sec + 60,
+    phase,
+  }))
+}
 
 const makeState = () => sealState({
   schema: 'project-cognition/state-draft/v1',
@@ -209,15 +236,25 @@ const hostVerifier = (treeSha256, exitCode) => {
   }
 }
 
-const budgetEvidence = (caseId, manifest, events) => {
+const budgetEvidence = (caseId, manifest, events, runLock) => {
   const stages = caseId === 'resume-replay' ? ['observe', 'continue'] : ['full']
-  const processes = stages.map((stage, index) => ({
-    stage,
-    started_at: '2026-08-24T00:00:0' + index + '.000Z',
-    ended_at: '2026-08-24T00:00:0' + (index + 1) + '.000Z',
-    elapsed_sec: 1,
-    timeout_sec: manifest.budget.max_time_sec + 60,
-  }))
+  const processes = stages.map((stage, index) => {
+    const admission = costAdmissions(runLock, stage).at(-1)
+    const deadline = new Date(Date.parse(admission.evaluated_at_utc) + admission.reservation_sec * 1000).toISOString()
+    return {
+      stage,
+      started_at: '2026-08-24T00:00:0' + index + '.000Z',
+      ended_at: '2026-08-24T00:00:0' + (index + 1) + '.000Z',
+      elapsed_sec: 1,
+      timeout_sec: 1,
+      cost_admission: {
+        phase: admission.phase,
+        evaluated_at_utc: admission.evaluated_at_utc,
+        deadline_utc: deadline,
+        policy_hash: admission.policy_hash,
+      },
+    }
+  })
   const nativeUsage = summarizeNativeUsage(events, { strict: true })
   if (!nativeUsage.coverage_complete) throw new Error('synthetic fixture must have complete native usage coverage')
   return {
@@ -265,12 +302,14 @@ const makeManifest = () => {
   const manifest = {
     schema: MANIFEST_SCHEMA,
     protocol: 'docs/goal-governor-evaluation-protocol.md',
+    protocol_version: '1.1',
     status: { infrastructure: 'READY', live_e1: 'NOT_RUN', outcome: 'NOT_PROVEN', portability: 'NOT_PROVEN' },
     runtime: {
       client: 'dsh', version: '0.1.0-rc.7', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',
       session_persistence: 'jsonl', pack_chunks: false, compression: 'none',
       title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false,
     },
+    cost_policy: JSON.parse(JSON.stringify(SYNTHETIC_COST_POLICY)),
     budget: { max_tokens: 40000, max_time_sec: 900, same_for_all_cases: true },
     fixture: { template: 'fixtures/goal-governor-e1/template', materializer: 'fixtures/goal-governor-e1/materialize.js', t0_revision: 'e1-fixture-t0-v1' },
     trusted_verifier: { tool_name: 'e1_verify', arguments: {}, source: TRUSTED_VERIFIER_SOURCE, sha256: TRUSTED_VERIFIER_SHA256 },
@@ -292,7 +331,7 @@ const makeManifest = () => {
       baseline_exit: ['already-satisfied', 'forged-evidence'].includes(item.id) ? 0 : 1,
       final_verifier_exit: item.id === 'no-progress' ? 1 : 0,
     })),
-    artifacts: { schema: RUN_SCHEMA, required_raw_fields: [...REQUIRED_RAW_FIELDS] },
+    artifacts: { schema: RUN_SCHEMA, required_raw_fields: [...REQUIRED_RAW_FIELDS], retention: 'preserve-success-and-failure-bundles' },
     invalidity_rules: [...INVALIDITY_RULES],
     replay_semantics: {
       prefix_checkpoint: 'prefix-before-exit-equals-resumed-state-before-followup',
@@ -316,7 +355,7 @@ const makeManifest = () => {
 
 const makeRunLock = (manifest, manifestSha256) => {
   const lock = {
-    schema: 'dsh-researcher/goal-governor-e1/run-lock/v1',
+    schema: RUN_LOCK_SCHEMA,
     manifest_sha256: manifestSha256,
     inputs: {
       'evaluation/frozen-input.txt': digest('frozen-input'),
@@ -329,7 +368,14 @@ const makeRunLock = (manifest, manifestSha256) => {
       package_version: '0.0.0-e1-test',
     },
     runtime: JSON.parse(JSON.stringify(manifest.runtime)),
-    model: { provider: 'fixture', model: 'deterministic', reasoning_effort: 'fixture' },
+    cost_policy: JSON.parse(JSON.stringify(manifest.cost_policy)),
+    model: {
+      route: 'local-loopback',
+      provider: 'deepseek-official',
+      model: 'deterministic',
+      reasoning_effort: 'fixture',
+      base_url: 'http://127.0.0.1:11434/v1',
+    },
     budget: { max_tokens: manifest.budget.max_tokens, max_time_sec: manifest.budget.max_time_sec },
     host_runtime: {
       node: { version: 'v22.12.0', platform: 'win32', arch: 'x64', executable_sha256: digest('node-executable') },
@@ -422,13 +468,15 @@ const artifactFor = (caseId, manifest, runLock) => {
 
   const worktreeEvidence = worktree(changed, manifestCase.allowed_changes)
   const finalVerifier = hostVerifier(worktreeEvidence.after_tree_sha256, manifestCase.final_verifier_exit)
-  const finalBudget = budgetEvidence(caseId, manifest, b.events)
+  const finalCostAdmissions = costAdmissions(runLock, caseId === 'resume-replay' ? 'continue' : 'full')
+  const finalBudget = budgetEvidence(caseId, manifest, b.events, runLock)
   const artifact = {
     schema: RUN_SCHEMA,
     case_id: caseId,
     session_id: 'session-' + caseId,
     runtime_goal_id: runtimeGoalId,
     run_lock: JSON.parse(JSON.stringify(runLock)),
+    cost_admissions: finalCostAdmissions,
     fixture_baseline: {
       case_id: caseId,
       t0_revision: manifest.fixture.t0_revision,
@@ -466,6 +514,33 @@ const artifactFor = (caseId, manifest, runLock) => {
       },
       session_persistence: { kind: 'jsonl', pack_chunks: false, compression: 'none' },
       auxiliary_model_policy: { title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false },
+      model_route: {
+        schema: 'dsh-researcher/goal-governor-e1/model-route-provenance/v1',
+        route: runLock.model.route,
+        provider: runLock.model.provider,
+        model: runLock.model.model,
+        reasoning_effort: runLock.model.reasoning_effort,
+        base_url: runLock.model.base_url,
+        settings_watch: false,
+        checks: [
+          'before-agent', 'after-agent-idle', 'before-model-followup', 'after-model-followup',
+          ...(caseId === 'governed-gate' ? ['before-governed-gate-followup', 'after-governed-gate-followup'] : []),
+        ].map((phase) => ({
+          phase,
+          settings_namespace: 'llm-deepseek',
+          resolved_base_url: runLock.model.base_url,
+          launch_base_url: runLock.model.base_url,
+          launch_source: 'process',
+        })),
+      },
+      frozen_settings: {
+        schema: 'dsh-researcher/goal-governor-e1/frozen-settings/v1',
+        watch: false,
+        sha256: crypto.createHash('sha256').update(Buffer.from(JSON.stringify({
+          'agent-default-model': { provider: runLock.model.provider, model: runLock.model.model, reasoningEffort: runLock.model.reasoning_effort },
+          'llm-deepseek': { baseURL: runLock.model.base_url },
+        }, null, 2) + '\n')).digest('hex'),
+      },
     },
     attempt_identity: {
       ledger: 'attempt-ledger.jsonl',
@@ -574,6 +649,7 @@ module.exports = {
   cloneBundle,
   refreshFinalReplay,
   artifactFor,
+  costAdmissions,
   scoreTrustedBundle,
   manifestDigest,
   snapshotTreeHash,

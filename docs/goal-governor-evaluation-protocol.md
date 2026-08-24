@@ -1,6 +1,8 @@
-# Goal Governor Value Evaluation Protocol v1
+# Goal Governor Value Evaluation Protocol v1.1
 
-Status: **frozen v1 for E1-ready infrastructure (2026-08-24)**. 尚未运行 live E1。本文在 live runs 之前固定主张、对照、无效条件和继续/停止阈值；修改轨迹、主指标、任务或阈值必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
+Status: **frozen v1.1 for E1-ready infrastructure (2026-08-24)**. 尚未运行 live E1。本文在 live runs 之前固定主张、对照、无效条件、成本准入和继续/停止阈值；修改轨迹、主指标、任务、阈值或成本策略必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
+
+v1 在任何 live run 发生前即被 v1.1 supersede，故 v1 live runs=`0`、没有可迁移或可比较的 v1 live 结果。其精确历史身份和取回方式保存在 [v1 archive record](./goal-governor-evaluation-protocol-v1.md)。v1.1 的变更仅增加 fail-closed 模型路由与北京时间成本准入，不改变六条 E1 轨迹、E2/E3 estimand 或通过阈值。
 
 ## 1. 要区分的三类主张
 
@@ -47,6 +49,19 @@ E1 结果只允许三种状态：
 - `INVALID`：缺原始日志/hash、运行配置漂移、gate command 未绑定到外部交互式 TTY 与 native command 链、错误 session resume、ground truth/fixture 污染、provider/quota/network 在轨迹开始前使运行不可裁决。TTY 证据不等于操作者的密码学身份认证。
 
 不得用 reducer 单测替代模型未执行的 live 轨迹，也不得删除 FAIL/INVALID bundle 后只报告成功运行。
+
+### E1 model route 与成本准入
+
+所有新 E1 live 进程（包括 resume）只能通过仓库 `evaluation/goal-governor-e1/` 的官方 E1 runner 启动，并由 manifest/run lock 冻结以下策略：
+
+- 时间统一按 `Asia/Shanghai`（UTC+08:00）解释。周一至周五 `[09:00,12:00)` 与 `[14:00,18:00)` 禁止 DeepSeek API；这些窗口内只允许 `local-loopback` 路由。
+- run lock 必须冻结 `base_url`。远程路由精确固定为 `provider=deepseek-official`、`model=deepseek-v4-flash`、`base_url=https://api.deepseek.com`。`local-loopback` 也只能使用 DSH 的 `deepseek-official` DeepSeek-compatible adapter；其 `base_url` 必须是无尾斜杠、显式端口、无认证/查询/fragment 的字面 `127/8` 或 `[::1]` HTTP(S) URL。仅把 provider/model 名称写成“local”不构成证明。
+- 每个 child 启动前，外层 runner 必须生成仅供本次运行使用的冻结 settings 文件，强制 `watch=false`，并把锁定的 `base_url` 写入 `DEEPSEEK_BASE_URL`。child 必须通过 DSH 公共 `@deepseek-ai/dsh-llm-deepseek` resolver 取得 resolved base URL；在 create/resume 前以及每次模型 followup 的前后均须与 run lock 精确重验。不得用不包含连接目标的 model-selection metadata 替代该 resolver 证明。
+- 周六、周日只免除时段黑窗，不免除固定 run lock、相同预算、显式 `--ack-live-cost`，也不免除远程 official Flash 与 `https://api.deepseek.com` 的精确约束。
+- runner 在写入或改动证据目录前（pre-output）、创建 DSH 进程前（pre-spawn）以及每次 resume 进程中重新裁决。每次裁决按 `run_lock.budget.max_time_sec + 60` 秒预留完整时段；预留区间只要与黑窗重叠即拒绝。pre-spawn 收据同时形成绝对 deadline；child timeout 取 `max_time_sec` 与 deadline 剩余时间减安全余量的较小值，deadline 传入 child 并在上述 resolver/model 边界重验。这样启动延迟不能把相对 timeout 推入黑窗。
+- 未知路由、provider/model/`base_url` 或 resolved base URL 漂移、缺失准入收据或任一阶段拒绝均使运行 fail closed；scorer 必须从冻结策略和准入时间重新计算，不信任 runner 自报的 `ALLOW`。
+
+这是一条仓库 runner 的机械策略，不是操作系统网络隔离证明。loopback 只证明 DSH adapter 的第一跳位于本机，不能证明本地服务未代理到远程 API。策略也不能证明宿主时钟与调度未被篡改、主机完全无外连、provider 实际计费身份、TTY 背后是真人，或阻止操作者绕开 runner 直接调用 API。正式运行还应使用可信时间源、服务端消费限额、E1 专用 key、provider 账单告警，并在需要更强保证时采用进程/主机出口控制。alpha.4 未运行 DSH/live/model/API；`local-loopback` 仍须通过 DSH-dependent Gate 0，不能由离线测试外推为可运行。
 
 ### E1 后的 non-inferential pilot
 
@@ -108,3 +123,5 @@ C 相对 B 必须同时满足：
 以下任一发生则 run 无效，不计入正向结论：ground truth 可读、不同 arm 获得额外 meta-instruction、verifier invocation 不等价、失败 run 被删除、人工裁决不盲、任务/指标在见结果后改变、terminal 只由助手文本推断。
 
 每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据。可选的 bundle 外 Ed25519 attestation 只证明所给外部 trust root 签过这些原始字节并检测签后篡改，不能识别由不诚实签署者生成的自洽伪包，不能证明 DSH 运行或产生无条件 causal validity；该传输/留存增强不改变本协议的轨迹、阈值或信任假设。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。
+
+历史 Phase A 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行，也不得替代 v1.1 E1 runner、run lock、成本准入和 scorer。

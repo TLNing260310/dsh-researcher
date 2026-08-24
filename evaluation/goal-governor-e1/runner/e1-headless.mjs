@@ -12,21 +12,67 @@ import { pathToFileURL } from 'node:url'
 const require = createRequire(import.meta.url)
 const dshRequire = createRequire(path.join(process.env.DSH_E1_DSH_MODULE_ROOT || '.', 'package.json'))
 const importDsh = (specifier) => import(pathToFileURL(dshRequire.resolve(specifier)).href)
-const [agentModule, llmModule, sessionModule] = await Promise.all([
+const [agentModule, llmModule, sessionModule, deepseekModule, settingsModule, launchEnvironmentModule] = await Promise.all([
   importDsh('@deepseek-ai/dsh-agent'),
   importDsh('@deepseek-ai/dsh-llm'),
   importDsh('@deepseek-ai/dsh-session'),
+  importDsh('@deepseek-ai/dsh-llm-deepseek'),
+  importDsh('@deepseek-ai/dsh-settings'),
+  importDsh('@deepseek-ai/dsh-launch-environment'),
 ])
 const { installModelSelection } = agentModule
 const { createUserMessage } = llmModule
 const { SessionId } = sessionModule
+const { resolveAdapterOptions } = deepseekModule
+const { settingsNamespace } = settingsModule
+const { launchEnvironmentOf } = launchEnvironmentModule
+const { validateCostPolicy, validateModelRoute } = require('../cost-policy.js')
 const name = 'goal-governor-e1-live-runner'
-const inject = ['agentDefaultModel', 'agents', 'sessions', 'commands', 'tools', 'goals', 'agentPresets', 'sessionPersistence']
+const inject = ['agentDefaultModel', 'agents', 'sessions', 'commands', 'tools', 'goals', 'agentPresets', 'sessionPersistence', 'settings']
 
 const requiredEnv = (key) => {
   const value = process.env[key]
   if (value === undefined || value === '') throw new Error(key + ' is required')
   return value
+}
+
+const parseCostDeadline = (value) => {
+  const parsed = new Date(value)
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString() !== value) throw new Error('DSH_E1_COST_ADMISSION_DEADLINE_UTC must be a canonical UTC instant')
+  return parsed.getTime()
+}
+
+const assertBeforeCostDeadline = (deadlineMs, phase) => {
+  if (!Number.isFinite(deadlineMs) || Date.now() >= deadlineMs) throw new Error('COST_ADMISSION_EXPIRED: ' + phase + ' reached the absolute pre-spawn deadline')
+}
+
+const assertResolvedModelRoute = ({ ctx, runLock, selection, phase }) => {
+  const settings = ctx.settings ?? ctx.get('settings')
+  if (!settings || typeof settings.get !== 'function') throw new Error('DSH settings service is unavailable for model-route verification')
+  if (typeof settingsNamespace !== 'function' || typeof launchEnvironmentOf !== 'function' || typeof resolveAdapterOptions !== 'function') {
+    throw new Error('pinned DSH does not expose the required public DeepSeek route-resolution APIs')
+  }
+  const actualEffort = selection.reasoningEffort ?? selection.reasoning_effort ?? selection.reasoning?.effort ?? 'none'
+  if (selection.provider !== runLock.model.provider || selection.model !== runLock.model.model || actualEffort !== runLock.model.reasoning_effort) {
+    throw new Error('active DSH model selection differs from the frozen run-lock')
+  }
+  const namespace = settingsNamespace('llm-deepseek')
+  const launchEnvironment = launchEnvironmentOf(ctx)
+  const launchBaseUrl = launchEnvironment?.get?.('DEEPSEEK_BASE_URL')
+  const resolved = resolveAdapterOptions(settings.get(namespace), launchEnvironment)
+  if (!resolved || resolved.baseURL !== runLock.model.base_url) {
+    throw new Error('resolved DSH DeepSeek baseURL differs from the frozen run-lock')
+  }
+  if (!launchBaseUrl || launchBaseUrl.value !== runLock.model.base_url) {
+    throw new Error('trusted DSH launch environment does not carry the frozen DeepSeek baseURL')
+  }
+  return {
+    phase,
+    settings_namespace: 'llm-deepseek',
+    resolved_base_url: resolved.baseURL,
+    launch_base_url: launchBaseUrl.value,
+    launch_source: typeof launchBaseUrl.source === 'string' ? launchBaseUrl.source : null,
+  }
 }
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
@@ -167,6 +213,7 @@ async function run(ctx, io) {
   const contractFile = path.resolve(requiredEnv('DSH_E1_CONTRACT_FILE'))
   const contractRelative = requiredEnv('DSH_E1_CONTRACT_RELATIVE')
   const runLock = readJson(path.resolve(requiredEnv('DSH_E1_RUN_LOCK')))
+  const costAdmissionDeadlineMs = parseCostDeadline(requiredEnv('DSH_E1_COST_ADMISSION_DEADLINE_UTC'))
   const visibleContractModule = require(path.resolve(requiredEnv('DSH_E1_VISIBLE_TOOL_CONTRACT_MODULE')))
   const { createVisibleToolContract, schemaName, INHERITED_VISIBLE_TOOL_NAMES } = visibleContractModule
   const contract = readJson(contractFile)
@@ -174,11 +221,15 @@ async function run(ctx, io) {
   const { foldDshGoalEvents, scopeGoalEvents } = require(path.join(presetRoot, 'lib', 'dsh-adapter', 'index.js'))
   const { hashCanonical } = require(path.join(presetRoot, 'lib', 'canonical-json.js'))
 
-  const selection = defaultModel.currentSelection()
-  const actualEffort = selection.reasoningEffort ?? selection.reasoning_effort ?? selection.reasoning?.effort ?? 'none'
-  if (selection.provider !== runLock.model.provider || selection.model !== runLock.model.model || actualEffort !== runLock.model.reasoning_effort) {
-    throw new Error('active DSH model selection differs from the frozen run-lock')
+  validateCostPolicy(runLock.cost_policy)
+  validateModelRoute(runLock.model, runLock.cost_policy)
+  const routeChecks = []
+  const verifyRoute = (phase) => {
+    const current = defaultModel.currentSelection()
+    routeChecks.push(assertResolvedModelRoute({ ctx, runLock, selection: current, phase }))
+    return current
   }
+  const selection = verifyRoute('before-agent')
   const resolved = await presets.resolve('governed')
   if (!resolved || resolved.id !== 'governed' || resolved.broken !== undefined || resolved.trust !== 'system' || typeof resolved.path !== 'string') throw new Error('candidate governed preset could not be resolved as an unbroken system-trusted exact preset')
   const presetPath = fs.realpathSync(resolved.path)
@@ -202,6 +253,7 @@ async function run(ctx, io) {
     // actual post-mount schemas are still required to match run-lock exactly.
     agentCtx.tools.restrict({ allow: [...INHERITED_VISIBLE_TOOL_NAMES] })
   }
+  assertBeforeCostDeadline(costAdmissionDeadlineMs, resume ? 'before agents.resume' : 'before agents.create')
   const handle = resume
     ? await agents.resume({ resumeSessionId: sessionId, agentOptions: { provider: selection.provider, model: selection.model }, setup })
     : await agents.create({ sessionId, meta: { cwd: process.cwd() }, agentOptions: { provider: selection.provider, model: selection.model }, setup })
@@ -212,6 +264,7 @@ async function run(ctx, io) {
 
   try {
     await agent.whenIdle()
+    verifyRoute('after-agent-idle')
     const visibleContract = createVisibleToolContract(tools.schemas(agent))
     const visibleToolSchemas = visibleContract.schemas
     const visibleTools = visibleToolSchemas.map(schemaName)
@@ -246,8 +299,12 @@ async function run(ctx, io) {
       if (!runtimeGoal) throw new Error('native /researcher run did not create a host goal')
     }
 
+    assertBeforeCostDeadline(costAdmissionDeadlineMs, resume ? 'before resume followup' : 'before initial followup')
+    verifyRoute('before-model-followup')
     const prompt = fs.readFileSync(promptFile, 'utf8')
     await followup(agent, prompt)
+    verifyRoute('after-model-followup')
+    assertBeforeCostDeadline(costAdmissionDeadlineMs, resume ? 'after resume followup' : 'after initial followup')
 
     if (caseId === 'governed-gate') {
       const pending = foldDshGoalEvents(contract, registry, scopeGoalEvents(agent.session.events, runtimeGoal))
@@ -275,7 +332,11 @@ async function run(ctx, io) {
         where: 'after', anchor: eventSeq(doneEvent),
         event: { type: 'runner/command-link', data: { input_id: inputId, commandId: String(commandId) } },
       })
+      assertBeforeCostDeadline(costAdmissionDeadlineMs, 'before governed-gate followup')
+      verifyRoute('before-governed-gate-followup')
       await followup(agent, fs.readFileSync(path.resolve(requiredEnv('DSH_E1_AFTER_GATE_PROMPT_FILE')), 'utf8'))
+      verifyRoute('after-governed-gate-followup')
+      assertBeforeCostDeadline(costAdmissionDeadlineMs, 'after governed-gate followup')
     }
 
     if (caseId === 'resume-replay' && stage === 'observe') {
@@ -317,7 +378,7 @@ async function run(ctx, io) {
       }
       await archiveSession({
         raw: durable.raw, outDir, visibleTools, visibleToolSchemas, augmented: durableAugmented, replayCheckpoints,
-        runtimeArtifact: { schema: 'dsh-researcher/goal-governor-e1/resume-stage1/v1', case_id: caseId, session_id: String(sessionId), runtime_goal_id: String(runtimeGoal.id), session_events: durableAugmented, visible_tools: visibleTools, visible_tool_schemas: visibleToolSchemas, visible_tool_contract_hash: runLock.visible_tool_contract.schema_hash, replay_checkpoints: replayCheckpoints, session_evidence: sessionEvidence, raw_session: { filename: durable.raw.filename, meta: durable.raw.meta, sha256: sessionEvidence.raw_sha256 }, preset_provenance: presetProvenance, host_folded_usage: foldedUsage(prefixOfflineReplay) },
+        runtimeArtifact: { schema: 'dsh-researcher/goal-governor-e1/resume-stage1/v1', case_id: caseId, session_id: String(sessionId), runtime_goal_id: String(runtimeGoal.id), session_events: durableAugmented, visible_tools: visibleTools, visible_tool_schemas: visibleToolSchemas, visible_tool_contract_hash: runLock.visible_tool_contract.schema_hash, replay_checkpoints: replayCheckpoints, session_evidence: sessionEvidence, raw_session: { filename: durable.raw.filename, meta: durable.raw.meta, sha256: sessionEvidence.raw_sha256 }, preset_provenance: presetProvenance, host_folded_usage: foldedUsage(prefixOfflineReplay), model_route_provenance: { schema: 'dsh-researcher/goal-governor-e1/model-route-provenance/v1', route: runLock.model.route, provider: runLock.model.provider, model: runLock.model.model, reasoning_effort: runLock.model.reasoning_effort, base_url: runLock.model.base_url, settings_watch: false, checks: routeChecks } },
         stageOne: true,
       })
       await fsp.copyFile(path.join(outDir, 'session.jsonl'), path.join(outDir, 'session.stage1.jsonl'), fs.constants.COPYFILE_EXCL)
@@ -352,7 +413,7 @@ async function run(ctx, io) {
       }
     }
     const runtimeArtifact = {
-      schema: 'dsh-researcher/goal-governor-e1/run-artifact/v1',
+      schema: 'dsh-researcher/goal-governor-e1/runtime-capture/v1',
       case_id: caseId,
       session_id: String(sessionId),
       runtime_goal_id: String(runtimeGoal.id),
@@ -370,6 +431,16 @@ async function run(ctx, io) {
       raw_session: { filename: durable.raw.filename, meta: durable.raw.meta, sha256: crypto.createHash('sha256').update(durable.raw.content).digest('hex') },
       preset_provenance: presetProvenance,
       host_folded_usage: foldedUsage(offlineReplay),
+      model_route_provenance: {
+        schema: 'dsh-researcher/goal-governor-e1/model-route-provenance/v1',
+        route: runLock.model.route,
+        provider: runLock.model.provider,
+        model: runLock.model.model,
+        reasoning_effort: runLock.model.reasoning_effort,
+        base_url: runLock.model.base_url,
+        settings_watch: false,
+        checks: routeChecks,
+      },
       ...(resume ? { stage1_seal_sha256: requiredEnv('DSH_E1_STAGE1_SEAL_HASH') } : {}),
     }
     await archiveSession({ raw: durable.raw, outDir, visibleTools, visibleToolSchemas, augmented: durableAugmented, replayCheckpoints, runtimeArtifact, stageOne: false })

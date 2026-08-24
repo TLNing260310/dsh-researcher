@@ -4,9 +4,9 @@
   "title": "Goal Governor E1 immutable run lock",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "manifest_sha256", "inputs", "candidate", "runtime", "model", "budget", "host_runtime", "dsh_home_policy", "visible_tool_contract", "lock_hash"],
+  "required": ["schema", "manifest_sha256", "inputs", "candidate", "runtime", "cost_policy", "model", "budget", "host_runtime", "dsh_home_policy", "visible_tool_contract", "lock_hash"],
   "properties": {
-    "schema": { "const": "dsh-researcher/goal-governor-e1/run-lock/v1" },
+    "schema": { "const": "dsh-researcher/goal-governor-e1/run-lock/v2" },
     "manifest_sha256": { "$ref": "#/$defs/sha256" },
     "inputs": { "type": "object", "minProperties": 1, "additionalProperties": { "$ref": "#/$defs/sha256" } },
     "candidate": {
@@ -39,15 +39,43 @@
         "extra_local_tools": { "const": false }
       }
     },
+    "cost_policy": { "$ref": "#/$defs/costPolicy" },
     "model": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["provider", "model", "reasoning_effort"],
+      "required": ["route", "provider", "model", "reasoning_effort", "base_url"],
       "properties": {
+        "route": { "enum": ["deepseek-api", "local-loopback"] },
         "provider": { "type": "string", "minLength": 1 },
         "model": { "type": "string", "minLength": 1 },
-        "reasoning_effort": { "type": "string", "minLength": 1 }
-      }
+        "reasoning_effort": { "type": "string", "minLength": 1 },
+        "base_url": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "route": { "const": "deepseek-api" } }, "required": ["route"] },
+          "then": {
+            "properties": {
+              "provider": { "const": "deepseek-official" },
+              "model": { "const": "deepseek-v4-flash" },
+              "base_url": { "const": "https://api.deepseek.com" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "route": { "const": "local-loopback" } }, "required": ["route"] },
+          "then": {
+            "properties": {
+              "provider": { "const": "deepseek-official" },
+              "base_url": {
+                "type": "string",
+                "pattern": "^https?://(?:127(?:\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}|\\[::1\\]):(?:[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])(?:/[^?#]*)?$",
+                "not": { "pattern": "/$" }
+              }
+            }
+          }
+        }
+      ]
     },
     "budget": {
       "type": "object",
@@ -119,6 +147,45 @@
   },
   "$defs": {
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "costPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "timezone", "utc_offset_minutes", "restricted_weekdays", "restricted_windows", "remote", "local", "unknown_route"],
+      "properties": {
+        "schema": { "const": "dsh-researcher/model-cost-policy/v1" },
+        "timezone": { "const": "Asia/Shanghai" },
+        "utc_offset_minutes": { "const": 480 },
+        "restricted_weekdays": { "const": [1, 2, 3, 4, 5] },
+        "restricted_windows": {
+          "const": [
+            { "start": "09:00", "end": "12:00" },
+            { "start": "14:00", "end": "18:00" }
+          ]
+        },
+        "remote": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["route", "provider", "model", "base_url"],
+          "properties": {
+            "route": { "const": "deepseek-api" },
+            "provider": { "const": "deepseek-official" },
+            "model": { "const": "deepseek-v4-flash" },
+            "base_url": { "const": "https://api.deepseek.com" }
+          }
+        },
+        "local": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["route", "provider", "endpoint_assurance"],
+          "properties": {
+            "route": { "const": "local-loopback" },
+            "provider": { "const": "deepseek-official" },
+            "endpoint_assurance": { "const": "resolved-adapter-base-url-loopback" }
+          }
+        },
+        "unknown_route": { "const": "deny" }
+      }
+    },
     "packageInventory": {
       "type": "object", "additionalProperties": false,
       "required": ["name", "version", "root_relative", "package_json_sha256", "content_tree_sha256", "file_count"],

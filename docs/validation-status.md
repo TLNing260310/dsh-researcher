@@ -1,6 +1,6 @@
 # Validation Status — dsh-researcher
 
-> 更新时间：2026-08-24（`0.8.0-alpha.3`）。本文件是公开证据账本：准确区分机械实现、真实运行、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
+> 更新时间：2026-08-24（`0.8.0-alpha.4`）。本文件是公开证据账本：准确区分机械实现、真实运行、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
 
 ## 证据层级
 
@@ -22,8 +22,9 @@
 | Goal Contract | 冻结 MUST/SHOULD、scope、budget、human gates、cognition/registry hash、有效 invariant refs 与连续本地 revision | “什么算完成”可在执行前固定；修改必须沿已安装 predecessor 新 revision | 合同本身保证任务价值或规格正确 |
 | Goal Governor | 纯 reducer/replay、真实 call-ID 与冻结参数绑定、attempt/observation repo revision 一致、终态前缀复算、同一最终 attempt 重验 MUST | 模型文本或不一致的 recorded decision 不能单方面完成目标；会话内伪造/漂移证据可被机械拒绝；status 明示剩余预算与停止动作 | 真实模型端到端成功率或净收益已证明；repo revision label 等同工作树字节证明 |
 | E1 bundle integrity | 原始字节 inventory commitment；可选 bundle 外 Ed25519 attestation 与外部 trust root；FAIL/PASS causal status 分离 | 可检测已签证据包在签署后的字节修改，并识别“有效证据但 conformance FAIL” | 签名证明 DSH 真实运行、签署者诚实、真人身份或因果价值 |
+| E1 model cost admission | 协议/manifest/run lock 冻结的北京时间黑窗与 `base_url`；remote 精确为 official Flash + `https://api.deepseek.com`；local 为 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback；冻结 settings（`watch=false`）、`DEEPSEEK_BASE_URL` 与 DSH 公共 resolver 边界复验 | 离线测试表明官方 runner 会在输出、spawn、resume 与 model boundary 拒绝高峰远程调用、resolved-base-URL 漂移与跨窗预算 | 不能宣称 alpha.4 已完成 DSH/live 验证、loopback 服务没有代理远程、操作系统无外连、provider 实际计费身份真实，或不存在绕开 runner 的调用 |
 | Researcher 启动方式 | one-shot、guarded mode、certified preset 的权限/状态机测试 | 研究与执行权限面可分离；certified preset 提供更强环境边界 | 所有客户端都有相同的 OS/host enforcement |
-| DSH packaging | 先前临时安装与 DSH `0.1.0-rc.7` preset scanner 中 `researcher`/`governed` 均可发现；alpha.3 未重跑 DSH | 既有发布布局记录可被目标版本解析 | alpha.3 已重新完成 DSH scan；全部 live terminal trajectories 已通过 |
+| DSH packaging | 先前临时安装与 DSH `0.1.0-rc.7` preset scanner 中 `researcher`/`governed` 均可发现；alpha.4 未重跑 DSH | 既有发布布局记录可被目标版本解析 | alpha.4 已重新完成 DSH scan；全部 live terminal trajectories 已通过 |
 | Portable Core | DSH 无关的 cognition/goal/verifier core、schemas、CLI、adapter contract | 核心抽象具备适配缝 | Codex、Claude Code、Zed/Zcode、OpenClaw 已兼容 |
 
 当前 `npm test` 覆盖 unit、replay、integration 与 isolated package smoke；具体数量以当次测试输出为准，避免文档复制数字后漂移。
@@ -80,7 +81,9 @@ Experiment A 表明同一模型下 orchestration 会显著改变成本和输出�
 
 轨迹、样本、estimand、阈值和 invalidity rule 只以冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 为准。E1 包含协议定义的全部轨迹；本文件不另存一份清单。Project Cognition 的 V3A 使用独立 longitudinal protocol，不由 E2 代替。
 
-`alpha.3` 没有重跑 DSH，因此当前 candidate 仍须先完成协议要求的 DSH-dependent Gate 0 checks，才进入 live E1；既有 scanner 记录不能替代这一步。
+`alpha.4` 没有重跑 DSH、live E1、模型或 API，因此当前 candidate 仍须先完成协议要求的 DSH-dependent Gate 0 checks，才进入 live E1；既有 scanner 记录不能替代这一步。Gate 0 还必须验证 rc.7 能按冻结 settings、`watch=false`、`DEEPSEEK_BASE_URL` 和公共 DeepSeek resolver 精确解析 remote 与 local `base_url`；尤其 local route 当前只是离线实现，不是已运行能力。历史 Phase A runtime 和 locks 只用于审计，不能用于新的模型运行。
+
+北京时间模型成本规则已在协议 v1.1、manifest、run lock 和 scorer 中冻结：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁止远程 DeepSeek；周末只免时段禁令，远程仍须 official Flash + 精确 `https://api.deepseek.com`，其他 gate 不免。它对官方 E1 runner 是 fail-closed 机械边界，但不是 OS 级网络隔离或计费证明；字面 loopback 也只证明 adapter 第一跳本机，不能证明本地服务不代理远程。正式 live E1 还应使用服务端限额、独立 key、账单告警及必要的出口控制。
 
 ## 判定纪律
 
