@@ -16,7 +16,7 @@ installed globally, invoke the exact release without installing a permanent
 CLI by prefixing each command with:
 
 ```text
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition
 ```
 
 ## 1. Initialize once
@@ -24,7 +24,7 @@ npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cogni
 From the target repository:
 
 ```sh
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition init .
 ```
 
 `init` creates the initial sealed canonical state, its generated Markdown projection, an empty Verifier Registry and the Goal Contract directory. Re-running it validates and preserves existing canonical artifacts.
@@ -34,7 +34,7 @@ npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cogni
 Use a new path outside the `--root` selected for this project review:
 
 ```text
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../project-review-001 --goal-id fix-session-resume
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart --root . --out ../project-review-001 --goal-id fix-session-resume
 ```
 
 The command is intentionally one line so it can be pasted into PowerShell or a POSIX shell.
@@ -42,13 +42,13 @@ The command is intentionally one line so it can be pasted into PowerShell or a P
 The default is `governed` mode because an unknown task should not silently receive the weaker path. For a localized task with a clear target, deterministic verifier, no architecture/security/public-API/migration/invariant impact, and at most two expected attempts, an owner may choose:
 
 ```text
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../project-review-002 --goal-id fix-local-parser --mode simple
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart --root . --out ../project-review-002 --goal-id fix-local-parser --mode simple
 ```
 
 The CLI infers a conservative test command when it finds a Node, Cargo, Go or pytest project. Otherwise provide the exact verifier invocation explicitly:
 
 ```text
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../project-review-003 --goal-id verify-release-build --verify-command "npm run check"
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart --root . --out ../project-review-003 --goal-id verify-release-build --verify-command "npm run check"
 ```
 
 Generation does not execute the verifier or contact a model or network service.
@@ -56,7 +56,7 @@ Generation does not execute the verifier or contact a model or network service.
 The generated manifest freezes the current canonical upstream GitHub tag and `REVIEW.md` renders every follow-up as a complete command such as:
 
 ```sh
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart sync ../project-review-001 --root .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart sync ../project-review-001 --root .
 ```
 
 README users therefore do not need a global install or need to prepend six commands manually. The binding is fail-closed during `sync`. A fork must publish and review its own pinned package identity; hand-editing the generated CLI binding is rejected.
@@ -94,7 +94,7 @@ The Cognition draft is optional. Leave it unchanged and do not promote it when t
 After editing:
 
 ```sh
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart sync ../project-review-001 --root .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart sync ../project-review-001 --root .
 ```
 
 `sync`:
@@ -130,12 +130,12 @@ The CLI actor label is not identity authentication. Owner identity and approval 
 Use the exact paths printed in `REVIEW.md`:
 
 ```sh
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition verifier seal ../project-review-001/verifiers.rN.draft.json
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition verifier install ../project-review-001/verifiers.rN.draft.json --root . --replace --expect-current-hash <reviewed-base-verifier-registry-hash>
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart sync ../project-review-001 --root .
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition goal validate ../project-review-001/goal.fix-session-resume.r1.draft.json
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition goal approve ../project-review-001/goal.fix-session-resume.r1.draft.json --actor OWNER_NAME --root .
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition doctor .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition verifier seal ../project-review-001/verifiers.rN.draft.json
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition verifier install ../project-review-001/verifiers.rN.draft.json --root . --replace --expect-current-hash <reviewed-base-verifier-registry-hash>
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart sync ../project-review-001 --root .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition goal validate ../project-review-001/goal.fix-session-resume.r1.draft.json
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition goal approve ../project-review-001/goal.fix-session-resume.r1.draft.json --actor OWNER_NAME --root .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition doctor .
 ```
 
 The generated `REVIEW.md` fills `<reviewed-base-verifier-registry-hash>` automatically. Registry installation uses this hash as compare-and-swap and accepts only the exact next revision; a concurrent Registry change is rejected without overwrite. The second `sync` reports `approval_ready: true` only when the installed registry equals the reviewed proposal. When generation reports `verifier_reused: true`, the exact registry was already installed and `REVIEW.md` omits the replacement command. The final approval still rechecks current Cognition, Registry, invariants and revision lineage. Only `goal approve` writes an approved contract under `.project-cognition/goals/`.

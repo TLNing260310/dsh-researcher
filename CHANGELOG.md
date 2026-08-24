@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0-alpha.8 (2026-08-25) — Windows Canonical-Path Hotfix
+
+- Supersedes alpha.7 after its post-release CI matrix exposed one Windows-only test expectation: GitHub-hosted runners supplied an 8.3 short temp path while Quickstart intentionally persisted the native canonical long path.
+- The assertion now compares against `fs.realpathSync.native`, matching the production identity function. Quickstart's device/inode/path binding and runtime behavior are unchanged.
+- The release remains evidence-conservative: no new model run, remote API call or Live E1 execution was performed. All alpha.7 capability and outcome boundaries still apply.
+
+Release boundary: **Windows CI portability fix / no runtime feature expansion / Goal Governor live E1: NOT RUN / outcome value and multi-client portability: NOT PROVEN**.
+
 ## 0.8.0-alpha.7 (2026-08-25) — Safe Trial and Guided Governance
 
 - Replaced the three drifting installer implementations with one cross-platform lifecycle manager. `--dry-run` does not write installer-owned paths; strict compatibility accepts exact DSH `0.1.0-rc.7` from CLI output or constrained package metadata and refuses missing/unknown versions by default. Automatic CLI detection may still start external `dsh --version`.

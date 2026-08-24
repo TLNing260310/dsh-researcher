@@ -76,18 +76,18 @@ Project Research 与 Goal Governor 并不捆绑。你可以只安装后试用前
 - DeepSeek Harness：精确验证版本 `0.1.0-rc.7`。
 - Node.js：`>=22.12.0`。
 - 建议使用独立 `DSH_HOME` 和非关键仓库副本首次试用。
-- 当前版本：`0.8.0-alpha.7`，不承诺稳定 API。
+- 当前版本：`0.8.0-alpha.8`，不承诺稳定 API。
 
 先预览操作，不写入 preset：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 --dry-run
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 --dry-run
 ```
 
 确认后安装：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.7
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.8
 ```
 
 安装器默认不会覆盖已有 preset，并严格核对 DSH 版本。备份、升级、卸载、回滚以及从 GitHub Release 校验 SHA-256 后安装的完整流程见 [安全安装与恢复](./docs/installation.md)。不要在不了解现有 preset 内容时使用覆盖选项。
@@ -125,8 +125,8 @@ Governed Coding 还支持 `/researcher on|off` 持久 guarded mode。它有工�
 引导器一次生成 Project Cognition、Verifier Registry、Goal Contract 的**待审核草稿**和 `REVIEW.md`，并自动绑定当前 cognition hash、Git revision 与 verifier hash：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition init .
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
 ```
 
 第一条只在项目尚未建立 `.project-cognition/state.json` 时执行；已有 canonical state 的项目直接运行第二条。命令均为单行，可直接用于 PowerShell 或 POSIX shell。
@@ -134,7 +134,7 @@ npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cogni
 若无法从 `package.json`、`Cargo.toml`、`pyproject.toml` 或 `go.mod` 推断测试命令，则显式提供：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout --verify-command "npm test"
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout --verify-command "npm test"
 ```
 
 省略 `--verify-tool` 时，Windows 默认 `pwsh`，Unix 默认 `bash`；只有 verifier 必须由其他宿主工具执行时才显式指定。
@@ -142,7 +142,7 @@ npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cogni
 编辑生成的草稿后同步冻结引用：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.7 project-cognition quickstart sync ../my-goal-review --root .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart sync ../my-goal-review --root .
 ```
 
 引导器**不会**替你批准 Goal、seal 项目事实或安装 canonical state。打开生成的 `REVIEW.md`，审核目的、边界、MUST 条件、预算与 verifier 后，再执行其中列出的批准命令。完整说明见 [五分钟 Quickstart](./docs/quickstart.md)。
@@ -251,5 +251,5 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 - DeepSeek Harness：目标且精确验证版本 `0.1.0-rc.7`。
 - Node.js：`>=22.12.0`。
-- 当前版本：`0.8.0-alpha.7`；Researcher/Goal runtime 的权限与终态逻辑沿用已通过发布 tarball smoke 的 alpha.6，本版增加安全安装生命周期、review-first Quickstart 和可运行演示。
+- 当前版本：`0.8.0-alpha.8`；功能与 alpha.7 相同，本版只修正 Windows 8.3 临时路径在 Quickstart 身份测试中的规范路径断言，并由新的干净提交重新生成发布制品。
 - License：MIT。

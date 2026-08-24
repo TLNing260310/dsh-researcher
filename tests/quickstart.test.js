@@ -81,7 +81,8 @@ test('quickstart creates external, non-executable review drafts without changing
   assert.equal(executableLines.every((line) => line.startsWith(expectedPrefix + ' ')), true)
   assert.doesNotMatch(reviewText, /^project-cognition\s/m)
   const manifest = readJson(path.join(review, output.files.manifest))
-  assert.equal(manifest.bindings.project_root.realpath, fs.realpathSync(root))
+  const canonicalRoot = fs.realpathSync.native ? fs.realpathSync.native(root) : fs.realpathSync(root)
+  assert.equal(manifest.bindings.project_root.realpath, canonicalRoot)
   assert.deepEqual(manifest.cli, {
     kind: 'canonical-pinned-github-npx',
     package_version: packageJson.version,
