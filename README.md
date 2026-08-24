@@ -57,7 +57,7 @@ Governed Coding 还支持 `/researcher on|off` 持久 guarded mode；它有工�
 安装已发布的 alpha（同时安装 `researcher`、`governed` 和 portable core）：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.5
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.6
 ```
 
 只读研究：新建 DSH 会话，先选 `Read Only`，再选「项目研究 Project Research」，然后描述仓库和你真正想判断的问题。DSH Web 的 `Read Only` 当前带 `approval=ask`；preset 会把它单向收紧为 `never`（UI 显示 `Custom`），不会放宽任何权限。若选择 writable 模式则拒绝运行。`research_doctor` 是强制首个工具调用；证书不是 SAFE 时研究不会开始。
@@ -65,7 +65,7 @@ npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.5
 Goal Governor 最小入口：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.5 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.6 project-cognition init .
 ```
 
 随后人工维护 Project Cognition、冻结 Verifier Registry、批准 Goal Contract，并在「目标治理编码 Governed Coding」中运行：
@@ -191,7 +191,7 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 - DeepSeek Harness：目标版本为 `0.1.0-rc.7`；alpha.5 已完成 Researcher Web 本地 smoke，但未运行 Goal Governor E1 的 DSH-dependent Gate 0 / live trajectories。
 - Node.js：`>=22.12.0`；仓库/CI 机械测试不能替代 live E1。
-- 当前版本：`0.8.0-alpha.5`，不承诺稳定 API。
+- 当前版本：`0.8.0-alpha.6`，不承诺稳定 API。alpha.6 仅修正三种安装器的 DSH Web 真实操作指引；运行时与已通过发布 tarball 验收的 alpha.5 相同。
 
 ## License
 

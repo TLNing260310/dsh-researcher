@@ -1,6 +1,6 @@
 # Validation Status — dsh-researcher
 
-> 更新时间：2026-08-24（`0.8.0-alpha.5`）。本文件是公开证据账本：准确区分机械实现、Researcher smoke、Goal Governor E1、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
+> 更新时间：2026-08-24（`0.8.0-alpha.6`）。本文件是公开证据账本：准确区分机械实现、Researcher smoke、Goal Governor E1、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
 
 alpha.5 的本地 smoke 是 provisional evidence；在 owner review、seal、install 前，它不会自动改写 canonical Project Cognition。这是 promotion 边界的实际应用，不是第二份规范真相。
 

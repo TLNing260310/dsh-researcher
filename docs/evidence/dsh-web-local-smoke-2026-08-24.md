@@ -24,6 +24,7 @@ The same Chinese prompt asked for a read-only project review, mandatory
 | pre-step candidate | local `qwen3:14b` | SAFE: every certificate row PASS | FAIL: forgot the original task, then invented `project_root` and Rust files |
 | same pre-step candidate after permission drift | local `qwen3:14b` | FAIL: stale SAFE accepted no-tool prose after switching to Workspace Write | not applicable |
 | drift-fix candidate | local `qwen3:14b` | PASS: SAFE baseline, then Workspace Write rejected before another model response | not an outcome run |
+| published alpha.5 tarball via PowerShell `dsh web` | local `qwen3:14b` | PASS: exact release artifact reached SAFE and rejected permission drift before another model response | runtime pass; stale installer guidance found |
 
 ## What this proves
 
@@ -56,5 +57,7 @@ The same Chinese prompt asked for a read-only project review, mandatory
   `22C36E3CA2BF40D2ADCA34B2CAF4AD385AFC977E7900165826E1C98548EEDA2C`
   (pre-step plus drift failure), and
   `0A7B8C9F7CBD02E3B36B643957083C9FB7290DED170EDBFBD078417FFACC521D`
-  (final drift fix). These hashes identify retained local artifacts but are
+  (final drift fix), and
+  `29EF27A859069383ADE13B9A606F63CC4CB2E19DB59A8B1686DED65888CE294C`
+  (exact published alpha.5 tarball acceptance). These hashes identify retained local artifacts but are
   not independently verifiable public evidence.

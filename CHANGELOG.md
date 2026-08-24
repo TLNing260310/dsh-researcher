@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.0-alpha.6 (2026-08-24) — Truthful DSH Web Onboarding
+
+- Post-release alpha.5 acceptance installed the exact GitHub release tarball into a fresh DSH_HOME and launched it through PowerShell `dsh web`. The published runtime obtained a full SAFE certificate and rejected post-certificate Workspace Write drift before another model response; the workspace stayed clean.
+- That acceptance found one remaining content defect: all three installers still told users to manually choose `read-only + approval never`, a combination current DSH Web does not expose. Node, PowerShell and bash installers now say to choose `Read Only`, then Project Research; the preset tightens approval to never and the UI displays `Custom`.
+- A repository consistency test freezes the same guidance across all installer entry points and rejects the stale wording.
+- Runtime code is unchanged from alpha.5. No additional model call is needed to validate this text-only delta; the alpha.6 release tarball must still pass isolated install-output, package smoke, full repository checks and cross-platform CI.
+
+Release boundary: **Published Researcher DSH Web smoke: PASS / installer truth alignment: PASS / Goal Governor live E1: NOT RUN / outcome value and multi-client portability: NOT PROVEN**.
+
 ## 0.8.0-alpha.5 (2026-08-24) — DSH Web Recompose and Terminal Safety
 
 - A real DSH Web smoke exposed that selecting Project Research after creating a standard agent bypassed `agent/created` attachment. Research-state replay now hydrates at preset selection with an idempotent `agent/pre-step` fallback; the read-only guard attaches to the exact live Web agent.

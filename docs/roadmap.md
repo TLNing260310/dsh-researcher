@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.5` 已完成 Researcher 的 DSH Web 本地 smoke，并修复实测发现的重组、无 doctor 终止与权限漂移漏洞；该 smoke 不是 Goal Governor E1。下一步仍是完成当前 candidate 的 DSH-dependent Gate 0，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和失败证据见 [CHANGELOG](../CHANGELOG.md)、[Validation Status](./validation-status.md) 与 [DSH Web local smoke](./evidence/dsh-web-local-smoke-2026-08-24.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.6` 保留 alpha.5 已通过发布 tarball 验收的 Researcher DSH Web runtime，并修正实测发现的安装指引漂移；该 smoke 不是 Goal Governor E1。下一步仍是完成当前 candidate 的 DSH-dependent Gate 0，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和失败证据见 [CHANGELOG](../CHANGELOG.md)、[Validation Status](./validation-status.md) 与 [DSH Web local smoke](./evidence/dsh-web-local-smoke-2026-08-24.md)。
 
 ## 路线纪律
 

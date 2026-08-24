@@ -24,6 +24,15 @@ test('declared Node floor, public quickstart, and CI matrix cover the floor and 
   assert.doesNotMatch(workflow, /node:\s*\[[^\]]*(?:16|18|20)(?:\.|,|\])/)
 })
 
+test('every installer describes the actual DSH Web permission transition', () => {
+  for (const relative of ['bin/install.js', 'install.ps1', 'install.sh']) {
+    const content = read(...relative.split('/'))
+    assert.match(content, /Certified research:[^\n]*Read Only[^\n]*Project Research/, relative + ' lost the real UI selection order')
+    assert.match(content, /tightens approval to never[^\n]*Custom/, relative + ' must explain the one-way approval reduction and Custom UI state')
+    assert.doesNotMatch(content, /Project Research[^\n]*(?:permission )?read-only \+ approval never/, relative + ' still asks for a UI combination DSH Web does not expose')
+  }
+})
+
 test('canonical cognition state carries the verified runtime and protocol-owned live E1 P1, and its projection has not drifted', () => {
   const state = readJson('.project-cognition', 'state.json')
   assert.ok(state.mission.environment.some((item) => /Node\.js 22\.12/.test(item)), 'canonical environment lost the Node.js 22.12 floor')
