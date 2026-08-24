@@ -58,4 +58,4 @@ The next meaningful proof is not another feature. It is a legitimate Live E1 evi
 
 ## Suggested GitHub About text
 
-Evidence-backed project cognition and host-governed definitions of done for AI coding workflows. DSH adapter; experimental alpha.
+Read-only repository research, durable project memory, and evidence-gated definitions of done for AI coding agents. DSH adapter; experimental alpha.

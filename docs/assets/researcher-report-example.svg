@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Example Project Research report</title>
+  <desc id="desc">A report excerpt separates verified facts, unknowns, boundaries, and the next evidence gate.</desc>
+  <rect width="1200" height="620" rx="24" fill="#071522"/>
+  <rect x="42" y="38" width="1116" height="544" rx="18" fill="#0f2637" stroke="#28485d"/>
+  <circle cx="76" cy="72" r="7" fill="#ef6a67"/><circle cx="98" cy="72" r="7" fill="#e8b258"/><circle cx="120" cy="72" r="7" fill="#58c58a"/>
+  <text x="154" y="79" fill="#a9c0cf" font-family="Consolas, monospace" font-size="17">project-research-report.md · calibration example</text>
+  <text x="76" y="132" fill="#f5f8fa" font-family="Segoe UI, sans-serif" font-size="28" font-weight="700">Repository reality before recommendations</text>
+
+  <rect x="76" y="166" width="504" height="144" rx="12" fill="#122f43"/>
+  <text x="100" y="202" fill="#5ed5ac" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">VERIFIED</text>
+  <text x="100" y="238" fill="#d5e2e9" font-family="Segoe UI, sans-serif" font-size="16">Canonical truth is JSON; Markdown is projection.</text>
+  <text x="100" y="270" fill="#8faabc" font-family="Consolas, monospace" font-size="14">.project-cognition/state.json + doctor PASS</text>
+
+  <rect x="620" y="166" width="504" height="144" rx="12" fill="#122f43"/>
+  <text x="644" y="202" fill="#f0b35b" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">UNKNOWN / NOT PROVEN</text>
+  <text x="644" y="238" fill="#d5e2e9" font-family="Segoe UI, sans-serif" font-size="16">Net productivity gain and cross-client value.</text>
+  <text x="644" y="270" fill="#8faabc" font-family="Consolas, monospace" font-size="14">Live E1: NOT RUN · external pilot: none</text>
+
+  <rect x="76" y="334" width="504" height="144" rx="12" fill="#122f43"/>
+  <text x="100" y="370" fill="#68bde7" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">DO NOT CHANGE</text>
+  <text x="100" y="406" fill="#d5e2e9" font-family="Segoe UI, sans-serif" font-size="16">Models cannot approve facts or terminal states.</text>
+  <text x="100" y="438" fill="#8faabc" font-family="Consolas, monospace" font-size="14">I2 / I3 / I5 owner-ratified invariants</text>
+
+  <rect x="620" y="334" width="504" height="144" rx="12" fill="#122f43"/>
+  <text x="644" y="370" fill="#c7a7ff" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">NEXT EVIDENCE GATE</text>
+  <text x="644" y="406" fill="#d5e2e9" font-family="Segoe UI, sans-serif" font-size="16">Run legitimate six-track Live E1; publish bundle.</text>
+  <text x="644" y="438" fill="#8faabc" font-family="Consolas, monospace" font-size="14">Do not add adapters before the gate passes.</text>
+
+  <text x="76" y="534" fill="#8faabc" font-family="Segoe UI, sans-serif" font-size="15">A polished report is not proof by itself. Every claim still needs a resolvable source and an explicit evidence level.</text>
+</svg>

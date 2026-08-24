@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+  <title id="title">Goal Governor offline demo</title>
+  <desc id="desc">Three steps show assistant confidence rejected, a failing verifier rejected, and a passing verifier producing DONE.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#061423"/>
+      <stop offset="1" stop-color="#0b2234"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity=".28"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="430" rx="24" fill="url(#bg)"/>
+  <text x="56" y="54" fill="#f6f9fc" font-family="Segoe UI, sans-serif" font-size="27" font-weight="700">Evidence, not confidence, ends the loop</text>
+  <text x="56" y="83" fill="#8da9bc" font-family="Segoe UI, sans-serif" font-size="16">Deterministic offline demo · real verifier processes · synthetic DSH event envelope · not Live E1</text>
+
+  <g filter="url(#shadow)">
+    <animate attributeName="opacity" values="0.72;1;1;0.72" keyTimes="0;0.08;0.32;1" dur="9s" repeatCount="indefinite"/>
+    <rect x="48" y="118" width="330" height="246" rx="18" fill="#10283a" stroke="#26465b"/>
+    <circle cx="92" cy="160" r="20" fill="#1f5674"/>
+    <text x="86" y="168" fill="#dff5ff" font-family="Segoe UI, sans-serif" font-size="20" font-weight="700">1</text>
+    <text x="126" y="157" fill="#f2f7fa" font-family="Segoe UI, sans-serif" font-size="19" font-weight="700">Assistant says DONE</text>
+    <text x="78" y="211" fill="#b7c9d5" font-family="Consolas, monospace" font-size="16">trusted evidence: none</text>
+    <line x1="78" y1="235" x2="346" y2="235" stroke="#26465b"/>
+    <text x="78" y="280" fill="#f0b35b" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">HOST: CONTINUE</text>
+    <text x="78" y="317" fill="#8da9bc" font-family="Segoe UI, sans-serif" font-size="15">Final prose cannot satisfy a MUST.</text>
+  </g>
+
+  <path d="M390 241h42" stroke="#3aaee8" stroke-width="3" stroke-dasharray="8 7"><animate attributeName="stroke-dashoffset" from="30" to="0" dur="1s" repeatCount="indefinite"/></path>
+  <path d="m424 232 12 9-12 9" fill="none" stroke="#3aaee8" stroke-width="3"/>
+
+  <g filter="url(#shadow)">
+    <animate attributeName="opacity" values="0.72;0.72;1;1;0.72" keyTimes="0;0.28;0.36;0.65;1" dur="9s" repeatCount="indefinite"/>
+    <rect x="438" y="118" width="330" height="246" rx="18" fill="#10283a" stroke="#26465b"/>
+    <circle cx="482" cy="160" r="20" fill="#1f5674"/>
+    <text x="476" y="168" fill="#dff5ff" font-family="Segoe UI, sans-serif" font-size="20" font-weight="700">2</text>
+    <text x="516" y="157" fill="#f2f7fa" font-family="Segoe UI, sans-serif" font-size="19" font-weight="700">Frozen verifier runs</text>
+    <text x="468" y="211" fill="#b7c9d5" font-family="Consolas, monospace" font-size="16">process exit_code = 1</text>
+    <line x1="468" y1="235" x2="736" y2="235" stroke="#26465b"/>
+    <text x="468" y="280" fill="#f0b35b" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">HOST: CONTINUE</text>
+    <text x="468" y="317" fill="#8da9bc" font-family="Segoe UI, sans-serif" font-size="15">A genuine failing result still fails.</text>
+  </g>
+
+  <path d="M780 241h42" stroke="#3aaee8" stroke-width="3" stroke-dasharray="8 7"><animate attributeName="stroke-dashoffset" from="30" to="0" dur="1s" repeatCount="indefinite"/></path>
+  <path d="m814 232 12 9-12 9" fill="none" stroke="#3aaee8" stroke-width="3"/>
+
+  <g filter="url(#shadow)">
+    <animate attributeName="opacity" values="0.72;0.72;1;1;0.72" keyTimes="0;0.61;0.69;0.94;1" dur="9s" repeatCount="indefinite"/>
+    <rect x="828" y="118" width="324" height="246" rx="18" fill="#10283a" stroke="#2d765e"/>
+    <circle cx="872" cy="160" r="20" fill="#216b54"/>
+    <text x="866" y="168" fill="#e8fff6" font-family="Segoe UI, sans-serif" font-size="20" font-weight="700">3</text>
+    <text x="906" y="157" fill="#f2f7fa" font-family="Segoe UI, sans-serif" font-size="19" font-weight="700">Repair, then re-verify</text>
+    <text x="858" y="211" fill="#b7c9d5" font-family="Consolas, monospace" font-size="16">process exit_code = 0</text>
+    <line x1="858" y1="235" x2="1120" y2="235" stroke="#2d765e"/>
+    <text x="858" y="280" fill="#61d6a5" font-family="Segoe UI, sans-serif" font-size="18" font-weight="700">HOST: DONE</text>
+    <text x="858" y="317" fill="#8da9bc" font-family="Segoe UI, sans-serif" font-size="15">Matching host evidence satisfies the MUST.</text>
+  </g>
+</svg>

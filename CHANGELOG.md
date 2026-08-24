@@ -1,5 +1,12 @@
 # Changelog
 
+### Main after alpha.8 — onboarding and discoverability, unreleased
+
+- Added an English-first README with a Chinese counterpart, a problem-led first screen, deterministic mechanism visuals, and a lower-friction ten-minute trial form.
+- Made the npm identity boundary explicit. The unscoped registry name belongs to another project; this repository now uses private scoped package metadata while preserving pinned GitHub and verified release installation.
+- Added a self-audit calibration case that demonstrates evidence-graded reporting without counting itself as an external user case, Live E1, or outcome evidence.
+- Kept `v0.8.0-alpha.8` as the current release. These main-branch onboarding changes do not expand runtime claims or create a new release milestone.
+
 ## 0.8.0-alpha.8 (2026-08-25) — Windows Canonical-Path Hotfix
 
 - Supersedes alpha.7 after its post-release CI matrix exposed one Windows-only test expectation: GitHub-hosted runners supplied an 8.3 short temp path while Quickstart intentionally persisted the native canonical long path.

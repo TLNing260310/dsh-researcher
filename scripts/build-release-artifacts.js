@@ -378,6 +378,7 @@ const buildArtifacts = ({ out, expectedVersion, expectedRevision, requireClean =
     if (!fs.existsSync(tarball)) fail('npm pack did not create ' + packed.filename)
     const tarballBytes = fs.readFileSync(tarball)
     validatePackedManifest(packed, tarballBytes)
+    const artifactFilename = 'dsh-researcher-' + packed.version + '.tgz'
 
     const sourceAfterPack = gitSource()
     if (sourceAfterPack.revision !== source.revision || sourceAfterPack.clean !== source.clean) {
@@ -402,7 +403,7 @@ const buildArtifacts = ({ out, expectedVersion, expectedRevision, requireClean =
       package: {
         name: packed.name,
         version: packed.version,
-        filename: packed.filename,
+        filename: artifactFilename,
         sha256: tarballSha256,
         npm_shasum_sha1: packed.shasum,
         npm_integrity_sha512: packed.integrity,
@@ -415,18 +416,18 @@ const buildArtifacts = ({ out, expectedVersion, expectedRevision, requireClean =
     }
     const manifestBytes = Buffer.from(JSON.stringify(manifest, null, 2) + '\n')
     const checksums = [
-      tarballSha256 + ' *' + packed.filename,
+      tarballSha256 + ' *' + artifactFilename,
       digest('sha256', manifestBytes) + ' *package-manifest.json',
       '',
     ].join('\n')
 
     fs.mkdirSync(out, { recursive: true })
     assertSafeOutput(out)
-    fs.copyFileSync(tarball, path.join(out, packed.filename), fs.constants.COPYFILE_EXCL)
+    fs.copyFileSync(tarball, path.join(out, artifactFilename), fs.constants.COPYFILE_EXCL)
     fs.writeFileSync(path.join(out, 'package-manifest.json'), manifestBytes, { flag: 'wx' })
     fs.writeFileSync(path.join(out, 'SHA256SUMS'), checksums, { flag: 'wx' })
 
-    return { out, filename: packed.filename, sha256: tarballSha256, entryCount: packed.entryCount }
+    return { out, filename: artifactFilename, sha256: tarballSha256, entryCount: packed.entryCount }
   } finally {
     fs.rmSync(stage, { recursive: true, force: true })
   }

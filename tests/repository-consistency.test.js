@@ -29,6 +29,20 @@ test('declared Node floor, public quickstart, and CI matrix cover the floor and 
   assert.doesNotMatch(quickstart, /project-cognition quickstart[^\n]*\\\s*$/m, 'public quickstart must remain pasteable in PowerShell')
 })
 
+test('package identity cannot be confused with the unrelated unscoped npm package', () => {
+  const pkg = readJson('package.json')
+  const readme = read('README.md')
+  const readmeZh = read('README.zh-CN.md')
+  const installation = read('docs', 'installation.md')
+  assert.equal(pkg.name, '@tlning260310/dsh-researcher')
+  assert.equal(pkg.private, true)
+  for (const content of [readme, readmeZh, installation]) {
+    assert.match(content, /npm[^\n]*dsh-researcher[^\n]*(?:different|另一)/i)
+    assert.match(content, /github:TLNing260310\/dsh-researcher#(?:v0\.8\.0-alpha\.8|<tag>)/)
+  }
+  assert.doesNotMatch(readme, /npm (?:install|i) dsh-researcher(?=\s|$)/)
+})
+
 test('every installer describes the actual DSH Web permission transition', () => {
   const installer = read('bin', 'install.js')
   assert.match(installer, /Certified research:[^\n]*Read Only[^\n]*Project Research/, 'canonical installer lost the real UI selection order')
@@ -191,20 +205,23 @@ test('the public proof order cannot skip E1, the non-inferential pilot, or E2', 
 test('current release identity and public evidence-status language do not drift', () => {
   const pkg = readJson('package.json')
   const readme = read('README.md')
+  const readmeZh = read('README.zh-CN.md')
   const changelog = read('CHANGELOG.md')
   const validation = read('docs', 'validation-status.md')
   const roadmap = read('docs', 'roadmap.md')
   const governor = read('docs', 'goal-governor.md')
-  const currentVersion = new RegExp('当前版本：`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`')
+  const currentVersion = new RegExp('Current release: `v?' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`')
   const pinnedInstall = new RegExp('#v' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const firstRelease = changelog.match(/^##\s+([^\s(]+)/m)
   assert.match(readme, currentVersion)
+  assert.match(readmeZh, new RegExp('当前版本：`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
   assert.match(readme, pinnedInstall)
   assert.match(validation, new RegExp('`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
   assert.match(roadmap, new RegExp('`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
   assert.equal(fs.existsSync(path.join(root, 'docs', 'releases', 'v' + pkg.version + '.md')), true)
   assert.equal(firstRelease && firstRelease[1], pkg.version)
-  assert.match(readme, /真实模型端到端成功率[^\n]*尚未证明|真实模型端到端[^\n]*尚未证明/)
+  assert.match(readme, /Live E1[^\n]*NOT RUN|model productivity[^\n]*not proven/i)
+  assert.match(readmeZh, /真实模型端到端成功率[^\n]*尚未证明|真实模型端到端[^\n]*尚未证明/)
   assert.match(validation, /Live conformance[^\n]*\*\*未完成 E1\*\*/)
   assert.match(validation, /不得宣称[^\n]*真实 DSH E2E 已通过/)
   assert.match(governor, /尚未证明：真实 DSH 模型会话端到端成功率/)
@@ -219,5 +236,6 @@ test('CI and issue templates avoid duplicate tag verification and per-release pl
   for (const relative of [
     path.join('.github', 'ISSUE_TEMPLATE', 'bug-report.yml'),
     path.join('.github', 'ISSUE_TEMPLATE', 'feedback.yml'),
+    path.join('.github', 'ISSUE_TEMPLATE', 'trial-report.yml'),
   ]) assert.doesNotMatch(read(...relative.split(path.sep)), /0\.8\.0-alpha\.\d+/, relative + ' hard-codes a prerelease')
 })

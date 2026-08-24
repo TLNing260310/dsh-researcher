@@ -1,5 +1,7 @@
 # Researcher Case Library
 
+[English](#admission-boundary) | [简体中文](#收录标准)
+
 案例库是 dsh-researcher 最有力的证明：**不是"它能输出报告"，而是"它在真实项目上发现了什么"**。
 
 ## 收录标准
@@ -28,4 +30,12 @@
 
 ## 已收录案例
 
-（待首次脱敏授权后添加。首个候选：一个"README 声称测试通过但未执行的冲刺项目"——运行时的 Runtime Certificate 与证据台账已留档。）
+- [000：dsh-researcher 自审校准](./000-dsh-researcher-self-audit.md)——真实公开仓库、可复核结论，但不是独立用户、不是 DSH Researcher live run，也不计入 pilot 或价值证据。
+
+外部真实用户案例：**0**。首个外部案例必须满足上面的收录标准，并保留负面或无价值结果。
+
+## Admission boundary
+
+A case may enter the external evidence count only when it records a real repository, exact runtime/client/model versions, a redacted but reviewable report or evidence bundle, the decision changed (or not changed), and explicit owner consent to publish. Synthetic fixtures belong under `tests/` or `evaluation/`. A self-audit can calibrate the format but cannot establish adoption, independence, or product value.
+
+The first public entry below is therefore labeled **CALIBRATION ONLY**. It exists so a new user can see the expected claim/evidence/unknown structure without mistaking it for a successful pilot.

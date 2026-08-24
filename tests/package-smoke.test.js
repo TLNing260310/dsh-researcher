@@ -4,6 +4,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
+const pkg = require('../package.json')
 
 const root = path.resolve(__dirname, '..')
 const run = (command, args, options = {}) => spawnSync(command, args, {
@@ -50,7 +51,7 @@ test('release tarball installs both presets and resolves the governed portable c
   const prefix = path.join(temp, 'installed-package')
   const installed = runNpm(['install', '--ignore-scripts', '--no-audit', '--no-fund', '--prefix', prefix, '--cache', cache, tarball])
   assert.equal(installed.status, 0, installed.stdout + installed.stderr)
-  const packageRoot = path.join(prefix, 'node_modules', 'dsh-researcher')
+  const packageRoot = path.join(prefix, 'node_modules', ...pkg.name.split('/'))
   const projectRoot = path.join(temp, 'quickstart-project')
   const reviewRoot = path.join(temp, 'quickstart-review')
   fs.mkdirSync(projectRoot)

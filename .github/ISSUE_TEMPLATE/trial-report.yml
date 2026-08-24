@@ -1,0 +1,60 @@
+name: 10-minute Trial Report
+description: Tell us whether the demo or safe trial worked, stopped, or was not worth the effort
+title: "[Trial] "
+labels: ["feedback", "trial"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A short negative result is useful. Do not post source code, secrets, private paths, API keys, or unredacted model transcripts.
+  - type: dropdown
+    id: path
+    attributes:
+      label: What did you try?
+      options:
+        - npm run demo only
+        - Installer --dry-run
+        - Project Research preset
+        - Goal Contract Quickstart
+        - Goal Governor / Governed Coding
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Where did you end?
+      options:
+        - Completed and understood the value
+        - Completed but did not see enough value
+        - Blocked by instructions or installation
+        - Blocked by runtime or model behavior
+        - Stopped because the workflow was too heavy
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: dsh-researcher version; add DSH/Node/OS only if relevant
+      placeholder: latest prerelease, Node 22.x, Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: moment
+    attributes:
+      label: First confusing or useful moment
+      description: One or two sentences are enough.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional redacted evidence
+      description: Exit code, certificate verdict, terminal state, or a small screenshot. Never include private source.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I removed secrets, personal data, private paths, and source I cannot share.
+          required: true
