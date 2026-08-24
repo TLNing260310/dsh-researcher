@@ -99,11 +99,11 @@ Codex、Claude Code、Zed/Zcode、OpenClaw 等可复用合同与 reducer，但�
 
 ## 7. 当前证明边界
 
-已证明（仓库内机械证据）：核心状态/hash/revision/replay、合同终态不可覆盖、attempt/no-progress/time/token 上限、最终 attempt 同轮重验全部 MUST、当前合同事件分段、真实 call-ID verifier 绑定、人工 gate command authority、one-shot mode 状态机、host-owned completion 与完整性失败暂停集成轨迹，以及发布 tarball 隔离安装。先前 candidate 曾被 DSH rc.7 preset scanner 解析；alpha.4 未重跑该 DSH 检查，因此它是历史兼容记录，不是当前 candidate 的 Gate 0 PASS。测试数量以当前 `npm test` 输出为准，不作为价值证明。
+已证明（仓库内机械证据）：核心状态/hash/revision/replay、合同终态不可覆盖、attempt/no-progress/time/token 上限、最终 attempt 同轮重验全部 MUST、当前合同事件分段、真实 call-ID verifier 绑定、人工 gate command authority、one-shot mode 状态机、host-owned completion 与完整性失败暂停集成轨迹，以及发布 tarball 隔离安装。alpha.5 的 DSH rc.7 Web smoke 只验证 Researcher preset 的 runtime attachment 与漂移拒绝；它不是 Goal Governor Gate 0 或 live E1 PASS。测试数量以当前 `npm test` 输出为准，不作为价值证明。
 
 尚未证明：真实 DSH 模型会话端到端成功率、Project Cognition 的纵向维护价值、Goal Governor 相对等内容 Research-only 的增量价值、不同模型/客户端的 effect size、其他客户端 adapter。历史 Experiment C+ 因隔离污染不具备因果效力；后续有效实验只能建立新的独立 claim，不能使 C+ 的历史记录恢复有效。
 
-alpha.4 的模型成本边界同样只具有仓库内机械证据：run lock 冻结 `base_url`；remote 精确为 `deepseek-official/deepseek-v4-flash` + `https://api.deepseek.com`；local 仍使用 DSH `deepseek-official` DeepSeek-compatible adapter，但要求无尾斜杠、显式端口的字面 loopback base URL。outer 为每个 child 生成冻结 settings、强制 `watch=false` 并设置 `DEEPSEEK_BASE_URL`；child 用 DSH 公共 resolver 在 create/resume 与每次 followup 前后核对 resolved base URL。工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末只免时段禁令。alpha.4 没有运行 DSH/live/model/API，local route 仍待 Gate 0；loopback 仅证明 adapter 第一跳本机，不能证明本地服务不代理远程。
+alpha.5 的 E1 模型成本边界仍只具有仓库内机械证据：run lock 冻结 `base_url`；remote 精确为 `deepseek-official/deepseek-v4-flash` + `https://api.deepseek.com`；local 使用 DSH `deepseek-official` DeepSeek-compatible adapter，并要求无尾斜杠、显式端口的字面 loopback base URL。工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末只免时段禁令。此次 Researcher Web smoke 未使用 E1 runner，因此 E1 route 仍待 Gate 0；loopback 仅证明 adapter 第一跳本机，不能证明本地服务不代理远程。
 
 下一价值门不是再加 prompt 或更多 schema，而是严格按以下依赖顺序推进：
 

@@ -65,10 +65,16 @@ const fs = require('node:fs')
 const path = require('node:path')
 
 const DENY = ['write', 'edit']
+const RESEARCHER_PRESETS = new Set(['researcher', 'researcher-quick', 'researcher-deep'])
 const doctorCapabilities = new WeakMap()
+const doctorVerdicts = new WeakMap()
+
+const TERMINAL_GATE_NOTICE = '[dsh-researcher] terminal gate: your previous assistant text was rejected as an uncertified draft because this session has no completed research_doctor result. Call research_doctor now. Do not answer in prose before the tool result.'
+const TERMINAL_GATE_FAILURE = '[dsh-researcher] terminal gate: refusing to complete this turn because the model produced assistant text twice without a completed research_doctor result.'
 
 const recordDoctorVerdict = (agent, overall) => {
   if (!agent || (typeof agent !== 'object' && typeof agent !== 'function')) return
+  doctorVerdicts.set(agent, { overall, issuedAt: Date.now() })
   if (overall === 'SAFE') {
     doctorCapabilities.set(agent, { overall: 'SAFE', issuedAt: Date.now() })
   } else {
@@ -77,7 +83,32 @@ const recordDoctorVerdict = (agent, overall) => {
 }
 
 const doctorCapabilityOf = (agent) => agent ? doctorCapabilities.get(agent) : undefined
-const revokeDoctorCapability = (agent) => { if (agent) doctorCapabilities.delete(agent) }
+const doctorVerdictOf = (agent) => agent ? doctorVerdicts.get(agent) : undefined
+const revokeDoctorCapability = (agent) => {
+  if (!agent) return
+  doctorCapabilities.delete(agent)
+  doctorVerdicts.delete(agent)
+}
+
+const terminalGateDecision = (verdict, retries) => {
+  if (verdict && ['SAFE', 'DEGRADED', 'UNSAFE'].includes(verdict.overall)) return { kind: 'accept' }
+  if ((retries || 0) < 1) return { kind: 'retry', retries: (retries || 0) + 1 }
+  return { kind: 'reject', error: TERMINAL_GATE_FAILURE }
+}
+
+const makeTerminalGateMessage = () => Object.freeze({
+  id: crypto.randomUUID(),
+  role: 'user',
+  content: [Object.freeze({ type: 'text', text: TERMINAL_GATE_NOTICE })],
+  source: Object.freeze({
+    kind: 'plugin',
+    plugin: 'dsh-researcher/tool-restrict',
+    form: 'notice',
+    summary: 'Uncertified assistant draft rejected; research_doctor is required.',
+  }),
+})
+
+const isResearcherPreset = (id) => RESEARCHER_PRESETS.has(id)
 
 // Pure environment verdict used by both the creation-time preflight and the
 // execution-time guard (unit-testable).
@@ -212,23 +243,33 @@ module.exports = {
       const sandboxOverride = ctx.sandboxPolicy.overrideOf(session)
       const approvalOverride = ctx.approval.overrideOf(session)
 
-      if (sandboxOverride === undefined || approvalOverride === undefined) {
+      if (sandboxOverride === undefined) {
         try {
           ctx.sandboxPolicy.setSandboxMode(session, 'read-only')
-          ctx.approval.setPolicy(agent, 'never')
         } catch (error) {
-          throw new Error('environment preflight: cannot pin an un-pinned session to read-only/never: ' + (error && error.message ? error.message : String(error)))
+          throw new Error('environment preflight: cannot pin an un-pinned session to read-only: ' + (error && error.message ? error.message : String(error)))
         }
       }
 
       const resolvedMode = ctx.sandboxPolicy.resolve({ session }).mode
-      const resolvedPolicy = ctx.approval.overrideOf(session)
       if (resolvedMode !== 'read-only') {
         throw new Error(
           '[dsh-researcher] environment preflight: session sandbox is "' + resolvedMode + '", the researcher preset requires "read-only". ' +
           'Create the session with the read-only permission preset; the preset refuses to run under writable environments.',
         )
       }
+      // DSH Web's Read Only access preset currently carries approval=ask.
+      // Researcher requires no escalation path, so tighten ask/undefined to
+      // never during both initial composition and post-creation recompose.
+      // This is a one-way authority reduction; writable sandboxes still fail.
+      if (approvalOverride !== 'never') {
+        try {
+          ctx.approval.setPolicy(agent, 'never')
+        } catch (error) {
+          throw new Error('environment preflight: cannot tighten approval policy to never: ' + (error && error.message ? error.message : String(error)))
+        }
+      }
+      const resolvedPolicy = ctx.approval.overrideOf(session)
       if (resolvedPolicy !== 'never') {
         throw new Error(
           '[dsh-researcher] environment preflight: session approval policy is "' + (resolvedPolicy === undefined ? 'unknown' : resolvedPolicy) + '", the researcher preset requires "never" ' +
@@ -241,13 +282,15 @@ module.exports = {
     const stubs = new WeakMap()
 
     const shadow = (agent) => {
+      const session = agent && agent.session
+      if (!session) throw new Error('agent has no live session')
+      // Re-check authority even when the stubs were attached earlier. DSH Web
+      // can change a session permission after a SAFE doctor result; an
+      // idempotent attachment must not turn into an idempotent security check.
+      verifyEnvironment(agent, session)
       if (stubs.has(agent)) return
       const disposers = []
       try {
-        const session = agent.session
-        if (!session) throw new Error('agent has no live session')
-        verifyEnvironment(agent, session)
-
         for (const name of DENY) {
           disposers.push(agent.ctx.tools.register(stubDefinition(name)))
         }
@@ -281,9 +324,13 @@ module.exports = {
       stubs.set(agent, disposers)
     }
 
+    const terminalGateRetries = new WeakMap()
+
     const release = (agent) => {
       const disposers = stubs.get(agent)
       stubs.delete(agent)
+      terminalGateRetries.delete(agent)
+      revokeDoctorCapability(agent)
       if (disposers) for (const dispose of disposers) dispose()
     }
 
@@ -294,6 +341,56 @@ module.exports = {
     ctx.on('agent/disposed', (payload) => {
       const agent = payload && payload.agent
       if (agent) release(agent)
+    })
+
+    // DSH Web creates a blank/standard agent and then re-links it to the
+    // selected preset. The standing preset is mounted before this durable
+    // event is appended, so install the agent-layer stubs at that boundary as
+    // well as at agent/created. Release them if a still-blank agent switches
+    // away before its first message.
+    ctx.on('agent-preset/selected', (sessionId, preset) => {
+      const agent = ctx.agents.get(sessionId)
+      if (!agent || !agent.ctx) return
+      if (isResearcherPreset(preset)) shadow(agent)
+      else release(agent)
+    })
+
+    // Some Web recompose paths publish the durable selection before the
+    // preset-scoped listener can resolve the live Agent. The first scoped
+    // pre-step is the authoritative fallback because it carries that Agent.
+    // Failures throw before the model request instead of degrading silently.
+    ctx.on('agent/pre-step', ({ agent }, next) => {
+      if (agent && agent.ctx) shadow(agent)
+      return next()
+    })
+
+    // 2b) Terminal doctor gate. A tools.guard can deny the wrong first tool,
+    // but DSH completes a step immediately when the model emits no tool call.
+    // Intercept that separate terminal path: permit a real completed doctor
+    // verdict (SAFE may research; DEGRADED/UNSAFE may only explain and stop),
+    // otherwise inject one bounded correction step and then fail loudly.
+    ctx.on('agent/turn-stopping', ({ agent }) => {
+      if (!agent) return
+      // The terminal path may contain no tool call, so tools.guard cannot be
+      // its drift detector. Re-verify here and revoke stale certification
+      // before refusing a session whose permission changed after doctor.
+      try {
+        verifyEnvironment(agent, agent.session)
+      } catch (error) {
+        revokeDoctorCapability(agent)
+        throw error
+      }
+      const decision = terminalGateDecision(doctorVerdictOf(agent), terminalGateRetries.get(agent))
+      if (decision.kind === 'accept') {
+        terminalGateRetries.delete(agent)
+        return
+      }
+      if (decision.kind === 'retry') {
+        terminalGateRetries.set(agent, decision.retries)
+        agent.inject(makeTerminalGateMessage())
+        return
+      }
+      throw new Error(decision.error)
     })
 
     // 3) Execution-time guard (v0.4.4/v0.5.1/v0.6.0): layer-based, not
@@ -342,6 +439,6 @@ module.exports = {
       return outcome.deny
     })
   },
-  __capability: { recordDoctorVerdict, doctorCapabilityOf, revokeDoctorCapability },
-  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, readPathVerdict, DOCTOR_GATE_DENIAL, READ_ROOT_DENIAL, recordDoctorVerdict, doctorCapabilityOf, revokeDoctorCapability },
+  __capability: { recordDoctorVerdict, doctorCapabilityOf, doctorVerdictOf, revokeDoctorCapability },
+  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, readPathVerdict, terminalGateDecision, makeTerminalGateMessage, isResearcherPreset, DOCTOR_GATE_DENIAL, READ_ROOT_DENIAL, TERMINAL_GATE_NOTICE, TERMINAL_GATE_FAILURE, recordDoctorVerdict, doctorCapabilityOf, doctorVerdictOf, revokeDoctorCapability },
 }

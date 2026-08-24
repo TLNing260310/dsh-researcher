@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0-alpha.5 (2026-08-24) — DSH Web Recompose and Terminal Safety
+
+- A real DSH Web smoke exposed that selecting Project Research after creating a standard agent bypassed `agent/created` attachment. Research-state replay now hydrates at preset selection with an idempotent `agent/pre-step` fallback; the read-only guard attaches to the exact live Web agent.
+- DSH Web `Read Only` currently resolves to sandbox=`read-only`, approval=`ask`. Researcher now performs the safe one-way reduction to approval=`never`; writable sandboxes still fail closed.
+- A new terminal doctor gate rejects prose-only completion without an actual completed `research_doctor` result, injects one bounded correction, then fails explicitly instead of looping or trusting assistant text.
+- Permission is rechecked at every pre-step and terminal stop. A stale SAFE certificate can no longer authorize prose completion after the UI changes to `Workspace Write`; the live adversarial rerun failed before an additional model response.
+- Local model evidence is deliberately mixed: `qwen3:14b` obtained a full SAFE certificate, but failed the requested project review by inventing a `project_root` Rust layout; `deepseek-r1:14b` emitted unsupported prose and never called doctor. Runtime conformance improved; useful outcome value remains **NOT PROVEN**.
+- Verification used only local Ollama. No DeepSeek remote API, paid model, live Goal Governor E1, second adapter, or historical Phase A runner was used.
+
+Release boundary: **Researcher DSH Web smoke: PASS / Goal Governor live E1: NOT RUN / outcome value and multi-client portability: NOT PROVEN**.
+
 ## 0.8.0-alpha.4 (2026-08-24) — Fail-Closed Model Cost Admission
 
 - E1 protocol is now frozen as v1.1. Protocol v1 is preserved by exact alpha.3 commit/blob identity and SHA-256, and is explicitly superseded with `0` live runs; no old outcome is rewritten.

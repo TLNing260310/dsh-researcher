@@ -2,8 +2,9 @@
 const test = require('node:test')
 const assert = require('node:assert')
 const path = require('node:path')
-const { __test } = require('../researcher/plugins/tool-restrict/index.js')
-const { envVerdict, readOnlyDenial, stubDefinition, decideGuard, readPathVerdict, DOCTOR_GATE_DENIAL, READ_ROOT_DENIAL, recordDoctorVerdict, doctorCapabilityOf, revokeDoctorCapability } = __test
+const toolRestrict = require('../researcher/plugins/tool-restrict/index.js')
+const { __test } = toolRestrict
+const { envVerdict, readOnlyDenial, stubDefinition, decideGuard, readPathVerdict, terminalGateDecision, makeTerminalGateMessage, isResearcherPreset, DOCTOR_GATE_DENIAL, READ_ROOT_DENIAL, TERMINAL_GATE_FAILURE, recordDoctorVerdict, doctorCapabilityOf, doctorVerdictOf, revokeDoctorCapability } = __test
 
 test('envVerdict: read-only + never is the only accepted environment', () => {
   assert.equal(envVerdict('read-only', 'never'), undefined)
@@ -86,9 +87,111 @@ test('doctor capability exists only for an actual SAFE verdict', () => {
   const agent = {}
   recordDoctorVerdict(agent, 'DEGRADED')
   assert.equal(doctorCapabilityOf(agent), undefined)
+  assert.equal(doctorVerdictOf(agent).overall, 'DEGRADED')
   recordDoctorVerdict(agent, 'SAFE')
   assert.equal(doctorCapabilityOf(agent).overall, 'SAFE')
+  assert.equal(doctorVerdictOf(agent).overall, 'SAFE')
   revokeDoctorCapability(agent)
+  assert.equal(doctorCapabilityOf(agent), undefined)
+  assert.equal(doctorVerdictOf(agent), undefined)
+})
+
+test('terminal doctor gate retries once, then rejects an uncertified completion', () => {
+  const first = terminalGateDecision(undefined, 0)
+  assert.deepEqual(first, { kind: 'retry', retries: 1 })
+  const message = makeTerminalGateMessage()
+  assert.equal(message.role, 'user')
+  assert.equal(message.source.kind, 'plugin')
+  assert.equal(message.source.form, 'notice')
+  assert.match(message.content[0].text, /previous assistant text was rejected.*research_doctor/s)
+  const second = terminalGateDecision(undefined, first.retries)
+  assert.equal(second.kind, 'reject')
+  assert.equal(second.error, TERMINAL_GATE_FAILURE)
+})
+
+test('terminal doctor gate accepts every completed certificate verdict but only SAFE unlocks tools', () => {
+  for (const overall of ['SAFE', 'DEGRADED', 'UNSAFE']) {
+    const agent = {}
+    recordDoctorVerdict(agent, overall)
+    assert.deepEqual(terminalGateDecision(doctorVerdictOf(agent), 1), { kind: 'accept' })
+    assert.equal(doctorCapabilityOf(agent) !== undefined, overall === 'SAFE')
+  }
+})
+
+test('only researcher-family preset selections trigger post-creation attachment', () => {
+  for (const id of ['researcher', 'researcher-quick', 'researcher-deep']) assert.equal(isResearcherPreset(id), true)
+  for (const id of ['standard', 'governed', undefined, '']) assert.equal(isResearcherPreset(id), false)
+})
+
+const makePluginHarness = () => {
+  const handlers = new Map()
+  const state = { mode: 'read-only', policy: 'ask' }
+  const definitions = new Map()
+  const agent = {
+    session: {},
+    inject() {},
+    ctx: {
+      tools: {
+        register(definition) {
+          definitions.set(definition.name, definition)
+          return () => definitions.delete(definition.name)
+        },
+        get(name) { return definitions.get(name) },
+      },
+      get(name) {
+        if (name !== 'systemPrompt') return undefined
+        return { section() { return () => {} } }
+      },
+    },
+  }
+  const ctx = {
+    tools: {
+      restrict() {},
+      guard() {},
+    },
+    agents: { get() { return agent } },
+    sandboxPolicy: {
+      overrideOf() { return state.mode },
+      resolve() { return { mode: state.mode, workspaceRoot: process.cwd() } },
+      setSandboxMode(_session, mode) { state.mode = mode },
+    },
+    approval: {
+      overrideOf() { return state.policy },
+      setPolicy(_agent, policy) { state.policy = policy },
+    },
+    on(name, handler) { handlers.set(name, handler) },
+  }
+  toolRestrict.apply(ctx, { mode: 'strict' })
+  return { agent, handlers, state, definitions }
+}
+
+test('Web pre-step attaches stubs, tightens approval, and rechecks later sandbox drift', () => {
+  const { agent, handlers, state, definitions } = makePluginHarness()
+  let continued = 0
+  handlers.get('agent/pre-step')({ agent }, () => { continued++ })
+  assert.equal(state.policy, 'never')
+  assert.match(definitions.get('write').description, /DISABLED/)
+  assert.match(definitions.get('edit').description, /DISABLED/)
+  assert.equal(continued, 1)
+
+  state.mode = 'workspace-write'
+  assert.throws(
+    () => handlers.get('agent/pre-step')({ agent }, () => { continued++ }),
+    /sandbox is "workspace-write".*requires "read-only"/,
+  )
+  assert.equal(continued, 1)
+})
+
+test('terminal prose rechecks permission and revokes a stale SAFE doctor verdict', () => {
+  const { agent, handlers, state } = makePluginHarness()
+  handlers.get('agent/pre-step')({ agent }, () => {})
+  recordDoctorVerdict(agent, 'SAFE')
+  state.mode = 'workspace-write'
+  assert.throws(
+    () => handlers.get('agent/turn-stopping')({ agent }),
+    /sandbox is "workspace-write".*requires "read-only"/,
+  )
+  assert.equal(doctorVerdictOf(agent), undefined)
   assert.equal(doctorCapabilityOf(agent), undefined)
 })
 

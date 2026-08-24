@@ -341,7 +341,7 @@ const liveStateOf = (agent) => agentStates.get(agent)
 
 module.exports = {
   name: 'research-state',
-  inject: ['tools'],
+  inject: ['tools', 'agents'],
   apply(ctx) {
     const definition = {
       name: 'research_checkpoint',
@@ -427,8 +427,7 @@ module.exports = {
     // Session-log replay: rebuild each agent's state from its own logged
     // research_checkpoint calls (durable tool/call events; arguments are the
     // model's raw JSON strings). Same reducer as live execution.
-    ctx.on('agent/created', (payload) => {
-      const agent = payload && payload.agent
+    const hydrate = (agent) => {
       if (!agent || !agent.session) return
       try {
         const events = Array.isArray(agent.session.events) ? agent.session.events : []
@@ -437,6 +436,27 @@ module.exports = {
         // Replay is best-effort at the event-array level: the model can always
         // re-import or re-derive.
       }
+    }
+
+    ctx.on('agent/created', (payload) => {
+      hydrate(payload && payload.agent)
+    })
+
+    // DSH Web may compose this preset after the Agent already exists. Rebuild
+    // the same live projection at the durable preset-selection boundary.
+    ctx.on('agent-preset/selected', (sessionId, preset) => {
+      const agent = ctx.agents.get(sessionId)
+      if (!agent) return
+      if (['researcher', 'researcher-quick', 'researcher-deep'].includes(preset)) hydrate(agent)
+      else agentStates.delete(agent)
+    })
+
+    // Idempotent fallback for Web recompose: the scoped pre-step always
+    // carries the live Agent even when the selection notification could not
+    // resolve it from the registry.
+    ctx.on('agent/pre-step', ({ agent }, next) => {
+      if (agent && !agentStates.has(agent)) hydrate(agent)
+      return next()
     })
   },
   // Test hooks: the reducer is nearly pure; unit tests exercise these.

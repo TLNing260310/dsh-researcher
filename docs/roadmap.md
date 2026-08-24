@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.4` 已把 canonical promotion、终态复算、证据包签名、发布产物校验以及北京时间模型成本准入机械化；由于本版按范围未重跑 DSH，下一步是先完成当前 candidate 的 DSH-dependent Gate 0 checks，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和历史实验见 [CHANGELOG](../CHANGELOG.md) 与 [Validation Status](./validation-status.md)。任何失败都保留为证据，不以增加功能绕过失败门。
+> 当前阶段（2026-08）：`0.8.0-alpha.5` 已完成 Researcher 的 DSH Web 本地 smoke，并修复实测发现的重组、无 doctor 终止与权限漂移漏洞；该 smoke 不是 Goal Governor E1。下一步仍是完成当前 candidate 的 DSH-dependent Gate 0，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和失败证据见 [CHANGELOG](../CHANGELOG.md)、[Validation Status](./validation-status.md) 与 [DSH Web local smoke](./evidence/dsh-web-local-smoke-2026-08-24.md)。
 
 ## 路线纪律
 
@@ -33,7 +33,7 @@ productization decision
 
 **目的**：确认 canonical state、projection、Goal Contracts、Verifier Registry、adapter capability 与实验冻结产物完整。
 
-**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。alpha.4 还需在不发起模型请求的 DSH-dependent Gate 0 中确认：外层冻结 settings 文件且 `watch=false`、锁定值进入 `DEEPSEEK_BASE_URL`，rc.7 公共 DeepSeek resolver 对 remote/local 都得到与 run lock 相同的 resolved base URL。此前没有运行 DSH，local route 仍未被证明可运行。
+**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。alpha.5 的 Researcher Web smoke 不覆盖 E1 runner route，因此仍需确认：外层冻结 settings 文件且 `watch=false`、锁定值进入 `DEEPSEEK_BASE_URL`，rc.7 公共 DeepSeek resolver 对 remote/local 都得到与 run lock 相同的 resolved base URL。
 
 ### E1 — Live DSH conformance
 
