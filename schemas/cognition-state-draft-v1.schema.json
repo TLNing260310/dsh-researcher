@@ -1,14 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "project-cognition/state/v1",
-  "$comment": "Schema for sealed canonical state. Editable candidates use project-cognition/state-draft/v1 until sealed by the CLI.",
+  "$id": "project-cognition/state-draft/v1",
+  "$comment": "Schema for an editable Project Cognition candidate. Sealing changes the discriminator to project-cognition/state/v1 and adds state_hash.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "revision", "state_hash", "mission", "architecture", "value_claims", "invariants", "decisions", "evidence", "known_unknowns", "next_proofs"],
+  "required": ["schema", "revision", "mission", "architecture", "value_claims", "invariants", "decisions", "evidence", "known_unknowns", "next_proofs"],
   "properties": {
-    "schema": { "const": "project-cognition/state/v1" },
+    "schema": { "const": "project-cognition/state-draft/v1" },
     "revision": { "type": "integer", "minimum": 1 },
-    "state_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "mission": {
       "type": "object",
       "additionalProperties": false,

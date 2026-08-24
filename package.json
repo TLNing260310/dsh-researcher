@@ -1,6 +1,6 @@
 {
   "name": "dsh-researcher",
-  "version": "0.8.0-alpha.2",
+  "version": "0.8.0-alpha.3",
   "description": "Evidence-backed project cognition and host-governed definitions of done for DeepSeek Harness.",
   "author": "TLNing260310",
   "license": "MIT",
@@ -18,6 +18,7 @@
     "examples/",
     "docs/",
     "fixtures/",
+    "scripts/",
     "tests/",
     "evaluation/selection_result.json",
     "evaluation/random_seed.txt",
@@ -29,7 +30,8 @@
     "evaluation/results/experiment-cplus/limitations.md",
     "evaluation/results/experiment-cplus/score-report.json",
     "evaluation/goal-governor-e1/",
-    ".project-cognition/",
+    ".project-cognition/state.json",
+    ".project-cognition/verifiers.json",
     "PROJECT_COGNITION.md",
     "README.md",
     "CHANGELOG.md",
@@ -41,10 +43,12 @@
     "test": "node --test tests/*.test.js",
     "doctor": "node bin/project-cognition.js doctor . && node bin/project-cognition.js adapter doctor governed/adapter-manifest.json",
     "eval:e1:capture-tools": "node evaluation/goal-governor-e1/capture-visible-tools.js",
+    "eval:e1:attest": "node evaluation/goal-governor-e1/attest-e1.js",
     "eval:e1:lock": "node evaluation/goal-governor-e1/lock.js",
     "eval:e1:preflight": "node evaluation/goal-governor-e1/preflight.js",
     "eval:e1:score": "node evaluation/goal-governor-e1/score-e1.js",
     "eval:e1:live": "node evaluation/goal-governor-e1/run-e1.js --mode live",
+    "release:artifacts": "node scripts/build-release-artifacts.js",
     "check": "npm test && npm run doctor && npm run eval:e1:preflight"
   },
   "keywords": [

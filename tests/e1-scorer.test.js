@@ -2,16 +2,18 @@
 
 const test = require('node:test')
 const assert = require('node:assert')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 
-const { CASE_PROTOCOL } = require('../evaluation/goal-governor-e1/score-e1.js')
+const { CASE_PROTOCOL, deriveCausalStatus, scoreBundle } = require('../evaluation/goal-governor-e1/score-e1.js')
 const { createStage1Seal } = require('../evaluation/goal-governor-e1/stage1-seal.js')
 const { beginAttempt, finishAttempt } = require('../evaluation/goal-governor-e1/attempt-ledger.js')
 const { sha256File } = require('../evaluation/goal-governor-e1/lib.js')
-const { trustedBundle, cloneBundle, scoreTrustedBundle } = require('./helpers/e1-fixtures.js')
+const { createAttestation } = require('../evaluation/goal-governor-e1/bundle-integrity.js')
+const { trustedBundle, cloneBundle, scoreTrustedBundle, snapshotTreeHash } = require('./helpers/e1-fixtures.js')
 
 test('synthetic E1 scorer passes six trajectory shapes without claiming live conformance', () => {
   const bundle = trustedBundle()
@@ -67,9 +69,40 @@ test('manifest omission makes the E1 package INVALID rather than a partial pass'
   assert.ok(report.causal_validity.reasons.some((reason) => /exactly 6|case IDs/.test(reason)))
 })
 
+test('causal status is verdict-aware and never labels complete FAIL evidence as trusted-host PASS', () => {
+  assert.equal(deriveCausalStatus({ valid: true, verdict: 'FAIL', synthetic: false, signatureVerified: false }), 'FAIL_UNDER_TRUSTED_HOST')
+  assert.equal(deriveCausalStatus({ valid: true, verdict: 'PASS', synthetic: false, signatureVerified: false }), 'PASS_UNDER_TRUSTED_HOST')
+  assert.equal(deriveCausalStatus({ valid: true, verdict: 'PASS', synthetic: false, signatureVerified: true }), 'PASS_UNDER_TRUSTED_HOST_WITH_VERIFIED_BUNDLE_SIGNATURE')
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['already-satisfied']
+  const task = run.worktree.after.find((record) => record.path === 'src/task.js')
+  task.sha256 = 'e'.repeat(64)
+  run.worktree.after_tree_sha256 = snapshotTreeHash(run.worktree.after)
+  run.host_verifier.workspace.before_tree_sha256 = run.worktree.after_tree_sha256
+  run.host_verifier.workspace.after_tree_sha256 = run.worktree.after_tree_sha256
+  const report = scoreTrustedBundle(bundle)
+  assert.equal(report.verdict, 'FAIL')
+  assert.equal(report.causal_validity.status, 'SYNTHETIC_FAIL')
+  assert.equal(report.causal_validity.valid_for_protocol_conformance_under_trusted_host, false)
+  assert.ok(report.causal_validity.reasons.some((reason) => /already-satisfied/.test(reason)))
+})
+
+test('the exported pure scorer cannot upgrade a caller-asserted signature status', () => {
+  const bundle = trustedBundle()
+  const report = scoreBundle(bundle.manifest, new Map(Object.entries(bundle.artifacts)), {
+    synthetic: true,
+    manifest_sha256: bundle.manifest_sha256,
+    bundle_signature: { status: 'VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT' },
+  })
+  assert.equal(report.verdict, 'PASS')
+  assert.equal(report.causal_validity.status, 'SYNTHETIC_ONLY')
+  assert.equal(report.bundle_signature.status, 'INVALID')
+})
+
 test('public scorer CLI accepts --run, writes bundle score.json, honors --out, and ignores an existing score as input', () => {
   const bundle = trustedBundle()
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-e1-score-cli-'))
+  const trustRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-e1-score-trust-'))
   try {
     const manifestFile = path.join(root, 'manifest.json')
     const manifestText = JSON.stringify(bundle.manifest, null, 2) + '\n'
@@ -308,16 +341,66 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
     assert.equal(report.causal_validity.valid_for_protocol_conformance_under_trusted_host, false)
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, 'score.json'), 'utf8')), report)
 
+    const manifestAsRun = spawnSync(process.execPath, [scoreFile, '--run', manifestFile, '--synthetic'], { encoding: 'utf8', windowsHide: true })
+    assert.equal(manifestAsRun.status, 2)
+    assert.match(manifestAsRun.stdout, /self-contained bundle directory/)
+
+    const splitRoot = path.join(trustRoot, 'alternate-artifacts')
+    fs.mkdirSync(splitRoot)
+    fs.writeFileSync(path.join(splitRoot, 'manifest.json'), '{"different":true}\n')
+    const splitBundle = spawnSync(process.execPath, [scoreFile, '--run', root, '--artifacts', splitRoot, '--synthetic'], { encoding: 'utf8', windowsHide: true })
+    assert.equal(splitBundle.status, 2)
+    assert.match(splitBundle.stdout, /unsupported.*self-contained bundle directory/)
+
+    const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519')
+    const privateKeyFile = path.join(trustRoot, 'private.pem')
+    const publicKeyFile = path.join(trustRoot, 'public.pem')
+    const attestationFile = path.join(trustRoot, 'attestation.json')
+    fs.writeFileSync(privateKeyFile, privateKey.export({ type: 'pkcs8', format: 'pem' }))
+    fs.writeFileSync(publicKeyFile, publicKey.export({ type: 'spki', format: 'pem' }))
+    const attestation = createAttestation({ bundleRoot: root, privateKeyFile })
+    fs.writeFileSync(attestationFile, JSON.stringify(attestation, null, 2) + '\n')
+    const signed = spawnSync(process.execPath, [scoreFile, '--run', root, '--synthetic', '--attestation', attestationFile, '--trusted-public-key', publicKeyFile], { encoding: 'utf8', windowsHide: true })
+    assert.equal(signed.status, 0, String(signed.stderr || signed.stdout))
+    const signedReport = JSON.parse(signed.stdout)
+    assert.equal(signedReport.bundle_signature.status, 'VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT')
+    assert.equal(signedReport.input_hash, attestation.commitment.commitment_sha256)
+    assert.equal(signedReport.input_hash_kind, 'RAW_BUNDLE_COMMITMENT_SHA256')
+    assert.equal(signedReport.causal_validity.status, 'SYNTHETIC_ONLY')
+    assert.equal(signedReport.causal_validity.valid_for_live_conformance_claim, false)
+
+    const wrongPublicKeyFile = path.join(trustRoot, 'wrong-public.pem')
+    const wrongPublicKey = crypto.generateKeyPairSync('ed25519').publicKey
+    fs.writeFileSync(wrongPublicKeyFile, wrongPublicKey.export({ type: 'spki', format: 'pem' }))
+    const wrongTrustRoot = spawnSync(process.execPath, [scoreFile, '--run', root, '--synthetic', '--attestation', attestationFile, '--trusted-public-key', wrongPublicKeyFile], { encoding: 'utf8', windowsHide: true })
+    assert.equal(wrongTrustRoot.status, 2, String(wrongTrustRoot.stderr || wrongTrustRoot.stdout))
+    const wrongTrustReport = JSON.parse(wrongTrustRoot.stdout)
+    assert.equal(wrongTrustReport.verdict, 'INVALID')
+    assert.equal(wrongTrustReport.bundle_signature.status, 'INVALID')
+    assert.equal(wrongTrustReport.causal_validity.valid_for_live_conformance_claim, false)
+    assert.ok(wrongTrustReport.causal_validity.reasons.some((reason) => /fingerprint differs/.test(reason)))
+
+    const forbiddenSignedOutput = spawnSync(process.execPath, [scoreFile, '--run', root, '--synthetic', '--attestation', attestationFile, '--trusted-public-key', publicKeyFile, '--out', path.join(root, 'signed-extra.json')], { encoding: 'utf8', windowsHide: true })
+    assert.equal(forbiddenSignedOutput.status, 2)
+    assert.match(forbiddenSignedOutput.stdout, /scored bundle may only receive/)
+
     fs.writeFileSync(path.join(root, 'score.json'), JSON.stringify({ verdict: 'TRUST_ME' }) + '\n')
-    const explicit = path.join(root, 'explicit-score.json')
+    const explicit = path.join(trustRoot, 'explicit-score.json')
     const rerun = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', explicit, '--synthetic'], { encoding: 'utf8', windowsHide: true })
     assert.equal(rerun.status, 0, String(rerun.stderr || rerun.stdout))
     assert.equal(JSON.parse(rerun.stdout).verdict, 'PASS')
     assert.equal(JSON.parse(fs.readFileSync(explicit, 'utf8')).verdict, 'PASS')
 
+    const scoreAlias = path.join(trustRoot, 'explicit-score-alias.json')
+    fs.linkSync(explicit, scoreAlias)
+    const hardLinkedOutput = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', explicit, '--synthetic'], { encoding: 'utf8', windowsHide: true })
+    assert.equal(hardLinkedOutput.status, 2)
+    assert.match(hardLinkedOutput.stdout, /hard-linked score output/)
+    fs.unlinkSync(scoreAlias)
+
     const protectedWrite = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', manifestFile], { encoding: 'utf8', windowsHide: true })
     assert.equal(protectedWrite.status, 2)
-    assert.match(protectedWrite.stdout, /refusing to overwrite an existing non-score evidence file/)
+    assert.match(protectedWrite.stdout, /scored bundle may only receive|refusing to overwrite an existing non-score evidence file/)
     assert.equal(fs.readFileSync(manifestFile, 'utf8'), manifestText)
 
     const ledgerText = fs.readFileSync(ledgerFile, 'utf8')
@@ -326,7 +409,7 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
     damagedReceipt.receipt_hash = '0'.repeat(64)
     ledgerLines[0] = JSON.stringify(damagedReceipt)
     fs.writeFileSync(ledgerFile, ledgerLines.join('\n') + '\n')
-    const ledgerRejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(root, 'ledger-rejected-score.json')], { encoding: 'utf8', windowsHide: true })
+    const ledgerRejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(trustRoot, 'ledger-rejected-score.json')], { encoding: 'utf8', windowsHide: true })
     assert.equal(ledgerRejected.status, 2, String(ledgerRejected.stderr || ledgerRejected.stdout))
     assert.ok(JSON.parse(ledgerRejected.stdout).causal_validity.reasons.some((reason) => /attempt receipt (?:self-hash|hash chain)/.test(reason)))
     fs.writeFileSync(ledgerFile, ledgerText)
@@ -334,14 +417,14 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
     const stage1EventsFile = path.join(root, 'resume-replay', 'session.stage1.events.json')
     const stage1EventsText = fs.readFileSync(stage1EventsFile, 'utf8')
     fs.writeFileSync(stage1EventsFile, '[]\n')
-    const stage1Rejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(root, 'stage1-rejected-score.json')], { encoding: 'utf8', windowsHide: true })
+    const stage1Rejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(trustRoot, 'stage1-rejected-score.json')], { encoding: 'utf8', windowsHide: true })
     assert.equal(stage1Rejected.status, 2, String(stage1Rejected.stderr || stage1Rejected.stdout))
     const stage1Invalid = JSON.parse(stage1Rejected.stdout).runs.find((run) => run.id === 'resume-replay').invalid_reasons
     assert.ok(stage1Invalid.some((reason) => /stage1 sealed hash differs/.test(reason)))
     fs.writeFileSync(stage1EventsFile, stage1EventsText)
 
     fs.writeFileSync(path.join(root, 'simple-done', 'session.events.json'), '[]\n')
-    const rejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(root, 'rejected-score.json')], { encoding: 'utf8', windowsHide: true })
+    const rejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(trustRoot, 'rejected-score.json')], { encoding: 'utf8', windowsHide: true })
     assert.equal(rejected.status, 2, String(rejected.stderr || rejected.stdout))
     const invalid = JSON.parse(rejected.stdout)
     assert.equal(invalid.verdict, 'INVALID')
@@ -354,7 +437,7 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
       return JSON.stringify(record)
     }).join('\n') + '\n'
     fs.writeFileSync(path.join(root, 'simple-done', 'session.jsonl'), tamperedRaw)
-    const rawRejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(root, 'raw-rejected-score.json')], { encoding: 'utf8', windowsHide: true })
+    const rawRejected = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(trustRoot, 'raw-rejected-score.json')], { encoding: 'utf8', windowsHide: true })
     assert.equal(rawRejected.status, 2, String(rawRejected.stderr || rawRejected.stdout))
     const rawInvalid = JSON.parse(rawRejected.stdout).runs.find((run) => run.id === 'simple-done').invalid_reasons
     assert.ok(rawInvalid.some((reason) => /raw full events differ/.test(reason)))
@@ -363,7 +446,7 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
     fs.writeFileSync(path.join(root, 'simple-done', 'session.jsonl'), '')
     fs.appendFileSync(path.join(root, 'simple-done', 'run-lock.json'), ' ')
     fs.rmSync(path.join(root, 'simple-done', 'post', 'diff.patch'))
-    const missingRaw = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(root, 'missing-raw-score.json')], { encoding: 'utf8', windowsHide: true })
+    const missingRaw = spawnSync(process.execPath, [scoreFile, '--run', root, '--out', path.join(trustRoot, 'missing-raw-score.json')], { encoding: 'utf8', windowsHide: true })
     assert.equal(missingRaw.status, 2, String(missingRaw.stderr || missingRaw.stdout))
     const missingRawReport = JSON.parse(missingRaw.stdout)
     const simpleInvalid = missingRawReport.runs.find((run) => run.id === 'simple-done').invalid_reasons
@@ -372,5 +455,6 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
     assert.ok(simpleInvalid.some((reason) => /post\/diff\.patch audit sidecar is missing/.test(reason)))
   } finally {
     fs.rmSync(root, { recursive: true, force: true })
+    fs.rmSync(trustRoot, { recursive: true, force: true })
   }
 })

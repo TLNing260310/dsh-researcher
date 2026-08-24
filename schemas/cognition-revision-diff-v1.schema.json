@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "project-cognition/revision-diff/v1",
+  "title": "Project Cognition owner-review diff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "base", "candidate", "valid_next_revision", "changes", "change_count", "risks", "requires_owner_review", "installable"],
+  "properties": {
+    "schema": { "const": "project-cognition/revision-diff/v1" },
+    "base": { "$ref": "#/$defs/sealedIdentity" },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "state_hash", "sealed"],
+      "properties": {
+        "revision": { "type": "integer", "minimum": 1 },
+        "state_hash": { "$ref": "#/$defs/sha256" },
+        "sealed": { "type": "boolean" }
+      }
+    },
+    "valid_next_revision": { "type": "boolean" },
+    "changes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mission", "architecture", "value_claims", "invariants", "decisions", "evidence", "known_unknowns", "next_proofs"],
+      "properties": {
+        "mission": { "$ref": "#/$defs/objectChange" },
+        "architecture": { "$ref": "#/$defs/objectChange" },
+        "value_claims": { "$ref": "#/$defs/idCollectionChange" },
+        "invariants": { "$ref": "#/$defs/idCollectionChange" },
+        "decisions": { "$ref": "#/$defs/idCollectionChange" },
+        "evidence": { "$ref": "#/$defs/idCollectionChange" },
+        "known_unknowns": { "$ref": "#/$defs/idCollectionChange" },
+        "next_proofs": { "$ref": "#/$defs/idCollectionChange" }
+      }
+    },
+    "change_count": { "type": "integer", "minimum": 0 },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "subject", "detail"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "severity": { "enum": ["medium", "high", "critical"] },
+          "subject": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "requires_owner_review": { "const": true },
+    "installable": { "type": "boolean" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "sealedIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["revision", "state_hash"],
+      "properties": {
+        "revision": { "type": "integer", "minimum": 1 },
+        "state_hash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "objectChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["changed", "fields"],
+      "properties": {
+        "changed": { "type": "boolean" },
+        "fields": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    },
+    "idCollectionChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "removed", "changed", "reordered"],
+      "properties": {
+        "added": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "removed": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+        "changed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "fields"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "fields": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+            }
+          }
+        },
+        "reordered": { "type": "boolean" }
+      }
+    }
+  }
+}

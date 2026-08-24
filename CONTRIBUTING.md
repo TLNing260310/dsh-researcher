@@ -24,6 +24,15 @@ The E1 preflight is offline: it validates the protocol-defined frozen manifest, 
 
 The current suite covers portable reducers, CLI behavior, DSH event replay, verifier evidence, Researcher restrictions and host-owned completion. A pull request that changes a public contract must add or update a failure-case test.
 
+Release candidates use the offline artifact gate from an empty directory outside the repository:
+
+```bash
+git rev-parse HEAD
+npm run release:artifacts -- --out <external-empty-directory> --expected-version <package.json-version> --expected-revision <full-git-object-id-from-above> --require-clean
+```
+
+The builder samples Git revision and worktree cleanliness before and after `npm pack`, fails if either changes, and records both in `package-manifest.json`. Build only after the final commit from a clean worktree. Publish the generated tarball together with `SHA256SUMS` and `package-manifest.json`; do not rebuild only one asset after review because the three files are one release evidence set.
+
 ## Truth discipline
 
 Keep these distinctions explicit in code, docs and release notes:
@@ -32,14 +41,17 @@ Keep these distinctions explicit in code, docs and release notes:
 - **tested in a fixture** is not the same as **observed in a live model session**;
 - **observed** is not the same as **causally shown to improve maintenance**;
 - a technical mechanism does not establish user adoption;
-- failed and invalid experiments remain part of the record.
+- failed and invalid experiments remain part of the record;
+- Goal Contract v1 boundary strings are semantic constraints, not a generic runtime filesystem allowlist; only the frozen E1 `allowed_changes` path contract is mechanically scored today;
+- a verified bundle signature proves that the private key corresponding to the supplied public key signed those bytes; it does not identify the key holder, prove that a client ran, or make an outcome claim causal.
 
 Do not silently weaken these ratified invariants:
 
-1. Certified Researcher remains read-only.
-2. Canonical JSON is the Project Cognition truth; Markdown is generated.
-3. A model cannot approve, weaken or complete its own Goal Contract.
-4. Invalid experiments cannot be promoted into positive product claims.
+1. **I1:** Certified Researcher remains read-only.
+2. **I2:** Canonical JSON is the Project Cognition truth; Markdown is generated.
+3. **I3:** A model cannot approve, weaken or complete its own Goal Contract.
+4. **I4:** Invalid experiments cannot be promoted into positive product claims.
+5. **I5:** A recorded goal terminal decision must equal the host reducer result derived from its preceding trusted evidence; terminal prose or labels cannot override the reducer.
 
 Changing an invariant requires an explicit owner-approved cognition revision, a migration note and new boundary tests.
 

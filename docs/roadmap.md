@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.2` 先统一真相与证明治理，再验证真实价值。路线只记录尚未完成的 gate；已发布能力和历史实验见 [CHANGELOG](../CHANGELOG.md) 与 [Validation Status](./validation-status.md)。任何失败都保留为证据，不以增加功能绕过失败门。
+> 当前阶段（2026-08）：`0.8.0-alpha.3` 已把 canonical promotion、终态复算、证据包签名和发布产物校验机械化；由于本版按范围未重跑 DSH，下一步是先完成当前 candidate 的 DSH-dependent Gate 0 checks，再按冻结协议运行真实 E1，而不是继续增加功能。路线只记录尚未完成的 gate；已发布能力和历史实验见 [CHANGELOG](../CHANGELOG.md) 与 [Validation Status](./validation-status.md)。任何失败都保留为证据，不以增加功能绕过失败门。
 
 ## 路线纪律
 

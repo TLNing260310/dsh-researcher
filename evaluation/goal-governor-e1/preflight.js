@@ -5,6 +5,7 @@
 // materializes deterministic fixtures in the OS temp directory, and runs the
 // fixture's local Node verifier. It never imports or starts DSH/model clients.
 const assert = require('node:assert/strict')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
@@ -30,6 +31,13 @@ const { createStage1Seal, validateStage1Seal, workspaceSnapshot: stageWorkspaceS
 const { directoryInventory, sanitizeNodeEnvironment, NODE_ENV_DENYLIST } = require('./runtime-provenance.js')
 const { beginAttempt, finishAttempt, assertClosedLedger } = require('./attempt-ledger.js')
 const { EXACT_VISIBLE_TOOL_NAMES, INHERITED_VISIBLE_TOOL_NAMES, createVisibleToolContract, validateCaptureReport } = require('./visible-tool-contract.js')
+const {
+  ATTESTATION_SCHEMA,
+  BUNDLE_COMMITMENT_SCHEMA,
+  createAttestation,
+  createBundleCommitment,
+  verifyAttestation,
+} = require('./bundle-integrity.js')
 const { validateState } = require('../../lib/cognition-core/index.js')
 const { validateGoalContract } = require('../../lib/goal-core/index.js')
 const { validateRegistry } = require('../../lib/verifier-core/index.js')
@@ -46,11 +54,49 @@ const assertFile = (file, label) => assert.equal(fs.statSync(file).isFile(), tru
 const validateSchemas = () => {
   const manifestSchema = readJson(path.join(EVAL_ROOT, 'manifest.schema.json'))
   const lockSchema = readJson(path.join(EVAL_ROOT, 'run-lock.schema.json'))
+  const commitmentSchema = readJson(path.join(EVAL_ROOT, 'bundle-commitment.schema.json'))
+  const attestationSchema = readJson(path.join(EVAL_ROOT, 'attestation.schema.json'))
+  const scoreSchema = readJson(path.join(EVAL_ROOT, 'score-report.schema.json'))
   assert.equal(manifestSchema.properties.schema.const, MANIFEST_SCHEMA)
   assert.equal(lockSchema.properties.schema.const, RUN_LOCK_SCHEMA)
   assert.deepEqual(manifestSchema.properties.replay_semantics.properties.compare.const, [...REPLAY_COMPARE_FIELDS])
   for (const field of ['status', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'invalidity_rules', 'replay_semantics']) assert.ok(manifestSchema.required.includes(field), 'manifest schema must require ' + field)
   for (const field of ['host_runtime', 'dsh_home_policy', 'visible_tool_contract']) assert.ok(lockSchema.required.includes(field), 'run-lock schema must require ' + field)
+  assert.equal(commitmentSchema.properties.schema.const, BUNDLE_COMMITMENT_SCHEMA)
+  assert.deepEqual(commitmentSchema.properties.excluded_top_level_files.const, ['score.json'])
+  assert.equal(attestationSchema.properties.schema.const, ATTESTATION_SCHEMA)
+  assert.equal(attestationSchema.properties.algorithm.const, 'Ed25519')
+  assert.equal(scoreSchema.properties.schema.const, 'dsh-researcher/goal-governor-e1/score-report/v1')
+  for (const field of ['causal_validity', 'bundle_signature', 'input_hash', 'input_hash_kind']) assert.ok(scoreSchema.required.includes(field), 'score schema must require ' + field)
+}
+
+const validateBundleIntegrityHelpers = (tempRoot) => {
+  const bundle = path.join(tempRoot, 'integrity-bundle')
+  fs.mkdirSync(path.join(bundle, 'nested'), { recursive: true })
+  fs.writeFileSync(path.join(bundle, 'manifest.json'), '{}\n')
+  fs.writeFileSync(path.join(bundle, 'run-lock.json'), '{}\n')
+  fs.writeFileSync(path.join(bundle, 'attempt-ledger.jsonl'), '{}\n')
+  fs.writeFileSync(path.join(bundle, 'nested', 'raw.bin'), Buffer.from([0, 1, 2, 255]))
+  fs.writeFileSync(path.join(bundle, 'score.json'), '{"ignored":1}\n')
+  const first = createBundleCommitment(bundle)
+  fs.writeFileSync(path.join(bundle, 'score.json'), '{"ignored":2}\n')
+  assert.deepEqual(createBundleCommitment(bundle), first, 'only exact top-level score.json may be excluded')
+  fs.writeFileSync(path.join(bundle, 'attestation.json'), '{"included":true}\n')
+  assert.notEqual(createBundleCommitment(bundle).commitment_sha256, first.commitment_sha256, 'bundle-local attestation.json must be signed like any other input')
+  fs.rmSync(path.join(bundle, 'attestation.json'))
+
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('ed25519')
+  const privateFile = path.join(tempRoot, 'integrity-private.pem')
+  const publicFile = path.join(tempRoot, 'integrity-public.pem')
+  const attestationFile = path.join(tempRoot, 'integrity-attestation.json')
+  fs.writeFileSync(privateFile, privateKey.export({ type: 'pkcs8', format: 'pem' }))
+  fs.writeFileSync(publicFile, publicKey.export({ type: 'spki', format: 'pem' }))
+  writeJson(attestationFile, createAttestation({ bundleRoot: bundle, privateKeyFile: privateFile }))
+  const proof = verifyAttestation({ bundleRoot: bundle, attestationFile, trustedPublicKeyFile: publicFile })
+  assert.equal(proof.status, 'VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT')
+  assert.equal(proof.commitment_sha256, first.commitment_sha256)
+  fs.appendFileSync(path.join(bundle, 'nested', 'raw.bin'), Buffer.from([3]))
+  assert.throws(() => verifyAttestation({ bundleRoot: bundle, attestationFile, trustedPublicKeyFile: publicFile }), /differ from the signed commitment/)
 }
 
 const validateManifestMutationGuards = (manifest) => {
@@ -187,7 +233,7 @@ const validateFixture = (manifest, entry, first, second) => {
   const registryFile = path.join(first, '.project-cognition', 'verifiers.json')
   for (const file of [contractFile, stateFile, registryFile, path.join(first, 'PROJECT_COGNITION.md'), path.join(first, 'fixture-case.json'), path.join(first, 'verify.mjs')]) assertFile(file, entry.id)
 
-  const state = validateState(readJson(stateFile))
+  const state = validateState(readJson(stateFile), { requireHash: true })
   const registry = validateRegistry(readJson(registryFile))
   const contract = validateGoalContract(readJson(contractFile), { allowDraft: false })
   assert.equal(contract.status, 'approved')
@@ -258,6 +304,7 @@ const runPreflight = () => {
   const results = []
   try {
     validateRuntimeAndRetentionHelpers(tempRoot)
+    validateBundleIntegrityHelpers(tempRoot)
     for (const entry of manifest.cases) {
       const first = path.join(tempRoot, entry.id + '-a')
       const second = path.join(tempRoot, entry.id + '-b')

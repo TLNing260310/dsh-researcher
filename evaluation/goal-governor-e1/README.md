@@ -103,12 +103,39 @@ CI/storage retention and cannot be detected by a self-contained ledger.
 The scorer treats the experiment operator and the model-inaccessible external
 bundle root as trusted. It independently rejects assistant prose, fabricated or
 ambiguous in-session call/result evidence, frozen-input drift, replay drift,
-worktree violations, and incomplete host receipts. It does not provide an
-external signature or attestation capable of distinguishing a real run from an
-entirely fabricated but self-consistent bundle produced by a malicious host.
-Accordingly, a valid non-synthetic package is `PASS_UNDER_TRUSTED_HOST`, not an
-unconditional causal claim. Formal E1 evidence must also be retained by
-independent CI or immutable storage.
+worktree violations, and incomplete host receipts. A valid failed trajectory is
+`FAIL_UNDER_TRUSTED_HOST`; only a conforming package can be
+`PASS_UNDER_TRUSTED_HOST`.
+
+alpha.3 also computes a deterministic byte-level bundle commitment. It inventories
+portable relative paths, sizes, and SHA-256 digests for every regular file while
+excluding only the scorer-generated top-level `score.json`; symbolic links are
+refused. An optional Ed25519 signature can authenticate that commitment against a
+public key supplied from outside the bundle:
+
+```text
+npm run eval:e1:attest -- create --run <external-bundle-dir> \
+  --private-key <external-private.pem> --out <external-attestation.json>
+npm run eval:e1:attest -- verify --run <external-bundle-dir> \
+  --attestation <external-attestation.json> \
+  --trusted-public-key <external-public.pem>
+npm run eval:e1:score -- --run <external-bundle-dir> \
+  --attestation <external-attestation.json> \
+  --trusted-public-key <external-public.pem>
+```
+
+The private key, public trust root, and attestation must remain outside the bundle.
+A verified signature proves only that the supplied key signed those exact bytes
+and that they have not changed since. It cannot distinguish an honest run from a
+self-consistent fabrication signed by a dishonest producer; it does not prove DSH
+execution, human identity, or outcome causality. Therefore
+`valid_for_live_conformance_claim` remains false because the report alone cannot
+make an unconditional live-origin claim against a dishonest bundle producer.
+For a complete, non-synthetic PASS, the separate
+`valid_for_protocol_conformance_under_trusted_host` field becomes true: that is
+the protocol's conditional E1 result under its declared trusted-host and external
+bundle-root assumptions, not independent proof of provenance. Formal E1 evidence
+must also be retained by independent CI or immutable storage.
 
 For `resume-replay`, stage one additionally seals its token, raw and augmented
 session, immutable inventory, stage artifact, and complete post snapshot

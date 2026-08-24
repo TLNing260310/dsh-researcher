@@ -20,6 +20,24 @@ const events = (args = { command: 'npm test' }, output = { exit_code: 0 }) => [
   { seq: 2, type: 'tool/result', data: { message: { callId: 'call-1', content: [{ type: 'text', text: JSON.stringify(output) }] } } },
 ]
 
+const rc7Result = (output = { exit_code: 0 }, options = {}) => ({
+  seq: 2,
+  type: 'tool/result',
+  data: {
+    message: {
+      source: { kind: 'tool', callId: options.sourceCallId || 'call-1' },
+      content: [{
+        type: 'tool-result',
+        toolCallId: options.toolCallId || 'call-1',
+        content: [{ type: 'text', text: JSON.stringify(output) }],
+        isError: options.isError === true,
+      }],
+      role: 'user',
+      id: 'rc7-message-1',
+    },
+  },
+})
+
 test('registry hash freezes verifier definitions', () => {
   const value = registry()
   validateRegistry(value)
@@ -34,10 +52,50 @@ test('evidence must name an earlier matching invocation and satisfy its result p
   assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], events(), 1).result, 'unknown')
 })
 
+test('a genuine passing reference cannot mask a forged or invocation-drifted reference', () => {
+  const genuine = events()
+  assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1', 'forged-call'], genuine, 3).result, 'unknown')
+
+  const mixed = [
+    ...genuine,
+    { seq: 2.1, type: 'tool/call', data: { callId: 'drifted-call', name: 'pwsh', arguments: JSON.stringify({ command: 'echo fake' }) } },
+    { seq: 2.2, type: 'tool/result', data: { message: { callId: 'drifted-call', content: [{ type: 'text', text: JSON.stringify({ exit_code: 0 }) }] } } },
+  ]
+  const drifted = verifyEvidence(registry(), 'tests.core', ['call-1', 'drifted-call'], mixed, 3)
+  assert.equal(drifted.result, 'unknown')
+  assert.match(drifted.diagnostics.join('; '), /does not match the frozen verifier/)
+})
+
 test('runtime errors cannot become passing verifier evidence', () => {
   const value = events()
   value[1].data.error = { name: 'ToolError', code: 'FAILED' }
   assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'fail')
+})
+
+test('DSH rc.7 tool-result envelopes bind source and block call IDs and expose nested text', () => {
+  const value = [events()[0], rc7Result()]
+  assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'pass')
+  value[1] = rc7Result({ exit_code: 1 })
+  assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'fail')
+})
+
+test('DSH rc.7 nested isError fails even a tool_success policy', () => {
+  const successRegistry = sealRegistry({
+    schema: 'project-cognition/verifier-registry/v1', revision: 1, registry_hash: null,
+    entries: [{ id: 'tests.success', invocations: [{ tool_name: 'pwsh', arguments: { command: 'npm test' }, arguments_hash: argumentsHash({ command: 'npm test' }) }], result_policy: { kind: 'tool_success' } }],
+  })
+  const value = [events()[0], rc7Result({ exit_code: 0 }, { isError: true })]
+  const verified = verifyEvidence(successRegistry, 'tests.success', ['call-1'], value, 3)
+  assert.equal(verified.result, 'fail')
+  assert.match(verified.diagnostics.join('; '), /returned an error/)
+})
+
+test('DSH rc.7 conflicting source and tool-result call IDs fail closed', () => {
+  const value = [events()[0], rc7Result({ exit_code: 0 }, { toolCallId: 'other-call' })]
+  assert.throws(
+    () => verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3),
+    /tool\/result call ID: conflicting identifiers/,
+  )
 })
 
 test('duplicate result events cannot overwrite an earlier result for the same call ID', () => {
@@ -80,4 +138,11 @@ test('rendered shell failure markers are enforceable without structured result l
   assert.equal(verifyEvidence(shellRegistry, 'tests.shell', ['shell-1'], clean, 3).result, 'pass')
   clean[1].data.message.content[0].text = 'test failed\n[exit code: 1]'
   assert.equal(verifyEvidence(shellRegistry, 'tests.shell', ['shell-1'], clean, 3).result, 'fail')
+
+  for (const content of [[], [{ type: 'text', text: '   ' }], [{ type: 'image', data: 'not-text' }]]) {
+    clean[1].data.message.content = content
+    const empty = verifyEvidence(shellRegistry, 'tests.shell', ['shell-1'], clean, 3)
+    assert.equal(empty.result, 'unknown')
+    assert.match(empty.diagnostics.join('; '), /no non-empty rendered text/)
+  }
 })

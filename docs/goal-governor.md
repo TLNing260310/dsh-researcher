@@ -38,7 +38,7 @@ human prompt
              | BLOCKED | STOPPED | CANCELLED
 ```
 
-模型能执行、反馈、报告阻塞，但不能写入终态。`request_goal_decision` 由 host reducer 重放会话并调用纯 Goal Core；只有 host 能调用 DSH `goals.complete/pause/block` 和终止当前 turn。
+模型能执行、反馈、报告阻塞，但不能写入终态。`request_goal_decision` 由 host reducer 重放会话并调用纯 Goal Core；只有 host 能调用 DSH `goals.complete/pause/block` 和终止当前 turn。即使日志中已有 `goal_decision`，Goal Core 也会从它之前的证据前缀独立复算；记录值与复算值不同即拒绝。baseline attempt 必须绑定合同冻结的 repo revision，observation 也必须与其 active attempt 使用同一 revision label；真实工作树字节仍由 adapter/E1 scorer 的 tree evidence 负责证明。
 
 ### DONE 的硬语义
 
@@ -50,6 +50,8 @@ human prompt
 - SHOULD 未通过不能继续消耗尝试；
 - 首次 baseline 已满足时返回 `ALREADY_SATISFIED`，不得为了“显得有工作”而修改。
 
+这里的 `scope guard violation` 指 trusted host 已经记录进事件流的 violation。Goal Contract v1 的 `boundaries.in_scope / out_of_scope / do_not_touch` 只是 hash-frozen 的语义文字：Goal Core 不把任意字符串解释成路径规则，当前通用 DSH runtime 也不会自动比较工作树并生成 scope violation。E1 使用自己的冻结 `allowed_changes` 和专用 scorer 机械裁决 fixture 路径；那是实验合同，不是通用产品能力。机器可执行的通用 path scope 留待显式 schema v2 与相应 adapter conformance。
+
 ### 防止无休止优化
 
 | 模式 | 适用 | 修改尝试上限 | 无进展上限 |
@@ -58,6 +60,8 @@ human prompt
 | Governed | 公共 API、数据迁移、安全、架构、不变量、主观验收或目标歧义 | 5 | 2 |
 
 到达尝试/时间/token/no-progress 边界返回 `STOPPED`，而不是降低验收标准。需要改变目标、范围、验证器或不变量时，旧合同必须 supersede，新 revision 重新人工批准。
+
+`project-cognition goal status <contract> <events> --format markdown` 会显示 MUST、human gate、已用/剩余尝试、no-progress streak、time/token 与唯一 next action。终态卡明确输出 `STOP — do not continue polishing`，使人和 Agent 使用同一停止条件。
 
 ## 4. 验证器为什么必须冻结
 
@@ -95,7 +99,7 @@ Codex、Claude Code、Zed/Zcode、OpenClaw 等可复用合同与 reducer，但�
 
 ## 7. 当前证明边界
 
-已证明（仓库内机械证据）：核心状态/hash/revision/replay、合同终态不可覆盖、attempt/no-progress/time/token 上限、最终 attempt 同轮重验全部 MUST、当前合同事件分段、真实 call-ID verifier 绑定、人工 gate command authority、one-shot mode 状态机、host-owned completion 与完整性失败暂停集成轨迹、发布 tarball 隔离安装，以及安装产物可被 DSH rc.7 preset scanner 解析。测试数量以当前 `npm test` 输出为准，不作为价值证明。
+已证明（仓库内机械证据）：核心状态/hash/revision/replay、合同终态不可覆盖、attempt/no-progress/time/token 上限、最终 attempt 同轮重验全部 MUST、当前合同事件分段、真实 call-ID verifier 绑定、人工 gate command authority、one-shot mode 状态机、host-owned completion 与完整性失败暂停集成轨迹，以及发布 tarball 隔离安装。先前 candidate 曾被 DSH rc.7 preset scanner 解析；alpha.3 未重跑该 DSH 检查，因此它是历史兼容记录，不是当前 candidate 的 Gate 0 PASS。测试数量以当前 `npm test` 输出为准，不作为价值证明。
 
 尚未证明：真实 DSH 模型会话端到端成功率、Project Cognition 的纵向维护价值、Goal Governor 相对等内容 Research-only 的增量价值、不同模型/客户端的 effect size、其他客户端 adapter。历史 Experiment C+ 因隔离污染不具备因果效力；后续有效实验只能建立新的独立 claim，不能使 C+ 的历史记录恢复有效。
 
@@ -111,27 +115,34 @@ E1 的 live DSH 轨迹、E2 的实验设计、estimand、阈值和 invalidity ru
 # 1. 建立空骨架
 project-cognition init .
 
-# 2. 人工编辑 state draft（删除旧 state_hash、递增 revision），owner review 后显式安装
-project-cognition cognition seal .project-cognition/state-draft.json
-project-cognition cognition install .project-cognition/state-draft.json --root . --replace
+# 2. 每次 promotion 使用唯一的仓库外 review 目录；不要把 provisional artifact 放进 .project-cognition/
+project-cognition cognition draft --root . --out <unique-review-dir-outside-repo>/state.r<N>.draft.json
+project-cognition cognition diff <unique-review-dir-outside-repo>/state.r<N>.draft.json --root .
 
-# 3. verifier draft 同时写 tool_name + 完整 arguments；seal 自动计算 arguments_hash 与 registry_hash
-project-cognition verifier seal .project-cognition/verifiers-draft.json
-project-cognition verifier install .project-cognition/verifiers-draft.json --root . --replace
+# 3. owner review 后 seal 独立 artifact；install 绑定审阅时看到的 base hash
+project-cognition cognition seal <unique-review-dir-outside-repo>/state.r<N>.draft.json --out <unique-review-dir-outside-repo>/state.r<N>.sealed.json
+project-cognition cognition install <unique-review-dir-outside-repo>/state.r<N>.sealed.json --root . --replace --expect-current-hash <reviewed-base-state-hash>
 
-# 4. 根据风险输入获得 Simple/Governed 建议；最终 mode 由批准者确认
+# 4. verifier draft 同时写 tool_name + 完整 arguments；seal 自动计算 arguments_hash 与 registry_hash
+project-cognition verifier seal <unique-review-dir-outside-repo>/verifiers.r<N>.draft.json
+project-cognition verifier install <unique-review-dir-outside-repo>/verifiers.r<N>.draft.json --root . --replace
+
+# 5. 根据风险输入获得 Simple/Governed 建议；最终 mode 由批准者确认
 project-cognition goal recommend risk.json
 
-# 5. Goal draft 引用当前 state_hash 与 registry_hash；批准后 revision 文件不可覆盖
-project-cognition goal approve goal-draft.json --actor owner --root .
-project-cognition goal show .project-cognition/goals/<goal>.r1.json
+# 6. Goal draft 引用当前 state_hash、有效 invariant 与 registry_hash；批准后 revision 文件不可覆盖或跳号
+project-cognition goal approve <unique-review-dir-outside-repo>/goal-draft.json --actor owner --root .
+project-cognition goal show .project-cognition/goals/<goal>.r1.json --format markdown
+project-cognition goal status .project-cognition/goals/<goal>.r1.json events.jsonl --format markdown
 
-# 6. 表示完整性与投影一致性检查（不等于 evidence freshness）
+# 7. 检查 governance lock 与 canonical pair/合同/注册表；不做 crash recovery，也不等于 evidence freshness
 project-cognition doctor .
 
 # 若要声称 evidence freshness，另提供实际指纹
 project-cognition cognition freshness fingerprints.json .
 ```
+
+CLI 故意不覆盖或清理 review artifact。审阅后应在仓库外归档/删除；如必须留在工作区，使用唯一且明确 gitignored 的目录。不要复用固定 draft 文件名，也不要把 draft/sealed 文件放进 `.project-cognition/` 或 release package。
 
 随后在 DSH 选择「目标治理编码 Governed Coding」并运行：
 

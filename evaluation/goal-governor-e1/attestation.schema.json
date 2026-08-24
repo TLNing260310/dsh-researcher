@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TLNing260310/dsh-researcher/evaluation/goal-governor-e1/attestation.schema.json",
+  "title": "Goal Governor E1 external Ed25519 bundle attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "algorithm", "key_fingerprint_sha256", "commitment", "signature_base64"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/goal-governor-e1/attestation/v1" },
+    "algorithm": { "const": "Ed25519" },
+    "key_fingerprint_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "commitment": { "$ref": "bundle-commitment.schema.json" },
+    "signature_base64": { "type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$" }
+  }
+}

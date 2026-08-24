@@ -20,9 +20,13 @@ Portable Goal + Verifier Core (pure fold and decision)
 DSH Host Governor (commands, real session events, external approval channel, hard stop)
         ↓
 Governed Coding Agent (execution, never completion authority)
+        ↓ raw host evidence
+E1 Bundle Integrity (byte commitment + optional external signature + offline scorer)
 ```
 
 规范状态位于 `.project-cognition/state.json`；`PROJECT_COGNITION.md` 只生成不双写。旧 `research-state` 机制保留为 provisional **Research Session Ledger**，其 session-log replay 只恢复研究过程，不会自动改变 canonical state。候选发现必须经 owner-reviewed cognition revision、seal/install 才能提升。Goal Contract、Verifier Registry 与 runtime events 分别回答“DONE 是什么”“什么证据可信”“实际发生了什么”。详细协议见 [goal-governor.md](./goal-governor.md) 与 [cognition-governance.md](./cognition-governance.md)。
+
+Goal Contract v1 的 `boundaries` 是 hash-frozen 的语义文字，不是通用文件路径 DSL。Portable Goal Core 只验证和呈现这些字符串；当前通用 DSH adapter 也不会从工作树自动推导 scope violation。只有 trusted host 已记录的 `guard_violation(kind=scope)` 会进入 reducer。E1 另有冻结 manifest `allowed_changes`，由专用 runner/scorer 对工作树机械裁决；它不能外推为产品 runtime 已有通用 hard path scope。该能力需要显式的 schema v2 与 adapter conformance。
 
 ## 1. 架构总览(双层)
 
@@ -96,10 +100,11 @@ evaluation governance(G1–G7 gate · eval-lock · blind-doctor · 失败保留)
 | **revision tracking** | 版本化假设(invalidated 保留历史,revision 递增) | ✅ 代码存在 |
 | **export / import migration** | `fullExport` → `cognition-state-export.js` → `cognition-state-to-import.js` → `importState` | ✅ 已验证(G1 32/32 保真;6/6 C+ B-runs G2 PASS) |
 | **evaluation governance** | `fixtures/blind/eval-lock.js`(sha256 锁)、`blind-doctor.js`(金丝雀)、`research-doctor`(8 项运行时检查)、G1–G7 gate | ✅ 已验证(抓住 QUOTA 失败;LOCK OK) |
-| **canonical Project Cognition state** | `.project-cognition/state.json` + `lib/cognition-core`:strict schema/canonical hash/authority/proof/freshness/Markdown projection | ✅ 机械测试通过；唯一规范项目真相，经 owner promotion 改变 |
-| **goal governor** | `lib/goal-core`:frozen revisions/event fold/MUST-SHOULD/human gates/attempt+no-progress stop | ✅ 机械测试通过；真实长期价值未证明 |
+| **canonical Project Cognition state** | `.project-cognition/state.json` + `lib/cognition-core`:sealed schema/hash、review diff、exact-next revision、expected-base hash、state/projection rollback protection | ✅ 机械测试通过；进程内写入失败会 best-effort rollback；doctor 检测 active/stale governance lock 和 missing/mismatched canonical pair，但不枚举所有 tmp/bak、不做 crash recovery，也不宣称跨文件断电原子性或 reviewer 身份 |
+| **goal governor** | `lib/goal-core`:frozen revisions/event fold/MUST-SHOULD/human gates/attempt+no-progress stop、repo-revision linkage、terminal-prefix recomputation、progress card | ✅ 机械测试通过；v1 boundary strings 仅具语义约束，通用 runtime path enforcement 未实现；真实长期价值未证明 |
 | **trusted verifier** | `lib/verifier-core`:tool + canonical arguments + hash + result policy；DSH call-id pairing | ✅ forged/drift/error replay tests 通过 |
-| **DSH host adapter** | `lib/dsh-adapter` + `researcher/plugins/goal-governor` + `governed/` | ✅ DSH rc.7 parser 通过；live model E2E 待做 |
+| **DSH host adapter** | `lib/dsh-adapter` + `researcher/plugins/goal-governor` + `governed/` | ⚠️ 先前 candidate 有 DSH rc.7 parser PASS 记录；alpha.3 未重跑，当前 candidate 的 DSH-dependent Gate 0 与 live E2E 待做 |
+| **E1 evidence integrity** | `evaluation/goal-governor-e1`:raw bundle commitment、外部 Ed25519 trust root、verdict-aware scorer | ✅ 离线/对抗测试通过；签名只证明所给公钥对应私钥签过这些字节及签后完整性，不证明密钥持有人身份、运行真实性或因果价值 |
 
 **原型边界(诚实声明)**:以上全部为**原型级实现**,不是商业级基础设施 —— 产品化(v0.9 capsule / Memory Bridge / 自动迁移)未做;应用层价值未验证。
 
@@ -141,6 +146,8 @@ L5 做           → Coding Agent
 | A4 | 检测 = 标注不动作(cognition-diff 只输出 stale-candidate) | 零自动失效承诺;人工裁决 | 已实现 |
 | A5 | 失败保留为反例资产 | 可信度优先;QUOTA/leakage 记录不删除 | 已执行 |
 | A6 | Ledger/handoff 只能经 owner-reviewed revision → seal/install 提升 | 防止报告、模型推断或 replay 静默改写项目目的与架构 | 已采纳 |
+| A7 | Canonical install 只接受 sealed exact-next revision，并绑定 review 时的 current hash | 防止 draft 直装、revision 回退与并发 stale overwrite；进程内写入失败 best-effort rollback；doctor 检测 lock 与 canonical pair 缺失/不匹配，不恢复崩溃或枚举所有残留 | 已实现；不宣称跨文件断电原子性 |
+| A8 | E1 外部签名只验证所给公钥对应私钥签过 bundle bytes，不升级身份、live 或 causal claim | 将篡改检测与“密钥属于谁、宿主是否诚实、运行是否真实”分开 | 已实现 |
 
 ---
 

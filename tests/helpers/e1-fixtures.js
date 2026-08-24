@@ -36,7 +36,7 @@ const manifestBytes = (manifest) => Buffer.from(JSON.stringify(manifest, null, 2
 const manifestDigest = (manifest) => crypto.createHash('sha256').update(manifestBytes(manifest)).digest('hex')
 
 const makeState = () => sealState({
-  schema: 'project-cognition/state/v1',
+  schema: 'project-cognition/state-draft/v1',
   revision: 1,
   mission: {
     purpose: 'Provide a deterministic E1 scorer fixture.',

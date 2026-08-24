@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0-alpha.3 (2026-08-24) — Auditable Promotion and Stop Discipline
+
+- Canonical cognition now fails closed without `state_hash`; the CLI adds `draft → diff → seal --out → install` and refuses draft installation, stale base hashes, rollback/skipped revisions, and sealed artifact overwrite. Install uses best-effort rollback for in-process write failures. `doctor` detects an active/stale governance lock and a missing or mismatched canonical state/projection pair; it does not enumerate all temporary/backup residue, recover a crash, or claim cross-file power-loss atomicity.
+- Goal Core binds baseline/observation repo-revision labels, independently recomputes every recorded terminal decision from its evidence prefix, and returns a stable progress object plus Markdown stop card with MUST/gate/budget/next-action state.
+- Goal approval rejects unknown/superseded invariants and orphaned or non-linear local revisions; these checks provide structural lineage, not authenticated owner identity or worktree-byte proof.
+- E1 scorer fixes the contradiction where valid FAIL evidence could be labeled `PASS_UNDER_TRUSTED_HOST`; PASS, FAIL, INVALID, and synthetic causal statuses are now verdict-aware and report concrete failed cases.
+- E1 bundles gain deterministic raw-byte commitments and optional external Ed25519 signing/verification. Signatures bind bytes to a supplied external trust root but never prove DSH execution, signer honesty, human identity, live causal validity, outcome value, or portability.
+- The E1 scorer accepts exactly one self-contained bundle directory, rejects split manifest/artifact roots, and rejects symlink, junction, and hard-link aliases across bundle, trust-root, attestation, and output boundaries.
+- Release builds disable replace-object aliases, compare working bytes to HEAD blob IDs without invoking clean filters (permitting only an equivalent CRLF checkout form of an LF blob), and pack an isolated snapshot reconstructed from verified HEAD blobs; ignored workspace files cannot alter the tarball. Builds emit `SHA256SUMS` and `package-manifest.json`; CI avoids duplicate tag runs and tests Node `22.12.0` plus current LTS on Windows and Linux.
+- Release boundary remains **E1 infrastructure: READY / Live E1 and DSH re-scan: NOT RUN / outcome value and multi-client portability: NOT PROVEN**.
+
 ## 0.8.0-alpha.2 (2026-08-24) — Truth and Evidence Governance
 
 - 明确 `.project-cognition/state.json` 是唯一 canonical project truth；`PROJECT_COGNITION.md` 仅由 CLI 生成，历史 `research-state` 重命名为 provisional Research Session Ledger。

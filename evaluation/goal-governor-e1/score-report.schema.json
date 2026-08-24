@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TLNing260310/dsh-researcher/evaluation/goal-governor-e1/score-report.schema.json",
+  "title": "Goal Governor E1 offline score report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["causal_validity", "bundle_signature", "verdict", "schema", "cases_expected", "cases_scored", "cases_passed", "failed_cases", "input_hash", "input_hash_kind", "runs", "note"],
+  "properties": {
+    "causal_validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid_for_live_conformance_claim", "valid_for_protocol_conformance_under_trusted_host", "status", "trust_model", "reasons"],
+      "properties": {
+        "valid_for_live_conformance_claim": {
+          "const": false,
+          "description": "Whether the report alone establishes an unconditional live-origin claim without trusting the host or bundle producer. Always false."
+        },
+        "valid_for_protocol_conformance_under_trusted_host": {
+          "type": "boolean",
+          "description": "True only for a complete non-synthetic PASS under the protocol's explicit trusted-host and external-bundle-root assumptions."
+        },
+        "status": {
+          "enum": ["INVALID", "SYNTHETIC_ONLY", "SYNTHETIC_FAIL", "FAIL_UNDER_TRUSTED_HOST", "PASS_UNDER_TRUSTED_HOST", "PASS_UNDER_TRUSTED_HOST_WITH_VERIFIED_BUNDLE_SIGNATURE"]
+        },
+        "trust_model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["host_operator_and_external_bundle_root", "assistant_and_model_writable_workspace", "authenticity_against_malicious_bundle_producer", "external_attestation"],
+          "properties": {
+            "host_operator_and_external_bundle_root": { "const": "TRUSTED" },
+            "assistant_and_model_writable_workspace": { "const": "UNTRUSTED" },
+            "authenticity_against_malicious_bundle_producer": { "const": "NOT_PROVEN" },
+            "external_attestation": { "enum": ["NOT_PROVIDED", "INVALID", "NOT_EVALUATED", "VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT"] }
+          }
+        },
+        "reasons": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+      }
+    },
+    "bundle_signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["NOT_PROVIDED", "INVALID", "NOT_EVALUATED", "VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT"] },
+        "reason": { "type": "string", "minLength": 1 },
+        "algorithm": { "const": "Ed25519" },
+        "key_fingerprint_sha256": { "$ref": "#/$defs/sha256" },
+        "commitment_sha256": { "$ref": "#/$defs/sha256" },
+        "file_count": { "type": "integer", "minimum": 3 },
+        "byte_count": { "type": "integer", "minimum": 0 },
+        "excluded_top_level_files": { "const": ["score.json"] }
+      }
+    },
+    "verdict": { "enum": ["PASS", "FAIL", "INVALID"] },
+    "schema": { "const": "dsh-researcher/goal-governor-e1/score-report/v1" },
+    "cases_expected": { "const": 6 },
+    "cases_scored": { "type": "integer", "minimum": 0 },
+    "cases_passed": { "type": "integer", "minimum": 0 },
+    "failed_cases": { "type": "array", "items": { "type": "string" } },
+    "input_hash": { "$ref": "#/$defs/sha256" },
+    "input_hash_kind": { "enum": ["RAW_BUNDLE_COMMITMENT_SHA256", "CANONICAL_OBJECT_INPUT_SHA256"] },
+    "runs": { "type": "array", "items": { "type": "object" } },
+    "note": { "type": "string", "minLength": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "const": "PASS" } }, "required": ["verdict"] },
+      "then": {
+        "properties": {
+          "cases_scored": { "const": 6 },
+          "cases_passed": { "const": 6 },
+          "failed_cases": { "maxItems": 0 },
+          "runs": { "minItems": 6, "maxItems": 6 },
+          "causal_validity": { "properties": { "status": { "enum": ["SYNTHETIC_ONLY", "PASS_UNDER_TRUSTED_HOST", "PASS_UNDER_TRUSTED_HOST_WITH_VERIFIED_BUNDLE_SIGNATURE"] } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "FAIL" } }, "required": ["verdict"] },
+      "then": {
+        "properties": {
+          "cases_scored": { "const": 6 },
+          "failed_cases": { "minItems": 1 },
+          "runs": { "minItems": 6, "maxItems": 6 },
+          "causal_validity": { "properties": { "valid_for_protocol_conformance_under_trusted_host": { "const": false }, "status": { "enum": ["SYNTHETIC_FAIL", "FAIL_UNDER_TRUSTED_HOST"] } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "INVALID" } }, "required": ["verdict"] },
+      "then": { "properties": { "causal_validity": { "properties": { "valid_for_protocol_conformance_under_trusted_host": { "const": false }, "status": { "const": "INVALID" } } } } }
+    },
+    {
+      "if": { "properties": { "causal_validity": { "properties": { "valid_for_protocol_conformance_under_trusted_host": { "const": true } }, "required": ["valid_for_protocol_conformance_under_trusted_host"] } } },
+      "then": { "properties": { "verdict": { "const": "PASS" }, "causal_validity": { "properties": { "status": { "enum": ["PASS_UNDER_TRUSTED_HOST", "PASS_UNDER_TRUSTED_HOST_WITH_VERIFIED_BUNDLE_SIGNATURE"] } } } } }
+    },
+    {
+      "if": { "properties": { "bundle_signature": { "properties": { "status": { "const": "VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT" } }, "required": ["status"] } } },
+      "then": { "properties": { "bundle_signature": { "required": ["status", "algorithm", "key_fingerprint_sha256", "commitment_sha256", "file_count", "byte_count", "excluded_top_level_files"] } } }
+    },
+    {
+      "if": { "properties": { "causal_validity": { "properties": { "status": { "const": "PASS_UNDER_TRUSTED_HOST_WITH_VERIFIED_BUNDLE_SIGNATURE" } }, "required": ["status"] } } },
+      "then": { "properties": { "bundle_signature": { "properties": { "status": { "const": "VERIFIED_AGAINST_SUPPLIED_TRUST_ROOT" } } } } }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

@@ -107,4 +107,4 @@ C 相对 B 必须同时满足：
 
 以下任一发生则 run 无效，不计入正向结论：ground truth 可读、不同 arm 获得额外 meta-instruction、verifier invocation 不等价、失败 run 被删除、人工裁决不盲、任务/指标在见结果后改变、terminal 只由助手文本推断。
 
-每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据，不声称能在没有外部 attestation 时识别恶意宿主整体伪造的自洽 bundle。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。
+每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据。可选的 bundle 外 Ed25519 attestation 只证明所给外部 trust root 签过这些原始字节并检测签后篡改，不能识别由不诚实签署者生成的自洽伪包，不能证明 DSH 运行或产生无条件 causal validity；该传输/留存增强不改变本协议的轨迹、阈值或信任假设。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。

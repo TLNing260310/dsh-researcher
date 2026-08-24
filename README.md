@@ -57,7 +57,7 @@ Governed Coding 还支持 `/researcher on|off` 持久 guarded mode；它有工�
 安装已发布的 alpha（同时安装 `researcher`、`governed` 和 portable core）：
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.2
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.3
 ```
 
 只读研究：新建 DSH 会话，选择「项目研究 Project Research」，确认 read-only + never，然后描述仓库和你真正想判断的问题。`research_doctor` 是强制首个工具调用；证书不是 SAFE 时研究不会开始。
@@ -65,7 +65,7 @@ npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.2
 Goal Governor 最小入口：
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.2 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.3 project-cognition init .
 ```
 
 随后人工维护 Project Cognition、冻结 Verifier Registry、批准 Goal Contract，并在「目标治理编码 Governed Coding」中运行：
@@ -89,6 +89,8 @@ npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.2 project-cogni
 
 模型无权写入终态。DSH 宿主重放 session log 后，才可调用 `complete / pause / block`。
 
+Goal Contract v1 的 `boundaries.in_scope / out_of_scope / do_not_touch` 是冻结的**语义约束文字**。当前通用 DSH runtime 会拒绝宿主已经记录的 scope guard violation，但不会把这些任意字符串自动编译为文件系统 allowlist，也不会自行比较工作树路径。E1 是更窄的实验例外：冻结 manifest 的 `allowed_changes` 由 E1 runner/scorer 机械检查，并与 fixture 合同边界一同裁决。通用、机器可执行的路径 scope 需要未来显式的 Goal Contract schema v2；在此之前不能把 v1 文本描述成 hard path enforcement。
+
 ## 与相近方案的简要比较
 
 Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到了什么”，task 工具保存“还有什么没做”。本项目尝试保存的是：**关于项目现实的主张、为什么相信它、何时证据已经陈旧，以及目标是否有结果证据。**
@@ -108,9 +110,9 @@ Spec 工具保存“准备构建什么”，memory 工具保存“Agent 学到�
 
 | 证据 | 当前结果 | 能说明什么 |
 |---|---|---|
-| Node unit/replay/integration/package tests | 当前仓库测试套件 PASS | hash/revision/replay、预算、人工 gate、伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作；具体数量以当次 `npm test` 输出为准 |
-| `project-cognition doctor .` | cognition schema/hash、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 规范对象的表示完整性与投影一致；**不证明代码或引用证据仍新鲜**，freshness 需单独使用 fingerprint report |
-| DSH preset discovery | `researcher` 与 `governed` 在 DSH `0.1.0-rc.7` 临时安装后均 `broken=null` | 发布布局和本地插件路径可由目标 DSH 版本加载 |
+| Node unit/replay/integration/package tests | 当前仓库测试套件 PASS | sealed-only cognition promotion、hash/revision/replay、预算、人工 gate、伪终态/伪证据拒绝、宿主完成、完整性失败暂停与 tarball 隔离安装按设计工作；具体数量以当次 `npm test` 输出为准 |
+| `project-cognition doctor .` | governance lock、cognition schema/hash、Markdown projection、Goal Contracts、Verifier Registry 全 PASS | 检测 active/stale governance lock，以及 canonical state/projection 缺失或不匹配；**不枚举所有 `.tmp-*` / `.bak-*`，不执行 crash recovery，不提供跨文件断电原子性，也不证明代码或引用证据仍新鲜**，freshness 需单独使用 fingerprint report |
+| DSH preset discovery | 既有 `0.1.0-rc.7` 临时安装记录中 `researcher` 与 `governed` 均 `broken=null`；alpha.3 未重跑 DSH | 该历史发布布局曾可被目标版本加载；不是本版 live E1 结果 |
 | Goal Governor E1 infrastructure | **READY；Live E1 NOT RUN** | 协议定义的 fixture、冻结 manifest/run lock、离线 preflight、fail-closed live runner 与对抗 scorer 已具备；**不证明**真实模型结果价值或多客户端可移植性 |
 | Experiment A（12 runs） | 同一模型下编排显著改变成本与输出，但未证明 Researcher 更优 | 客户端/工作流重要，不等于本项目有净收益 |
 | Experiment C+（12 runs） | 状态迁移链可运行；A/B 因 snapshot leakage 被判定为 causal-invalid | 证明基础设施存在，也证明评测会保留失败并拒绝夸大结论 |
@@ -129,17 +131,28 @@ npm run eval:e1:preflight
 npm run eval:e1:score -- --run <external-bundle-dir>
 ```
 
-该命令生成 bundle 内的 `score.json`；`PASS | FAIL | INVALID` 只由宿主事件、真实 call ID/参数、冻结对象与工作树证据决定，不采用助手最终文字。这里的真实性边界是：实验操作者与模型不可写的外部 bundle root 可信；scorer 能拒绝会话内伪证据和包内漂移，但没有外部 attestation，不能鉴别恶意宿主从零伪造的一整套自洽 bundle。因此 `causal_validity` 只会给出 `PASS_UNDER_TRUSTED_HOST`，不会自动生成无条件的 live 因果结论。live runner 默认拒绝启动，只有完整 run lock、固定 DSH 版本和显式 `--ack-live-cost` 同时存在才可能进入真实执行；本版本没有运行 live E1。
+该命令生成 bundle 内的 `score.json`；`PASS | FAIL | INVALID` 只由宿主事件、真实 call ID/参数、冻结对象与工作树证据决定，不采用助手最终文字。有效但未达到协议终态的包会明确得到 `FAIL_UNDER_TRUSTED_HOST`，不会再出现 verdict=FAIL、causal status=PASS 的冲突。
+
+默认真实性边界仍是：实验操作者与模型不可写的外部 bundle root 可信。alpha.3 可选择用 bundle 外的 Ed25519 key 对原始文件 commitment 签名，再让 scorer 使用 bundle 外的公钥验签：
+
+```bash
+npm run eval:e1:attest -- create --run <external-bundle-dir> --private-key <external-private.pem> --out <external-attestation.json>
+npm run eval:e1:score -- --run <external-bundle-dir> --attestation <external-attestation.json> --trusted-public-key <external-public.pem>
+```
+
+验签只证明“与所给公钥对应的私钥签过这些字节，且其后未被修改”，不能证明密钥持有人身份、签署者诚实、DSH 确实运行、TTY 操作者身份或产品因果价值；代表“无需信任宿主即可独立证明 live 来源”的 `valid_for_live_conformance_claim` 因而始终为 `false`。完整、非 synthetic 的 PASS 会另将 `valid_for_protocol_conformance_under_trusted_host` 设为 `true`，表示在预注册 trusted-host 与外部 bundle-root 假设下支持条件式 E1 conformance，而不是独立来源证明。未提供外部签名时，成功状态仍是 `PASS_UNDER_TRUSTED_HOST`。live runner 默认拒绝启动，只有完整 run lock、固定 DSH 版本和显式 `--ack-live-cost` 同时存在才可能进入真实执行；本版本没有运行 live E1。
 
 公开验证边界见 [Validation Status](./docs/validation-status.md)，预注册的下一阶段实验见 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md)。证明顺序固定为 `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`；轨迹、estimand 与阈值只以冻结协议为准。
 
+由于 alpha.3 按范围未重跑 DSH，当前 candidate 还需先完成冻结协议中的 DSH-dependent Gate 0 checks，之后才进入 live E1；历史 preset scan 不替代当前 candidate 的 Gate 0。
+
 ## 已证明、未证明与不允许静默改变
 
-**仓库内已证明**：canonical hashing、严格 schema、revision、确定性重放、只读工具面、真实 verifier call 绑定、attempt/no-progress 限制和 host-owned completion。
+**仓库内已证明**：canonical hashing、sealed-only 且防 stale review / revision 回退的安装、确定性重放、只读工具面、真实 verifier call 绑定、attempt/no-progress 限制、证据前缀终态复算和 host-owned completion。
 
 **仍是待验证假设**：Project Cognition 的纵向维护价值；Goal Governor 相对等内容 Research-only 的增量价值；不同模型/客户端的 effect size；Codex/Claude Code/Kiro/OpenClaw/Zed adapter 可行性。前两项是不同 claim，不能由同一个对照静默合并证明。
 
-**硬不变量**：Certified Researcher 保持只读；JSON 是 Project Cognition 唯一规范事实，Research Session Ledger 只是非权威输入；模型不能批准、削弱或完成自己的 Goal Contract；失败或无效实验不能被改写成正向产品证据。后续有效实验可以建立新 claim，但不能洗白历史 Experiment C+。改变这些内容需要新的 owner-reviewed cognition revision、seal 和重新审查。
+**硬不变量**：Certified Researcher 保持只读；JSON 是 Project Cognition 唯一规范事实，Research Session Ledger 只是非权威输入；模型不能批准、削弱或完成自己的 Goal Contract；失败或无效实验不能被改写成正向产品证据；已记录的目标终态必须等于从其先前可信证据复算出的 host reducer 结果，终态文字或标签不能覆盖 reducer。后续有效实验可以建立新 claim，但不能洗白历史 Experiment C+。改变这些内容需要新的 owner-reviewed cognition revision、seal 和重新审查。
 
 ## 架构与可移植性
 
@@ -168,9 +181,9 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 ## Compatibility
 
-- DeepSeek Harness：已验证 `0.1.0-rc.7`。
-- Node.js：`>=22.12.0`（与已验证的 DSH `0.1.0-rc.7` 运行时一致）。
-- 当前版本：`0.8.0-alpha.2`，不承诺稳定 API。
+- DeepSeek Harness：目标版本为 `0.1.0-rc.7`；先前 candidate 有 preset scanner PASS 记录，但 alpha.3 尚未重跑该 DSH-dependent Gate 0 检查。
+- Node.js：`>=22.12.0`；alpha.3 的仓库/CI 机械测试覆盖该下限，不能替代待完成的 DSH rc.7 scanner 与 live E1。
+- 当前版本：`0.8.0-alpha.3`，不承诺稳定 API。
 
 ## License
 

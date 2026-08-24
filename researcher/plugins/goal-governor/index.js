@@ -23,7 +23,7 @@ const resolveCoreRoot = () => {
 }
 
 const coreRoot = resolveCoreRoot()
-const { validateGoalContract } = require(path.join(coreRoot, 'goal-core', 'index.js'))
+const { validateGoalContract, decideGoal } = require(path.join(coreRoot, 'goal-core', 'index.js'))
 const { validateRegistry } = require(path.join(coreRoot, 'verifier-core', 'index.js'))
 const { parseGoalPointer, makeGoalPointer, researchModeState, scopeGoalEvents, foldDshGoalEvents } = require(path.join(coreRoot, 'dsh-adapter', 'index.js'))
 const { validateState } = require(path.join(coreRoot, 'cognition-core', 'index.js'))
@@ -69,11 +69,28 @@ const confinedFile = (root, relativePath, requiredParent) => {
   if (typeof relativePath !== 'string' || /[\u0000-\u001f\u007f]/.test(relativePath) || isPortableAbsolute(relativePath)) throw new Error('path must be relative to the workspace')
   const lexical = path.resolve(root, relativePath)
   const parent = path.resolve(root, requiredParent)
-  if (!isWithin(parent, lexical) || !isWithin(canonicalWithMissingTail(parent), canonicalWithMissingTail(lexical))) throw new Error('path escapes ' + requiredParent)
+  const canonicalRoot = canonicalExisting(path.resolve(root))
+  const canonicalParent = canonicalWithMissingTail(parent)
+  if (!isWithin(path.resolve(root), parent) || !isWithin(canonicalRoot, canonicalParent) || !isWithin(parent, lexical) || !isWithin(canonicalParent, canonicalWithMissingTail(lexical))) throw new Error('path escapes ' + requiredParent)
   return lexical
 }
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
+
+const assertLatestGoalRevision = (root, contractPath, contract) => {
+  if (contract.status !== 'approved') throw new Error('only an approved Goal Contract can run')
+  const goalsDir = confinedFile(root, '.project-cognition/goals', '.project-cognition')
+  const expectedPath = path.join(goalsDir, encodeURIComponent(contract.goal_id) + '.r' + contract.revision + '.json')
+  if (path.resolve(contractPath) !== path.resolve(expectedPath)) throw new Error('approved Goal Contract path does not match its goal id and revision')
+  const escaped = encodeURIComponent(contract.goal_id).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const pattern = new RegExp('^' + escaped + '\\.r([1-9][0-9]*)\\.json$')
+  const revisions = fs.readdirSync(goalsDir).map((file) => file.match(pattern)).filter(Boolean).map((match) => Number(match[1]))
+  for (let revision = 1; revision <= contract.revision; revision += 1) {
+    if (!revisions.includes(revision)) throw new Error('Goal Contract revision chain is incomplete at revision ' + revision)
+  }
+  const latest = Math.max(...revisions)
+  if (latest !== contract.revision) throw new Error('selected Goal Contract revision ' + contract.revision + ' is stale; latest installed revision is ' + latest)
+}
 
 const loadSelected = (ctx, agent) => {
   const runtimeGoal = ctx.goals.get(agent)
@@ -83,6 +100,7 @@ const loadSelected = (ctx, agent) => {
   const contractPath = confinedFile(root, pointer.relative_path, '.project-cognition/goals')
   const contract = readJson(contractPath)
   validateGoalContract(contract, { allowDraft: false })
+  assertLatestGoalRevision(root, contractPath, contract)
   if (contract.contract_hash !== pointer.contract_hash) throw new Error('contract file no longer matches the DSH goal pointer')
   const registryPath = confinedFile(root, '.project-cognition/verifiers.json', '.project-cognition')
   const registry = readJson(registryPath)
@@ -94,6 +112,24 @@ const loadSelected = (ctx, agent) => {
   if (cognition.state_hash !== contract.baseline.cognition_hash) throw new Error('Project Cognition state does not match the contract baseline; revise and re-approve the contract')
   const replay = foldDshGoalEvents(contract, registry, scopeGoalEvents(agent.session.events, runtimeGoal))
   return { root, runtimeGoal, contractPath, contract, registryPath, registry, cognition, replay }
+}
+
+const gateResumeVerdict = (contract, replay) => {
+  // The last request_goal_decision can legitimately predate the direct gate
+  // command. Recompute from the complete trusted replay prefix so the command
+  // cannot blindly resume a goal that still needs another human decision.
+  const decision = decideGoal(contract, replay.events)
+  const pendingGates = decision.progress.human_gates.filter((gate) => gate.result !== 'approved').map((gate) => gate.id)
+  const guardViolation = replay.events.some((event) => event.type === 'guard_violation')
+  const diagnostics = Array.isArray(replay.diagnostics) ? replay.diagnostics : []
+  const resumableDecision = ['CONTINUE', 'DONE', 'ALREADY_SATISFIED'].includes(decision.decision)
+  return {
+    decision,
+    pending_gates: pendingGates,
+    guard_violation: guardViolation,
+    diagnostics,
+    resumable: resumableDecision && pendingGates.length === 0 && !guardViolation && diagnostics.length === 0,
+  }
 }
 
 const userMessage = (text) => Object.freeze({
@@ -113,14 +149,14 @@ const researchPrompt = (task, contractDraft) => [
 
 const commandHelp = (role) => role === 'researcher'
   ? '/researcher <question> — one-shot research\n/researcher goal <task> — propose a frozen Goal Contract draft\nThe Project Research preset itself is the certified persistent Researcher Mode.'
-  : '/researcher <question> — one read-only research turn\n/researcher on [question] — persistent guarded Researcher Mode\n/researcher off — leave guarded mode\n/researcher goal <task> — research and propose a Goal Contract\n/researcher run <.project-cognition/goals/...json> — bind an approved contract\n/researcher status\n/researcher approve-gate|reject-gate <gate-id> [evidence-ref...]\n/researcher cancel'
+  : '/researcher <question> — one read-only research turn\n/researcher on [question] — persistent guarded Researcher Mode\n/researcher off — leave guarded mode\n/researcher goal <task> — research and propose a Goal Contract\n/researcher run <.project-cognition/goals/...json> — bind an approved contract\n/researcher status\n/researcher approve-gate|reject-gate <gate-id> [evidence-ref...]\n/researcher confirm-blocker <code> <detail>\n/researcher cancel'
 
 const registerCommand = (ctx, role) => {
   ctx.inject(['commands'], (commandCtx) => {
     commandCtx.commands.register({
       name: 'researcher',
       description: 'Research a project read-only or operate an evidence-bound Goal Contract',
-      input: { hint: '[on|off|goal|run|status|approve-gate|reject-gate|cancel|<question>]' },
+      input: { hint: '[on|off|goal|run|status|approve-gate|reject-gate|confirm-blocker|cancel|<question>]' },
       handler: ({ agent, rawInput }) => {
         const raw = String(rawInput || '').trim()
         const parts = raw.split(/\s+/).filter(Boolean)
@@ -148,6 +184,7 @@ const registerCommand = (ctx, role) => {
             const contractPath = confinedFile(root, parts[1], '.project-cognition/goals')
             const contract = readJson(contractPath)
             validateGoalContract(contract, { allowDraft: false })
+            assertLatestGoalRevision(root, contractPath, contract)
             const registry = readJson(confinedFile(root, '.project-cognition/verifiers.json', '.project-cognition'))
             validateRegistry(registry)
             if (registry.registry_hash !== contract.verifier_registry_hash) throw new Error('verifier registry hash does not match the approved contract')
@@ -167,12 +204,28 @@ const registerCommand = (ctx, role) => {
             const gateId = parts[1]
             if (!gateId || !selected.contract.human_gates.some((gate) => gate.id === gateId)) return { kind: 'error', text: 'Unknown or missing gate id.' }
             if (action === 'approve-gate' && selected.runtimeGoal.phase === 'paused') {
-              ctx.goals.resume(agent, { id: selected.runtimeGoal.id, revision: selected.runtimeGoal.revision })
+              const resume = gateResumeVerdict(selected.contract, selected.replay)
+              if (resume.resumable) {
+                ctx.goals.resume(agent, { id: selected.runtimeGoal.id, revision: selected.runtimeGoal.revision })
+              } else {
+                const pending = resume.pending_gates.length > 0 ? '; pending gates: ' + resume.pending_gates.join(', ') : ''
+                return { kind: 'success', text: 'Human gate ' + gateId + ' recorded as approved in the durable command log. Goal remains paused: ' + resume.decision.decision + ' — ' + resume.decision.reason + pending + '. Resolve the remaining governor condition with a direct /researcher command.' }
+              }
             }
             if (action === 'reject-gate' && selected.runtimeGoal.phase === 'active') {
               ctx.goals.pause(agent, { id: selected.runtimeGoal.id, revision: selected.runtimeGoal.revision })
             }
             return { kind: 'success', text: 'Human gate ' + gateId + ' recorded as ' + (action === 'approve-gate' ? 'approved' : 'rejected') + ' in the durable command log. Call request_goal_decision again.' }
+          }
+          if (action === 'confirm-blocker') {
+            const selected = loadSelected(ctx, agent)
+            const code = parts[1]
+            const detail = parts.slice(2).join(' ')
+            if (!code || !detail) return { kind: 'error', text: 'Usage: /researcher confirm-blocker <code> <detail>' }
+            if (selected.runtimeGoal.phase === 'active' || selected.runtimeGoal.phase === 'paused') {
+              ctx.goals.block(agent, { id: selected.runtimeGoal.id, revision: selected.runtimeGoal.revision }, { code, message: detail })
+            }
+            return { kind: 'success', text: 'External blocker confirmed by direct user authority and recorded in the durable command log.' }
           }
           if (action === 'cancel') {
             const selected = loadSelected(ctx, agent)
@@ -216,8 +269,8 @@ const registerTools = (ctx) => {
   ctx.tools.register(tool('complete_goal_attempt', 'Close the active attempt. This records evidence state but does not let the model declare success.', {
     attempt_id: { type: 'string', required: true },
   }, (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
-  ctx.tools.register(tool('report_goal_blocker', 'Report a concrete blocker. Only an external blocker can produce BLOCKED.', {
-    code: { type: 'string', required: true }, detail: { type: 'string', required: true }, external: { type: 'boolean', required: true },
+  ctx.tools.register(tool('report_goal_blocker', 'Report a suspected blocker. Model reports require direct /researcher confirm-blocker user authority before BLOCKED.', {
+    code: { type: 'string', required: true }, detail: { type: 'string', required: true },
   }, (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
   ctx.tools.register(tool('request_goal_decision', 'Ask the host governor to compare trusted observations with the frozen contract. The host alone may continue, pause, stop, block, or complete the DSH goal.', {}, (_args, exec) => {
     try {
@@ -251,6 +304,10 @@ const RESEARCH_ALLOWLIST = new Set([
   'researcher_mode_status', 'get_goal_contract', 'read', 'read_image', 'glob', 'grep', 'git_read',
   'web_search', 'web_fetch', 'ask_user_question', 'todo_write', 'skill', 'research_checkpoint', 'research_doctor',
 ])
+const PAUSED_GOAL_ALLOWLIST = new Set([
+  'researcher_mode_status', 'get_goal_contract', 'read', 'read_image', 'glob', 'grep', 'git_read',
+  'web_search', 'web_fetch', 'ask_user_question',
+])
 
 module.exports = {
   name: 'project-cognition-goal-governor',
@@ -267,10 +324,20 @@ module.exports = {
     if (role === 'executor') registerTools(ctx)
     ctx.tools.guard((execution) => {
       const agent = execution && execution.agent
-      if (!agent || !researchModeState(agent.session && agent.session.events).active) return undefined
-      if (!RESEARCH_ALLOWLIST.has(execution.name)) return '[project-cognition] guarded Researcher Mode is read-only; tool "' + execution.name + '" is outside the explicit research allowlist.'
-      return readPathVerdict(execution.name, execution.arguments, workspaceRoot(agent))
+      if (!agent) return undefined
+      if (researchModeState(agent.session && agent.session.events).active) {
+        if (!RESEARCH_ALLOWLIST.has(execution.name)) return '[project-cognition] guarded Researcher Mode is read-only; tool "' + execution.name + '" is outside the explicit research allowlist.'
+        return readPathVerdict(execution.name, execution.arguments, workspaceRoot(agent))
+      }
+      if (role === 'executor' && typeof ctx.goals.get === 'function') {
+        const runtimeGoal = ctx.goals.get(agent)
+        if (runtimeGoal && runtimeGoal.phase === 'paused') {
+          if (!PAUSED_GOAL_ALLOWLIST.has(execution.name)) return '[project-cognition] paused Goal Contract is read-only until a direct /researcher command resumes or terminates it; tool "' + execution.name + '" is blocked.'
+          return readPathVerdict(execution.name, execution.arguments, workspaceRoot(agent))
+        }
+      }
+      return undefined
     })
   },
-  __test: { isWithin, confinedFile, researchPrompt, RESEARCH_ALLOWLIST },
+  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
 }

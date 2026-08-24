@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TLNing260310/dsh-researcher/evaluation/goal-governor-e1/bundle-commitment.schema.json",
+  "title": "Goal Governor E1 deterministic raw bundle commitment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "hash_algorithm", "path_encoding", "excluded_top_level_files", "required_root_files", "file_count", "byte_count", "files", "commitment_sha256"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/goal-governor-e1/bundle-commitment/v1" },
+    "hash_algorithm": { "const": "sha256" },
+    "path_encoding": { "const": "portable-posix-relative" },
+    "excluded_top_level_files": { "const": ["score.json"] },
+    "required_root_files": { "const": ["attempt-ledger.jsonl", "manifest.json", "run-lock.json"] },
+    "file_count": { "type": "integer", "minimum": 3 },
+    "byte_count": { "type": "integer", "minimum": 0 },
+    "files": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "size", "sha256"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*\\\\)(?!\\.\\.(?:/|$)).+" },
+          "size": { "type": "integer", "minimum": 0 },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "commitment_sha256": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

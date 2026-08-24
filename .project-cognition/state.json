@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 2,
+  "revision": 4,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -25,7 +25,8 @@
       "Goal Core: approved contract revisions, attempt/event fold, completion decision state machine",
       "Verifier Core: frozen invocation hashes and trusted session evidence evaluation",
       "DSH Adapter: /researcher entryways, session-log replay, human gates, hard stop/pause/complete authority",
-      "Evaluation Governance: blind snapshots, locks, validity gates, feedback telemetry"
+      "Evaluation Governance: blind snapshots, locks, validity gates, feedback telemetry",
+      "Evidence Bundle Integrity: deterministic raw-byte commitment, external Ed25519 signature verification, and verdict-aware offline scoring"
     ],
     "boundaries": [
       "JSON state is normative; PROJECT_COGNITION.md is generated and must not be edited as a second truth",
@@ -33,20 +34,23 @@
       "Promoting a research finding requires an explicit draft cognition revision, owner review, sealing, and deterministic projection regeneration",
       "Research produces evidence and draft handoff but never execution authority",
       "Models may execute and report observations but only the host governor may choose a terminal state",
-      "Client adapters must not weaken portable contract, verifier, project-root, or human-approval semantics"
+      "Client adapters must not weaken portable contract, verifier, project-root, or human-approval semantics",
+      "Recorded goal terminal events must equal the decision independently derived from their preceding evidence; labels and signatures cannot replace host or worktree evidence",
+      "Goal Contract v1 scope fields are semantic constraints, not a generic filesystem allowlist; only E1 allowed_changes currently has hard path enforcement"
     ]
   },
   "value_claims": [
     {
       "id": "V1",
-      "statement": "The repository implements deterministic canonical state hashing, strict validation, revisioned contracts, event replay, and generated Markdown projection.",
+      "statement": "The repository implements distinct draft/canonical schemas, deterministic canonical state hashing, sealed-only exact-next promotion, strict validation, complete revision lineage, prefix-derived terminal decisions, event replay, and generated Markdown projection.",
       "authority": "repository_observed",
       "proof_status": "proven_within_scope",
       "scope": "current repository unit and CLI behavior",
       "confidence": 0.99,
       "evidence_refs": [
         "E1",
-        "E2"
+        "E2",
+        "E7"
       ],
       "invalidation_conditions": [
         "tests fail",
@@ -63,12 +67,13 @@
       "statement": "The DSH adapter can mechanically reject in-session fabricated or verifier-drifted evidence and reserves goal terminal authority for the host plugin.",
       "authority": "repository_observed",
       "proof_status": "supported",
-      "scope": "pure replay tests plus DSH rc.7 preset discovery under a trusted host operator and model-inaccessible evidence root; no external bundle attestation and not a live model E2E run",
+      "scope": "pure replay tests plus historical DSH rc.7 preset discovery under a trusted host operator and model-inaccessible evidence root; optional external bundle signatures prove retained bytes against a supplied trust root, not that a live run occurred; DSH was not rerun for alpha.3",
       "confidence": 0.9,
       "evidence_refs": [
         "E1",
         "E2",
-        "E3"
+        "E3",
+        "E7"
       ],
       "invalidation_conditions": [
         "a live DSH model can complete through an ungoverned tool",
@@ -129,7 +134,7 @@
         "E1"
       ],
       "invalidation_conditions": [
-        "a target client cannot provide durable identity, trusted verifier evidence, project-root confinement, human approval, or hard stop"
+        "a target client cannot provide durable ordered events, trusted verifier evidence, project-root confinement, a host-owned approval channel with an explicit identity-assurance level, or hard stop"
       ],
       "freshness": {
         "status": "unknown",
@@ -203,6 +208,19 @@
         "E5"
       ],
       "change_policy": "Only new valid evidence may supersede a conclusion; historical invalidity records remain immutable."
+    },
+    {
+      "id": "I5",
+      "statement": "A recorded goal terminal decision must equal the host reducer result derived from its preceding trusted evidence; terminal prose or labels cannot override the reducer.",
+      "lifecycle": "ratified",
+      "strength": "hard",
+      "authority": "owner_ratified",
+      "evidence_refs": [
+        "E1",
+        "E5",
+        "E7"
+      ],
+      "change_policy": "Requires an explicit owner-approved cognition revision plus runtime and evidence-integrity review."
     }
   ],
   "decisions": [
@@ -259,6 +277,17 @@
         "E5",
         "E6"
       ]
+    },
+    {
+      "id": "D6",
+      "statement": "Require sealed-only, exact-next Project Cognition installation bound to the reviewed current state hash.",
+      "rationale": "The bound transition rejects direct draft installation, stale reviewed base hashes, and skipped or rollback revisions. It uses best-effort rollback for in-process write failures. Doctor detects an active/stale governance lock and a missing or mismatched canonical state/projection pair; it does not enumerate all temporary/backup residue, perform crash recovery, or claim cross-file power-loss atomicity.",
+      "status": "active",
+      "authority": "owner_ratified",
+      "evidence_refs": [
+        "E5",
+        "E7"
+      ]
     }
   ],
   "evidence": [
@@ -277,7 +306,7 @@
     {
       "id": "E3",
       "kind": "test",
-      "ref": "DSH 0.1.0-rc.7 scanRoot over temporary installation: researcher and governed presets both broken=null",
+      "ref": "Historical pre-alpha.3 DSH 0.1.0-rc.7 scanRoot over temporary installation: researcher and governed presets both broken=null; alpha.3 did not rerun this check",
       "observed_at": "2026-08-24"
     },
     {
@@ -296,6 +325,12 @@
       "id": "E6",
       "kind": "document",
       "ref": "docs/cognition-governance.md: canonical authority, Research Session Ledger boundary, promotion workflow, document roles, and proof-order governance",
+      "observed_at": "2026-08-24"
+    },
+    {
+      "id": "E7",
+      "kind": "test",
+      "ref": "alpha.3 offline verification: distinct cognition schemas and refutation preservation; bound draft/diff/seal/install; complete goal-revision lineage; terminal-prefix recomputation; exact DSH goal/create scoping, human blocker authority and paused mutation gate; multi-reference verifier rejection; self-contained E1 bundle commitment/signature/path-alias defenses; revision-bound run-lock and isolated HEAD-blob release packaging",
       "observed_at": "2026-08-24"
     }
   ],
@@ -322,7 +357,7 @@
   "next_proofs": [
     {
       "id": "P0",
-      "statement": "Pass Gate 0 integrity checks and freeze the evaluation artifacts defined by the Goal Governor Evaluation Protocol.",
+      "statement": "Complete every Gate 0 integrity check for the current release candidate, including DSH-dependent checks, and freeze the evaluation artifacts defined by the Goal Governor Evaluation Protocol.",
       "evidence_refs": [
         "E1",
         "E2"
@@ -361,5 +396,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "43c61591427ca654798b82371e9d3c6d892d407841610fa2645d194f4d1f8b5d"
+  "state_hash": "0cfefb037ee5607bd910114072e3adba97230973ed7206ebca0c134acd41d2dd"
 }

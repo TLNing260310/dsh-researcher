@@ -14,13 +14,13 @@ const root = path.join(__dirname, '..')
 const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8')
 const readJson = (...parts) => JSON.parse(read(...parts))
 
-test('declared Node floor, public quickstart, and CI matrix stay on the verified Node 22 runtime', () => {
+test('declared Node floor, public quickstart, and CI matrix cover the floor and current LTS', () => {
   const pkg = readJson('package.json')
   const readme = read('README.md')
   const workflow = read('.github', 'workflows', 'test.yml')
   assert.equal(pkg.engines.node, '>=22.12.0')
   assert.match(readme, /Node\.js[^\n]*`>=22\.12\.0`/)
-  assert.match(workflow, /node:\s*\[22\.12\.0,\s*22\.x\]/)
+  assert.match(workflow, /node:\s*\[22\.12\.0,\s*24\.x\]/)
   assert.doesNotMatch(workflow, /node:\s*\[[^\]]*(?:16|18|20)(?:\.|,|\])/)
 })
 
@@ -137,16 +137,31 @@ test('current release identity and public evidence-status language do not drift'
   const readme = read('README.md')
   const changelog = read('CHANGELOG.md')
   const validation = read('docs', 'validation-status.md')
+  const roadmap = read('docs', 'roadmap.md')
   const governor = read('docs', 'goal-governor.md')
   const currentVersion = new RegExp('当前版本：`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`')
   const pinnedInstall = new RegExp('#v' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const firstRelease = changelog.match(/^##\s+([^\s(]+)/m)
   assert.match(readme, currentVersion)
   assert.match(readme, pinnedInstall)
+  assert.match(validation, new RegExp('`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
+  assert.match(roadmap, new RegExp('`' + pkg.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
+  assert.equal(fs.existsSync(path.join(root, 'docs', 'releases', 'v' + pkg.version + '.md')), true)
   assert.equal(firstRelease && firstRelease[1], pkg.version)
   assert.match(readme, /真实模型端到端成功率[^\n]*尚未证明|真实模型端到端[^\n]*尚未证明/)
   assert.match(validation, /Live conformance[^\n]*\*\*未完成 E1\*\*/)
   assert.match(validation, /不得宣称[^\n]*真实 DSH E2E 已通过/)
   assert.match(governor, /尚未证明：真实 DSH 模型会话端到端成功率/)
   assert.doesNotMatch(governor, /\d+\s*项测试通过/)
+})
+
+test('CI and issue templates avoid duplicate tag verification and per-release placeholder drift', () => {
+  const workflow = read('.github', 'workflows', 'test.yml')
+  assert.match(workflow, /push:\s*\n\s+branches:\s*\[main\]/)
+  assert.match(workflow, /concurrency:/)
+  assert.match(workflow, /timeout-minutes:/)
+  for (const relative of [
+    path.join('.github', 'ISSUE_TEMPLATE', 'bug-report.yml'),
+    path.join('.github', 'ISSUE_TEMPLATE', 'feedback.yml'),
+  ]) assert.doesNotMatch(read(...relative.split(path.sep)), /0\.8\.0-alpha\.\d+/, relative + ' hard-codes a prerelease')
 })

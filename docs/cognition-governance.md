@@ -20,20 +20,30 @@
 只有以下流程可以改变项目级真相：
 
 1. **Observe**：Researcher 在只读环境中记录候选 claim、证据位置、置信度、反证和未知；这些内容留在 Session Ledger/handoff。
-2. **Propose**：维护者选择值得长期保存的内容，复制当前 canonical state 为 draft，递增 `revision` 并删除旧 `state_hash`。
+2. **Propose**：维护者选择值得长期保存的内容，用 `project-cognition cognition draft` 将当前 canonical state 复制为无 `state_hash`、revision 恰好加 1 的候选，并写入本次独占的仓库外（或明确 gitignored）review 路径。
 3. **Classify**：为每个变更明确 `authority`、`proof_status`、适用 `scope`、`evidence_refs`、`invalidation_conditions` 和 freshness。模型推断不得伪装成 `owner_ratified` 或 `repository_observed`。
 4. **Review**：owner 检查新事实是否与 mission、hard invariants、active decisions、失败实验记录和冻结协议冲突；涉及硬不变量时还必须完成其 `change_policy` 要求的复审。
-5. **Seal and install**：CLI 对 draft 做严格验证、canonical hash、原子安装，并重生成 Markdown projection。
-6. **Verify**：运行 `project-cognition doctor .` 检查 schema/hash/投影/合同/注册表完整性。证据是否仍新鲜必须另用 `project-cognition cognition freshness <fingerprints.json> .`；doctor 不能替代 freshness。
+5. **Seal and install**：CLI 将 owner 实际审阅过的 draft 写成独立 sealed artifact；install 只接受该 artifact，并要求当前 canonical hash 与审阅基线一致、revision 恰好递增 1。state 与 Markdown projection 对进程内写入错误使用 best-effort rollback；这不是跨文件断电事务，也不是 crash-recovery system。
+6. **Verify**：运行 `project-cognition doctor .` 检查 active/stale governance lock、canonical state schema/hash、state/projection 缺失或不匹配、合同和注册表。doctor 不枚举所有 `.tmp-*` / `.bak-*`，不自动恢复中断的写入，也不判断证据是否仍新鲜；freshness 必须另用 `project-cognition cognition freshness <fingerprints.json> .`。
 
 ```powershell
-# draft 已递增 revision 且不含旧 state_hash
-project-cognition cognition seal .project-cognition/state-draft.json
-project-cognition cognition install .project-cognition/state-draft.json --root . --replace
+# <unique-review-dir-outside-repo> 必须是本次 review 独占的新目录；不要放进 .project-cognition/
+project-cognition cognition draft --root . --out <unique-review-dir-outside-repo>/state.r<N>.draft.json
+
+# 人工编辑后先检查语义变化与高风险项；记录输出中的 base.state_hash
+project-cognition cognition diff <unique-review-dir-outside-repo>/state.r<N>.draft.json --root .
+
+# owner review 通过后，seal 到独立文件；install 不接受未 sealed draft
+project-cognition cognition seal <unique-review-dir-outside-repo>/state.r<N>.draft.json --out <unique-review-dir-outside-repo>/state.r<N>.sealed.json
+project-cognition cognition install <unique-review-dir-outside-repo>/state.r<N>.sealed.json --root . --replace --expect-current-hash <reviewed-base-state-hash>
 project-cognition doctor .
 ```
 
-若 review 未通过，候选结论留在 Session Ledger 或 known unknowns；不得为了减少冲突而静默覆盖旧事实。当前 CLI 的 `--replace` 只表示显式原子安装，不构成身份认证；owner review 是仓库治理责任。
+review artifact 默认放在仓库外且每次使用唯一文件名；CLI 故意拒绝覆盖它们，install 也不会替你删除。若组织政策要求留在仓库工作区，必须置于明确 gitignored 的 review 目录，绝不能放进 `.project-cognition/`、提交或打包；release package allowlist 会排除它们，builder 也会拒绝任何进入 package inventory 的非 allowlist `.project-cognition` 内容。审阅完成后在仓库外归档或删除这些 provisional artifact。
+
+若 review 未通过，候选结论留在 Session Ledger 或 known unknowns；不得为了减少冲突而静默覆盖旧事实。`cognition diff` 会突出 mission/architecture、authority/proof、硬不变量、active decision 与 evidence 删除等变化，但它只是 review 辅助。`--replace`、`--expect-current-hash` 和本地 actor label 都不构成身份认证；它们防止 draft 直装、revision 回退和 stale/concurrent overwrite，owner 身份与批准仍是仓库治理责任。
+
+Canonical state 使用 `schemas/cognition-state-v1.schema.json` 并必须含 `state_hash`；CLI 产生的无 hash 候选使用 `schemas/cognition-state-draft-v1.schema.json`。两者不是可互换的验证目标。
 
 ## 3. 历史无效性与新证据
 
@@ -77,9 +87,11 @@ project-cognition doctor .
 提交 cognition revision 或状态文档变更前确认：
 
 - [ ] canonical revision 已递增并由 CLI 重新 seal；
+- [ ] `cognition diff` 的 base hash 与 install 时的 `--expect-current-hash` 一致；
+- [ ] draft/sealed review artifact 使用唯一的仓库外路径（或明确 gitignored 路径），未进入 `.project-cognition/`、提交或 package；
 - [ ] `PROJECT_COGNITION.md` 由 CLI 生成而非手改；
 - [ ] Session Ledger/handoff 未被描述为规范真相；
 - [ ] claim 的 proof status、scope 与实际证据层级一致；
 - [ ] 历史失败和 invalidity 未被覆盖；
 - [ ] 路线顺序未绕过 E1、pilot 或 E2；
-- [ ] `project-cognition doctor .` 通过；若声称 freshness，另附 fingerprint report。
+- [ ] `project-cognition doctor .` 通过且不存在 active/stale governance lock；若声称 freshness，另附 fingerprint report。

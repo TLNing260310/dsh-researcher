@@ -62,6 +62,14 @@ test('fabricated or verifier-drifted evidence poisons the run instead of passing
   assert.equal(replay.decision.decision, 'NEEDS_HUMAN')
   assert.ok(replay.events.some((event) => event.type === 'guard_violation'))
   assert.ok(replay.diagnostics.some((item) => /trusted evidence/.test(item.detail)))
+
+  const mixedEvents = passingBaseline()
+  const mixedArgs = JSON.parse(mixedEvents[3].data.arguments)
+  mixedArgs.evidence_refs = ['tool:verify-1', 'tool:missing-call']
+  mixedEvents[3] = call(4, 'observe-1', 'submit_goal_observation', mixedArgs)
+  const mixedReplay = foldDshGoalEvents(goal, registry, mixedEvents)
+  assert.equal(mixedReplay.decision.decision, 'NEEDS_HUMAN')
+  assert.ok(mixedReplay.diagnostics.some((item) => /no earlier tool\/call/.test(item.detail)))
 })
 
 test('human gate authority comes only from the slash-command event', () => {
@@ -74,6 +82,25 @@ test('human gate authority comes only from the slash-command event', () => {
     call(7, 'decision-1', 'request_goal_decision', {}),
   ])
   assert.equal(approved.decision.decision, 'ALREADY_SATISFIED')
+})
+
+test('a model blocker report cannot become BLOCKED without direct user confirmation', () => {
+  const { goal, registry } = fixture()
+  const modelReport = [
+    call(1, 'blocker-1', 'report_goal_blocker', { code: 'permission', detail: 'Owner access required', external: true }),
+    call(2, 'decision-1', 'request_goal_decision', {}),
+  ]
+  const unconfirmed = foldDshGoalEvents(goal, registry, modelReport)
+  assert.equal(unconfirmed.decision.decision, 'NEEDS_HUMAN')
+  assert.equal(unconfirmed.events.find((event) => event.type === 'blocker_reported').data.external, false)
+
+  const confirmed = foldDshGoalEvents(goal, registry, [
+    ...modelReport,
+    { seq: 3, type: 'command/run', data: { name: 'researcher', args: 'confirm-blocker permission Owner access required' } },
+    call(4, 'decision-2', 'request_goal_decision', {}),
+  ])
+  assert.equal(confirmed.decision.decision, 'BLOCKED')
+  assert.equal(confirmed.events.filter((event) => event.type === 'blocker_reported').at(-1).data.external, true)
 })
 
 test('one-shot research lasts one turn while Researcher Mode persists until off', () => {
@@ -90,6 +117,18 @@ test('replay is scoped after the current DSH goal creation, excluding an older c
     call(3, 'new', 'begin_goal_attempt', { attempt_id: 'baseline', baseline: true, target_criteria: ['C1'], repo_revision: 'new' }),
   ]
   assert.deepEqual(scopeGoalEvents(events, { id: 'current' }).map((event) => event.seq), [2, 3])
+})
+
+test('replay fails closed when prior genuine evidence has no matching runtime goal creation boundary', () => {
+  const staleSession = [
+    ...passingBaseline(),
+    { seq: 7, type: 'command/run', data: { name: 'researcher', args: 'run .project-cognition/goals/G-DSH.r1.json' } },
+  ]
+  assert.throws(
+    () => scopeGoalEvents(staleSession, { id: 'new-runtime-goal' }),
+    /matching runtime goal\/create boundary is unavailable/,
+  )
+  assert.throws(() => scopeGoalEvents(staleSession, null), /creation boundary is unavailable/)
 })
 
 test('host-derived DSH usage enforces token budgets', () => {
