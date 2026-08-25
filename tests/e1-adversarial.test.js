@@ -32,6 +32,18 @@ test('a genuine passing call cannot mask an additional fabricated evidence refer
   assert.ok(report.runs.find((run) => run.id === 'simple-done').invalid_reasons.some((reason) => /no earlier tool\/call|trusted evidence/.test(reason)))
 })
 
+test('a complete captured trajectory without a terminal decision is a valid model FAIL', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['already-satisfied']
+  run.session_events = run.session_events.filter((event) => !(event.type === 'tool/call' && event.data && event.data.name === 'request_goal_decision'))
+  refreshFinalReplay(run)
+  const report = scoreTrustedBundle(bundle)
+  assert.equal(report.verdict, 'FAIL')
+  const scored = report.runs.find((item) => item.id === 'already-satisfied')
+  assert.deepEqual(scored.invalid_reasons, [])
+  assert.ok(scored.failures.some((reason) => /without calling request_goal_decision/.test(reason)))
+})
+
 test('already-satisfied fails if any worktree content changes after the passing baseline', () => {
   const bundle = cloneBundle()
   const run = bundle.artifacts['already-satisfied']

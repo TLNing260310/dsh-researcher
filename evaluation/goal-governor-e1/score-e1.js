@@ -1364,7 +1364,7 @@ const scoreRun = (artifact, manifestCase, context = {}) => {
   const terminalDecision = replay.decisions.find((decision) => decision.decision === expectedTerminal)
   if (!terminalDecision) {
     const hasDecisionCall = events.some((event) => event.type === 'tool/call' && event.data && event.data.name === 'request_goal_decision')
-    if (!hasDecisionCall) invalid.push('request_goal_decision evidence is missing')
+    if (!hasDecisionCall) failures.push('model completed the captured trajectory without calling request_goal_decision')
   }
 
   const verdict = invalid.length > 0 ? 'INVALID' : failures.length > 0 ? 'FAIL' : 'PASS'
