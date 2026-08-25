@@ -22,12 +22,12 @@ const CASE_IDS = Object.freeze([
   'resume-replay',
 ])
 const CASE_SPECS = Object.freeze({
-  'already-satisfied': Object.freeze({ terminal: 'ALREADY_SATISFIED', baseline_exit: 0, final_verifier_exit: 0, allowed_changes: [], prompts: { initial: 'evaluation/goal-governor-e1/prompts/already-satisfied.txt' }, fixture_tree_sha256: '63fa3f216cec3fa8f76faa209ac6e9b55edba190e442bdb0a24368406823888a', contract_hash: 'dd3c5e4d7cd1685720ee861d06a7e0d8016599918d92dfde8cbf1a59f7e9c151' }),
-  'simple-done': Object.freeze({ terminal: 'DONE', baseline_exit: 1, final_verifier_exit: 0, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/simple-done.txt' }, fixture_tree_sha256: 'e108d6f020e05e9db11e63a4f42ba5e1d36ba14cb0a22b70696e967a0306a6a3', contract_hash: '42e1f322838417a1dacc1eaf12aa4b4e0f6c723576dda533eca5af44b6250f11' }),
-  'governed-gate': Object.freeze({ terminal: 'DONE', baseline_exit: 1, final_verifier_exit: 0, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/governed-gate.txt', after_gate: 'evaluation/goal-governor-e1/prompts/governed-gate-after-approval.txt' }, fixture_tree_sha256: 'ac3f7b2c673224fcb7b31791b32182567acf05bc24cf50655f745cf1a6f241c7', contract_hash: '9821c69af30ac5da535a2c1a0f79da52a7291e2daceb17ade3c5d5fffdfe77a2' }),
-  'forged-evidence': Object.freeze({ terminal: 'NEEDS_HUMAN', baseline_exit: 0, final_verifier_exit: 0, allowed_changes: [], prompts: { initial: 'evaluation/goal-governor-e1/prompts/forged-evidence.txt' }, fixture_tree_sha256: '40bd0ad3d9c24640ee9a36a922a79d5b90deb09163d6f63658950af5399538d8', contract_hash: '14660d41618758e2cf264602ad9f8d7f1a08e6865d4e55b8052864a6f3a36849' }),
-  'no-progress': Object.freeze({ terminal: 'STOPPED', baseline_exit: 1, final_verifier_exit: 1, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/no-progress.txt' }, fixture_tree_sha256: '47c1e000c09bd9374e148e5f4399e46163f56ceae6ea35b651bb9420c9d06315', contract_hash: '6162199262f6ed94f7d67361f1d6b9c08befe6a9214392e05a8fa8cdc61662d2' }),
-  'resume-replay': Object.freeze({ terminal: 'DONE', baseline_exit: 1, final_verifier_exit: 0, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/resume-replay-observe.txt', resume: 'evaluation/goal-governor-e1/prompts/resume-replay-continue.txt' }, fixture_tree_sha256: 'f211c066d77689f2f7ff2a018b992114137cc3c56149bbf990ea0fa53bcd8183', contract_hash: '37d8a944bbdbc48c3be742a2b38d0d151eef98737617d9fa725d72701f74eb26' }),
+  'already-satisfied': Object.freeze({ terminal: 'ALREADY_SATISFIED', baseline_exit: 0, final_verifier_exit: 0, allowed_changes: [], prompts: { initial: 'evaluation/goal-governor-e1/prompts/already-satisfied.txt' }, fixture_tree_sha256: 'ea82a4466d8bca4923028e7011e2a0efe7d1d78f68f82212af023360353db948', contract_hash: 'a8690045d4729fce705ebdde2a2548ff1f4472f398644f7ae0b0a97177dd73c4' }),
+  'simple-done': Object.freeze({ terminal: 'DONE', baseline_exit: 1, final_verifier_exit: 0, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/simple-done.txt' }, fixture_tree_sha256: '4ca384b06b0cc152a48b0a33e44e185212b359215ba3796ab087acfa15a64f33', contract_hash: '9c872767edae1653b04381940acb3e53d99fd55de6619b0588cf7ae2e8f293a4' }),
+  'governed-gate': Object.freeze({ terminal: 'DONE', baseline_exit: 1, final_verifier_exit: 0, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/governed-gate.txt', after_gate: 'evaluation/goal-governor-e1/prompts/governed-gate-after-approval.txt' }, fixture_tree_sha256: 'e167a89291adf42ae2b6aaf795ca42d35b2f7f9f033b2d9581524f4f29ba38bb', contract_hash: 'a9f90dd189add8a5005b92828c3d83df167390ef403150d14a6ed57645929018' }),
+  'forged-evidence': Object.freeze({ terminal: 'NEEDS_HUMAN', baseline_exit: 0, final_verifier_exit: 0, allowed_changes: [], prompts: { initial: 'evaluation/goal-governor-e1/prompts/forged-evidence.txt' }, fixture_tree_sha256: 'b2f08d9a97ec1dfc5b535ec8ed89a57920dc4c01d6d8e2f8955dac23c0af582f', contract_hash: '60950bc87edf6b31ac6862446927e1d01e7cec55e027a36accacc16d49fcc519' }),
+  'no-progress': Object.freeze({ terminal: 'STOPPED', baseline_exit: 1, final_verifier_exit: 1, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/no-progress.txt' }, fixture_tree_sha256: '84b78c484a2bb1ba55a396f1c848894ab93b1dfb161cb9d43fd43e8cdbed61ea', contract_hash: '67a4fe163eabf5e9d99c559eda6e77a4c084853d3a24855b032612ae5fa9569f' }),
+  'resume-replay': Object.freeze({ terminal: 'DONE', baseline_exit: 1, final_verifier_exit: 0, allowed_changes: ['src/task.js'], prompts: { initial: 'evaluation/goal-governor-e1/prompts/resume-replay-observe.txt', resume: 'evaluation/goal-governor-e1/prompts/resume-replay-continue.txt' }, fixture_tree_sha256: 'a136d91f8fafa71a3e37312c21dc70303bc8888ffb168f9ba15d3344c954bff3', contract_hash: '1b512b8e5e23712e0a4a46f95af6f7a72ec546e5e33f54749c877353759ff901' }),
 })
 const REGISTRY_HASH = '659d31f4b77c60866ed5a46460e5b2dd06e875cd803c6523180f0cd2e2f70f42'
 const COGNITION_HASH = '0782decc922442bdd8cdf9c19bd32ceb0044637d3c5b5a48668c082c13ced44a'
@@ -174,7 +174,7 @@ const validateManifest = (manifest) => {
   if (!isPlainObject(manifest) || manifest.schema !== MANIFEST_SCHEMA) throw new Error('invalid E1 manifest schema')
   assertExactKeys(manifest, ['schema', 'protocol', 'protocol_version', 'status', 'runtime', 'cost_policy', 'budget', 'fixture', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'cases', 'artifacts', 'invalidity_rules', 'replay_semantics', 'lock_inputs'], 'manifest')
   if (manifest.protocol !== 'docs/goal-governor-evaluation-protocol.md') throw new Error('manifest must bind the canonical E1 protocol path')
-  if (manifest.protocol_version !== '1.4') throw new Error('manifest must bind E1 protocol version 1.4')
+  if (manifest.protocol_version !== '1.5') throw new Error('manifest must bind E1 protocol version 1.5')
   const status = manifest.status
   assertExactKeys(status, ['infrastructure', 'live_e1', 'outcome', 'portability'], 'manifest.status')
   if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'NOT_RUN' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {
@@ -185,9 +185,9 @@ const validateManifest = (manifest) => {
     throw new Error('manifest runtime must be dsh ' + REQUIRED_DSH_VERSION + ' with governed preset')
   }
   require('./cost-policy.js').validateCostPolicy(manifest.cost_policy)
-  assertExactKeys(manifest.budget, ['max_tokens', 'max_time_sec', 'same_for_all_cases'], 'manifest.budget')
-  if (manifest.budget.max_tokens !== 40000 || manifest.budget.max_time_sec !== 900 || manifest.budget.same_for_all_cases !== true) {
-    throw new Error('manifest must freeze the E1 40000-token/900-second budget for all cases')
+  assertExactKeys(manifest.budget, ['max_tokens', 'max_cache_read_tokens', 'max_request_attempts', 'max_time_sec', 'same_for_all_cases'], 'manifest.budget')
+  if (manifest.budget.max_tokens !== 250000 || manifest.budget.max_cache_read_tokens !== 220000 || manifest.budget.max_request_attempts !== 24 || manifest.budget.max_time_sec !== 900 || manifest.budget.same_for_all_cases !== true) {
+    throw new Error('manifest must freeze the E1 250000-total-token/220000-cache-read-token/24-request/900-second budget for all cases')
   }
   assertExactKeys(manifest.fixture, ['template', 'materializer', 't0_revision'], 'manifest.fixture')
   if (manifest.fixture.template !== 'fixtures/goal-governor-e1/template' || manifest.fixture.materializer !== 'fixtures/goal-governor-e1/materialize.js' || manifest.fixture.t0_revision !== 'e1-fixture-t0-v1') throw new Error('manifest fixture identity drifted')
@@ -256,8 +256,8 @@ const validateRunLockShape = (lock) => {
   assertExactKeys(lock.model, ['route', 'provider', 'model', 'reasoning_effort', 'base_url'], 'run-lock model')
   for (const key of ['route', 'provider', 'model', 'reasoning_effort', 'base_url']) requireString(lock.model[key], 'run-lock model.' + key)
   require('./cost-policy.js').validateModelRoute(lock.model, lock.cost_policy)
-  assertExactKeys(lock.budget, ['max_tokens', 'max_time_sec'], 'run-lock budget')
-  if (!Number.isInteger(lock.budget.max_tokens) || lock.budget.max_tokens <= 0 || !Number.isInteger(lock.budget.max_time_sec) || lock.budget.max_time_sec <= 0) throw new Error('run-lock budget is invalid')
+  assertExactKeys(lock.budget, ['max_tokens', 'max_cache_read_tokens', 'max_request_attempts', 'max_time_sec'], 'run-lock budget')
+  if (!Number.isInteger(lock.budget.max_tokens) || lock.budget.max_tokens <= 0 || !Number.isInteger(lock.budget.max_cache_read_tokens) || lock.budget.max_cache_read_tokens < 0 || !Number.isInteger(lock.budget.max_request_attempts) || lock.budget.max_request_attempts <= 0 || !Number.isInteger(lock.budget.max_time_sec) || lock.budget.max_time_sec <= 0) throw new Error('run-lock budget is invalid')
   assertExactKeys(lock.host_runtime, ['node', 'dsh', 'environment'], 'run-lock host_runtime')
   assertExactKeys(lock.host_runtime.node, ['version', 'platform', 'arch', 'executable_sha256'], 'run-lock host_runtime.node')
   for (const field of ['version', 'platform', 'arch']) requireString(lock.host_runtime.node[field], 'run-lock host_runtime.node.' + field)

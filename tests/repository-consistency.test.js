@@ -126,7 +126,14 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   const manifest = readJson('evaluation', 'goal-governor-e1', 'manifest.json')
   assert.deepEqual(validateManifest(manifest), [])
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.4')
+  assert.equal(manifest.protocol_version, '1.5')
+  assert.deepEqual(manifest.budget, {
+    max_tokens: 250000,
+    max_cache_read_tokens: 220000,
+    max_request_attempts: 24,
+    max_time_sec: 900,
+    same_for_all_cases: true,
+  })
   assert.deepEqual(manifest.cost_policy, {
     schema: 'dsh-researcher/model-cost-policy/v1',
     timezone: 'Asia/Shanghai',
@@ -155,7 +162,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   }
 })
 
-test('protocol v1.4 cost enforcement and superseded protocol provenance cannot drift silently', () => {
+test('protocol v1.5 layered cost enforcement and superseded protocol provenance cannot drift silently', () => {
   const runner = read('evaluation', 'goal-governor-e1', 'run-e1.js')
   const child = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
   const scorer = read('evaluation', 'goal-governor-e1', 'score-e1.js')
@@ -163,6 +170,7 @@ test('protocol v1.4 cost enforcement and superseded protocol provenance cannot d
   const archiveV11 = read('docs', 'goal-governor-evaluation-protocol-v1.1.md')
   const archiveV12 = read('docs', 'goal-governor-evaluation-protocol-v1.2.md')
   const archiveV13 = read('docs', 'goal-governor-evaluation-protocol-v1.3.md')
+  const archiveV14 = read('docs', 'goal-governor-evaluation-protocol-v1.4.md')
   for (const phase of ['pre-output', 'pre-spawn']) assert.match(runner, new RegExp("phase: '" + phase + "'"))
   assert.match(child, /resolveAdapterOptions/)
   assert.match(child, /commands\.execute\(agent, line, \[\], controller\.signal\)/)
@@ -182,6 +190,8 @@ test('protocol v1.4 cost enforcement and superseded protocol provenance cannot d
   assert.match(runner, /credentials\/workspace/)
   assert.match(e1Patch, /id:\s*goal-round-driver\s*[\s\S]{0,80}disabled:\s*true/)
   assert.match(scorer, /independently recomputed policy decision/)
+  assert.match(scorer, /native model request-attempt budget was exhausted/)
+  assert.match(scorer, /native cache-read token budget was exhausted/)
   assert.match(archive, /Live runs under v1 \| `0`/)
   assert.match(archive, /86691ec89951b1d5319760856d21e58ef7d98a04/)
   assert.match(archive, /ce8047a4c569ebeda07be5d1882a820da7efbfac392dabb24123503bf01ea856/)
@@ -194,6 +204,9 @@ test('protocol v1.4 cost enforcement and superseded protocol provenance cannot d
   assert.match(archiveV13, /Confirmatory Live E1 runs: `0`/)
   assert.match(archiveV13, /c238be11d7c49683c72c2054486dc5c0bfcc10db/)
   assert.match(archiveV13, /db7b04f8cd490c541c8a41190cb27287c6d1c438b67e8708e9fdb1c7709db743/)
+  assert.match(archiveV14, /2 PASS \/ 1 FAIL \/ 3 NOT RUN/)
+  assert.match(archiveV14, /816f0ad40b1f93027a1c9618fc10872440261f05/)
+  assert.match(archiveV14, /1b6542e3748b7bc7b90f829518c961be3f1419d366acdf823acaef2c95685d28/)
 })
 
 test('E1 runner defaults to offline preflight and live mode fails before launch without cost acknowledgement', () => {

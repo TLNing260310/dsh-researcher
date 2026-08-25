@@ -248,6 +248,8 @@ const createRunLock = (options) => {
     },
     budget: {
       max_tokens: manifest.budget.max_tokens,
+      max_cache_read_tokens: manifest.budget.max_cache_read_tokens,
+      max_request_attempts: manifest.budget.max_request_attempts,
       max_time_sec: manifest.budget.max_time_sec,
     },
     host_runtime: {
@@ -283,7 +285,12 @@ const verifyRunLock = (lockPath, options = {}) => {
   if (canonicalize(frozenInputs) !== canonicalize(lock.inputs)) throw new Error('run-lock frozen input hashes drifted')
   if (canonicalize(lock.runtime) !== canonicalize(manifest.runtime)) throw new Error('run-lock runtime drifted from manifest')
   if (canonicalize(lock.cost_policy) !== canonicalize(manifest.cost_policy)) throw new Error('run-lock cost policy drifted from manifest')
-  const frozenBudget = { max_tokens: manifest.budget.max_tokens, max_time_sec: manifest.budget.max_time_sec }
+  const frozenBudget = {
+    max_tokens: manifest.budget.max_tokens,
+    max_cache_read_tokens: manifest.budget.max_cache_read_tokens,
+    max_request_attempts: manifest.budget.max_request_attempts,
+    max_time_sec: manifest.budget.max_time_sec,
+  }
   if (canonicalize(lock.budget) !== canonicalize(frozenBudget)) throw new Error('run-lock budget drifted from manifest')
   const candidatePackage = candidatePathFromLock(lock)
   if (!fs.existsSync(candidatePackage) || !fs.statSync(candidatePackage).isFile()) throw new Error('run-lock candidate package is missing: ' + candidatePackage)

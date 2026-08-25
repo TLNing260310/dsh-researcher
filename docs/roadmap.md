@@ -1,13 +1,13 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.8` 的 exact rc.2 实跑发现并修复了模型可见 Governor schema 与 resume stage-one replay-domain 缺陷；真实 DSH recapture 后，本地 `qwen3:14b` 三条对照为可评分 FAIL、一条对抗轨 INVALID。rejected resume observe 的 live/durable checkpoint 已完全一致，失败证据完整归档且不会签发 token/seal。完整 E1 仍未运行。下一步是 dedicated remote Flash 准入、owner TTY gate、成功 resume 与统一全轨 bundle，而不是增加产品功能。证据见 [Validation Status](./validation-status.md)、[corrected continuation](./evidence/e1-corrected-local-continuation-2026-08-26.md) 与 [schema-repair probe](./evidence/e1-governor-tool-schema-repair-2026-08-25.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.8` 的 protocol v1.4 official Flash 部分运行已形成可裁决结果：2 PASS、1 FAIL、3 NOT RUN。`simple-done` 正确完成局部修改并通过 verifier，但 40,000 total-token 上限先触发 `STOPPED`；该失败已冻结且不会重评分。v1.5 在任何新 live call 前预注册总 token、cache-read、native request 和 wall-time 四重预算，完整 E1 仍未运行。下一步是先验证 v1.5 六轨，而不是增加产品功能。证据见 [v1.4 partial evidence](./evidence/e1-official-flash-partial-2026-08-26.md) 与 [Validation Status](./validation-status.md)。
 
 ## 路线纪律
 
 - `.project-cognition/state.json` 是唯一 canonical project truth；Research Session Ledger、报告和 handoff 只是 provisional 输入，必须经 [owner promotion](./cognition-governance.md) 才能进入新 revision。
 - 冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 是 E1/E2/E3 轨迹、样本、estimand、阈值和 invalidity rule 的唯一来源。本路线不复制这些定义。
 - mechanical PASS 只说明实现按设计工作；不能替代 live conformance、outcome validation 或 portability validation。
-- live E1 必须通过当前冻结协议 v1.4 的模型路由与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A runtime 仅供审计，不得复用于新模型运行。
+- live E1 必须通过当前冻结协议 v1.5 的模型路由、四重预算与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A runtime 仅供审计，不得复用于新模型运行。
 - Project Cognition 的 longitudinal value 与 Goal Governor 的 incremental value 是两个 claim，必须分开识别。
 - 未通过前一 gate，不开发后一 gate 所需的产品扩展。
 

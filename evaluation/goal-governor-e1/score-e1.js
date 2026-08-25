@@ -346,6 +346,8 @@ const validateRunLockEvidence = (artifact, manifest, manifestSha256, invalid) =>
   if (!isPlainObject(manifest.runtime) || hashCanonical(lock.runtime) !== hashCanonical(manifest.runtime)) invalid.push('run_lock runtime drifted from the frozen manifest')
   const budget = isPlainObject(manifest.budget) ? {
     max_tokens: manifest.budget.max_tokens,
+    max_cache_read_tokens: manifest.budget.max_cache_read_tokens,
+    max_request_attempts: manifest.budget.max_request_attempts,
     max_time_sec: manifest.budget.max_time_sec,
   } : null
   if (!budget || hashCanonical(lock.budget) !== hashCanonical(budget)) invalid.push('run_lock budget drifted from the frozen manifest')
@@ -662,14 +664,15 @@ const validateRuntimeProvenance = (artifact, manifest, invalid) => {
 
 const validateBudgetEvidence = (artifact, manifest, contract, replay, invalid, failures, options = {}) => {
   const evidence = artifact.budget_evidence
-  if (!isPlainObject(evidence) || evidence.schema !== 'dsh-researcher/goal-governor-e1/budget-evidence/v1') {
+  if (!isPlainObject(evidence) || evidence.schema !== 'dsh-researcher/goal-governor-e1/budget-evidence/v2') {
     invalid.push('budget_evidence is missing or has the wrong schema')
     return null
   }
   const limits = evidence.limits
   const manifestLimits = manifest && manifest.budget
   if (!isPlainObject(limits) || !isPlainObject(manifestLimits) ||
-      limits.max_tokens !== manifestLimits.max_tokens || limits.max_time_sec !== manifestLimits.max_time_sec ||
+      limits.max_tokens !== manifestLimits.max_tokens || limits.max_cache_read_tokens !== manifestLimits.max_cache_read_tokens ||
+      limits.max_request_attempts !== manifestLimits.max_request_attempts || limits.max_time_sec !== manifestLimits.max_time_sec ||
       limits.max_tokens !== contract.limits.max_tokens || limits.max_time_sec !== contract.limits.max_time_sec) {
     invalid.push('budget_evidence limits drifted from manifest or Goal Contract')
   }
@@ -709,11 +712,14 @@ const validateBudgetEvidence = (artifact, manifest, contract, replay, invalid, f
   const derivedElapsed = usageEvents.reduce((maximum, event) => Math.max(maximum, Number(event.data && event.data.elapsed_sec) || 0), 0)
   const nativeUsage = summarizeNativeUsage(options.events, { strict: true })
   const derivedTokens = nativeUsage.cumulative_tokens
+  const derivedCacheReadTokens = nativeUsage.token_buckets.cacheReadTokens
   if (nativeUsage.request_attempts === 0) invalid.push('raw session contains no auditable native model request attempt')
   if (nativeUsage.coverage_complete !== true) {
     invalid.push('native model request usage coverage is incomplete')
     for (const diagnostic of nativeUsage.diagnostics.slice(0, 20)) invalid.push('native usage: ' + diagnostic.detail)
   }
+  if (nativeUsage.request_attempts >= limits.max_request_attempts) failures.push('native model request-attempt budget was exhausted')
+  if (derivedCacheReadTokens >= limits.max_cache_read_tokens) failures.push('native cache-read token budget was exhausted')
   if (replayTokens !== derivedTokens) invalid.push('goal replay usage total differs from the independently reconstructed native request-attempt ledger')
   if (!isPlainObject(usage) || usage.source !== 'host-folded-goal-events/usage_recorded' ||
       !Number.isInteger(usage.cumulative_tokens) || usage.cumulative_tokens < 0 || !Number.isFinite(usage.elapsed_sec) || usage.elapsed_sec < 0) {
@@ -736,6 +742,7 @@ const validateBudgetEvidence = (artifact, manifest, contract, replay, invalid, f
       independent_calls: nativeUsage.independent_calls,
       coverage_complete: nativeUsage.coverage_complete,
       cumulative_tokens: nativeUsage.cumulative_tokens,
+      cache_read_tokens: derivedCacheReadTokens,
       ledger_hash: hashCanonical({ attempts: nativeUsage.attempts, independent_calls: nativeUsage.independent_call_ledger }),
     },
   }
@@ -1418,7 +1425,7 @@ const validateManifest = (manifest, options = {}) => {
   }
   if (!isPlainObject(manifest)) return ['manifest must be an object']
   if (manifest.schema !== MANIFEST_SCHEMA) invalid.push('manifest schema must equal ' + MANIFEST_SCHEMA)
-  if (manifest.protocol_version !== '1.4') invalid.push('manifest.protocol_version must equal 1.4')
+  if (manifest.protocol_version !== '1.5') invalid.push('manifest.protocol_version must equal 1.5')
   try { validateCostPolicy(manifest.cost_policy) } catch (error) { invalid.push('manifest cost policy: ' + error.message) }
   if (!isPlainObject(manifest.runtime)) invalid.push('manifest.runtime must be an object')
   else {

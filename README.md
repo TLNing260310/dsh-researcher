@@ -20,7 +20,7 @@ They are independent. You can trial Project Research without adopting Goal Contr
 
 > **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. Live E1, net productivity gain, long-term Project Cognition value, and adapters beyond DSH are **not proven**.
 
-> **Latest runtime evidence:** after repairing and recapturing the model-visible Governor Schema, three controlled Qwen tracks are scorable **FAIL**, one adversarial track is **INVALID**, and a rejected resume observe now reproduces identical live/durable checkpoints without issuing a token or seal. The host rejects unsafe completion, while this local model still ignores the required workflow. This is runtime and negative evidence, not full E1. See the [corrected continuation](./docs/evidence/e1-corrected-local-continuation-2026-08-26.md), [schema repair](./docs/evidence/e1-governor-tool-schema-repair-2026-08-25.md), and preserved [history](./docs/evidence/e1-local-qwen-multitrack-2026-08-25.md).
+> **Latest runtime evidence:** protocol v1.4 reached official `deepseek-v4-flash`: `already-satisfied` and `forged-evidence` passed; `simple-done` correctly changed only `src/task.js` and passed the trusted verifier, but the frozen 40,000-token limit forced `STOPPED`, so the track is a valid **FAIL**. The remaining three tracks were not run. v1.5 was preregistered afterward with separate total-token, cache-read, request-attempt, and time limits; it has made zero live calls. See the preserved [official Flash partial result](./docs/evidence/e1-official-flash-partial-2026-08-26.md) and [v1.4 archive](./docs/goal-governor-evaluation-protocol-v1.4.md).
 
 ## The problem
 
@@ -160,7 +160,7 @@ The CLI actor label is not human authentication. Repository governance must keep
 | Unit, replay, integration, adversarial, installer, and package tests | PASS | The published mechanisms reject the covered drift and forged-evidence paths |
 | `project-cognition doctor .` | PASS | Current schema, hashes, projection, goals, and registry agree; it does not prove evidence freshness |
 | DSH Web Project Research smoke | Runtime boundary PASS; output probes FAIL | The exact tested runtime can become SAFE and reject drift; research quality is not established |
-| Goal Governor E1 infrastructure | READY; Live E1 NOT RUN | Preflight, run lock, cost admission, bundle, replay, and scorer exist |
+| Goal Governor E1 infrastructure | v1.5 READY; v1.5 Live E1 NOT RUN | v1.4 remains 2 PASS / 1 FAIL / 3 NOT RUN; preflight, layered budgets, run lock, cost admission, bundle, replay, and scorer exist |
 | Outcome value and portability | NOT PROVEN | Requires Live E1, a non-inferential pilot, E2, then second-adapter conformance |
 
 Run the public offline checks without a model or network call:

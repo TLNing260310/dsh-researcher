@@ -40,6 +40,7 @@ const {
 const { beginAttempt, finishAttempt, assertClosedLedger } = require('./attempt-ledger.js')
 const { materialize } = require('../../fixtures/goal-governor-e1/materialize.js')
 const { PROJECT_PACKAGE_NAME, assertDshNodeSupported } = require('../../lib/runtime-requirements.js')
+const { summarizeNativeUsage } = require('../../lib/dsh-adapter/index.js')
 const { materializeE1Patch } = require('./patch-materializer.js')
 
 const EVAL_ROOT = __dirname
@@ -572,9 +573,10 @@ const main = () => {
   }
   const timingProcesses = [...priorTimingProcesses, processTiming]
   const wallElapsedSec = timingProcesses.reduce((sum, item) => sum + Number(item.elapsed_sec || 0), 0)
+  const nativeUsage = summarizeNativeUsage(runtime.session_events, { strict: true })
   const budgetEvidence = {
-    schema: 'dsh-researcher/goal-governor-e1/budget-evidence/v1',
-    limits: { max_tokens: lockResult.lock.budget.max_tokens, max_time_sec: lockResult.lock.budget.max_time_sec },
+    schema: 'dsh-researcher/goal-governor-e1/budget-evidence/v2',
+    limits: { ...lockResult.lock.budget },
     outer_monotonic: {
       source: 'process.hrtime.bigint',
       processes: timingProcesses,
@@ -652,6 +654,9 @@ const main = () => {
     if (foldedUsage.cumulative_tokens >= lockResult.lock.budget.max_tokens) reject('TOKEN_BUDGET_EXHAUSTED', 'host-folded usage reached the frozen token limit')
     if (foldedUsage.elapsed_sec >= lockResult.lock.budget.max_time_sec) reject('EVENT_TIME_BUDGET_EXHAUSTED', 'host-folded elapsed time reached the frozen time limit')
   }
+  if (!nativeUsage.coverage_complete) reject('NATIVE_USAGE_INCOMPLETE', 'native request usage coverage is incomplete')
+  if (nativeUsage.request_attempts >= lockResult.lock.budget.max_request_attempts) reject('REQUEST_BUDGET_EXHAUSTED', 'native request attempts reached the frozen limit')
+  if (nativeUsage.token_buckets.cacheReadTokens >= lockResult.lock.budget.max_cache_read_tokens) reject('CACHE_READ_BUDGET_EXHAUSTED', 'native cache-read usage reached the frozen limit')
   const outerFinalization = {
     schema: 'dsh-researcher/goal-governor-e1/outer-finalization/v1',
     finalized: outerErrors.length === 0,

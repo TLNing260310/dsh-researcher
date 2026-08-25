@@ -364,6 +364,54 @@ test('a completely evidenced token limit exhaustion is a causally valid FAIL', (
   assert.ok(scored.failures.some((reason) => /token budget was exhausted/.test(reason)))
 })
 
+test('cache-read exhaustion is independently reconstructed as a causally valid FAIL', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  const exhausted = { inputTokens: 8, outputTokens: 4, cacheReadTokens: bundle.manifest.budget.max_cache_read_tokens }
+  const total = exhausted.inputTokens + exhausted.outputTokens + exhausted.cacheReadTokens
+  const usageChunk = run.session_events.find((event) => event.type === 'assistant/chunk' && event.data?.chunk?.type === 'usage')
+  const message = run.session_events.find((event) => event.type === 'assistant/message')
+  usageChunk.data.chunk.usage = { ...exhausted }
+  message.data.usage = { ...exhausted }
+  run.budget_evidence.host_folded_usage.cumulative_tokens = total
+  run.outer_finalized = false
+  run.outer_finalization.finalized = false
+  run.outer_finalization.budget.cumulative_tokens = total
+  run.outer_finalization.errors = [{ code: 'CACHE_READ_BUDGET_EXHAUSTED', message: 'fixture exhaustion' }]
+  refreshFinalReplay(run)
+  const scored = scoreTrustedBundle(bundle).runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'FAIL')
+  assert.ok(scored.failures.some((reason) => /cache-read token budget was exhausted/.test(reason)))
+  assert.equal(scored.proof.budget.native_usage.cache_read_tokens, bundle.manifest.budget.max_cache_read_tokens)
+})
+
+test('native request-attempt exhaustion is independently reconstructed as a causally valid FAIL', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  const usage = { inputTokens: 8, outputTokens: 4, cacheReadTokens: 1, reasoningTokens: 2 }
+  const added = []
+  for (let turn = 2; turn <= bundle.manifest.budget.max_request_attempts; turn++) {
+    const usageChunk = { seq: 0, type: 'assistant/chunk', data: { turn, step: 1, chunk: { type: 'usage', usage: { ...usage } } } }
+    const finishChunk = { seq: 0, type: 'assistant/chunk', data: { turn, step: 1, chunk: { type: 'finish', reason: { kind: 'stop' } } } }
+    const message = { seq: 0, type: 'assistant/message', data: { turn, step: 1, usage: { ...usage }, message: { role: 'assistant', content: [] } }, sourceEventSeqs: [] }
+    added.push({ usageChunk, finishChunk, message })
+  }
+  run.session_events.splice(4, 0, ...added.flatMap(({ usageChunk, finishChunk, message }) => [usageChunk, finishChunk, message]))
+  run.session_events.forEach((event, index) => { event.seq = index + 1 })
+  for (const { usageChunk, finishChunk, message } of added) message.sourceEventSeqs = [usageChunk.seq, finishChunk.seq]
+  const total = 13 * bundle.manifest.budget.max_request_attempts
+  run.budget_evidence.host_folded_usage.cumulative_tokens = total
+  run.outer_finalized = false
+  run.outer_finalization.finalized = false
+  run.outer_finalization.budget.cumulative_tokens = total
+  run.outer_finalization.errors = [{ code: 'REQUEST_BUDGET_EXHAUSTED', message: 'fixture exhaustion' }]
+  refreshFinalReplay(run)
+  const scored = scoreTrustedBundle(bundle).runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'FAIL')
+  assert.ok(scored.failures.some((reason) => /request-attempt budget was exhausted/.test(reason)))
+  assert.equal(scored.proof.budget.native_usage.request_attempts, bundle.manifest.budget.max_request_attempts)
+})
+
 test('an actual forbidden shell-family call absent from the locked surface is INVALID', () => {
   const bundle = cloneBundle()
   const run = bundle.artifacts['simple-done']

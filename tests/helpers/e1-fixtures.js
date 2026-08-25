@@ -258,8 +258,13 @@ const budgetEvidence = (caseId, manifest, events, runLock) => {
   const nativeUsage = summarizeNativeUsage(events, { strict: true })
   if (!nativeUsage.coverage_complete) throw new Error('synthetic fixture must have complete native usage coverage')
   return {
-    schema: 'dsh-researcher/goal-governor-e1/budget-evidence/v1',
-    limits: { max_tokens: manifest.budget.max_tokens, max_time_sec: manifest.budget.max_time_sec },
+    schema: 'dsh-researcher/goal-governor-e1/budget-evidence/v2',
+    limits: {
+      max_tokens: manifest.budget.max_tokens,
+      max_cache_read_tokens: manifest.budget.max_cache_read_tokens,
+      max_request_attempts: manifest.budget.max_request_attempts,
+      max_time_sec: manifest.budget.max_time_sec,
+    },
     outer_monotonic: {
       source: 'process.hrtime.bigint',
       processes,
@@ -302,7 +307,7 @@ const makeManifest = () => {
   const manifest = {
     schema: MANIFEST_SCHEMA,
     protocol: 'docs/goal-governor-evaluation-protocol.md',
-    protocol_version: '1.4',
+    protocol_version: '1.5',
     status: { infrastructure: 'READY', live_e1: 'NOT_RUN', outcome: 'NOT_PROVEN', portability: 'NOT_PROVEN' },
     runtime: {
       client: 'dsh', version: '0.1.1-rc.2', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',
@@ -310,7 +315,7 @@ const makeManifest = () => {
       title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false, goal_round_driver: 'runner-disarmed',
     },
     cost_policy: JSON.parse(JSON.stringify(SYNTHETIC_COST_POLICY)),
-    budget: { max_tokens: 40000, max_time_sec: 900, same_for_all_cases: true },
+    budget: { max_tokens: 250000, max_cache_read_tokens: 220000, max_request_attempts: 24, max_time_sec: 900, same_for_all_cases: true },
     fixture: { template: 'fixtures/goal-governor-e1/template', materializer: 'fixtures/goal-governor-e1/materialize.js', t0_revision: 'e1-fixture-t0-v1' },
     trusted_verifier: { tool_name: 'e1_verify', arguments: {}, source: TRUSTED_VERIFIER_SOURCE, sha256: TRUSTED_VERIFIER_SHA256 },
     visible_tool_contract: JSON.parse(JSON.stringify(VISIBLE_TOOL_POLICY)),
@@ -377,7 +382,12 @@ const makeRunLock = (manifest, manifestSha256) => {
       reasoning_effort: 'fixture',
       base_url: 'http://127.0.0.1:11434/v1',
     },
-    budget: { max_tokens: manifest.budget.max_tokens, max_time_sec: manifest.budget.max_time_sec },
+    budget: {
+      max_tokens: manifest.budget.max_tokens,
+      max_cache_read_tokens: manifest.budget.max_cache_read_tokens,
+      max_request_attempts: manifest.budget.max_request_attempts,
+      max_time_sec: manifest.budget.max_time_sec,
+    },
     host_runtime: {
       node: { version: 'v24.9.0', platform: 'win32', arch: 'x64', executable_sha256: digest('node-executable') },
       dsh: {
