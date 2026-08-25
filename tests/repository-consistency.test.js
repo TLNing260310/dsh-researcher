@@ -132,6 +132,7 @@ test('protocol v1.3 cost enforcement and superseded protocol provenance cannot d
   const archiveV12 = read('docs', 'goal-governor-evaluation-protocol-v1.2.md')
   for (const phase of ['pre-output', 'pre-spawn']) assert.match(runner, new RegExp("phase: '" + phase + "'"))
   assert.match(child, /resolveAdapterOptions/)
+  assert.match(child, /commands\.execute\(agent, line, \[\], controller\.signal\)/)
   assert.match(child, /resolved DSH DeepSeek baseURL differs from the frozen run-lock/)
   assert.match(child, /before-model-followup/)
   assert.match(child, /after-model-followup/)

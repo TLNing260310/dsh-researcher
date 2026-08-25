@@ -161,7 +161,7 @@ const followup = async (agent, text) => {
 const executeCommand = async (commands, agent, line) => {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(new Error('E1 command timed out')), 30000)
-  try { return await commands.execute(agent, line, controller.signal) }
+  try { return await commands.execute(agent, line, [], controller.signal) }
   finally { clearTimeout(timeout) }
 }
 

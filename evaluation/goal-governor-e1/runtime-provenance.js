@@ -164,9 +164,30 @@ const dshPackageImportMap = (provenance, requiredNames) => {
   return values
 }
 
-const directoryInventory = (root) => {
+const directoryInventory = (root, options = {}) => {
   const absolute = canonicalExisting(path.resolve(root))
-  const files = snapshotTree(absolute)
+  const allowedLinkRoot = options.allowedLinkRoot === undefined
+    ? null
+    : canonicalExisting(path.resolve(options.allowedLinkRoot))
+  const files = []
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      const target = path.join(directory, entry.name)
+      const relative = slash(path.relative(absolute, target))
+      if (entry.isSymbolicLink()) {
+        if (!allowedLinkRoot) throw new Error('symbolic links are not allowed in frozen E1 inputs: ' + relative)
+        const resolved = canonicalExisting(target)
+        if (!isWithin(allowedLinkRoot, resolved)) throw new Error('DSH_HOME dependency link escapes the locked DSH module root: ' + relative)
+        files.push({
+          path: relative,
+          sha256: hashJson({ kind: 'locked-dependency-link', target_relative: slash(path.relative(allowedLinkRoot, resolved)) }),
+        })
+      } else if (entry.isDirectory()) visit(target)
+      else if (entry.isFile()) files.push({ path: relative, sha256: sha256File(target) })
+      else throw new Error('unsupported filesystem entry in frozen E1 input: ' + relative)
+    }
+  }
+  visit(absolute)
   return {
     schema: 'dsh-researcher/goal-governor-e1/directory-inventory/v1',
     files,

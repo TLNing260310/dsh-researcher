@@ -311,7 +311,7 @@ const main = () => {
     const requested = requireString(args['resume-session'], '--resume-session')
     if (requested !== token.session_id) throw new Error('--resume-session does not match the preserved stage-one token')
     if (token.run_lock_hash !== lockResult.lock.lock_hash || token.contract_hash !== entry.contract_hash) throw new Error('stage-one token does not match the current run-lock/contract')
-    stage1Verification = validateStage1Seal({ caseDir, workspace, dshHome, runLockHash: lockResult.lock.lock_hash, contractHash: entry.contract_hash, sessionId: requested })
+    stage1Verification = validateStage1Seal({ caseDir, workspace, dshHome, dshModuleRoot, runLockHash: lockResult.lock.lock_hash, contractHash: entry.contract_hash, sessionId: requested })
     if (runGit(workspace, ['status', '--porcelain=v1', '--untracked-files=all']) !== stage1Verification.expected_git_status) throw new Error('current git status differs from the sealed stage-one boundary')
     if (runGit(workspace, ['diff', '--no-ext-diff', '--binary', '--']) !== stage1Verification.expected_diff) throw new Error('current git diff differs from the sealed stage-one boundary')
   } else {
@@ -330,11 +330,11 @@ const main = () => {
     }
   }
   verifyInstalledCandidate(presetRoot, lockResult.lock)
-  const dshHomeBefore = directoryInventory(dshHome)
+  const dshHomeBefore = directoryInventory(dshHome, { allowedLinkRoot: dshModuleRoot })
   if (!continuing && (dshHomeBefore.file_count !== lockResult.lock.dsh_home_policy.initial_file_count || dshHomeBefore.inventory_sha256 !== lockResult.lock.dsh_home_policy.initial_inventory_sha256)) throw new Error('DSH_HOME_DRIFT: each new E1 case requires a fresh empty DSH_HOME')
   if (continuing && canonicalize(dshHomeBefore) !== canonicalize(stage1Verification.dsh_home_inventory)) throw new Error('DSH_HOME_DRIFT: continuation DSH_HOME differs from the sealed stage-one inventory')
   const runtimeProvenance = verifyDshRuntime(dshModuleRoot, dshHome, lockResult.lock.host_runtime.dsh)
-  if (canonicalize(directoryInventory(dshHome)) !== canonicalize(dshHomeBefore)) throw new Error('DSH_HOME_DRIFT: DSH --version mutated the frozen pre-run home')
+  if (canonicalize(directoryInventory(dshHome, { allowedLinkRoot: dshModuleRoot })) !== canonicalize(dshHomeBefore)) throw new Error('DSH_HOME_DRIFT: DSH --version mutated the frozen pre-run home')
 
   // No mutation above this line. The explicit live contract is now complete.
   fs.mkdirSync(outputRoot, { recursive: true })
@@ -512,7 +512,7 @@ const main = () => {
     allowedChanges: entry.allowed_changes,
     expectedNodeProvenance: lockResult.lock.host_runtime.node,
   })
-  const dshHomeAfter = directoryInventory(dshHome)
+  const dshHomeAfter = directoryInventory(dshHome, { allowedLinkRoot: dshModuleRoot })
   const postStatus = runGit(workspace, ['status', '--porcelain=v1', '--untracked-files=all'])
   const diff = runGit(workspace, ['diff', '--no-ext-diff', '--binary', '--'])
   const after = workspaceSnapshot(workspace)

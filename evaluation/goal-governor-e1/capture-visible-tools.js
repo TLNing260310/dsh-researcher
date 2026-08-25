@@ -67,9 +67,9 @@ const main = () => {
   const dsh = dshRuntimeProvenance(dshModuleRoot)
   assertDshNodeSupported()
   if (dsh.package_version !== VERIFIED_DSH) throw new Error('schema capture requires @deepseek-ai/dsh@' + VERIFIED_DSH)
-  const dshHomeBefore = directoryInventory(dshHome)
+  const dshHomeBefore = directoryInventory(dshHome, { allowedLinkRoot: dshModuleRoot })
   const verifiedDsh = verifyDshRuntime(dshModuleRoot, dshHome, publicDshProvenance(dsh))
-  if (canonicalize(directoryInventory(dshHome)) !== canonicalize(dshHomeBefore)) throw new Error('DSH --version mutated the fresh capture home')
+  if (canonicalize(directoryInventory(dshHome, { allowedLinkRoot: dshModuleRoot })) !== canonicalize(dshHomeBefore)) throw new Error('DSH --version mutated the fresh capture home')
   const candidatePackage = readJson(path.join(presetRoot, 'package.json'))
   if (candidatePackage.name !== PROJECT_PACKAGE_NAME) throw new Error('schema capture preset root is not ' + PROJECT_PACKAGE_NAME)
   // This synthetic lock shape is used only to reuse the candidate closure
