@@ -51,6 +51,7 @@ const DRIVER_PATH = path.join(EVAL_ROOT, 'runner', 'e1-headless.mjs')
 const HOST_TOOL_PATH = path.join(EVAL_ROOT, 'runner', 'e1-host-tool.js')
 const EXTERNAL_VERIFIER_PATH = path.resolve(REPO_ROOT, TRUSTED_VERIFIER.source)
 const VISIBLE_TOOL_CONTRACT_PATH = path.join(EVAL_ROOT, 'visible-tool-contract.js')
+const LOCAL_LOOPBACK_API_KEY = 'dsh-e1-local-loopback-non-secret'
 let pendingAttempt = null
 
 // The observe stage is a prerequisite for resume and cannot be sealed unless
@@ -58,6 +59,19 @@ let pendingAttempt = null
 // verifier mismatch is model/conformance behavior for the scorer to mark FAIL;
 // it is not an evidence-capture failure.
 const verifierExitIsFinalizationError = (stage, actual, expected) => stage === 'observe' && actual !== expected
+
+const applyModelCredentialBoundary = (source, model) => {
+  const environment = { ...source }
+  if (model?.route === 'local-loopback') {
+    // The OpenAI-compatible adapter requires a non-empty key even when its
+    // frozen endpoint is loopback. Never forward a real remote credential to
+    // a local test server; provide an explicit, public, non-secret sentinel.
+    environment.DEEPSEEK_API_KEY = LOCAL_LOOPBACK_API_KEY
+    return environment
+  }
+  if (model?.route === 'deepseek-api') return environment
+  throw new Error('MODEL_ROUTE_INVALID: cannot construct a credential boundary for an unknown route')
+}
 
 const writeJson = (file, value) => fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n')
 const frozenSettingsBytes = (model) => Buffer.from(JSON.stringify({
@@ -423,7 +437,7 @@ const main = () => {
     ? readJson(path.join(caseDir, 'resume-stage1.json')).budget_evidence?.outer_monotonic?.processes || []
     : []
   const sanitizedLaunch = sanitizeNodeEnvironment(process.env)
-  const environment = {
+  const environment = applyModelCredentialBoundary({
     ...sanitizedLaunch.env,
     DSH_HOME: dshHome,
     DSH_PERMISSION_MODE: 'workspace-write',
@@ -461,7 +475,7 @@ const main = () => {
     DSH_E1_DISABLE_MODEL_COMPACTION: '1',
     DSH_E1_RESTRICT_TOOL_SURFACE: '1',
     DEEPSEEK_BASE_URL: lockResult.lock.model.base_url,
-  }
+  }, lockResult.lock.model)
   let preSpawnAdmission
   try {
     preSpawnAdmission = assertCostAdmission({
@@ -697,4 +711,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { main, deriveChildTimeout, frozenSettingsBytes, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail, verifierExitIsFinalizationError }
+module.exports = { main, deriveChildTimeout, frozenSettingsBytes, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail, verifierExitIsFinalizationError, applyModelCredentialBoundary, LOCAL_LOOPBACK_API_KEY }

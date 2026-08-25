@@ -121,6 +121,13 @@ equal the capture-bound run-lock before the first prompt. Scope-local governor,
 status, and `e1_verify` tools are therefore checked from the actual pinned DSH
 evidence; a guard alone is never treated as invisibility.
 
+For `local-loopback`, the runner replaces any inherited `DEEPSEEK_API_KEY` with
+a fixed public non-secret sentinel because the OpenAI-compatible adapter still
+requires a non-empty credential. This prevents a real remote key from reaching
+the local test server and keeps a fresh isolated `DSH_HOME` self-contained. The
+sentinel is never used for `deepseek-api`; remote runs retain their dedicated
+credential and spend-control requirements.
+
 `governed-gate` also requires `--human-gate-stdin` and external interactive TTY
 input; it cannot come from a lock, flag, pipe, or model tool. This proves the
 input channel and command linkage, not cryptographic human identity. `resume-replay`

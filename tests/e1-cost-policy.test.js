@@ -10,7 +10,7 @@ const {
   evaluateCostAdmission,
   assertCostAdmission,
 } = require('../evaluation/goal-governor-e1/cost-policy.js')
-const { deriveChildTimeout } = require('../evaluation/goal-governor-e1/run-e1.js')
+const { deriveChildTimeout, applyModelCredentialBoundary, LOCAL_LOOPBACK_API_KEY } = require('../evaluation/goal-governor-e1/run-e1.js')
 
 const policy = {
   schema: 'dsh-researcher/model-cost-policy/v1',
@@ -98,6 +98,20 @@ test('local execution requires the official adapter and a literal explicit-port 
   }
   const wrongProvider = { route: 'local-loopback', provider: 'local', model: 'fixture', reasoning_effort: 'none', base_url: 'http://127.0.0.1:11434' }
   assert.ok(at('2026-08-24T10:00:00', 60, wrongProvider).reason_codes.includes('LOCAL_PROVIDER_INVALID'))
+})
+
+test('local loopback replaces inherited remote credentials with a public non-secret sentinel', () => {
+  const inherited = { SAFE: '1', DEEPSEEK_API_KEY: 'must-not-reach-local-server' }
+  const local = { route: 'local-loopback' }
+  const bounded = applyModelCredentialBoundary(inherited, local)
+  assert.equal(bounded.SAFE, '1')
+  assert.equal(bounded.DEEPSEEK_API_KEY, LOCAL_LOOPBACK_API_KEY)
+  assert.notEqual(bounded.DEEPSEEK_API_KEY, inherited.DEEPSEEK_API_KEY)
+  assert.equal(inherited.DEEPSEEK_API_KEY, 'must-not-reach-local-server')
+
+  const remoteEnvironment = applyModelCredentialBoundary(inherited, { route: 'deepseek-api' })
+  assert.equal(remoteEnvironment.DEEPSEEK_API_KEY, inherited.DEEPSEEK_API_KEY)
+  assert.throws(() => applyModelCredentialBoundary(inherited, { route: 'unknown' }), /MODEL_ROUTE_INVALID/)
 })
 
 test('invalid and ambiguous clocks fail closed', () => {
