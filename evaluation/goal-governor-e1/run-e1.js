@@ -53,6 +53,12 @@ const EXTERNAL_VERIFIER_PATH = path.resolve(REPO_ROOT, TRUSTED_VERIFIER.source)
 const VISIBLE_TOOL_CONTRACT_PATH = path.join(EVAL_ROOT, 'visible-tool-contract.js')
 let pendingAttempt = null
 
+// The observe stage is a prerequisite for resume and cannot be sealed unless
+// its baseline verifier matches. At a final stage, however, a trustworthy
+// verifier mismatch is model/conformance behavior for the scorer to mark FAIL;
+// it is not an evidence-capture failure.
+const verifierExitIsFinalizationError = (stage, actual, expected) => stage === 'observe' && actual !== expected
+
 const writeJson = (file, value) => fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n')
 const frozenSettingsBytes = (model) => Buffer.from(JSON.stringify({
   'agent-default-model': {
@@ -603,7 +609,7 @@ const main = () => {
   const outerErrors = []
   const reject = (code, message) => outerErrors.push({ code, message })
   if (!hostVerifier.integrity.ok || !hostVerifier.workspace.unchanged || hostVerifier.spawn_error || hostVerifier.timed_out) reject('TRUSTED_VERIFIER_DRIFT', 'external verifier integrity or execution failed')
-  if (hostVerifier.exit_code !== expectedVerifierExit) reject('HOST_VERIFIER_EXIT_MISMATCH', 'expected exit ' + expectedVerifierExit + ', received ' + hostVerifier.exit_code)
+  if (verifierExitIsFinalizationError(stage, hostVerifier.exit_code, expectedVerifierExit)) reject('HOST_VERIFIER_EXIT_MISMATCH', 'expected exit ' + expectedVerifierExit + ', received ' + hostVerifier.exit_code)
   if (child.error) reject(child.error.code === 'ETIMEDOUT' ? 'DSH_CHILD_TIMEOUT' : 'DSH_CHILD_ERROR', child.error.message)
   if (child.status !== 0) reject('DSH_CHILD_NONZERO', 'DSH child exit was ' + child.status)
   if (!budgetEvidence.outer_monotonic.within_limit) reject('WALL_BUDGET_EXHAUSTED', 'host-monotonic execution time reached the frozen limit')
@@ -691,4 +697,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { main, deriveChildTimeout, frozenSettingsBytes, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail }
+module.exports = { main, deriveChildTimeout, frozenSettingsBytes, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail, verifierExitIsFinalizationError }

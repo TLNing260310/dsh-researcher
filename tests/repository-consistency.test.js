@@ -8,11 +8,19 @@ const { spawnSync } = require('node:child_process')
 
 const { CASE_PROTOCOL, CASE_IDS, MANIFEST_SCHEMA, RUN_SCHEMA, validateManifest } = require('../evaluation/goal-governor-e1/score-e1.js')
 const { validateCapturePaths } = require('../evaluation/goal-governor-e1/capture-visible-tools.js')
+const { verifierExitIsFinalizationError } = require('../evaluation/goal-governor-e1/run-e1.js')
 const { renderMarkdown } = require('../lib/cognition-core/index.js')
 
 const root = path.join(__dirname, '..')
 const read = (...parts) => fs.readFileSync(path.join(root, ...parts), 'utf8')
 const readJson = (...parts) => JSON.parse(read(...parts))
+
+test('final E1 verifier mismatches remain scorable while resume prerequisites fail closed', () => {
+  assert.equal(verifierExitIsFinalizationError('full', 1, 0), false)
+  assert.equal(verifierExitIsFinalizationError('continue', 1, 0), false)
+  assert.equal(verifierExitIsFinalizationError('observe', 1, 0), true)
+  assert.equal(verifierExitIsFinalizationError('observe', 1, 1), false)
+})
 
 test('declared Node floor, public quickstart, and CI matrix cover the floor and current LTS', () => {
   const pkg = readJson('package.json')
