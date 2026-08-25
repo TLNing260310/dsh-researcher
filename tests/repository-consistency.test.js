@@ -135,6 +135,7 @@ test('protocol v1.4 cost enforcement and superseded protocol provenance cannot d
   assert.match(child, /resolveAdapterOptions/)
   assert.match(child, /commands\.execute\(agent, line, \[\], controller\.signal\)/)
   assert.match(child, /disarmTrajectoryGoal\(goals, agent/)
+  assert.doesNotMatch(child, /replayed\.decision\s*===\s*requiredEnv\('DSH_E1_EXPECTED_TERMINAL'\)\s*\?\s*0\s*:\s*1/)
   assert.match(child, /resolved DSH DeepSeek baseURL differs from the frozen run-lock/)
   assert.match(child, /before-model-followup/)
   assert.match(child, /after-model-followup/)

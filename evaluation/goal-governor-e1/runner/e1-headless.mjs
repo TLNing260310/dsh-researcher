@@ -459,7 +459,10 @@ async function run(ctx, io) {
     const checkpointMatches = ['session_id', 'goal_id', 'runtime_goal_id', 'contract_hash', 'state_hash', 'diagnostics_hash', 'decision'].every((field) => live[field] === replayed[field])
     if (!checkpointMatches || hashCanonical(liveAugmented) !== hashCanonical(durableAugmented)) throw new Error('live state differs from the flushed durable full-log replay')
     io.stdout.write(JSON.stringify({ case_id: caseId, session_id: String(sessionId), decision: replayed.decision }) + '\n')
-    io.exit(replayed.decision === requiredEnv('DSH_E1_EXPECTED_TERMINAL') ? 0 : 1)
+    // A captured but non-matching terminal is a model/conformance FAIL, not a
+    // runner failure. The offline scorer owns that verdict; exit 1 is reserved
+    // for exceptions that prevented a trustworthy capture.
+    io.exit(0)
   } finally {
     await handle.dispose()
   }

@@ -188,6 +188,7 @@ const directoryInventory = (root, options = {}) => {
     }
   }
   visit(absolute)
+  files.sort((left, right) => left.path.localeCompare(right.path))
   return {
     schema: 'dsh-researcher/goal-governor-e1/directory-inventory/v1',
     files,

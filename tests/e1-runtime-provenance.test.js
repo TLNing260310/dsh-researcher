@@ -19,13 +19,17 @@ test('DSH_HOME inventory commits dependency links only when they resolve inside 
   fs.mkdirSync(outside)
   fs.writeFileSync(path.join(modules, 'pkg', 'index.js'), 'module.exports = 1\n')
   fs.symlinkSync(path.join(modules, 'pkg'), path.join(home, 'pkg'), process.platform === 'win32' ? 'junction' : 'dir')
+  fs.mkdirSync(path.join(home, 'scope'))
+  fs.symlinkSync(path.join(modules, 'pkg'), path.join(home, 'scope', 'z'), process.platform === 'win32' ? 'junction' : 'dir')
+  fs.symlinkSync(path.join(modules, 'pkg'), path.join(home, 'scope-a'), process.platform === 'win32' ? 'junction' : 'dir')
 
   assert.throws(() => directoryInventory(home), /symbolic links/)
   const first = directoryInventory(home, { allowedLinkRoot: modules })
   const second = directoryInventory(home, { allowedLinkRoot: modules })
   assert.deepEqual(second, first)
-  assert.equal(first.file_count, 1)
+  assert.equal(first.file_count, 3)
   assert.equal(first.files[0].path, 'pkg')
+  assert.deepEqual(first.files.map((entry) => entry.path), [...first.files.map((entry) => entry.path)].sort((left, right) => left.localeCompare(right)))
 
   fs.symlinkSync(outside, path.join(home, 'outside'), process.platform === 'win32' ? 'junction' : 'dir')
   assert.throws(
