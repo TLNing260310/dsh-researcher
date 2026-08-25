@@ -70,3 +70,35 @@ observe proves equal live/durable replay plus fail-closed token/seal issuance.
 This is useful runtime and negative evidence. It does not prove the complete E1
 set, a successful resume, the owner TTY gate, official Flash behavior, net user
 value, or portability. Those claims retain their existing evidence gates.
+
+## Fresh-home local credential boundary
+
+Commit `4d65cbb86eeb47574bfa2c5f378a3ccd29db2828` removes a remaining dependency
+on personal DSH state: for a run-locked `local-loopback` route, the outer runner
+replaces any inherited `DEEPSEEK_API_KEY` with a fixed public non-secret
+sentinel. The remote route never receives that sentinel. This both lets a fresh
+empty `DSH_HOME` reach the OpenAI-compatible loopback adapter and prevents a
+real remote credential from being forwarded to a local test server.
+
+The replacement candidate was packed, recaptured, and locked independently:
+
+| Input | Value |
+|---|---|
+| package SHA-256 | `1fe5c69ca284fb41e7ac97e46cf341af51ada17d53b638fe0d6b543586dd4b17` |
+| visible-tool schema hash | `b5a2ce895e7f7ea3a50f2ea03a193ec162a7995ba2b6b8134215123119e550b4` |
+| run-lock hash | `977fd71095f6edc7f658baf44ac4d3a81a7ed99ce02fdfa2fbb80f120ef0c291` |
+
+With `DEEPSEEK_API_KEY` explicitly absent from the parent process and a fresh
+DSH home, a real `already-satisfied` run reached local Qwen and archived 143
+events and 12,469 tokens. It was `INVALID`, not a conformance result, because
+the model claimed pass against a nonexistent verifier call and never requested
+the host decision. Replay derived `NEEDS_HUMAN`, the workspace remained
+unchanged, and the host did not complete the goal.
+
+| Artifact | SHA-256 |
+|---|---|
+| `artifact.json` | `bc0b0918fd976da818eac036d8b8d20430627dc7d08eee175fab1d9656763fa7` |
+| `session.jsonl` | `ab817948e530424df09c4e13fdd46cd2d2ac3f152d3abf1b23e6d9e27f1cb03e` |
+
+This proves the fresh-home local credential plumbing and preserved fail-closed
+evidence handling. It does not add a passing E1 trajectory.
