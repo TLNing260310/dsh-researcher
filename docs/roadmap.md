@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.8` 的 exact rc.2 实跑发现并修复了模型可见 Governor schema 缺陷；真实 DSH recapture 后，本地 `qwen3:14b` 两条对照仍为可评分 FAIL，说明宿主拒绝路径有效但该模型尚不能遵循冻结工作流。rejected resume observe 已能完整归档且不会签发 token/seal。完整 E1 仍未运行。下一步是 dedicated remote Flash 准入、owner TTY gate、成功 resume 与统一全轨 bundle，而不是增加产品功能。证据见 [Validation Status](./validation-status.md)、[schema-repair probe](./evidence/e1-governor-tool-schema-repair-2026-08-25.md) 与 [multi-track history](./evidence/e1-local-qwen-multitrack-2026-08-25.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.8` 的 exact rc.2 实跑发现并修复了模型可见 Governor schema 与 resume stage-one replay-domain 缺陷；真实 DSH recapture 后，本地 `qwen3:14b` 三条对照为可评分 FAIL、一条对抗轨 INVALID。rejected resume observe 的 live/durable checkpoint 已完全一致，失败证据完整归档且不会签发 token/seal。完整 E1 仍未运行。下一步是 dedicated remote Flash 准入、owner TTY gate、成功 resume 与统一全轨 bundle，而不是增加产品功能。证据见 [Validation Status](./validation-status.md)、[corrected continuation](./evidence/e1-corrected-local-continuation-2026-08-26.md) 与 [schema-repair probe](./evidence/e1-governor-tool-schema-repair-2026-08-25.md)。
 
 ## 路线纪律
 

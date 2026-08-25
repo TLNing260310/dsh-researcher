@@ -2,6 +2,9 @@
 
 Status: **adapter defect fixed; two corrected-schema local tracks FAIL; not full E1**
 
+Later corrected-schema tracks and a resume replay-domain repair are recorded in
+the [local continuation](./e1-corrected-local-continuation-2026-08-26.md).
+
 ## Finding
 
 The first local multi-track probe repeatedly produced empty or incorrectly
@@ -73,4 +76,3 @@ dedicated credential/spend boundary, plus direct owner TTY input for the gate.
 Changing the frozen prompts merely to make this local model pass would alter
 the intervention and requires an explicit protocol revision rather than a
 silent retry.
-

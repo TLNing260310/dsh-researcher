@@ -20,7 +20,7 @@ They are independent. You can trial Project Research without adopting Goal Contr
 
 > **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. Live E1, net productivity gain, long-term Project Cognition value, and adapters beyond DSH are **not proven**.
 
-> **Latest runtime evidence:** the first local multi-track probe exposed a real model-visible Governor schema defect. After repairing and recapturing standard JSON Schema, two controlled Qwen reruns still scored valid **FAIL**—the host rejected completion, while the model ignored the required baseline/decision workflow. This is runtime and negative evidence, not full E1. See the [schema-repair record](./docs/evidence/e1-governor-tool-schema-repair-2026-08-25.md) and preserved [multi-track history](./docs/evidence/e1-local-qwen-multitrack-2026-08-25.md).
+> **Latest runtime evidence:** after repairing and recapturing the model-visible Governor Schema, three controlled Qwen tracks are scorable **FAIL**, one adversarial track is **INVALID**, and a rejected resume observe now reproduces identical live/durable checkpoints without issuing a token or seal. The host rejects unsafe completion, while this local model still ignores the required workflow. This is runtime and negative evidence, not full E1. See the [corrected continuation](./docs/evidence/e1-corrected-local-continuation-2026-08-26.md), [schema repair](./docs/evidence/e1-governor-tool-schema-repair-2026-08-25.md), and preserved [history](./docs/evidence/e1-local-qwen-multitrack-2026-08-25.md).
 
 ## The problem
 
