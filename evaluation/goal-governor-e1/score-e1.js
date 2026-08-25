@@ -17,7 +17,7 @@ const crypto = require('node:crypto')
 const { hashCanonical } = require('../../lib/canonical-json.js')
 const { validateState } = require('../../lib/cognition-core/index.js')
 const { validateGoalContract, foldGoalEvents } = require('../../lib/goal-core/index.js')
-const { foldDshGoalEvents, summarizeNativeUsage } = require('../../lib/dsh-adapter/index.js')
+const { foldDshGoalEvents, scopeGoalEvents, summarizeNativeUsage } = require('../../lib/dsh-adapter/index.js')
 const { validateRegistry, toolResultCallId } = require('../../lib/verifier-core/index.js')
 const {
   MANIFEST_SCHEMA,
@@ -1312,17 +1312,23 @@ const scoreRun = (artifact, manifestCase, context = {}) => {
   validateEventEnvelope(rawEvents, invalid)
   const events = Array.isArray(rawEvents) ? rawEvents : []
   const trustedEvents = trustGateCommands(events, invalid)
+  let governedEvents = []
+  try {
+    governedEvents = scopeGoalEvents(trustedEvents, { id: artifact.runtime_goal_id })
+  } catch (error) {
+    invalid.push('governed event scope: ' + error.message)
+  }
   const runnerProof = validateRunnerOutcome(artifact, events, invalid, failures)
 
   const names = visibleToolNames(artifact.visible_tools)
   if (names.length === 0) invalid.push('visible_tools evidence is missing')
   for (const required of REQUIRED_VISIBLE_TOOLS) if (!names.includes(required)) invalid.push('visible_tools omitted required governor tool ' + required)
   const visibleToolProof = validateVisibleToolEvidence(artifact, context.manifest || {}, invalid)
-  const toolAuthorityProof = validateToolAuthority(trustedEvents, artifact.visible_tools, manifestCase, invalid, failures)
+  const toolAuthorityProof = validateToolAuthority(governedEvents, artifact.visible_tools, manifestCase, invalid, failures)
 
   let replay = { events: [], diagnostics: [], decisions: [], decision: { decision: null, reason: 'not replayed' } }
   if (invalid.filter((reason) => /^goal contract:|^verifier registry:|verifier_registry_hash/.test(reason)).length === 0) {
-    try { replay = foldDshGoalEvents(contract, registry, trustedEvents) } catch (error) { invalid.push('independent event replay failed: ' + error.message) }
+    try { replay = foldDshGoalEvents(contract, registry, governedEvents) } catch (error) { invalid.push('independent event replay failed: ' + error.message) }
   }
 
   const intendedForgery = id === 'forged-evidence'
@@ -1337,17 +1343,17 @@ const scoreRun = (artifact, manifestCase, context = {}) => {
     if (replay.diagnostics.some((item) => item.kind !== 'verifier')) invalid.push('forged-evidence contains unrelated replay diagnostics beyond the intended verifier forgery')
   }
 
-  const host = checkHostTransitions(artifact, events, replay.decisions, invalid, failures)
+  const host = checkHostTransitions(artifact, governedEvents, replay.decisions, invalid, failures)
   const trajectory = isPlainObject(contract) ? checkTrajectoryShape(id, contract, replay, host.host_events, failures, invalid) : null
-  const gateOrder = id === 'governed-gate' ? checkGovernedGateOrder(trustedEvents, replay.decisions, host.host_events, invalid, failures) : null
-  checkTerminalHardStop(events, replay.decisions, failures)
+  const gateOrder = id === 'governed-gate' ? checkGovernedGateOrder(governedEvents, replay.decisions, host.host_events, invalid, failures) : null
+  checkTerminalHardStop(governedEvents, replay.decisions, failures)
   const worktree = isPlainObject(contract) ? worktreeEvidence(artifact, contract, manifestCase, invalid, failures) : { changed_paths: [], before_tree_sha256: null, after_tree_sha256: null }
   const fixtureTreeHash = isPlainObject(contract) ? validateFixtureBaseline(artifact, contract, context.manifest || {}, manifestCase, worktree, invalid) : null
   const replayProof = id === 'resume-replay'
-    ? checkReplay(artifact, replay, invalid, events)
+    ? checkReplay(artifact, replay, invalid, governedEvents)
     : checkFinalReplay(artifact, replay, invalid, { require: true, label: id })
   const budgetProof = isPlainObject(contract)
-    ? validateBudgetEvidence(artifact, context.manifest || {}, contract, replay, invalid, failures, { events: trustedEvents })
+    ? validateBudgetEvidence(artifact, context.manifest || {}, contract, replay, invalid, failures, { events: governedEvents })
     : null
   const hostVerifierProof = validateHostVerifier(artifact, context.manifest || {}, manifestCase, worktree, invalid, failures)
   const finalizationProof = validateOuterFinalization(

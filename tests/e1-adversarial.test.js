@@ -44,6 +44,18 @@ test('a complete captured trajectory without a terminal decision is a valid mode
   assert.ok(scored.failures.some((reason) => /without calling request_goal_decision/.test(reason)))
 })
 
+test('pre-goal session traffic cannot contaminate the frozen E1 replay scope', () => {
+  const bundle = cloneBundle()
+  bundle.artifacts['already-satisfied'].session_events.unshift({
+    seq: 0.5,
+    time: '2020-01-01T00:00:00.000Z',
+    type: 'assistant/message',
+    data: { usage: { inputTokens: 999999, outputTokens: 999999 } },
+  })
+  const report = scoreTrustedBundle(bundle)
+  assert.equal(report.verdict, 'PASS')
+})
+
 test('already-satisfied fails if any worktree content changes after the passing baseline', () => {
   const bundle = cloneBundle()
   const run = bundle.artifacts['already-satisfied']
