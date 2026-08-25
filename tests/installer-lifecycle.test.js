@@ -6,9 +6,11 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
+const { supportsDshNode } = require('../lib/runtime-requirements.js')
 
 const root = path.resolve(__dirname, '..')
 const entry = path.join(root, 'bin', 'install.js')
+const dshRuntimeTest = supportsDshNode(process.version) ? test : test.skip
 const {
   VERIFIED_DSH,
   SNAPSHOT_SCHEMA,
@@ -73,7 +75,7 @@ test('installer argument and exact DSH version parsing fail closed', () => {
   assert.throws(() => parseArguments(['rollback', '--backup-id', '..\\escape']), /invalid|unknown|backup id/)
 })
 
-test('strict install refuses an unverified DSH before writes and dry-run leaves installer-owned paths untouched', (t) => {
+dshRuntimeTest('strict install refuses an unverified DSH before writes and dry-run leaves installer-owned paths untouched', (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-preflight-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const dshHome = path.join(temp, 'dsh-home')
@@ -199,7 +201,7 @@ test('Windows npm shim discovery is PATH-bound, shell-free, and ignores reposito
   assert.doesNotMatch(refused.detail, new RegExp(npmBin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 })
 
-test('source and final-stage preflights reject nested links before replacement', (t) => {
+dshRuntimeTest('source and final-stage preflights reject nested links before replacement', (t) => {
   const fakeLinkFs = {
     readdirSync: () => [{ name: 'nested-link' }],
     lstatSync: () => ({ isSymbolicLink: () => true, isDirectory: () => false, isFile: () => false }),
@@ -312,7 +314,7 @@ test('cross-device stage is refused before any existing target is deleted', (t) 
   assert.equal(fs.existsSync(path.join(targets.researcher, 'late-change.txt')), true)
 })
 
-test('atomic lifecycle lock serializes writers and stale locks require manual confirmation', (t) => {
+dshRuntimeTest('atomic lifecycle lock serializes writers and stale locks require manual confirmation', (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-lock-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const directState = path.join(temp, 'direct-home', '.dsh-researcher')
@@ -358,7 +360,7 @@ test('atomic lifecycle lock serializes writers and stale locks require manual co
   assert.equal(fs.readFileSync(emptyLock, 'utf8'), stale)
 })
 
-test('install, force replacement, backup, uninstall, and exact rollback are reversible', { timeout: 120000 }, (t) => {
+dshRuntimeTest('install, force replacement, backup, uninstall, and exact rollback are reversible', { timeout: 120000 }, (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-lifecycle-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const dshHome = path.join(temp, 'dsh-home')
@@ -416,7 +418,7 @@ test('install, force replacement, backup, uninstall, and exact rollback are reve
   assert.equal(fs.existsSync(path.join(dshHome, '.dsh-researcher', 'lifecycle.lock')), false)
 })
 
-test('rollback rejects incomplete or contradictory evidence without changing targets', (t) => {
+dshRuntimeTest('rollback rejects incomplete or contradictory evidence without changing targets', (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-invalid-backup-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const dshHome = path.join(temp, 'dsh-home')

@@ -4,6 +4,7 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
+const { supportsDshNode } = require('../lib/runtime-requirements.js')
 const pkg = require('../package.json')
 
 const root = path.resolve(__dirname, '..')
@@ -18,7 +19,9 @@ const runNpm = (args, options = {}) => {
   return run(process.execPath, [npmCli, ...args], options)
 }
 
-test('release tarball installs both presets and resolves the governed portable core', { timeout: 120000 }, (t) => {
+const dshRuntimeTest = supportsDshNode(process.version) ? test : test.skip
+
+dshRuntimeTest('release tarball installs both presets and resolves the governed portable core', { timeout: 120000 }, (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-package-smoke-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const cache = path.join(temp, 'npm-cache')

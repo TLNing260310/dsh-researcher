@@ -11,7 +11,7 @@ Thanks for helping test a deliberately narrow alpha. The highest-value contribut
 
 ## Local verification
 
-Requirements: Node.js `>=22.12.0` and Git.
+Requirements: Node.js `>=22.12.0` and Git. Full DSH install/package lifecycle tests require DSH's runtime range, `^22.19.0 || >=24.0.0`; the Node 22.12 CI lane runs the portable suite and explicitly skips those integration-only tests.
 
 ```bash
 npm test

@@ -9,6 +9,10 @@
 - Node.js：`>=22.12.0`
 - 目标 DeepSeek Harness：精确版本 `0.1.1-rc.2`（隔离 Gate 0/live conformance 尚待完成）
 - DSH 运行时 Node：`^22.19.0 || >=24.0.0`；低于该范围的安装会 fail closed
+
+仓库仍以 Node `22.12.0` 验证 portable core。由于 pinned DSH 自身拒绝
+Node 22.12–22.18，该 CI lane 会明确跳过必须实际安装 DSH 的 lifecycle/package
+tests；这些测试在 Node 22.19+ 与 24.x 运行。跳过不表示 DSH 支持较低版本。
 - 默认安装先自行解析 `PATH` 中第一个绝对路径 DSH 命令；空项和相对路径会被忽略，避免在不可信仓库中执行同名文件。可直接安全启动的命令会运行 `--version`；Windows npm 的 canonical `.cmd` / `.bat` shim 不经 shell 执行，而是要求完整结构与实际调用目标匹配，再校验邻近 `@deepseek-ai/dsh` 的包名、`dsh` bin 声明与精确版本。注释或无关命令中出现包路径不会通过。其他 shim 格式（包括只有 `.ps1`）须改用显式 `--dsh-package`。后续 PATH 项或无关 npm global package 不能替第一个命中项背书。
 - 若 `dsh` 根本不在 `PATH`，自动 metadata fallback 会拒绝；它不会用一个无法调用的全局包冒充可用 CLI，也不会信任当前工作目录里的同名文件。
 - 自动定位不可用时，可传入绝对路径 `--dsh-package <package.json>`。该文件必须是真实普通文件，所在包目录不能是符号链接，且 `name` 必须精确为 `@deepseek-ai/dsh`。
