@@ -33,6 +33,19 @@ test('resume observe archives failed model evidence before rejecting it and neve
   assert.ok(tokenAt > rejectAt, 'resume token must be written only after observe shape validation')
 })
 
+test('resume observe folds identical augmented event domains for live and durable replay', () => {
+  const runner = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
+  const branchAt = runner.indexOf("if (caseId === 'resume-replay' && stage === 'observe')")
+  const branchEnd = runner.indexOf("    const nativeEvents = agent.session.events", runner.indexOf('io.exit(0)', branchAt))
+  const observeBranch = runner.slice(branchAt, branchEnd)
+  const liveAugmentedAt = observeBranch.indexOf('const liveAugmented = augmentEvents(nativeEvents, markers)')
+  const liveFoldAt = observeBranch.indexOf('scopeGoalEvents(liveAugmented, runtimeGoal)')
+  const durableFoldAt = observeBranch.indexOf('scopeGoalEvents(durableAugmented, runtimeGoal)')
+  assert.ok(liveAugmentedAt >= 0 && liveFoldAt > liveAugmentedAt, 'live checkpoint must fold runner-augmented events')
+  assert.ok(durableFoldAt > liveFoldAt, 'durable checkpoint must fold the matching augmented event domain')
+  assert.doesNotMatch(observeBranch, /scopeGoalEvents\(nativeEvents, runtimeGoal\)/, 'mixed native/augmented replay domains cause diagnostic sequence drift')
+})
+
 test('declared Node floor, public quickstart, and CI matrix cover the floor and current LTS', () => {
   const pkg = readJson('package.json')
   const readme = read('README.md')

@@ -356,9 +356,12 @@ async function run(ctx, io) {
       const observations = nativeEvents.filter((event) => event.type === 'tool/call' && event.data?.name === 'submit_goal_observation')
       const decisions = nativeEvents.filter((event) => event.type === 'tool/call' && event.data?.name === 'request_goal_decision')
       const boundaryNativeSeq = Math.max(...nativeEvents.map((event, index) => eventSeq(event, index + 1)))
-      const prefixReplay = foldDshGoalEvents(contract, registry, scopeGoalEvents(nativeEvents, runtimeGoal))
-      const prefixLive = checkpoint(hashCanonical, prefixReplay, contract, runtimeGoal, sessionId)
+      // Runner markers are part of the evidence stream committed to the durable
+      // artifact. Fold the same augmented event domain on both sides so marker
+      // insertion cannot renumber a diagnostic only in the offline checkpoint.
       const liveAugmented = augmentEvents(nativeEvents, markers)
+      const prefixReplay = foldDshGoalEvents(contract, registry, scopeGoalEvents(liveAugmented, runtimeGoal))
+      const prefixLive = checkpoint(hashCanonical, prefixReplay, contract, runtimeGoal, sessionId)
       const durable = await captureDurableSession({ agent, sessions, persistence, sessionId })
       const durableAugmented = augmentEvents(durable.loaded.events, markers)
       const prefixOfflineReplay = foldDshGoalEvents(contract, registry, scopeGoalEvents(durableAugmented, runtimeGoal))
