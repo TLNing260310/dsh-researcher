@@ -277,3 +277,17 @@ test('adapter conformance requires every hard-governed capability', () => {
   complete.capabilities.hard_stop = false
   assert.deepEqual(validateAdapterManifest(complete), { governed: false, missing: ['hard_stop'] })
 })
+
+test('adapter v2 separates declared capability from observed conformance', () => {
+  const manifest = {
+    schema: 'project-cognition/adapter-capabilities/v2', client: 'dsh', version: '2',
+    runtime: { package: '@deepseek-ai/dsh', version: '0.1.1-rc.2' },
+    event_contract: { schema: 'project-cognition/host-event/v1', native_source: 'dsh-session-jsonl', human_identity_assurance: 'host-authenticated slash command' },
+    invocation: { function_call: ['researcher.ask', 'researcher.mode.set', 'researcher.mode.get'], mode_switch: ['/researcher <question>', '/researcher on|off'] },
+    capabilities: { human_approval: true, hard_stop: true, event_store: true, trusted_verifier: true, project_root_confinement: true },
+    conformance: { status: 'PENDING', evidence: [] },
+  }
+  assert.deepEqual(validateAdapterManifest(manifest), { governed: false, declared_governed: true, conformance: 'PENDING', missing: [] })
+  manifest.conformance.status = 'PASS'
+  assert.equal(validateAdapterManifest(manifest).governed, true)
+})

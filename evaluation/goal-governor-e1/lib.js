@@ -5,7 +5,8 @@ const path = require('node:path')
 const MANIFEST_SCHEMA = 'dsh-researcher/goal-governor-e1/manifest/v2'
 const RUN_LOCK_SCHEMA = 'dsh-researcher/goal-governor-e1/run-lock/v2'
 const RUN_ARTIFACT_SCHEMA = 'dsh-researcher/goal-governor-e1/run-artifact/v2'
-const REQUIRED_DSH_VERSION = '0.1.0-rc.7'
+const { VERIFIED_DSH } = require('../../lib/runtime-requirements.js')
+const REQUIRED_DSH_VERSION = VERIFIED_DSH
 const TRUSTED_VERIFIER = Object.freeze({
   tool_name: 'e1_verify',
   arguments: Object.freeze({}),
@@ -41,6 +42,7 @@ const LOCK_INPUTS = Object.freeze([
   'lib/cognition-core',
   'lib/goal-core',
   'lib/verifier-core',
+  'lib/adapter-core',
   'lib/dsh-adapter',
   'lib/canonical-json.js',
 ])
@@ -172,7 +174,7 @@ const validateManifest = (manifest) => {
   if (!isPlainObject(manifest) || manifest.schema !== MANIFEST_SCHEMA) throw new Error('invalid E1 manifest schema')
   assertExactKeys(manifest, ['schema', 'protocol', 'protocol_version', 'status', 'runtime', 'cost_policy', 'budget', 'fixture', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'cases', 'artifacts', 'invalidity_rules', 'replay_semantics', 'lock_inputs'], 'manifest')
   if (manifest.protocol !== 'docs/goal-governor-evaluation-protocol.md') throw new Error('manifest must bind the canonical E1 protocol path')
-  if (manifest.protocol_version !== '1.1') throw new Error('manifest must bind E1 protocol version 1.1')
+  if (manifest.protocol_version !== '1.2') throw new Error('manifest must bind E1 protocol version 1.2')
   const status = manifest.status
   assertExactKeys(status, ['infrastructure', 'live_e1', 'outcome', 'portability'], 'manifest.status')
   if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'NOT_RUN' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {
@@ -242,10 +244,11 @@ const validateRunLockShape = (lock) => {
     requireString(file, 'run-lock input path')
     if (!/^[a-f0-9]{64}$/.test(String(digest))) throw new Error('invalid input digest for ' + file)
   }
-  assertExactKeys(lock.candidate, ['repo_revision', 'package_path', 'package_sha256', 'package_version'], 'run-lock candidate')
+  assertExactKeys(lock.candidate, ['repo_revision', 'package_name', 'package_path', 'package_sha256', 'package_version'], 'run-lock candidate')
   if (!/^[a-f0-9]{64}$/.test(String(lock.candidate.package_sha256 || ''))) throw new Error('run-lock candidate package hash is required')
   if (!/^[a-f0-9]{40,64}$/.test(String(lock.candidate.repo_revision || ''))) throw new Error('run-lock candidate repo_revision must be a full git object id')
   requireString(lock.candidate.package_path, 'run-lock candidate package_path')
+  requireString(lock.candidate.package_name, 'run-lock candidate package_name')
   requireString(lock.candidate.package_version, 'run-lock candidate package_version')
   assertExactKeys(lock.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools'], 'run-lock runtime')
   if (lock.runtime.version !== REQUIRED_DSH_VERSION || lock.runtime.client !== 'dsh' || lock.runtime.profile !== 'headless' || lock.runtime.preset !== 'governed' || lock.runtime.permission_mode !== 'workspace-write' || lock.runtime.session_persistence !== 'jsonl' || lock.runtime.pack_chunks !== false || lock.runtime.compression !== 'none' || lock.runtime.title_llm !== false || lock.runtime.model_compaction !== false || lock.runtime.tool_result_pruning !== true || lock.runtime.extra_local_tools !== false) throw new Error('run-lock runtime is not the frozen DSH runtime')

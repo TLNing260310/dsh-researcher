@@ -8,7 +8,7 @@
   "properties": {
     "schema": { "const": "dsh-researcher/goal-governor-e1/manifest/v2" },
     "protocol": { "const": "docs/goal-governor-evaluation-protocol.md" },
-    "protocol_version": { "const": "1.1" },
+    "protocol_version": { "const": "1.2" },
     "status": {
       "type": "object",
       "additionalProperties": false,
@@ -26,7 +26,7 @@
       "required": ["client", "version", "profile", "preset", "permission_mode", "session_persistence", "pack_chunks", "compression", "title_llm", "model_compaction", "tool_result_pruning", "extra_local_tools"],
       "properties": {
         "client": { "const": "dsh" },
-        "version": { "const": "0.1.0-rc.7" },
+        "version": { "const": "0.1.1-rc.2" },
         "profile": { "const": "headless" },
         "preset": { "const": "governed" },
         "permission_mode": { "const": "workspace-write" },
@@ -155,7 +155,7 @@
       }
     },
     "lock_inputs": {
-      "const": ["docs/goal-governor-evaluation-protocol.md", "evaluation/goal-governor-e1", "fixtures/goal-governor-e1", "governed", "researcher/plugins/goal-governor", "researcher/plugins/tool-restrict", "lib/cognition-core", "lib/goal-core", "lib/verifier-core", "lib/dsh-adapter", "lib/canonical-json.js"]
+      "const": ["docs/goal-governor-evaluation-protocol.md", "evaluation/goal-governor-e1", "fixtures/goal-governor-e1", "governed", "researcher/plugins/goal-governor", "researcher/plugins/tool-restrict", "lib/cognition-core", "lib/goal-core", "lib/verifier-core", "lib/adapter-core", "lib/dsh-adapter", "lib/canonical-json.js"]
     }
   },
   "$defs": {

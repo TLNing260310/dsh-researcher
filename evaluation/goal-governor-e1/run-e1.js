@@ -38,6 +38,7 @@ const {
 } = require('./runtime-provenance.js')
 const { beginAttempt, finishAttempt, assertClosedLedger } = require('./attempt-ledger.js')
 const { materialize } = require('../../fixtures/goal-governor-e1/materialize.js')
+const { PROJECT_PACKAGE_NAME, assertDshNodeSupported } = require('../../lib/runtime-requirements.js')
 
 const EVAL_ROOT = __dirname
 const REPO_ROOT = path.resolve(EVAL_ROOT, '..', '..')
@@ -114,8 +115,8 @@ const installedPathFor = (presetRoot, repoPath) => path.join(presetRoot, ...repo
 const verifyInstalledCandidate = (presetRoot, lock) => {
   const root = path.resolve(presetRoot)
   const packageJson = readJson(path.join(root, 'package.json'))
-  if (packageJson.name !== 'dsh-researcher' || packageJson.version !== lock.candidate.package_version) throw new Error('installed candidate identity/version does not match the run-lock')
-  const directories = ['governed', 'researcher/plugins/goal-governor', 'researcher/plugins/tool-restrict', 'lib/cognition-core', 'lib/goal-core', 'lib/verifier-core', 'lib/dsh-adapter']
+  if (packageJson.name !== PROJECT_PACKAGE_NAME || packageJson.name !== lock.candidate.package_name || packageJson.version !== lock.candidate.package_version) throw new Error('installed candidate identity/version does not match the run-lock')
+  const directories = ['governed', 'researcher/plugins/goal-governor', 'researcher/plugins/tool-restrict', 'lib/cognition-core', 'lib/goal-core', 'lib/verifier-core', 'lib/adapter-core', 'lib/dsh-adapter']
   const inClosure = (file) => file === 'lib/canonical-json.js' || directories.some((directory) => file.startsWith(directory + '/'))
   const expected = Object.fromEntries(Object.entries(lock.inputs).filter(([file]) => inClosure(file)))
   if (Object.keys(expected).length === 0 || expected['lib/canonical-json.js'] === undefined) throw new Error('run-lock runtime closure is incomplete')
@@ -134,6 +135,7 @@ const verifyInstalledCandidate = (presetRoot, lock) => {
 }
 
 const verifyDshRuntime = (dshModuleRoot, dshHome, expected) => {
+  assertDshNodeSupported()
   const provenance = dshRuntimeProvenance(dshModuleRoot)
   const publicEvidence = publicDshProvenance(provenance)
   assertSameProvenance(publicEvidence, expected, 'DSH dependency closure')

@@ -13,7 +13,7 @@ const { spawnSync } = require('node:child_process')
 
 const REPOSITORY = path.join(__dirname, '..')
 const PACKAGE = require(path.join(REPOSITORY, 'package.json'))
-const VERIFIED_DSH = '0.1.0-rc.7'
+const { VERIFIED_DSH, DSH_NODE_RANGE, assertDshNodeSupported } = require('../lib/runtime-requirements.js')
 const TARGET_NAMES = ['researcher', 'governed']
 const ACTIONS = new Set(['install', 'backup', 'uninstall', 'rollback'])
 const DSH_HOME = path.resolve(process.env.DSH_HOME || path.join(os.homedir(), '.dsh'))
@@ -56,7 +56,8 @@ Safety options:
   --allow-unsupported-dsh  UNSAFE: install when exact DSH ${VERIFIED_DSH}
                            compatibility cannot be established.
   --dsh-package <path>     Verify an explicit @deepseek-ai/dsh package.json
-                           when the rc.7 CLI reports no version.
+                           when the pinned CLI reports no version.
+  Runtime                  DSH requires Node ${DSH_NODE_RANGE}.
   --backup-id <id>         Restore this backup instead of the newest one.
   --force                  Replace existing targets after taking a backup.
   --help                    Show this help.
@@ -799,6 +800,7 @@ const printInstalledNextSteps = () => {
 }
 
 const runInstall = (options) => {
+  assertDshNodeSupported()
   validateSources()
   // This inventory walk is part of dry-run too. It rejects nested symlinks,
   // junctions, special files, and unreadable source bytes before any write.

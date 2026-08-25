@@ -67,7 +67,8 @@ The final assistant message is never evidence. A MUST criterion is satisfied onl
 
 Requirements:
 
-- DeepSeek Harness: exactly verified against `0.1.0-rc.7`.
+- DeepSeek Harness target: `0.1.1-rc.2`; offline infrastructure is green, while the isolated Gate 0/live conformance result remains pending.
+- DSH runtime Node requirement: `^22.19.0 || >=24.0.0` (the portable project core remains `>=22.12.0`).
 - Node.js: `>=22.12.0`.
 - Use an isolated `DSH_HOME` and a non-critical repository copy first.
 
@@ -169,6 +170,8 @@ npm run eval:e1:preflight
 ```
 
 The proof order is frozen as `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`. See [Validation Status](./docs/validation-status.md) and the protocol-owned [Goal Governor evaluation definition](./docs/goal-governor-evaluation-protocol.md).
+
+Client integrations share the [portable HostEvent and invocation contract](./docs/client-adapter-contract.md): one-shot `researcher.ask(...)`, persistent `researcher.mode.set/get(...)`, and client-native mode-switch commands reduce to the same host-owned state.
 
 ## How this differs from familiar tools
 

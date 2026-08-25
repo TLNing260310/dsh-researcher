@@ -1,7 +1,7 @@
 {
   "schema": "dsh-researcher/goal-governor-e1/manifest/v2",
   "protocol": "docs/goal-governor-evaluation-protocol.md",
-  "protocol_version": "1.1",
+  "protocol_version": "1.2",
   "status": {
     "infrastructure": "READY",
     "live_e1": "NOT_RUN",
@@ -10,7 +10,7 @@
   },
   "runtime": {
     "client": "dsh",
-    "version": "0.1.0-rc.7",
+    "version": "0.1.1-rc.2",
     "profile": "headless",
     "preset": "governed",
     "permission_mode": "workspace-write",
@@ -247,6 +247,7 @@
     "lib/cognition-core",
     "lib/goal-core",
     "lib/verifier-core",
+    "lib/adapter-core",
     "lib/dsh-adapter",
     "lib/canonical-json.js"
   ]

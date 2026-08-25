@@ -28,6 +28,7 @@ const {
   assertSameProvenance,
 } = require('./runtime-provenance.js')
 const { validateCaptureReport } = require('./visible-tool-contract.js')
+const { PROJECT_PACKAGE_NAME } = require('../../lib/runtime-requirements.js')
 
 const EVAL_ROOT = __dirname
 const REPO_ROOT = path.resolve(EVAL_ROOT, '..', '..')
@@ -231,6 +232,7 @@ const createRunLock = (options) => {
     inputs: frozenInputs,
     candidate: {
       repo_revision: head,
+      package_name: repoPackage.name,
       package_path: storedCandidate,
       package_sha256: sha256File(candidatePackage),
       package_version: repoPackage.version,
@@ -287,7 +289,7 @@ const verifyRunLock = (lockPath, options = {}) => {
   if (!fs.existsSync(candidatePackage) || !fs.statSync(candidatePackage).isFile()) throw new Error('run-lock candidate package is missing: ' + candidatePackage)
   if (sha256File(candidatePackage) !== lock.candidate.package_sha256) throw new Error('run-lock candidate package hash drifted')
   const repoPackage = readJson(path.join(REPO_ROOT, 'package.json'))
-  if (repoPackage.version !== lock.candidate.package_version) throw new Error('run-lock candidate package version drifted from repository package.json')
+  if (repoPackage.name !== lock.candidate.package_name || repoPackage.name !== PROJECT_PACKAGE_NAME || repoPackage.version !== lock.candidate.package_version) throw new Error('run-lock candidate package identity/version drifted from repository package.json')
   if (options.dshModuleRoot) {
     assertSameProvenance(currentNodeProvenance(), lock.host_runtime.node, 'Node runtime')
     const actualDsh = publicDshProvenance(dshRuntimeProvenance(options.dshModuleRoot))

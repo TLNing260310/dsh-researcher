@@ -81,7 +81,8 @@ Project Research 与 Goal Governor 并不捆绑。你可以只安装后试用前
 
 ### 前置条件
 
-- DeepSeek Harness：精确验证版本 `0.1.0-rc.7`。
+- DeepSeek Harness 目标版本：`0.1.1-rc.2`；离线设施已通过，隔离 Gate 0/live conformance 仍待完成。
+- DSH 运行时 Node 要求：`^22.19.0 || >=24.0.0`（可移植项目核心仍为 `>=22.12.0`）。
 - Node.js：`>=22.12.0`。
 - 建议使用独立 `DSH_HOME` 和非关键仓库副本首次试用。
 - 当前版本：`0.8.0-alpha.8`，不承诺稳定 API。
@@ -210,6 +211,8 @@ npm run eval:e1:preflight
 
 公开证明顺序固定为：`Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`。轨迹、阈值和 invalidity rules 只以冻结的 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md) 为准，README 不复制实验定义。
 
+不同客户端共享同一份[可移植 HostEvent 与调用合同](./docs/client-adapter-contract.md)：单次 `researcher.ask(...)`、持续 `researcher.mode.set/get(...)` 与客户端原生命令最终进入同一个宿主状态机。
+
 ### Live 模型成本边界
 
 北京时间工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁止 DeepSeek 远程 API；这些时段只允许锁定到字面 loopback 地址的本地路由。其他时段和周末的远程 E1 也只能使用 official `deepseek-v4-flash`、精确 `https://api.deepseek.com`、完整 run lock、预算和显式费用确认。loopback 只证明第一跳在本机，不能证明本地服务没有再代理远程。
@@ -259,7 +262,7 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 ## Compatibility
 
-- DeepSeek Harness：目标且精确验证版本 `0.1.0-rc.7`。
+- DeepSeek Harness：目标版本 `0.1.1-rc.2`；不得在 Gate 0/live conformance 完成前写成“已经验证”。
 - Node.js：`>=22.12.0`。
 - 当前版本：`0.8.0-alpha.8`；功能与 alpha.7 相同，本版只修正 Windows 8.3 临时路径在 Quickstart 身份测试中的规范路径断言，并由新的干净提交重新生成发布制品。
 - License：MIT。

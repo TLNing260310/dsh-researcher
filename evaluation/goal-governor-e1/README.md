@@ -13,7 +13,7 @@ sealed cognition/contract/verifier hashes, exercises the host verifier and
 write guard with local deterministic helpers, and makes zero network, DSH, or
 model calls.
 
-First run the dedicated capture-only entry against pinned rc.7:
+First run the dedicated capture-only entry against pinned DSH `0.1.1-rc.2`:
 
 ```text
 node evaluation/goal-governor-e1/capture-visible-tools.js \
@@ -50,7 +50,7 @@ node evaluation/goal-governor-e1/run-e1.js --mode live \
 
 The CLI is not accepted as an independent argument. The runner derives its
 single JavaScript entry from the locked
-`@deepseek-ai/dsh@0.1.0-rc.7` package and uses the same module root for the
+`@deepseek-ai/dsh@0.1.1-rc.2` package and uses the same module root for the
 driver imports, preventing a shim/module split. Session persistence is
 explicitly JSONL with `packChunks=false` and `compression=none` under the
 provided DSH home; every native event therefore remains a separate raw row.
@@ -70,7 +70,7 @@ effective connection URL from model-selection metadata.
 
 ### Model cost admission
 
-The manifest and run lock freeze protocol v1.1's `Asia/Shanghai` policy. On
+The manifest and run lock freeze protocol v1.2's `Asia/Shanghai` policy. On
 Monday through Friday, DeepSeek API is denied during `[09:00,12:00)` and
 `[14:00,18:00)` Beijing time. Those windows admit only `local-loopback`, with
 a literal loopback `--base-url` frozen in the lock. This route still uses the
@@ -100,7 +100,7 @@ does not proxy to a remote API. Use a dedicated E1 API key,
 trusted time, server-side spend limits and alerts, and host/process egress controls when those
 assurances are required. Alpha.4 ran no DSH, live E1, model, or API call. In
 particular, `local-loopback` remains pending the DSH-dependent Gate 0 checks;
-offline tests are not evidence that this route has run successfully under rc.7.
+offline tests are not evidence that this route has run successfully under the pinned DSH runtime.
 
 The frozen registry binds only `e1_verify {}`. That host tool executes the
 run-lock-bound template verifier outside the model-writable workspace, while
@@ -111,7 +111,7 @@ executes the same verifier after DSH exits and saves `post/verifier.json`.
 The agent-scoped setup restricts inherited global tools, then requires the
 actual post-mount `tools.schemas(agent)` names, schemas, and canonical hash to
 equal the capture-bound run-lock before the first prompt. Scope-local governor,
-status, and `e1_verify` tools are therefore checked from actual rc.7
+status, and `e1_verify` tools are therefore checked from the actual pinned DSH
 evidence; a guard alone is never treated as invisibility.
 
 `governed-gate` also requires `--human-gate-stdin` and external interactive TTY

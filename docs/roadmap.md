@@ -33,7 +33,7 @@ productization decision
 
 **目的**：确认 canonical state、projection、Goal Contracts、Verifier Registry、adapter capability 与实验冻结产物完整。
 
-**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。alpha.5 的 Researcher Web smoke 不覆盖 E1 runner route，因此仍需确认：外层冻结 settings 文件且 `watch=false`、锁定值进入 `DEEPSEEK_BASE_URL`，rc.7 公共 DeepSeek resolver 对 remote/local 都得到与 run lock 相同的 resolved base URL。
+**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。alpha.5 的 Researcher Web smoke 不覆盖 E1 runner route；DSH `0.1.1-rc.2` 的隔离 CLI/version 与 preset discovery 已通过，但仍需确认：外层冻结 settings 文件且 `watch=false`、锁定值进入 `DEEPSEEK_BASE_URL`，公共 DeepSeek resolver 对 remote/local 都得到与 run lock 相同的 resolved base URL。
 
 ### E1 — Live DSH conformance
 

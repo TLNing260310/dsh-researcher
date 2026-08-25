@@ -59,7 +59,7 @@ const validateSchemas = () => {
   const scoreSchema = readJson(path.join(EVAL_ROOT, 'score-report.schema.json'))
   assert.equal(manifestSchema.properties.schema.const, MANIFEST_SCHEMA)
   assert.equal(lockSchema.properties.schema.const, RUN_LOCK_SCHEMA)
-  assert.equal(manifestSchema.properties.protocol_version.const, '1.1')
+  assert.equal(manifestSchema.properties.protocol_version.const, '1.2')
   assert.equal(manifestSchema.$defs.costPolicy.properties.timezone.const, 'Asia/Shanghai')
   assert.equal(manifestSchema.$defs.costPolicy.properties.remote.properties.model.const, 'deepseek-v4-flash')
   assert.equal(manifestSchema.$defs.costPolicy.properties.remote.properties.base_url.const, 'https://api.deepseek.com')
@@ -183,7 +183,7 @@ const validateRuntimeAndRetentionHelpers = (tempRoot) => {
     schema: 'dsh-researcher/goal-governor-e1/visible-tools-capture/v1',
     model_calls: 0, prompt_submissions: 0, command_submissions: 0,
     node: { version: 'test' }, dsh: { package_name: '@deepseek-ai/dsh' },
-    candidate: { package_name: 'dsh-researcher', package_version: 'test' },
+    candidate: { package_name: '@tlning260310/dsh-researcher', package_version: 'test' },
     visible_tool_contract: syntheticContract,
   })
 
@@ -305,7 +305,7 @@ const runPreflight = () => {
   validateSchemas()
   validatePortableSources()
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.1')
+  assert.equal(manifest.protocol_version, '1.2')
   assert.equal(manifest.artifacts.schema, RUN_ARTIFACT_SCHEMA)
   assert.equal(manifest.cost_policy.remote.model, 'deepseek-v4-flash')
   assert.equal(manifest.cost_policy.remote.base_url, 'https://api.deepseek.com')

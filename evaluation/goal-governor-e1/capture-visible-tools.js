@@ -15,6 +15,7 @@ const { immutableSnapshot } = require('./external-verifier.js')
 const { verifyInstalledCandidate, verifyDshRuntime } = require('./run-e1.js')
 const { currentNodeProvenance, dshRuntimeProvenance, publicDshProvenance, directoryInventory, sanitizeNodeEnvironment } = require('./runtime-provenance.js')
 const { validateCaptureReport } = require('./visible-tool-contract.js')
+const { PROJECT_PACKAGE_NAME, VERIFIED_DSH, assertDshNodeSupported } = require('../../lib/runtime-requirements.js')
 
 const EVAL_ROOT = __dirname
 const REPO_ROOT = path.resolve(EVAL_ROOT, '..', '..')
@@ -63,12 +64,13 @@ const main = () => {
   if (fs.existsSync(workspace) && (!fs.statSync(workspace).isDirectory() || fs.readdirSync(workspace).length !== 0)) throw new Error('schema capture workspace must be absent or empty')
   validateCapturePaths({ output, workspace, dshModuleRoot, dshHome, presetRoot })
   const dsh = dshRuntimeProvenance(dshModuleRoot)
-  if (dsh.package_version !== '0.1.0-rc.7') throw new Error('schema capture requires @deepseek-ai/dsh@0.1.0-rc.7')
+  assertDshNodeSupported()
+  if (dsh.package_version !== VERIFIED_DSH) throw new Error('schema capture requires @deepseek-ai/dsh@' + VERIFIED_DSH)
   const dshHomeBefore = directoryInventory(dshHome)
   const verifiedDsh = verifyDshRuntime(dshModuleRoot, dshHome, publicDshProvenance(dsh))
   if (canonicalize(directoryInventory(dshHome)) !== canonicalize(dshHomeBefore)) throw new Error('DSH --version mutated the fresh capture home')
   const candidatePackage = readJson(path.join(presetRoot, 'package.json'))
-  if (candidatePackage.name !== 'dsh-researcher') throw new Error('schema capture preset root is not dsh-researcher')
+  if (candidatePackage.name !== PROJECT_PACKAGE_NAME) throw new Error('schema capture preset root is not ' + PROJECT_PACKAGE_NAME)
   // This synthetic lock shape is used only to reuse the candidate closure
   // inventory verifier; no live/model decision trusts it.
   const manifest = readJson(path.join(EVAL_ROOT, 'manifest.json'))
@@ -78,7 +80,7 @@ const main = () => {
     if (fs.statSync(absolute).isFile()) inputs[relative] = sha256File(absolute)
     else for (const entry of require('./lib.js').walkFiles(absolute)) inputs[relative + '/' + entry.path] = entry.sha256
   }
-  verifyInstalledCandidate(presetRoot, { candidate: { package_version: candidatePackage.version }, inputs })
+  verifyInstalledCandidate(presetRoot, { candidate: { package_name: candidatePackage.name, package_version: candidatePackage.version }, inputs })
   materialize({ caseId: 'simple-done', output: workspace, initGit: false })
   const before = snapshotTree(workspace)
   const expectedImmutableFiles = digestMap(immutableSnapshot(workspace, ['src/task.js']))

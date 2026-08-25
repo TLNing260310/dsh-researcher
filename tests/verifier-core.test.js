@@ -72,14 +72,14 @@ test('runtime errors cannot become passing verifier evidence', () => {
   assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'fail')
 })
 
-test('DSH rc.7 tool-result envelopes bind source and block call IDs and expose nested text', () => {
+test('DSH native tool-result envelopes bind source and block call IDs and expose nested text', () => {
   const value = [events()[0], rc7Result()]
   assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'pass')
   value[1] = rc7Result({ exit_code: 1 })
   assert.equal(verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3).result, 'fail')
 })
 
-test('DSH rc.7 nested isError fails even a tool_success policy', () => {
+test('DSH native nested isError fails even a tool_success policy', () => {
   const successRegistry = sealRegistry({
     schema: 'project-cognition/verifier-registry/v1', revision: 1, registry_hash: null,
     entries: [{ id: 'tests.success', invocations: [{ tool_name: 'pwsh', arguments: { command: 'npm test' }, arguments_hash: argumentsHash({ command: 'npm test' }) }], result_policy: { kind: 'tool_success' } }],
@@ -90,7 +90,7 @@ test('DSH rc.7 nested isError fails even a tool_success policy', () => {
   assert.match(verified.diagnostics.join('; '), /returned an error/)
 })
 
-test('DSH rc.7 conflicting source and tool-result call IDs fail closed', () => {
+test('DSH native conflicting source and tool-result call IDs fail closed', () => {
   const value = [events()[0], rc7Result({ exit_code: 0 }, { toolCallId: 'other-call' })]
   assert.throws(
     () => verifyEvidence(registry(), 'tests.core', ['call-1'], value, 3),

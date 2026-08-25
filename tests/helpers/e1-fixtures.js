@@ -30,7 +30,7 @@ const SYNTHETIC_VISIBLE_TOOL_SCHEMAS = EXACT_VISIBLE_TOOL_NAMES.map((name) => ({
 }))
 const SYNTHETIC_VISIBLE_TOOL_CONTRACT = createVisibleToolContract(SYNTHETIC_VISIBLE_TOOL_SCHEMAS)
 const SYNTHETIC_DSH_DEPENDENCIES = [{
-  name: '@deepseek-ai/dsh', version: '0.1.0-rc.7', root_relative: '@deepseek-ai/dsh',
+  name: '@deepseek-ai/dsh', version: '0.1.1-rc.2', root_relative: '@deepseek-ai/dsh',
   package_json_sha256: digest('dsh-package-json'), content_tree_sha256: digest('dsh-content'), file_count: 1,
 }]
 const manifestBytes = (manifest) => Buffer.from(JSON.stringify(manifest, null, 2) + '\n')
@@ -302,10 +302,10 @@ const makeManifest = () => {
   const manifest = {
     schema: MANIFEST_SCHEMA,
     protocol: 'docs/goal-governor-evaluation-protocol.md',
-    protocol_version: '1.1',
+    protocol_version: '1.2',
     status: { infrastructure: 'READY', live_e1: 'NOT_RUN', outcome: 'NOT_PROVEN', portability: 'NOT_PROVEN' },
     runtime: {
-      client: 'dsh', version: '0.1.0-rc.7', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',
+      client: 'dsh', version: '0.1.1-rc.2', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',
       session_persistence: 'jsonl', pack_chunks: false, compression: 'none',
       title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false,
     },
@@ -363,6 +363,7 @@ const makeRunLock = (manifest, manifestSha256) => {
     },
     candidate: {
       repo_revision: digest('candidate-revision'),
+      package_name: '@tlning260310/dsh-researcher',
       package_path: 'dist/dsh-researcher-test.tgz',
       package_sha256: digest('candidate-package'),
       package_version: '0.0.0-e1-test',
@@ -378,10 +379,10 @@ const makeRunLock = (manifest, manifestSha256) => {
     },
     budget: { max_tokens: manifest.budget.max_tokens, max_time_sec: manifest.budget.max_time_sec },
     host_runtime: {
-      node: { version: 'v22.12.0', platform: 'win32', arch: 'x64', executable_sha256: digest('node-executable') },
+      node: { version: 'v24.9.0', platform: 'win32', arch: 'x64', executable_sha256: digest('node-executable') },
       dsh: {
         package_name: '@deepseek-ai/dsh',
-        package_version: '0.1.0-rc.7',
+        package_version: '0.1.1-rc.2',
         package_json_sha256: digest('dsh-package-json'),
         cli_relative: 'dist/cli.js',
         cli_sha256: digest('dsh-cli'),

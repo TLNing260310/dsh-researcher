@@ -12,9 +12,10 @@
     "candidate": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repo_revision", "package_path", "package_sha256", "package_version"],
+      "required": ["repo_revision", "package_name", "package_path", "package_sha256", "package_version"],
       "properties": {
         "repo_revision": { "type": "string", "pattern": "^[a-f0-9]{40,64}$" },
+        "package_name": { "const": "@tlning260310/dsh-researcher" },
         "package_path": { "type": "string", "minLength": 1 },
         "package_sha256": { "$ref": "#/$defs/sha256" },
         "package_version": { "type": "string", "minLength": 1 }
@@ -26,7 +27,7 @@
       "required": ["client", "version", "profile", "preset", "permission_mode", "session_persistence", "pack_chunks", "compression", "title_llm", "model_compaction", "tool_result_pruning", "extra_local_tools"],
       "properties": {
         "client": { "const": "dsh" },
-        "version": { "const": "0.1.0-rc.7" },
+        "version": { "const": "0.1.1-rc.2" },
         "profile": { "const": "headless" },
         "preset": { "const": "governed" },
         "permission_mode": { "const": "workspace-write" },
@@ -106,7 +107,7 @@
           "required": ["package_name", "package_version", "package_json_sha256", "cli_relative", "cli_sha256", "dependency_inventory_sha256", "dependencies"],
           "properties": {
             "package_name": { "const": "@deepseek-ai/dsh" },
-            "package_version": { "const": "0.1.0-rc.7" },
+            "package_version": { "const": "0.1.1-rc.2" },
             "package_json_sha256": { "$ref": "#/$defs/sha256" },
             "cli_relative": { "type": "string", "minLength": 1 },
             "cli_sha256": { "$ref": "#/$defs/sha256" },

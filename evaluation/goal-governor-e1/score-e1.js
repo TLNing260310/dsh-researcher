@@ -1402,13 +1402,13 @@ const validateManifest = (manifest, options = {}) => {
   }
   if (!isPlainObject(manifest)) return ['manifest must be an object']
   if (manifest.schema !== MANIFEST_SCHEMA) invalid.push('manifest schema must equal ' + MANIFEST_SCHEMA)
-  if (manifest.protocol_version !== '1.1') invalid.push('manifest.protocol_version must equal 1.1')
+  if (manifest.protocol_version !== '1.2') invalid.push('manifest.protocol_version must equal 1.2')
   try { validateCostPolicy(manifest.cost_policy) } catch (error) { invalid.push('manifest cost policy: ' + error.message) }
   if (!isPlainObject(manifest.runtime)) invalid.push('manifest.runtime must be an object')
   else {
     if (manifest.runtime.pack_chunks !== false) invalid.push('manifest.runtime.pack_chunks must remain false for complete raw-event adjudication')
-    if (manifest.runtime.title_llm !== false) invalid.push('manifest.runtime.title_llm must remain disabled because rc.7 does not persist its usage')
-    if (manifest.runtime.model_compaction !== false) invalid.push('manifest.runtime.model_compaction must remain disabled because failed rc.7 compaction calls can lose usage')
+    if (manifest.runtime.title_llm !== false) invalid.push('manifest.runtime.title_llm must remain disabled because auxiliary title usage is outside the frozen evidence contract')
+    if (manifest.runtime.model_compaction !== false) invalid.push('manifest.runtime.model_compaction must remain disabled because failed compaction calls can lose usage evidence')
     if (manifest.runtime.tool_result_pruning !== true) invalid.push('manifest.runtime.tool_result_pruning must remain enabled as the model-free context bound')
     if (manifest.runtime.extra_local_tools !== false) invalid.push('manifest.runtime.extra_local_tools must remain disabled for the exact E1 tool surface')
   }

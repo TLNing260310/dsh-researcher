@@ -3,6 +3,7 @@
 // The policy surface is repository-owned; concrete JSON Schemas are captured
 // from the pinned DSH installation before a live run and frozen in run-lock.
 const { canonicalize, hashJson, EXACT_VISIBLE_TOOL_NAMES, INHERITED_VISIBLE_TOOL_NAMES, VISIBLE_TOOL_POLICY } = require('./lib.js')
+const { PROJECT_PACKAGE_NAME } = require('../../lib/runtime-requirements.js')
 
 const schemaName = (value) => typeof value === 'string'
   ? value
@@ -56,7 +57,7 @@ const validateCaptureReport = (value) => {
   if (canonicalize(Object.keys(value).sort()) !== canonicalize(keys.sort()) || value.schema !== 'dsh-researcher/goal-governor-e1/visible-tools-capture/v1') throw new Error('visible tool capture report envelope drifted')
   if (value.model_calls !== 0 || value.prompt_submissions !== 0 || value.command_submissions !== 0) throw new Error('visible tool snapshot was not captured without model/prompt/command submissions')
   for (const field of ['node', 'dsh', 'candidate']) if (!value[field] || typeof value[field] !== 'object' || Array.isArray(value[field])) throw new Error('visible tool capture ' + field + ' provenance is missing')
-  if (value.candidate.package_name !== 'dsh-researcher' || typeof value.candidate.package_version !== 'string' || value.candidate.package_version === '') throw new Error('visible tool capture candidate identity is invalid')
+  if (value.candidate.package_name !== PROJECT_PACKAGE_NAME || typeof value.candidate.package_version !== 'string' || value.candidate.package_version === '') throw new Error('visible tool capture candidate identity is invalid')
   validateVisibleToolContract(value.visible_tool_contract)
   return value
 }

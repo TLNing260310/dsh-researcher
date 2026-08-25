@@ -149,7 +149,7 @@ L5 做           → Coding Agent
 | A6 | Ledger/handoff 只能经 owner-reviewed revision → seal/install 提升 | 防止报告、模型推断或 replay 静默改写项目目的与架构 | 已采纳 |
 | A7 | Canonical install 只接受 sealed exact-next revision，并绑定 review 时的 current hash | 防止 draft 直装、revision 回退与并发 stale overwrite；进程内写入失败 best-effort rollback；doctor 检测 lock 与 canonical pair 缺失/不匹配，不恢复崩溃或枚举所有残留 | 已实现；不宣称跨文件断电原子性 |
 | A8 | E1 外部签名只验证所给公钥对应私钥签过 bundle bytes，不升级身份、live 或 causal claim | 将篡改检测与“密钥属于谁、宿主是否诚实、运行是否真实”分开 | 已实现 |
-| A9 | E1 run lock 冻结 `base_url`，不从 model-selection metadata 推断连接目标；outer 固定 settings/`watch=false`/`DEEPSEEK_BASE_URL`，child 用 DSH 公共 resolver 在每个模型边界复验 | rc.7 的 model selection 不提供连接 URL；必须对 adapter 真正解析出的连接目标 fail closed。remote 固定 official Flash + `https://api.deepseek.com`；local 仍使用 `deepseek-official` adapter + 无尾斜杠字面 loopback | 离线实现；DSH-dependent Gate 0 待验证 |
+| A9 | E1 run lock 冻结 `base_url`，不从 model-selection metadata 推断连接目标；outer 固定 settings/`watch=false`/`DEEPSEEK_BASE_URL`，child 用 DSH 公共 resolver 在每个模型边界复验 | model selection 不提供连接 URL；必须对 adapter 真正解析出的连接目标 fail closed。remote 固定 official Flash + `https://api.deepseek.com`；local 仍使用 `deepseek-official` adapter + 无尾斜杠字面 loopback | 离线实现；DSH `0.1.1-rc.2` preset discovery 已通过，完整 Gate 0/capture 仍待验证 |
 
 ---
 

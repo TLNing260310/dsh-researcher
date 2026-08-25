@@ -5,7 +5,7 @@
 - id: headless-runner
   disabled: true
 
-# rc.7's first-prompt title provider performs an auxiliary LLM request whose
+# DSH's first-prompt title provider performs an auxiliary LLM request whose
 # usage is not persisted. E1 disables both the plugin id and provider-shaped
 # id fail-closed; unknown disabled ids are inert under the patch merger.
 - id: session-title-llm
@@ -15,7 +15,7 @@
   disabled: true
 
 # The outer runner generates this settings file from the signed run lock.
-# Disabling watch closes the rc.7 live-settings TOCTOU: provider, model,
+# Disabling watch closes the live-settings TOCTOU: provider, model,
 # reasoning effort, and DeepSeek baseURL cannot change between requests.
 - id: settings
   name: '@deepseek-ai/dsh-settings-file'
