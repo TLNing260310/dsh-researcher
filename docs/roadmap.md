@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.8` 已完成 exact rc.2 的 isolated local route/capture/replay smoke，但本地 `qwen3:14b` 在最简单 E1 单轨得到有效 FAIL；完整 E1 仍未运行。下一步是补齐 remote Flash 准入、owner TTY gate 与统一全轨 bundle，而不是增加产品功能。证据见 [Validation Status](./validation-status.md) 与 [local Qwen E1 smoke](./evidence/e1-local-qwen-smoke-2026-08-25.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.8` 已完成 exact rc.2 的 isolated local route/capture/replay 探测。本地 `qwen3:14b` 的后续四条非交互轨迹得到 3 条可评分 FAIL、1 条 INVALID；rejected resume observe 已能完整归档且不会签发 token/seal。完整 E1 仍未运行。下一步是 dedicated remote Flash 准入、owner TTY gate、成功 resume 与统一全轨 bundle，而不是增加产品功能。证据见 [Validation Status](./validation-status.md)、[multi-track probe](./evidence/e1-local-qwen-multitrack-2026-08-25.md) 与早期 [single-track smoke](./evidence/e1-local-qwen-smoke-2026-08-25.md)。
 
 ## 路线纪律
 

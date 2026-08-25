@@ -20,7 +20,7 @@ They are independent. You can trial Project Research without adopting Goal Contr
 
 > **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. Live E1, net productivity gain, long-term Project Cognition value, and adapters beyond DSH are **not proven**.
 
-> **Latest runtime evidence:** one isolated local-Qwen E1 smoke completed the real DSH capture/replay path but scored a valid model **FAIL** (`CONTINUE` instead of `ALREADY_SATISFIED`). It is useful negative evidence, not full E1. See [the evidence record](./docs/evidence/e1-local-qwen-smoke-2026-08-25.md).
+> **Latest runtime evidence:** isolated local-Qwen probes exercised four non-interactive tracks: three produced scorable model **FAIL** results, one adversarial track was **INVALID**, and a rejected resume observation preserved full failure evidence without issuing a resume token or seal. This is useful negative/runtime evidence, not full E1. See the [multi-track record](./docs/evidence/e1-local-qwen-multitrack-2026-08-25.md) and the earlier [single-track record](./docs/evidence/e1-local-qwen-smoke-2026-08-25.md).
 
 ## The problem
 

@@ -198,7 +198,7 @@ session ledger → draft revision → owner review → seal → regenerate proje
 | 单元、replay、集成与 package smoke | PASS | 哈希、revision、预算、人工 gate、伪证据拒绝、host completion 和隔离安装按设计工作 |
 | `project-cognition doctor .` | PASS | canonical state、schema、hash、projection、Goal 与 registry 当前一致；不证明引用证据仍新鲜 |
 | DSH Web Project Research smoke | PASS（运行时边界）；本地输出 probe FAIL | 精确发布 runtime 可达 SAFE 并拒绝权限漂移/未认证终态；两个本地 14B probe 未产出合格报告 |
-| Goal Governor E1 infrastructure | READY；Live E1 NOT RUN | preflight、run lock、成本准入、bundle、replay 与 scorer 已存在；不证明真实模型 conformance |
+| Goal Governor E1 infrastructure | READY；完整 Live E1 NOT RUN | 本地 Qwen 非交互探测得到 3 条可评分 FAIL、1 条 INVALID；resume 失败证据可完整归档且未签发 token/seal。它证明拒绝路径，不证明全轨模型 conformance |
 | Experiment C+ | causal-invalid，永久保留 | 基础设施能运行，同时评测会拒绝 snapshot leakage 和伪正向结论 |
 
 本地复核不会调用模型或网络：
