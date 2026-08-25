@@ -8,7 +8,7 @@
   "properties": {
     "schema": { "const": "dsh-researcher/goal-governor-e1/manifest/v2" },
     "protocol": { "const": "docs/goal-governor-evaluation-protocol.md" },
-    "protocol_version": { "const": "1.2" },
+    "protocol_version": { "const": "1.3" },
     "status": {
       "type": "object",
       "additionalProperties": false,

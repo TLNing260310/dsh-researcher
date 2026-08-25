@@ -94,7 +94,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   const manifest = readJson('evaluation', 'goal-governor-e1', 'manifest.json')
   assert.deepEqual(validateManifest(manifest), [])
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.2')
+  assert.equal(manifest.protocol_version, '1.3')
   assert.deepEqual(manifest.cost_policy, {
     schema: 'dsh-researcher/model-cost-policy/v1',
     timezone: 'Asia/Shanghai',
@@ -123,12 +123,13 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   }
 })
 
-test('protocol v1.2 cost enforcement and superseded protocol provenance cannot drift silently', () => {
+test('protocol v1.3 cost enforcement and superseded protocol provenance cannot drift silently', () => {
   const runner = read('evaluation', 'goal-governor-e1', 'run-e1.js')
   const child = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
   const scorer = read('evaluation', 'goal-governor-e1', 'score-e1.js')
   const archive = read('docs', 'goal-governor-evaluation-protocol-v1.md')
   const archiveV11 = read('docs', 'goal-governor-evaluation-protocol-v1.1.md')
+  const archiveV12 = read('docs', 'goal-governor-evaluation-protocol-v1.2.md')
   for (const phase of ['pre-output', 'pre-spawn']) assert.match(runner, new RegExp("phase: '" + phase + "'"))
   assert.match(child, /resolveAdapterOptions/)
   assert.match(child, /resolved DSH DeepSeek baseURL differs from the frozen run-lock/)
@@ -145,6 +146,9 @@ test('protocol v1.2 cost enforcement and superseded protocol provenance cannot d
   assert.match(archiveV11, /Live runs under v1\.1: `0`/)
   assert.match(archiveV11, /4e29b361056588bd9a625cc2335ef8721f52e8a4/)
   assert.match(archiveV11, /47e75b262c4e4b4342889a175192726ffdb2da8e4d1bd31e3108e956131f0cca/)
+  assert.match(archiveV12, /model calls: `0`/i)
+  assert.match(archiveV12, /acfa74ab70eb5570268e9a3f176b9f6870a1b4b2/)
+  assert.match(archiveV12, /48c5e88603c1214e896c6ec6139ccddc91fa3d7a901029b61f9a81ca6e9c8152/i)
 })
 
 test('E1 runner defaults to offline preflight and live mode fails before launch without cost acknowledgement', () => {

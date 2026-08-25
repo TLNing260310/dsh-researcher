@@ -59,7 +59,7 @@ const validateSchemas = () => {
   const scoreSchema = readJson(path.join(EVAL_ROOT, 'score-report.schema.json'))
   assert.equal(manifestSchema.properties.schema.const, MANIFEST_SCHEMA)
   assert.equal(lockSchema.properties.schema.const, RUN_LOCK_SCHEMA)
-  assert.equal(manifestSchema.properties.protocol_version.const, '1.2')
+  assert.equal(manifestSchema.properties.protocol_version.const, '1.3')
   assert.equal(manifestSchema.$defs.costPolicy.properties.timezone.const, 'Asia/Shanghai')
   assert.equal(manifestSchema.$defs.costPolicy.properties.remote.properties.model.const, 'deepseek-v4-flash')
   assert.equal(manifestSchema.$defs.costPolicy.properties.remote.properties.base_url.const, 'https://api.deepseek.com')
@@ -266,8 +266,10 @@ const validateFixture = (manifest, entry, first, second) => {
   assert.equal(contract.human_gates.length, entry.id === 'governed-gate' ? 1 : 0)
   assert.deepEqual(registry.entries[0].invocations, [{ tool_name: TRUSTED_VERIFIER.tool_name, arguments: {}, arguments_hash: registry.entries[0].invocations[0].arguments_hash }])
 
-  const firstTree = snapshotTree(first)
-  const secondTree = snapshotTree(second)
+  // materialization.json describes this content tree and therefore cannot be
+  // part of its own digest. The live runner uses the same explicit domain.
+  const firstTree = snapshotTree(first, { exclude: ['.git', 'materialization.json'] })
+  const secondTree = snapshotTree(second, { exclude: ['.git', 'materialization.json'] })
   assert.deepEqual(secondTree, firstTree, entry.id + ' must materialize byte-for-byte deterministically')
 
   assert.equal(fs.readFileSync(path.join(first, 'verify.mjs')).equals(fs.readFileSync(EXTERNAL_VERIFIER_PATH)), true, 'workspace verifier audit copy drifted')
@@ -305,7 +307,7 @@ const runPreflight = () => {
   validateSchemas()
   validatePortableSources()
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.2')
+  assert.equal(manifest.protocol_version, '1.3')
   assert.equal(manifest.artifacts.schema, RUN_ARTIFACT_SCHEMA)
   assert.equal(manifest.cost_policy.remote.model, 'deepseek-v4-flash')
   assert.equal(manifest.cost_policy.remote.base_url, 'https://api.deepseek.com')

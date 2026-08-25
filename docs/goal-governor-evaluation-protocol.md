@@ -1,8 +1,8 @@
-# Goal Governor Value Evaluation Protocol v1.2
+# Goal Governor Value Evaluation Protocol v1.3
 
-Status: **frozen v1.2 for DSH rc.2 E1 execution (2026-08-25)**. 尚未运行 live E1。本文在 live runs 之前固定主张、对照、无效条件、成本准入和继续/停止阈值；修改轨迹、主指标、任务、阈值或成本策略必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
+Status: **frozen v1.3 for DSH rc.2 E1 execution (2026-08-25)**. 尚未发生模型调用或可裁决 live E1。本文固定主张、对照、无效条件、成本准入和继续/停止阈值；修改轨迹、主指标、任务、阈值或成本策略必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
 
-v1 和 v1.1 均在任何 live run 发生前被 supersede，故各自 live runs=`0`。精确历史身份和取回方式保存在 [v1 archive record](./goal-governor-evaluation-protocol-v1.md) 与 [v1.1 archive record](./goal-governor-evaluation-protocol-v1.1.md)。v1.2 只把未运行的 E1 绑定到 DSH `0.1.1-rc.2`、其官方 Node 范围、正确的 scoped candidate identity 和 portable HostEvent/invocation contract；不改变六条 E1 轨迹、E2/E3 estimand 或通过阈值。
+v1 和 v1.1 均在任何 live run 发生前被 supersede。v1.2 的 rc.2 capture-only PASS，但一次本地 smoke 因 fixture hash domain 冲突在首个模型消息前 fail closed，模型调用=`0`。精确历史身份见 [v1](./goal-governor-evaluation-protocol-v1.md)、[v1.1](./goal-governor-evaluation-protocol-v1.1.md)、[v1.2](./goal-governor-evaluation-protocol-v1.2.md) archive records。v1.3 统一规定 fixture tree hash 排除 `.git` 与自描述的 `materialization.json`；不改变 fixture 业务字节、六条轨迹、E2/E3 estimand 或通过阈值。
 
 ## 1. 要区分的三类主张
 
@@ -124,4 +124,4 @@ C 相对 B 必须同时满足：
 
 每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据。可选的 bundle 外 Ed25519 attestation 只证明所给外部 trust root 签过这些原始字节并检测签后篡改，不能识别由不诚实签署者生成的自洽伪包，不能证明 DSH 运行或产生无条件 causal validity；该传输/留存增强不改变本协议的轨迹、阈值或信任假设。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。
 
-历史 Phase A 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行，也不得替代 v1.2 E1 runner、run lock、成本准入和 scorer。
+历史 Phase A 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行，也不得替代 v1.3 E1 runner、run lock、成本准入和 scorer。

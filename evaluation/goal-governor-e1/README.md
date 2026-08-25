@@ -70,7 +70,7 @@ effective connection URL from model-selection metadata.
 
 ### Model cost admission
 
-The manifest and run lock freeze protocol v1.2's `Asia/Shanghai` policy. On
+The manifest and run lock freeze protocol v1.3's `Asia/Shanghai` policy. On
 Monday through Friday, DeepSeek API is denied during `[09:00,12:00)` and
 `[14:00,18:00)` Beijing time. Those windows admit only `local-loopback`, with
 a literal loopback `--base-url` frozen in the lock. This route still uses the
