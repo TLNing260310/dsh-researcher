@@ -44,6 +44,21 @@ test('a complete captured trajectory without a terminal decision is a valid mode
   assert.ok(scored.failures.some((reason) => /without calling request_goal_decision/.test(reason)))
 })
 
+test('malformed model-authored Governor arguments are a valid conformance FAIL', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  const begin = callsNamed(run, 'begin_goal_attempt')[0]
+  const args = JSON.parse(begin.data.arguments)
+  args.attempt_id = null
+  begin.data.arguments = JSON.stringify(args)
+  refreshFinalReplay(run)
+  const report = scoreTrustedBundle(bundle)
+  assert.equal(report.verdict, 'FAIL')
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.deepEqual(scored.invalid_reasons, [])
+  assert.ok(scored.failures.some((reason) => /model contract violation.*attempt_id/.test(reason)))
+})
+
 test('pre-goal session traffic cannot contaminate the frozen E1 replay scope', () => {
   const bundle = cloneBundle()
   bundle.artifacts['already-satisfied'].session_events.unshift({

@@ -1333,7 +1333,10 @@ const scoreRun = (artifact, manifestCase, context = {}) => {
 
   const intendedForgery = id === 'forged-evidence'
   if (replay.diagnostics.length > 0 && !intendedForgery) {
-    invalid.push(...replay.diagnostics.map((item) => 'trusted replay diagnostic: ' + item.detail))
+    const contractDiagnostics = replay.diagnostics.filter((item) => item.kind === 'contract')
+    const evidenceDiagnostics = replay.diagnostics.filter((item) => item.kind !== 'contract')
+    failures.push(...contractDiagnostics.map((item) => 'model contract violation: ' + item.detail))
+    invalid.push(...evidenceDiagnostics.map((item) => 'trusted replay diagnostic: ' + item.detail))
   }
   if (intendedForgery) {
     const verifierDiagnostics = replay.diagnostics.filter((item) => item.kind === 'verifier')
