@@ -45,8 +45,18 @@ node evaluation/goal-governor-e1/run-e1.js --mode live \
   --case <case-id> --run-lock <external-run-lock.json> --ack-live-cost \
   --workspace <external-isolated-workspace> --output <external-artifact-root> \
   --dsh-module-root <node-modules-root> \
-  --dsh-home <dsh-home> --preset-root <installed-candidate-root>
+  --dsh-home <dsh-home> --preset-root <installed-candidate-root> \
+  [--credentials-file <existing-managed-credentials-store>]
 ```
+
+`--credentials-file` is remote-only. It lets the official DSH credential
+provider read an existing managed `.credentials.yaml` while session state
+remains isolated in the required fresh `--dsh-home`. The runner never reads,
+copies, hashes, or writes credential contents, and the path must be disjoint
+from the workspace, output, fresh DSH home, candidate, modules, repository,
+and fixture. Without the option, credentials resolve from the fresh DSH home
+or the inherited `DEEPSEEK_API_KEY`; `local-loopback` forbids the option and
+continues to use the public non-secret sentinel.
 
 The E1 runner is the sole trajectory prompt driver. It binds the approved DSH
 Goal, immediately freezes its activation as `disarmed`, and submits only the

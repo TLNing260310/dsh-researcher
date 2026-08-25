@@ -29,6 +29,15 @@
     path: !!js process.env.DSH_E1_SETTINGS_FILE
     watch: false
 
+# Session state stays under the per-track fresh DSH_HOME, while the official
+# credential provider may read an explicitly selected external managed store.
+# The runner never reads, copies, hashes, or records the secret bytes.
+- id: credentials
+  name: '@deepseek-ai/dsh-credentials-local'
+  config:
+    path: !!js process.env.DSH_E1_CREDENTIALS_FILE
+    watch: false
+
 - id: approval
   name: '@deepseek-ai/dsh-user-approval'
   config:

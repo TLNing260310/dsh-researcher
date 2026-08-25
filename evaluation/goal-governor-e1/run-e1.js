@@ -244,7 +244,7 @@ const usage = () => [
   'Goal Governor E1:',
   '  node run-e1.js                         # offline preflight only',
   '  node run-e1.js --mode preflight        # offline preflight only',
-  '  node run-e1.js --mode live --case <id> --run-lock <file> --ack-live-cost --workspace <isolated-dir> --output <external-root> --dsh-module-root <node_modules> --dsh-home <dir> --preset-root <installed-dsh-researcher>',
+  '  node run-e1.js --mode live --case <id> --run-lock <file> --ack-live-cost --workspace <isolated-dir> --output <external-root> --dsh-module-root <node_modules> --dsh-home <dir> --preset-root <installed-dsh-researcher> [--credentials-file <managed-store>]',
   '  resume-replay additionally requires --stage observe, then --stage continue --resume-session <id>.',
   '  governed-gate additionally requires --human-gate-stdin and external interactive TTY input (not cryptographic identity).',
 ].join('\n')
@@ -301,6 +301,23 @@ const main = () => {
   const manifest = validateManifest(readJson(MANIFEST_PATH))
   const entry = manifest.cases.find((item) => item.id === caseId)
   const lockResult = verifyRunLock(runLockPath, { dshModuleRoot })
+  const externalCredentialsFile = args['credentials-file'] === undefined
+    ? null
+    : canonicalWithMissingTail(requireString(args['credentials-file'], '--credentials-file'))
+  if (lockResult.lock.model.route === 'local-loopback' && externalCredentialsFile !== null) throw new Error('--credentials-file is forbidden for local-loopback; the runner supplies a public non-secret sentinel')
+  if (externalCredentialsFile !== null && (!fs.existsSync(externalCredentialsFile) || !fs.statSync(externalCredentialsFile).isFile())) throw new Error('--credentials-file must be an existing regular file')
+  const credentialsFile = externalCredentialsFile || path.join(dshHome, '.credentials.yaml')
+  if (externalCredentialsFile !== null) {
+    for (const [other, label] of [
+      [workspace, 'credentials/workspace'],
+      [outputRoot, 'credentials/output'],
+      [dshHome, 'credentials/DSH home'],
+      [presetRoot, 'credentials/candidate preset'],
+      [dshModuleRoot, 'credentials/DSH modules'],
+      [REPO_ROOT, 'credentials/repository'],
+      [FIXTURE_ROOT, 'credentials/fixture'],
+    ]) assertDisjoint(credentialsFile, other, label)
+  }
   if (canonicalize(lockResult.manifest) !== canonicalize(manifest)) throw new Error('verified run-lock manifest differs from live manifest')
   if (lockResult.lock.inputs[TRUSTED_VERIFIER.source] !== TRUSTED_VERIFIER.sha256 || sha256File(EXTERNAL_VERIFIER_PATH) !== TRUSTED_VERIFIER.sha256) throw new Error('TRUSTED_VERIFIER_DRIFT: manifest, run lock, and external verifier do not agree')
   const reservationSec = lockResult.lock.budget.max_time_sec + 60
@@ -471,6 +488,7 @@ const main = () => {
     DSH_E1_STAGE1_SEAL_HASH: continuing ? stage1Verification.seal_sha256 : '',
     DSH_E1_VISIBLE_TOOL_CONTRACT_MODULE: VISIBLE_TOOL_CONTRACT_PATH,
     DSH_E1_SETTINGS_FILE: settingsFile,
+    DSH_E1_CREDENTIALS_FILE: credentialsFile,
     DSH_E1_NODE_PROVENANCE: JSON.stringify(lockResult.lock.host_runtime.node),
     DSH_E1_DISABLE_MODEL_COMPACTION: '1',
     DSH_E1_RESTRICT_TOOL_SURFACE: '1',
