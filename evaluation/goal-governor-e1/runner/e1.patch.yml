@@ -63,7 +63,7 @@
             trust: system
 
     - id: e1-host-tool
-      name: !!js process.env.DSH_E1_HOST_TOOL
+      name: "__DSH_E1_HOST_TOOL_URL__"
 
     - id: e1-live-runner
-      name: !!js process.env.DSH_E1_DRIVER
+      name: "__DSH_E1_DRIVER_URL__"

@@ -6,11 +6,14 @@ import fs from 'node:fs'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const dshRequire = createRequire(path.join(process.env.DSH_E1_DSH_MODULE_ROOT || '.', 'package.json'))
-const importDsh = (specifier) => import(pathToFileURL(dshRequire.resolve(specifier)).href)
+const dshImports = JSON.parse(process.env.DSH_E1_PACKAGE_IMPORTS || '{}')
+const importDsh = (specifier) => {
+  const target = dshImports[specifier]
+  if (typeof target !== 'string' || !target.startsWith('file:')) throw new Error('pinned DSH import is unavailable: ' + specifier)
+  return import(target)
+}
 const [agentModule, sessionModule] = await Promise.all([
   importDsh('@deepseek-ai/dsh-agent'),
   importDsh('@deepseek-ai/dsh-session'),
@@ -44,7 +47,7 @@ async function run(ctx, io) {
     installModelSelection(agentCtx, { current: selection, assembled: undefined })
     await presets.mount(agentCtx, resolved.id)
     if (!agentCtx.tools || typeof agentCtx.tools.restrict !== 'function') throw new Error('agent-scoped inherited tool restriction is unavailable')
-    agentCtx.tools.restrict({ allow: [...contractModule.INHERITED_VISIBLE_TOOL_NAMES] })
+    agentCtx.tools.restrict({ allow: [...contractModule.EXACT_VISIBLE_TOOL_NAMES] })
   }
   const handle = await agents.create({ sessionId, meta: { cwd: process.cwd() }, agentOptions: { provider: selection.provider, model: selection.model }, setup })
   try {
@@ -52,7 +55,12 @@ async function run(ctx, io) {
     const nativeEvents = Array.isArray(handle.agent.session?.events) ? handle.agent.session.events : []
     const forbidden = nativeEvents.filter((event) => /^(?:assistant|llm|tool|command)\//.test(String(event?.type || '')))
     if (forbidden.length > 0) throw new Error('capture-only agent emitted prompt/model/tool/command events')
-    const contract = contractModule.createVisibleToolContract(tools.schemas(handle.agent))
+    const schemas = tools.schemas(handle.agent)
+    let contract
+    try { contract = contractModule.createVisibleToolContract(schemas) } catch (error) {
+      const names = schemas.map((schema) => contractModule.schemaName(schema)).filter(Boolean).sort()
+      throw new Error(error.message + '; actual visible names: ' + JSON.stringify(names), { cause: error })
+    }
     await fsp.writeFile(path.resolve(requiredEnv('DSH_E1_CAPTURE_OUT')), JSON.stringify({
       schema: 'dsh-researcher/goal-governor-e1/visible-tools-capture-inner/v1',
       model_calls: 0,

@@ -32,6 +32,7 @@ const {
   sanitizeNodeEnvironment,
   currentNodeProvenance,
   dshRuntimeProvenance,
+  dshPackageImportMap,
   publicDshProvenance,
   directoryInventory,
   assertSameProvenance,
@@ -39,6 +40,7 @@ const {
 const { beginAttempt, finishAttempt, assertClosedLedger } = require('./attempt-ledger.js')
 const { materialize } = require('../../fixtures/goal-governor-e1/materialize.js')
 const { PROJECT_PACKAGE_NAME, assertDshNodeSupported } = require('../../lib/runtime-requirements.js')
+const { materializeE1Patch } = require('./patch-materializer.js')
 
 const EVAL_ROOT = __dirname
 const REPO_ROOT = path.resolve(EVAL_ROOT, '..', '..')
@@ -156,6 +158,7 @@ const verifyDshRuntime = (dshModuleRoot, dshHome, expected) => {
     ...publicEvidence,
     invocation: { runtime: 'node', argv_prefix: [provenance.cli_relative] },
     environment: { policy: 'sanitized-node-spawn-environment/v1', denied_names: [...NODE_ENV_DENYLIST], removed_present_names: sanitized.removed },
+    module_root: provenance.module_root,
     package_root: provenance.package_root,
     cli_file: provenance.cli_file,
   }
@@ -353,6 +356,8 @@ const main = () => {
   const settingsFile = path.join(caseDir, 'frozen-dsh-settings.yaml')
   const settingsBytes = frozenSettingsBytes(lockResult.lock.model)
   ensureExactBytes(settingsFile, settingsBytes)
+  const materializedPatchFile = path.join(caseDir, 'frozen-e1.patch.yml')
+  if (!fs.existsSync(materializedPatchFile)) materializeE1Patch({ template: PATCH_PATH, output: materializedPatchFile, hostTool: HOST_TOOL_PATH, driver: DRIVER_PATH })
   if (continuing) {
     fs.appendFileSync(path.join(caseDir, 'stdout.txt'), '\n--- E1 durable resume process ---\n')
     fs.appendFileSync(path.join(caseDir, 'stderr.txt'), '\n--- E1 durable resume process ---\n')
@@ -421,6 +426,10 @@ const main = () => {
     DSH_E1_CASE_OUT: caseDir,
     DSH_E1_PRESET_ROOT: presetRoot,
     DSH_E1_DSH_MODULE_ROOT: dshModuleRoot,
+    DSH_E1_PACKAGE_IMPORTS: JSON.stringify(dshPackageImportMap(runtimeProvenance, [
+      '@deepseek-ai/dsh-agent', '@deepseek-ai/dsh-llm', '@deepseek-ai/dsh-session',
+      '@deepseek-ai/dsh-llm-deepseek', '@deepseek-ai/dsh-settings', '@deepseek-ai/dsh-launch-environment',
+    ])),
     DSH_E1_DRIVER: DRIVER_PATH,
     DSH_E1_HOST_TOOL: HOST_TOOL_PATH,
     DSH_E1_WORKSPACE: workspace,
@@ -470,7 +479,7 @@ const main = () => {
   const processStartedAt = new Date(processStartedWallMs).toISOString()
   const childTimeoutMs = childAdmissionWindow.timeout_ms
   const processStartedMonotonic = process.hrtime.bigint()
-  const child = spawnSync(process.execPath, [runtimeProvenance.cli_file, '--profile', 'headless', '--patch', PATCH_PATH, 'e1-' + caseId], {
+  const child = spawnSync(process.execPath, [runtimeProvenance.cli_file, '--profile', 'headless', '--patch', materializedPatchFile, 'e1-' + caseId], {
     cwd: workspace,
     env: environment,
     stdio: 'inherit',

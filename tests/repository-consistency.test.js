@@ -176,6 +176,20 @@ test('E1 runner and scorer share the honest external-TTY evidence contract', () 
   assert.doesNotMatch(scorer, /external-tty-human/, 'scorer must not require an identity claim the runner cannot prove')
 })
 
+test('E1 rc.2 patch and package imports are host-materialized and exact-tool restricted', () => {
+  const patch = read('evaluation', 'goal-governor-e1', 'runner', 'e1.patch.yml')
+  const materializer = read('evaluation', 'goal-governor-e1', 'patch-materializer.js')
+  const capture = read('evaluation', 'goal-governor-e1', 'runner', 'capture-visible-tools.mjs')
+  const live = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
+  assert.match(patch, /"__DSH_E1_HOST_TOOL_URL__"/)
+  assert.match(patch, /"__DSH_E1_DRIVER_URL__"/)
+  assert.match(materializer, /pathToFileURL/)
+  assert.match(capture, /DSH_E1_PACKAGE_IMPORTS/)
+  assert.match(live, /DSH_E1_PACKAGE_IMPORTS/)
+  assert.match(capture, /EXACT_VISIBLE_TOOL_NAMES/)
+  assert.match(live, /EXACT_VISIBLE_TOOL_NAMES/)
+})
+
 test('capture output cannot be hidden inside any measured or runtime-controlled path', () => {
   const parent = path.dirname(root)
   const paths = {

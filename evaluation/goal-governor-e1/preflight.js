@@ -157,7 +157,7 @@ const validatePortableSources = () => {
   assert.ok(inner.includes('process.stdin.isTTY'), 'inner runner must enforce interactive TTY authority')
   assert.ok(inner.includes('resume_before_followup: resumeBeforeFollowup'), 'resume must record the actually recomputed pre-followup checkpoint')
   for (const preserved of ['session.stage1.jsonl', 'session.stage1.events.json']) assert.ok(inner.includes(preserved), 'resume must preserve ' + preserved)
-  assert.ok(inner.includes('agentCtx.tools.restrict({ allow: [...INHERITED_VISIBLE_TOOL_NAMES] })'), 'inherited tool restriction must run in the agent-scoped setup')
+  assert.ok(inner.includes('agentCtx.tools.restrict({ allow: [...EXACT_VISIBLE_TOOL_NAMES] })'), 'exact tool restriction must run in the agent-scoped setup')
   assert.ok(inner.indexOf('createVisibleToolContract(tools.schemas(agent))') < inner.indexOf('await followup(agent, prompt)'), 'exact actual tool schemas must be checked before the first prompt')
   const patch = fs.readFileSync(path.join(EVAL_ROOT, 'runner', 'e1.patch.yml'), 'utf8')
   for (const invariant of ['session-persistence-jsonl', 'packChunks: false', 'compression: none', 'DSH_E1_SESSION_ROOT', 'DSH_E1_HOST_TOOL', 'session-title-llm']) assert.ok(patch.includes(invariant), 'live patch omitted ' + invariant)

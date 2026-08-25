@@ -5,6 +5,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const { createRequire } = require('node:module')
+const { pathToFileURL } = require('node:url')
 const { canonicalize, hashJson, readJson, sha256File, snapshotTree, treeHash } = require('./lib.js')
 
 const NODE_ENV_DENYLIST = Object.freeze([
@@ -60,8 +61,27 @@ const resolveDependencyRoot = (parentRoot, dependencyName, moduleRoot, optional)
   let entry
   try { entry = resolver.resolve(dependencyName + '/package.json') } catch (_) {
     try { entry = resolver.resolve(dependencyName) } catch (error) {
-      if (optional) return null
-      throw new Error('pinned DSH dependency is missing: ' + dependencyName)
+      // ESM-only packages may export only an "import" condition and hide
+      // package.json, so createRequire cannot resolve either spelling even
+      // though the dependency is correctly installed. Walk only the normal
+      // node_modules ancestry inside the pinned module root, then bind the
+      // canonical package root and verified manifest name below.
+      let cursor = path.resolve(parentRoot)
+      while (isWithin(moduleRoot, cursor)) {
+        const direct = path.join(cursor, 'node_modules', ...dependencyName.split('/'), 'package.json')
+        if (fs.existsSync(direct) && fs.statSync(direct).isFile()) {
+          const manifest = readJson(direct)
+          if (manifest.name !== dependencyName) throw new Error('pinned DSH dependency identity drifted: ' + dependencyName)
+          entry = direct
+          break
+        }
+        if (cursor === moduleRoot || path.dirname(cursor) === cursor) break
+        cursor = path.dirname(cursor)
+      }
+      if (!entry) {
+        if (optional) return null
+        throw new Error('pinned DSH dependency is missing: ' + dependencyName)
+      }
     }
   }
   const root = canonicalExisting(packageRootFromEntry(entry, dependencyName))
@@ -125,6 +145,25 @@ const dshRuntimeProvenance = (dshModuleRoot) => {
   return { ...publicEvidence, module_root: moduleRoot, package_root: dshRoot, cli_file: cliFile }
 }
 
+const dshPackageImportMap = (provenance, requiredNames) => {
+  if (!provenance || !provenance.module_root || !Array.isArray(provenance.dependencies)) throw new Error('complete DSH provenance is required for package imports')
+  if (!Array.isArray(requiredNames) || requiredNames.length === 0) throw new Error('required DSH package imports must be declared')
+  const required = new Set(requiredNames)
+  const values = {}
+  for (const entry of provenance.dependencies) {
+    if (!required.has(entry.name)) continue
+    const root = canonicalExisting(path.resolve(provenance.module_root, entry.root_relative))
+    if (!isWithin(provenance.module_root, root)) throw new Error('DSH package import root escapes module root: ' + entry.name)
+    const manifest = readJson(path.join(root, 'package.json'))
+    if (manifest.name !== entry.name || typeof manifest.main !== 'string' || manifest.main === '') continue
+    const target = canonicalExisting(path.resolve(root, manifest.main))
+    if (!isWithin(root, target) || !fs.statSync(target).isFile()) throw new Error('DSH package main escapes package root: ' + entry.name)
+    values[entry.name] = pathToFileURL(target).href
+  }
+  for (const name of required) if (!values[name]) throw new Error('required DSH package import is unavailable: ' + name)
+  return values
+}
+
 const directoryInventory = (root) => {
   const absolute = canonicalExisting(path.resolve(root))
   const files = snapshotTree(absolute)
@@ -155,6 +194,7 @@ module.exports = {
   sanitizeNodeEnvironment,
   currentNodeProvenance,
   dshRuntimeProvenance,
+  dshPackageImportMap,
   publicDshProvenance,
   directoryInventory,
   assertSameProvenance,

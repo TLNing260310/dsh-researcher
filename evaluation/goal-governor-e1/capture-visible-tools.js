@@ -13,9 +13,10 @@ const { parseArgs, readJson, requireString, canonicalize, snapshotTree, sha256Fi
 const { materialize } = require('../../fixtures/goal-governor-e1/materialize.js')
 const { immutableSnapshot } = require('./external-verifier.js')
 const { verifyInstalledCandidate, verifyDshRuntime } = require('./run-e1.js')
-const { currentNodeProvenance, dshRuntimeProvenance, publicDshProvenance, directoryInventory, sanitizeNodeEnvironment } = require('./runtime-provenance.js')
+const { currentNodeProvenance, dshRuntimeProvenance, dshPackageImportMap, publicDshProvenance, directoryInventory, sanitizeNodeEnvironment } = require('./runtime-provenance.js')
 const { validateCaptureReport } = require('./visible-tool-contract.js')
 const { PROJECT_PACKAGE_NAME, VERIFIED_DSH, assertDshNodeSupported } = require('../../lib/runtime-requirements.js')
+const { materializeE1Patch } = require('./patch-materializer.js')
 
 const EVAL_ROOT = __dirname
 const REPO_ROOT = path.resolve(EVAL_ROOT, '..', '..')
@@ -85,12 +86,15 @@ const main = () => {
   const before = snapshotTree(workspace)
   const expectedImmutableFiles = digestMap(immutableSnapshot(workspace, ['src/task.js']))
   const innerOut = path.join(os.tmpdir(), 'dsh-researcher-e1-schema-' + crypto.randomUUID() + '.json')
+  const materializedPatch = path.join(os.tmpdir(), 'dsh-researcher-e1-patch-' + crypto.randomUUID() + '.yml')
+  materializeE1Patch({ template: PATCH_PATH, output: materializedPatch, hostTool: HOST_TOOL_PATH, driver: DRIVER_PATH })
   const sanitized = sanitizeNodeEnvironment({
     ...process.env,
     DSH_HOME: dshHome,
     DSH_PERMISSION_MODE: 'workspace-write',
     DSH_E1_PRESET_ROOT: presetRoot,
     DSH_E1_DSH_MODULE_ROOT: dshModuleRoot,
+    DSH_E1_PACKAGE_IMPORTS: JSON.stringify(dshPackageImportMap(verifiedDsh, ['@deepseek-ai/dsh-agent', '@deepseek-ai/dsh-session'])),
     DSH_E1_DRIVER: DRIVER_PATH,
     DSH_E1_HOST_TOOL: HOST_TOOL_PATH,
     DSH_E1_WORKSPACE: workspace,
@@ -106,7 +110,8 @@ const main = () => {
     DSH_E1_DISABLE_MODEL_COMPACTION: '1',
     DSH_E1_RESTRICT_TOOL_SURFACE: '1',
   })
-  const child = spawnSync(process.execPath, [verifiedDsh.cli_file, '--profile', 'headless', '--patch', PATCH_PATH, 'e1-schema-capture'], { cwd: workspace, env: sanitized.env, stdio: 'inherit', windowsHide: false, timeout: 60000 })
+  const child = spawnSync(process.execPath, [verifiedDsh.cli_file, '--profile', 'headless', '--patch', materializedPatch, 'e1-schema-capture'], { cwd: workspace, env: sanitized.env, stdio: 'inherit', windowsHide: false, timeout: 60000 })
+  try { fs.unlinkSync(materializedPatch) } catch (_) { /* OS temp residue is non-normative */ }
   if (child.error || child.status !== 0 || !fs.existsSync(innerOut)) throw new Error('capture-only DSH process failed without producing a snapshot')
   const inner = readJson(innerOut)
   try { fs.unlinkSync(innerOut) } catch (_) { /* OS temp residue is non-normative */ }

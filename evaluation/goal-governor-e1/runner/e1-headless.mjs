@@ -7,11 +7,14 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import readline from 'node:readline/promises'
 import { createRequire } from 'node:module'
-import { pathToFileURL } from 'node:url'
 
 const require = createRequire(import.meta.url)
-const dshRequire = createRequire(path.join(process.env.DSH_E1_DSH_MODULE_ROOT || '.', 'package.json'))
-const importDsh = (specifier) => import(pathToFileURL(dshRequire.resolve(specifier)).href)
+const dshImports = JSON.parse(process.env.DSH_E1_PACKAGE_IMPORTS || '{}')
+const importDsh = (specifier) => {
+  const target = dshImports[specifier]
+  if (typeof target !== 'string' || !target.startsWith('file:')) throw new Error('pinned DSH import is unavailable: ' + specifier)
+  return import(target)
+}
 const [agentModule, llmModule, sessionModule, deepseekModule, settingsModule, launchEnvironmentModule] = await Promise.all([
   importDsh('@deepseek-ai/dsh-agent'),
   importDsh('@deepseek-ai/dsh-llm'),
@@ -215,7 +218,7 @@ async function run(ctx, io) {
   const runLock = readJson(path.resolve(requiredEnv('DSH_E1_RUN_LOCK')))
   const costAdmissionDeadlineMs = parseCostDeadline(requiredEnv('DSH_E1_COST_ADMISSION_DEADLINE_UTC'))
   const visibleContractModule = require(path.resolve(requiredEnv('DSH_E1_VISIBLE_TOOL_CONTRACT_MODULE')))
-  const { createVisibleToolContract, schemaName, INHERITED_VISIBLE_TOOL_NAMES } = visibleContractModule
+  const { createVisibleToolContract, schemaName, EXACT_VISIBLE_TOOL_NAMES } = visibleContractModule
   const contract = readJson(contractFile)
   const registry = readJson(path.join(process.cwd(), '.project-cognition', 'verifiers.json'))
   const { foldDshGoalEvents, scopeGoalEvents } = require(path.join(presetRoot, 'lib', 'dsh-adapter', 'index.js'))
@@ -251,7 +254,7 @@ async function run(ctx, io) {
     if (!agentCtx.tools || typeof agentCtx.tools.restrict !== 'function') throw new Error('pinned DSH agent scope does not support inherited tool restriction')
     // Scope-local goal/git/status tools merge after inherited restrictions;
     // actual post-mount schemas are still required to match run-lock exactly.
-    agentCtx.tools.restrict({ allow: [...INHERITED_VISIBLE_TOOL_NAMES] })
+    agentCtx.tools.restrict({ allow: [...EXACT_VISIBLE_TOOL_NAMES] })
   }
   assertBeforeCostDeadline(costAdmissionDeadlineMs, resume ? 'before agents.resume' : 'before agents.create')
   const handle = resume
