@@ -575,6 +575,7 @@ const main = () => {
       dsh_home: { before: dshHomeBefore, after: dshHomeAfter },
       session_persistence: { kind: 'jsonl', pack_chunks: false, compression: 'none' },
       auxiliary_model_policy: { title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false },
+      trajectory_control: { goal_activation: 'disarmed', followups: 'runner-authored' },
       model_route: runtime.model_route_provenance || null,
       frozen_settings: {
         schema: 'dsh-researcher/goal-governor-e1/frozen-settings/v1',

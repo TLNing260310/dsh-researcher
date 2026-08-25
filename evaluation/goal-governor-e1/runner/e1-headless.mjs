@@ -165,6 +165,15 @@ const executeCommand = async (commands, agent, line) => {
   finally { clearTimeout(timeout) }
 }
 
+const disarmTrajectoryGoal = (goals, agent, label) => {
+  let goal = goals.get(agent)
+  if (!goal || goal.phase !== 'active') throw new Error(label + ' requires one active DSH goal')
+  if (goal.activation === 'armed') goals.disarm(agent)
+  goal = goals.get(agent)
+  if (!goal || goal.phase !== 'active' || goal.activation !== 'disarmed') throw new Error(label + ' could not freeze the DSH goal as disarmed')
+  return goal
+}
+
 const readInteractiveGateInput = async () => {
   if (process.stdin.isTTY !== true || process.stdout.isTTY !== true) throw new Error('governed-gate requires an interactive stdin/stdout TTY; automation approval is forbidden')
   const terminal = readline.createInterface({ input: process.stdin, output: process.stdout })
@@ -281,7 +290,7 @@ async function run(ctx, io) {
     if (resume) {
       prefixToken = readJson(path.join(outDir, 'resume-token.json'))
       if (prefixToken.session_id !== String(sessionId) || prefixToken.contract_hash !== contract.contract_hash || prefixToken.run_lock_hash !== runLock.lock_hash) throw new Error('resume identity does not match the frozen stage-one token')
-      runtimeGoal = goals.get(agent)
+      runtimeGoal = disarmTrajectoryGoal(goals, agent, 'resume prefix')
       if (!runtimeGoal || String(runtimeGoal.id) !== prefixToken.runtime_goal_id) throw new Error('resumed runtime goal identity changed')
       validateNativeEvents(agent.session.events, 'resumed native session')
       const beforeFollowup = foldDshGoalEvents(contract, registry, scopeGoalEvents(agent.session.events, runtimeGoal))
@@ -298,8 +307,7 @@ async function run(ctx, io) {
     } else {
       const bound = await executeCommand(commands, agent, '/researcher run ' + contractRelative)
       if (!bound) throw new Error('native /researcher run command was not admitted')
-      runtimeGoal = goals.get(agent)
-      if (!runtimeGoal) throw new Error('native /researcher run did not create a host goal')
+      runtimeGoal = disarmTrajectoryGoal(goals, agent, 'native /researcher run')
     }
 
     assertBeforeCostDeadline(costAdmissionDeadlineMs, resume ? 'before resume followup' : 'before initial followup')
@@ -317,6 +325,7 @@ async function run(ctx, io) {
       const startSeq = eventSeq(agent.session.events.at(-1), 0)
       const execution = await executeCommand(commands, agent, '/researcher ' + directInput)
       if (!execution) throw new Error('native human gate command was not admitted')
+      runtimeGoal = disarmTrajectoryGoal(goals, agent, 'human gate resume')
       const runEvent = findCommandRun(agent.session.events, startSeq, directInput)
       const commandId = runEvent?.data?.commandId ?? runEvent?.data?.command_id ?? execution.commandId
       if (!runEvent || !commandId) throw new Error('native command/run evidence for human gate is missing')

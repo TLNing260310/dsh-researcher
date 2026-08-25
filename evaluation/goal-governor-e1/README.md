@@ -48,6 +48,13 @@ node evaluation/goal-governor-e1/run-e1.js --mode live \
   --dsh-home <dsh-home> --preset-root <installed-candidate-root>
 ```
 
+The E1 runner is the sole trajectory prompt driver. It binds the approved DSH
+Goal, immediately freezes its activation as `disarmed`, and submits only the
+followups named by the protocol. DSH's generic Goal Round Driver remains a
+production feature, but an automatic `source.kind=goal` continuation would add
+an unregistered prompt and therefore makes an E1 bundle `INVALID`. Production
+automatic-loop behavior is measured later in the pilot/E2 path.
+
 The CLI is not accepted as an independent argument. The runner derives its
 single JavaScript entry from the locked
 `@deepseek-ai/dsh@0.1.1-rc.2` package and uses the same module root for the
@@ -70,7 +77,7 @@ effective connection URL from model-selection metadata.
 
 ### Model cost admission
 
-The manifest and run lock freeze protocol v1.3's `Asia/Shanghai` policy. On
+The manifest and run lock freeze protocol v1.4's `Asia/Shanghai` policy. On
 Monday through Friday, DeepSeek API is denied during `[09:00,12:00)` and
 `[14:00,18:00)` Beijing time. Those windows admit only `local-loopback`, with
 a literal loopback `--base-url` frozen in the lock. This route still uses the

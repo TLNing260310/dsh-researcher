@@ -608,6 +608,11 @@ const validateRuntimeProvenance = (artifact, manifest, invalid) => {
       auxiliary.model_compaction !== runtime.model_compaction || auxiliary.tool_result_pruning !== runtime.tool_result_pruning) {
     invalid.push('runtime_provenance auxiliary model policy differs from the frozen manifest runtime')
   }
+  const trajectoryControl = value.trajectory_control
+  if (!isPlainObject(trajectoryControl) || runtime?.goal_round_driver !== 'runner-disarmed' ||
+      trajectoryControl.goal_activation !== 'disarmed' || trajectoryControl.followups !== 'runner-authored') {
+    invalid.push('runtime_provenance trajectory control differs from the frozen runner-disarmed policy')
+  }
   const lockedModel = artifact.run_lock && artifact.run_lock.model
   const route = value.model_route
   if (!isPlainObject(route) || route.schema !== 'dsh-researcher/goal-governor-e1/model-route-provenance/v1') {
@@ -1208,6 +1213,8 @@ const validateEventEnvelope = (events, invalid) => {
     const seq = eventSequence(event, NaN)
     if (!Number.isFinite(seq) || seq <= previous) invalid.push('session event sequences must be positive and strictly increasing')
     previous = Number.isFinite(seq) ? seq : previous
+    const sources = [event.data.source, event.data.message?.source, ...(Array.isArray(event.data.inserted) ? event.data.inserted.map((item) => item?.source) : [])]
+    if (sources.some((source) => source?.kind === 'goal')) invalid.push('generic DSH goal-round prompt entered the frozen runner-authored trajectory')
     if (event.type === 'tool/call') {
       const callId = event.data.callId || event.data.call_id
       if (typeof callId !== 'string' || callId.length === 0) invalid.push('tool/call at sequence ' + seq + ' has no callId')
@@ -1402,7 +1409,7 @@ const validateManifest = (manifest, options = {}) => {
   }
   if (!isPlainObject(manifest)) return ['manifest must be an object']
   if (manifest.schema !== MANIFEST_SCHEMA) invalid.push('manifest schema must equal ' + MANIFEST_SCHEMA)
-  if (manifest.protocol_version !== '1.3') invalid.push('manifest.protocol_version must equal 1.3')
+  if (manifest.protocol_version !== '1.4') invalid.push('manifest.protocol_version must equal 1.4')
   try { validateCostPolicy(manifest.cost_policy) } catch (error) { invalid.push('manifest cost policy: ' + error.message) }
   if (!isPlainObject(manifest.runtime)) invalid.push('manifest.runtime must be an object')
   else {
@@ -1411,6 +1418,7 @@ const validateManifest = (manifest, options = {}) => {
     if (manifest.runtime.model_compaction !== false) invalid.push('manifest.runtime.model_compaction must remain disabled because failed compaction calls can lose usage evidence')
     if (manifest.runtime.tool_result_pruning !== true) invalid.push('manifest.runtime.tool_result_pruning must remain enabled as the model-free context bound')
     if (manifest.runtime.extra_local_tools !== false) invalid.push('manifest.runtime.extra_local_tools must remain disabled for the exact E1 tool surface')
+    if (manifest.runtime.goal_round_driver !== 'runner-disarmed') invalid.push('manifest.runtime.goal_round_driver must remain runner-disarmed')
   }
   if (!isPlainObject(manifest.budget)) invalid.push('manifest.budget must be an object')
   if (!isPlainObject(manifest.fixture) || typeof manifest.fixture.t0_revision !== 'string') invalid.push('manifest.fixture.t0_revision is required')

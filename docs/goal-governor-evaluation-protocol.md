@@ -1,8 +1,10 @@
-# Goal Governor Value Evaluation Protocol v1.3
+# Goal Governor Value Evaluation Protocol v1.4
 
-Status: **frozen v1.3 for DSH rc.2 E1 execution (2026-08-25)**. 尚未发生模型调用或可裁决 live E1。本文固定主张、对照、无效条件、成本准入和继续/停止阈值；修改轨迹、主指标、任务、阈值或成本策略必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
+Status: **frozen v1.4 for DSH rc.2 E1 execution (2026-08-25)**. 尚未发生可裁决 live E1。本文固定主张、对照、无效条件、成本准入和继续/停止阈值；修改轨迹、主指标、任务、阈值或成本策略必须 bump protocol、重新生成 run lock 并重跑，不能追着结果改口径。
 
-v1 和 v1.1 均在任何 live run 发生前被 supersede。v1.2 的 rc.2 capture-only PASS，但一次本地 smoke 因 fixture hash domain 冲突在首个模型消息前 fail closed，模型调用=`0`。精确历史身份见 [v1](./goal-governor-evaluation-protocol-v1.md)、[v1.1](./goal-governor-evaluation-protocol-v1.1.md)、[v1.2](./goal-governor-evaluation-protocol-v1.2.md) archive records。v1.3 统一规定 fixture tree hash 排除 `.git` 与自描述的 `materialization.json`；不改变 fixture 业务字节、六条轨迹、E2/E3 estimand 或通过阈值。
+v1 和 v1.1 均在任何 live run 发生前被 supersede。v1.2 在首个模型消息前发现 fixture hash domain 冲突；v1.3 的本地 smoke 产生真实 Qwen 模型调用后，发现 DSH 通用 Goal Round Driver 会在 runner flush 时自动打开协议外下一轮，故证据被 fail closed 且不可裁决。精确历史身份见 [v1](./goal-governor-evaluation-protocol-v1.md)、[v1.1](./goal-governor-evaluation-protocol-v1.1.md)、[v1.2](./goal-governor-evaluation-protocol-v1.2.md)、[v1.3](./goal-governor-evaluation-protocol-v1.3.md) archive records。v1.4 固定 E1 由 runner 发送协议内 followup，并把绑定的 DSH Goal 保持为 `disarmed`，防止通用自动续轮改写六条冻结轨迹；生产态自动 goal loop 留给 pilot/E2，不由 E1 外推。
+
+E1 runner 是六条冻结轨迹的唯一 prompt 驱动者。`/researcher run` 绑定合同后，runner 必须通过 DSH 公共 Goal 服务把该 Goal 置为 `disarmed`，每次人工 gate resume 后再次确认 `disarmed`，然后才发送协议定义的 followup。任何 `source.kind=goal` 的自动续轮、额外 runner prompt 或无法证明的 activation 状态均使证据无效。
 
 ## 1. 要区分的三类主张
 
@@ -124,4 +126,4 @@ C 相对 B 必须同时满足：
 
 每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据。可选的 bundle 外 Ed25519 attestation 只证明所给外部 trust root 签过这些原始字节并检测签后篡改，不能识别由不诚实签署者生成的自洽伪包，不能证明 DSH 运行或产生无条件 causal validity；该传输/留存增强不改变本协议的轨迹、阈值或信任假设。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。
 
-历史 Phase A 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行，也不得替代 v1.3 E1 runner、run lock、成本准入和 scorer。
+历史 Phase A 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行，也不得替代 v1.4 E1 runner、run lock、成本准入和 scorer。

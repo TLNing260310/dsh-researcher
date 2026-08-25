@@ -498,3 +498,20 @@ test('settings watch or generated settings hash drift is INVALID', () => {
   assert.ok(scored.invalid_reasons.some((reason) => /watch=false/.test(reason)))
   assert.ok(scored.invalid_reasons.some((reason) => /run-lock-derived bytes/.test(reason)))
 })
+
+test('a generic DSH goal-round prompt cannot enter a runner-authored E1 trajectory', () => {
+  const bundle = cloneBundle()
+  const run = bundle.artifacts['simple-done']
+  run.session_events.splice(1, 0, {
+    seq: 1.5,
+    type: 'user/message',
+    data: {
+      source: { kind: 'goal', goalId: run.runtime_goal_id, revision: 1, round: 1 },
+      content: [{ type: 'text', text: 'automatic continuation outside the frozen trajectory' }],
+    },
+  })
+  const report = scoreTrustedBundle(bundle)
+  const scored = report.runs.find((item) => item.id === 'simple-done')
+  assert.equal(scored.verdict, 'INVALID')
+  assert.ok(scored.invalid_reasons.some((reason) => /goal-round prompt.*runner-authored/.test(reason)))
+})

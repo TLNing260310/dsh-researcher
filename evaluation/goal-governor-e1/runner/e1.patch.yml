@@ -5,6 +5,12 @@
 - id: headless-runner
   disabled: true
 
+# E1 owns the six frozen prompt trajectories. Production may use DSH's generic
+# continuation loop, but an automatic goal round here would add an unregistered
+# prompt and make resume/replay impossible to adjudicate.
+- id: goal-round-driver
+  disabled: true
+
 # DSH's first-prompt title provider performs an auxiliary LLM request whose
 # usage is not persisted. E1 disables both the plugin id and provider-shaped
 # id fail-closed; unknown disabled ids are inert under the patch merger.

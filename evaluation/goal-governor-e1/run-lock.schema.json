@@ -24,7 +24,7 @@
     "runtime": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["client", "version", "profile", "preset", "permission_mode", "session_persistence", "pack_chunks", "compression", "title_llm", "model_compaction", "tool_result_pruning", "extra_local_tools"],
+      "required": ["client", "version", "profile", "preset", "permission_mode", "session_persistence", "pack_chunks", "compression", "title_llm", "model_compaction", "tool_result_pruning", "extra_local_tools", "goal_round_driver"],
       "properties": {
         "client": { "const": "dsh" },
         "version": { "const": "0.1.1-rc.2" },
@@ -37,7 +37,8 @@
         "title_llm": { "const": false },
         "model_compaction": { "const": false },
         "tool_result_pruning": { "const": true },
-        "extra_local_tools": { "const": false }
+        "extra_local_tools": { "const": false },
+        "goal_round_driver": { "const": "runner-disarmed" }
       }
     },
     "cost_policy": { "$ref": "#/$defs/costPolicy" },

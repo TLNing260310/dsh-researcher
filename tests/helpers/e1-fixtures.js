@@ -302,12 +302,12 @@ const makeManifest = () => {
   const manifest = {
     schema: MANIFEST_SCHEMA,
     protocol: 'docs/goal-governor-evaluation-protocol.md',
-    protocol_version: '1.3',
+    protocol_version: '1.4',
     status: { infrastructure: 'READY', live_e1: 'NOT_RUN', outcome: 'NOT_PROVEN', portability: 'NOT_PROVEN' },
     runtime: {
       client: 'dsh', version: '0.1.1-rc.2', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',
       session_persistence: 'jsonl', pack_chunks: false, compression: 'none',
-      title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false,
+      title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false, goal_round_driver: 'runner-disarmed',
     },
     cost_policy: JSON.parse(JSON.stringify(SYNTHETIC_COST_POLICY)),
     budget: { max_tokens: 40000, max_time_sec: 900, same_for_all_cases: true },
@@ -515,6 +515,7 @@ const artifactFor = (caseId, manifest, runLock) => {
       },
       session_persistence: { kind: 'jsonl', pack_chunks: false, compression: 'none' },
       auxiliary_model_policy: { title_llm: false, model_compaction: false, tool_result_pruning: true, extra_local_tools: false },
+      trajectory_control: { goal_activation: 'disarmed', followups: 'runner-authored' },
       model_route: {
         schema: 'dsh-researcher/goal-governor-e1/model-route-provenance/v1',
         route: runLock.model.route,

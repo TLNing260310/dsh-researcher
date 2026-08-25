@@ -1,7 +1,7 @@
 {
   "schema": "dsh-researcher/goal-governor-e1/manifest/v2",
   "protocol": "docs/goal-governor-evaluation-protocol.md",
-  "protocol_version": "1.3",
+  "protocol_version": "1.4",
   "status": {
     "infrastructure": "READY",
     "live_e1": "NOT_RUN",
@@ -20,7 +20,8 @@
     "title_llm": false,
     "model_compaction": false,
     "tool_result_pruning": true,
-    "extra_local_tools": false
+    "extra_local_tools": false,
+    "goal_round_driver": "runner-disarmed"
   },
   "cost_policy": {
     "schema": "dsh-researcher/model-cost-policy/v1",

@@ -174,14 +174,14 @@ const validateManifest = (manifest) => {
   if (!isPlainObject(manifest) || manifest.schema !== MANIFEST_SCHEMA) throw new Error('invalid E1 manifest schema')
   assertExactKeys(manifest, ['schema', 'protocol', 'protocol_version', 'status', 'runtime', 'cost_policy', 'budget', 'fixture', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'cases', 'artifacts', 'invalidity_rules', 'replay_semantics', 'lock_inputs'], 'manifest')
   if (manifest.protocol !== 'docs/goal-governor-evaluation-protocol.md') throw new Error('manifest must bind the canonical E1 protocol path')
-  if (manifest.protocol_version !== '1.3') throw new Error('manifest must bind E1 protocol version 1.3')
+  if (manifest.protocol_version !== '1.4') throw new Error('manifest must bind E1 protocol version 1.4')
   const status = manifest.status
   assertExactKeys(status, ['infrastructure', 'live_e1', 'outcome', 'portability'], 'manifest.status')
   if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'NOT_RUN' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {
     throw new Error('manifest status must state infrastructure READY and live/outcome/portability not proven')
   }
-  assertExactKeys(manifest.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools'], 'manifest.runtime')
-  if (manifest.runtime.client !== 'dsh' || manifest.runtime.version !== REQUIRED_DSH_VERSION || manifest.runtime.profile !== 'headless' || manifest.runtime.preset !== 'governed' || manifest.runtime.permission_mode !== 'workspace-write' || manifest.runtime.session_persistence !== 'jsonl' || manifest.runtime.pack_chunks !== false || manifest.runtime.compression !== 'none' || manifest.runtime.title_llm !== false || manifest.runtime.model_compaction !== false || manifest.runtime.tool_result_pruning !== true || manifest.runtime.extra_local_tools !== false) {
+  assertExactKeys(manifest.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools', 'goal_round_driver'], 'manifest.runtime')
+  if (manifest.runtime.client !== 'dsh' || manifest.runtime.version !== REQUIRED_DSH_VERSION || manifest.runtime.profile !== 'headless' || manifest.runtime.preset !== 'governed' || manifest.runtime.permission_mode !== 'workspace-write' || manifest.runtime.session_persistence !== 'jsonl' || manifest.runtime.pack_chunks !== false || manifest.runtime.compression !== 'none' || manifest.runtime.title_llm !== false || manifest.runtime.model_compaction !== false || manifest.runtime.tool_result_pruning !== true || manifest.runtime.extra_local_tools !== false || manifest.runtime.goal_round_driver !== 'runner-disarmed') {
     throw new Error('manifest runtime must be dsh ' + REQUIRED_DSH_VERSION + ' with governed preset')
   }
   require('./cost-policy.js').validateCostPolicy(manifest.cost_policy)
@@ -250,8 +250,8 @@ const validateRunLockShape = (lock) => {
   requireString(lock.candidate.package_path, 'run-lock candidate package_path')
   requireString(lock.candidate.package_name, 'run-lock candidate package_name')
   requireString(lock.candidate.package_version, 'run-lock candidate package_version')
-  assertExactKeys(lock.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools'], 'run-lock runtime')
-  if (lock.runtime.version !== REQUIRED_DSH_VERSION || lock.runtime.client !== 'dsh' || lock.runtime.profile !== 'headless' || lock.runtime.preset !== 'governed' || lock.runtime.permission_mode !== 'workspace-write' || lock.runtime.session_persistence !== 'jsonl' || lock.runtime.pack_chunks !== false || lock.runtime.compression !== 'none' || lock.runtime.title_llm !== false || lock.runtime.model_compaction !== false || lock.runtime.tool_result_pruning !== true || lock.runtime.extra_local_tools !== false) throw new Error('run-lock runtime is not the frozen DSH runtime')
+  assertExactKeys(lock.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools', 'goal_round_driver'], 'run-lock runtime')
+  if (lock.runtime.version !== REQUIRED_DSH_VERSION || lock.runtime.client !== 'dsh' || lock.runtime.profile !== 'headless' || lock.runtime.preset !== 'governed' || lock.runtime.permission_mode !== 'workspace-write' || lock.runtime.session_persistence !== 'jsonl' || lock.runtime.pack_chunks !== false || lock.runtime.compression !== 'none' || lock.runtime.title_llm !== false || lock.runtime.model_compaction !== false || lock.runtime.tool_result_pruning !== true || lock.runtime.extra_local_tools !== false || lock.runtime.goal_round_driver !== 'runner-disarmed') throw new Error('run-lock runtime is not the frozen DSH runtime')
   require('./cost-policy.js').validateCostPolicy(lock.cost_policy)
   assertExactKeys(lock.model, ['route', 'provider', 'model', 'reasoning_effort', 'base_url'], 'run-lock model')
   for (const key of ['route', 'provider', 'model', 'reasoning_effort', 'base_url']) requireString(lock.model[key], 'run-lock model.' + key)
