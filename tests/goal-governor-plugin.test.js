@@ -195,6 +195,16 @@ test('one-shot and contract prompts preserve the research/execute authority spli
   assert.match(plugin.__test.researchPrompt('fix loop', true), /Do not approve it and do not implement/)
 })
 
+test('model-facing attempt status omits the replay event ledger', () => {
+  const compact = plugin.__test.replayStatus({
+    events: [{ type: 'attempt_started' }],
+    decision: { decision: 'CONTINUE' },
+    diagnostics: [],
+  })
+  assert.deepEqual(compact, { decision: { decision: 'CONTINUE' }, diagnostics: [] })
+  assert.equal(Object.hasOwn(compact, 'events'), false)
+})
+
 test('plugin composition exposes governor tools only on the executor role', () => {
   const compose = (role) => {
     const registeredTools = []

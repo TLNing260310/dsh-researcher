@@ -31,3 +31,9 @@ test('the host-owned E1 verifier also exposes a strict empty object schema', () 
     additionalProperties: false,
   })
 })
+
+test('the E1 verifier exposes the host-issued call ID as a copyable evidence reference', () => {
+  const result = hostTool.__test.attachEvidenceRef({ exit_code: 0 }, { callId: 'call-real-1' })
+  assert.deepEqual(result, { exit_code: 0, evidence_ref: 'call-real-1' })
+  assert.throws(() => hostTool.__test.attachEvidenceRef({ exit_code: 0 }, {}), /missing its DSH call ID/)
+})

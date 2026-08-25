@@ -44,6 +44,12 @@ const output = {
   render: (_args, value) => [{ type: 'text', text: value }],
 }
 
+const attachEvidenceRef = (result, execution) => {
+  const callId = execution && execution.callId
+  if (typeof callId !== 'string' || callId.length === 0) throw new Error('E1 host verifier execution is missing its DSH call ID')
+  return { ...result, evidence_ref: callId }
+}
+
 module.exports = {
   name: 'goal-governor-e1-host-tool',
   inject: ['tools'],
@@ -59,7 +65,7 @@ module.exports = {
 
     ctx.tools.register({
       name: TOOL_NAME,
-      description: 'Run the frozen host-owned E1 verifier. Accepts exactly {}. This is the only verifier invocation trusted by the Goal Contract.',
+      description: 'Run the frozen host-owned E1 verifier. Accepts exactly {}. Copy the returned evidence_ref exactly into submit_goal_observation.evidence_refs; it is the real DSH call ID.',
       parameters: EMPTY_PARAMETERS,
       output,
       presentCall: () => ({ card: 'generic', title: 'E1 host verifier', kind: 'read' }),
@@ -67,7 +73,7 @@ module.exports = {
         const workspace = workspaceOf(execution && execution.agent)
         const denial = guardVerdict(TOOL_NAME, args, workspace, expectedWorkspace, allowedChanges)
         if (denial) return denial
-        return renderToolResult(runExternalVerifier({
+        return renderToolResult(attachEvidenceRef(runExternalVerifier({
           workspace,
           verifierPath,
           verifierSource,
@@ -75,7 +81,7 @@ module.exports = {
           expectedImmutableFiles,
           allowedChanges,
           expectedNodeProvenance,
-        }))
+        }), execution))
       },
     })
 
@@ -87,5 +93,5 @@ module.exports = {
       allowedChanges,
     ))
   },
-  __test: { ALLOWED_READ_TOOLS, DENIAL, EMPTY_PARAMETERS, guardVerdict, pathVerdict },
+  __test: { ALLOWED_READ_TOOLS, DENIAL, EMPTY_PARAMETERS, attachEvidenceRef, guardVerdict, pathVerdict },
 }
