@@ -10,6 +10,7 @@ const { EXACT_VISIBLE_TOOL_NAMES } = require('../visible-tool-contract.js')
 const MUTATION_TOOLS = new Set(['write', 'edit'])
 const ALLOWED_READ_TOOLS = new Set(EXACT_VISIBLE_TOOL_NAMES.filter((name) => !MUTATION_TOOLS.has(name)))
 const DENIAL = '[dsh-researcher E1] host tool policy refused this execution.'
+const EMPTY_PARAMETERS = { type: 'object', properties: {}, required: [], additionalProperties: false }
 
 const canonicalExisting = (value) => {
   try { return fs.realpathSync.native ? fs.realpathSync.native(value) : fs.realpathSync(value) } catch (_) { return path.resolve(value) }
@@ -59,7 +60,7 @@ module.exports = {
     ctx.tools.register({
       name: TOOL_NAME,
       description: 'Run the frozen host-owned E1 verifier. Accepts exactly {}. This is the only verifier invocation trusted by the Goal Contract.',
-      parameters: {},
+      parameters: EMPTY_PARAMETERS,
       output,
       presentCall: () => ({ card: 'generic', title: 'E1 host verifier', kind: 'read' }),
       async execute(args, execution) {
@@ -86,5 +87,5 @@ module.exports = {
       allowedChanges,
     ))
   },
-  __test: { ALLOWED_READ_TOOLS, DENIAL, guardVerdict, pathVerdict },
+  __test: { ALLOWED_READ_TOOLS, DENIAL, EMPTY_PARAMETERS, guardVerdict, pathVerdict },
 }

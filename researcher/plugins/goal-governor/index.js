@@ -249,30 +249,44 @@ const tool = (name, description, parameters, execute) => ({
   presentCall: (args) => present(name.replace(/_/g, ' '), name === 'get_goal_contract' || name === 'researcher_mode_status' ? 'read' : 'other', args && (args.attempt_id || args.criterion_id || args.code)),
 })
 
+const objectParameters = (properties = {}, required = []) => ({
+  type: 'object',
+  properties,
+  required,
+  additionalProperties: false,
+})
+
 const registerTools = (ctx) => {
-  ctx.tools.register(tool('researcher_mode_status', 'Read the host-enforced one-shot/persistent Researcher Mode state.', {}, (_args, exec) => Promise.resolve(result(researchModeState(exec.agent.session.events)))))
-  ctx.tools.register(tool('get_goal_contract', 'Read the approved frozen Goal Contract, trusted current replay state, and next decision. This tool cannot complete the goal.', {}, (_args, exec) => {
+  ctx.tools.register(tool('researcher_mode_status', 'Read the host-enforced one-shot/persistent Researcher Mode state.', objectParameters(), (_args, exec) => Promise.resolve(result(researchModeState(exec.agent.session.events)))))
+  ctx.tools.register(tool('get_goal_contract', 'Read the approved frozen Goal Contract, trusted current replay state, and next decision. This tool cannot complete the goal.', objectParameters(), (_args, exec) => {
     try {
       const selected = loadSelected(ctx, exec.agent)
       const needed = new Set(selected.contract.criteria.filter((criterion) => criterion.authority === 'tool').map((criterion) => criterion.verifier_id))
       return Promise.resolve(result({ contract: selected.contract, verifiers: selected.registry.entries.filter((entry) => needed.has(entry.id)), decision: selected.replay.decision, diagnostics: selected.replay.diagnostics }))
     } catch (error) { return Promise.resolve(result({ error: error.message })) }
   }))
-  ctx.tools.register(tool('begin_goal_attempt', 'Begin exactly one baseline or change attempt under the frozen contract.', {
-    attempt_id: { type: 'string', required: true }, baseline: { type: 'boolean', required: true },
-    target_criteria: { type: 'array', items: { type: 'string' }, required: true }, repo_revision: { type: 'string', required: true },
-  }, (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
-  ctx.tools.register(tool('submit_goal_observation', 'Submit an observation. A claimed pass/fail is accepted only when evidence_refs point to earlier DSH tool calls matching the frozen verifier invocation and result policy.', {
-    attempt_id: { type: 'string', required: true }, criterion_id: { type: 'string', required: true }, verifier_id: { type: 'string', required: true },
-    result: { type: 'string', required: true, enum: ['pass', 'fail', 'unknown'] }, evidence_refs: { type: 'array', items: { type: 'string' }, required: true }, repo_revision: { type: 'string', required: true },
-  }, (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
-  ctx.tools.register(tool('complete_goal_attempt', 'Close the active attempt. This records evidence state but does not let the model declare success.', {
-    attempt_id: { type: 'string', required: true },
-  }, (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
-  ctx.tools.register(tool('report_goal_blocker', 'Report a suspected blocker. Model reports require direct /researcher confirm-blocker user authority before BLOCKED.', {
-    code: { type: 'string', required: true }, detail: { type: 'string', required: true },
-  }, (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
-  ctx.tools.register(tool('request_goal_decision', 'Ask the host governor to compare trusted observations with the frozen contract. The host alone may continue, pause, stop, block, or complete the DSH goal.', {}, (_args, exec) => {
+  ctx.tools.register(tool('begin_goal_attempt', 'Begin exactly one baseline or change attempt under the frozen contract.', objectParameters({
+    attempt_id: { type: 'string', description: 'Unique attempt identity chosen for this baseline or change attempt.' },
+    baseline: { type: 'boolean', description: 'True only for the single leading baseline attempt.' },
+    target_criteria: { type: 'array', items: { type: 'string' }, description: 'Frozen criterion IDs targeted by this attempt.' },
+    repo_revision: { type: 'string', description: 'Exact repository revision from the active Goal Contract.' },
+  }, ['attempt_id', 'baseline', 'target_criteria', 'repo_revision']), (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
+  ctx.tools.register(tool('submit_goal_observation', 'Submit an observation. A claimed pass/fail is accepted only when evidence_refs point to earlier DSH tool calls matching the frozen verifier invocation and result policy.', objectParameters({
+    attempt_id: { type: 'string', description: 'The currently active attempt identity.' },
+    criterion_id: { type: 'string', description: 'One frozen criterion ID from the Goal Contract.' },
+    verifier_id: { type: 'string', description: 'The criterion\'s frozen verifier ID.' },
+    result: { type: 'string', enum: ['pass', 'fail', 'unknown'], description: 'Result claimed from the referenced real verifier evidence.' },
+    evidence_refs: { type: 'array', items: { type: 'string' }, description: 'Earlier real DSH verifier call IDs from this session.' },
+    repo_revision: { type: 'string', description: 'Exact repository revision evaluated by this observation.' },
+  }, ['attempt_id', 'criterion_id', 'verifier_id', 'result', 'evidence_refs', 'repo_revision']), (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
+  ctx.tools.register(tool('complete_goal_attempt', 'Close the active attempt. This records evidence state but does not let the model declare success.', objectParameters({
+    attempt_id: { type: 'string', description: 'The currently active attempt identity.' },
+  }, ['attempt_id']), (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
+  ctx.tools.register(tool('report_goal_blocker', 'Report a suspected blocker. Model reports require direct /researcher confirm-blocker user authority before BLOCKED.', objectParameters({
+    code: { type: 'string', description: 'Stable suspected-blocker code.' },
+    detail: { type: 'string', description: 'Evidence-bounded blocker detail for direct user review.' },
+  }, ['code', 'detail']), (args, exec) => Promise.resolve(result(loadSelected(ctx, exec.agent).replay))))
+  ctx.tools.register(tool('request_goal_decision', 'Ask the host governor to compare trusted observations with the frozen contract. The host alone may continue, pause, stop, block, or complete the DSH goal.', objectParameters(), (_args, exec) => {
     try {
       const selected = loadSelected(ctx, exec.agent)
       const decision = selected.replay.decision
@@ -339,5 +353,5 @@ module.exports = {
       return undefined
     })
   },
-  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
+  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, objectParameters, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
 }

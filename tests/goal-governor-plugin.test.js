@@ -215,9 +215,16 @@ test('plugin composition exposes governor tools only on the executor role', () =
   ])
   assert.deepEqual(executor.registeredCommands.map((command) => command.name), ['researcher'])
   const blocker = executor.registeredTools.find((tool) => tool.name === 'report_goal_blocker')
-  assert.deepEqual(Object.keys(blocker.parameters).sort(), ['code', 'detail'])
+  assert.deepEqual(blocker.parameters.required, ['code', 'detail'])
+  assert.deepEqual(Object.keys(blocker.parameters.properties).sort(), ['code', 'detail'])
   assert.match(blocker.description, /direct \/researcher confirm-blocker user authority/)
   assert.match(executor.registeredCommands[0].input.hint, /confirm-blocker/)
+  for (const definition of executor.registeredTools) {
+    assert.equal(definition.parameters.type, 'object', definition.name)
+    assert.equal(Array.isArray(definition.parameters.required), true, definition.name)
+    assert.equal(typeof definition.parameters.properties, 'object', definition.name)
+    for (const field of definition.parameters.required) assert.ok(definition.parameters.properties[field], definition.name + '.' + field)
+  }
   assert.equal(compose('researcher').registeredTools.length, 0)
 })
 

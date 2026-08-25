@@ -9,6 +9,20 @@ const schemaName = (value) => typeof value === 'string'
   ? value
   : value && (value.name || value.id || value.tool_name)
 
+const assertModelVisibleParameters = (schema, name) => {
+  const parameters = schema.parameters
+  if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters) || parameters.type !== 'object') throw new Error('visible tool schema parameters must be a JSON Schema object: ' + name)
+  const properties = parameters.properties === undefined ? {} : parameters.properties
+  if (typeof properties !== 'object' || properties === null || Array.isArray(properties)) throw new Error('visible tool schema properties must be an object: ' + name)
+  if (parameters.required !== undefined) {
+    if (!Array.isArray(parameters.required) || parameters.required.some((field) => typeof field !== 'string' || !Object.prototype.hasOwnProperty.call(properties, field))) throw new Error('visible tool schema required fields must name declared properties: ' + name)
+  }
+  for (const [field, definition] of Object.entries(properties)) {
+    if (!definition || typeof definition !== 'object' || Array.isArray(definition)) throw new Error('visible tool property schema must be an object: ' + name + '.' + field)
+    if (Object.prototype.hasOwnProperty.call(definition, 'required')) throw new Error('visible tool property uses legacy nested required instead of root required: ' + name + '.' + field)
+  }
+}
+
 const normalizeVisibleToolSchemas = (input) => {
   const source = Array.isArray(input) ? input : Array.isArray(input && input.tools) ? input.tools : null
   if (!source) throw new Error('visible tool schema snapshot must be an array or {tools: array}')
@@ -20,6 +34,7 @@ const normalizeVisibleToolSchemas = (input) => {
     if (typeof name !== 'string' || name === '') throw new Error('visible tool schema at index ' + index + ' has no name')
     const json = JSON.parse(JSON.stringify(value))
     if (schemaName(json) !== name) throw new Error('visible tool schema is not canonically serializable: ' + name)
+    assertModelVisibleParameters(json, name)
     return json
   }).sort((left, right) => schemaName(left).localeCompare(schemaName(right)))
   const names = values.map(schemaName)
@@ -67,6 +82,7 @@ module.exports = {
   INHERITED_VISIBLE_TOOL_NAMES,
   VISIBLE_TOOL_POLICY,
   schemaName,
+  assertModelVisibleParameters,
   normalizeVisibleToolSchemas,
   createVisibleToolContract,
   validateVisibleToolContract,
