@@ -1,10 +1,13 @@
 # Live E1 publication readiness — 2026-08-25
 
-Status: **NOT RUN — Gate 0 inputs are incomplete**
+Status: **SUPERSEDED SNAPSHOT — full E1 still NOT RUN**
 
-This record explains why no Live E1 bundle was created during the onboarding
-and installer iteration. It is not a model result and must not be cited as E1
-conformance evidence.
+This record explains the prerequisites observed before the later exact-rc.2
+local smoke. The local route/capture prerequisites in items 1–3 and 5 were
+subsequently closed for one non-confirmatory Qwen track; see
+[E1 local Qwen smoke](./e1-local-qwen-smoke-2026-08-25.md). The real-TTY gate,
+remote Flash controls and complete all-track bundle remain open. Neither this
+snapshot nor the single-track FAIL is E1 conformance evidence.
 
 ## What is ready
 
