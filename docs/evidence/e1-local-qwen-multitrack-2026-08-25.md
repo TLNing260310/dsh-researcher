@@ -2,6 +2,12 @@
 
 Status: **three scorable FAIL, one INVALID, one rejected resume observe; not full E1**
 
+> Subsequent audit found that this candidate exposed Governor parameters as a
+> legacy flat map rather than standard object JSON Schema. The host rejection
+> observations remain valid, but malformed argument behavior is confounded by
+> that adapter defect and must not be attributed solely to the model. See the
+> [corrected-schema probe](./e1-governor-tool-schema-repair-2026-08-25.md).
+
 This probe exercised real DSH `0.1.1-rc.2`, a local Ollama `qwen3:14b`
 through the frozen loopback DeepSeek-compatible adapter, host-owned verifiers,
 durable session flush, replay, attempt ledgers, and the offline scorer. It made
@@ -76,4 +82,3 @@ They do **not** establish all-track E1, remote Flash behavior, human-gate
 authority in a real TTY, successful resume/replay, net user value, longitudinal
 Project Cognition value, or another-client adapter. The next valid proof remains
 one confirmatory bundle under the frozen protocol, followed by a pilot and E2.
-
