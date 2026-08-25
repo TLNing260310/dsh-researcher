@@ -355,8 +355,6 @@ async function run(ctx, io) {
       const nativeEvents = agent.session.events
       const observations = nativeEvents.filter((event) => event.type === 'tool/call' && event.data?.name === 'submit_goal_observation')
       const decisions = nativeEvents.filter((event) => event.type === 'tool/call' && event.data?.name === 'request_goal_decision')
-      if (observations.length === 0) throw new Error('resume stage one ended without an observation')
-      if (decisions.length !== 0) throw new Error('resume stage one crossed the forbidden terminal-decision boundary')
       const boundaryNativeSeq = Math.max(...nativeEvents.map((event, index) => eventSeq(event, index + 1)))
       const prefixReplay = foldDshGoalEvents(contract, registry, scopeGoalEvents(nativeEvents, runtimeGoal))
       const prefixLive = checkpoint(hashCanonical, prefixReplay, contract, runtimeGoal, sessionId)
@@ -395,6 +393,11 @@ async function run(ctx, io) {
       })
       await fsp.copyFile(path.join(outDir, 'session.jsonl'), path.join(outDir, 'session.stage1.jsonl'), fs.constants.COPYFILE_EXCL)
       await fsp.copyFile(path.join(outDir, 'session.events.json'), path.join(outDir, 'session.stage1.events.json'), fs.constants.COPYFILE_EXCL)
+      // Archive the complete failed model attempt before enforcing the stage-one
+      // shape. A malformed attempt must remain auditable, but it must never
+      // receive a resume token or an outer stage-one seal.
+      if (observations.length === 0) throw new Error('resume stage one ended without an observation')
+      if (decisions.length !== 0) throw new Error('resume stage one crossed the forbidden terminal-decision boundary')
       if (!checkpointMatches || !eventLogMatches || boundaryNativeSeq !== durableBoundaryNativeSeq) throw new Error('stage-one live state differs from the flushed durable full-log replay')
       await writeJson(path.join(outDir, 'resume-token.json'), token)
       io.stdout.write(JSON.stringify({ case_id: caseId, stage: 'observe', session_id: String(sessionId), decision: prefixLive.decision }) + '\n')

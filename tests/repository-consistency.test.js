@@ -22,6 +22,17 @@ test('final E1 verifier mismatches remain scorable while resume prerequisites fa
   assert.equal(verifierExitIsFinalizationError('observe', 1, 1), false)
 })
 
+test('resume observe archives failed model evidence before rejecting it and never issues a token first', () => {
+  const runner = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
+  const branchAt = runner.indexOf("if (caseId === 'resume-replay' && stage === 'observe')")
+  const observeBranch = runner.slice(branchAt, runner.indexOf('    const nativeEvents = agent.session.events', runner.indexOf('io.exit(0)', branchAt)))
+  const archiveAt = observeBranch.indexOf('await archiveSession({')
+  const rejectAt = observeBranch.indexOf("if (observations.length === 0) throw new Error('resume stage one ended without an observation')")
+  const tokenAt = observeBranch.indexOf("await writeJson(path.join(outDir, 'resume-token.json'), token)")
+  assert.ok(archiveAt >= 0 && rejectAt > archiveAt, 'failed observe evidence must be archived before shape rejection')
+  assert.ok(tokenAt > rejectAt, 'resume token must be written only after observe shape validation')
+})
+
 test('declared Node floor, public quickstart, and CI matrix cover the floor and current LTS', () => {
   const pkg = readJson('package.json')
   const readme = read('README.md')
