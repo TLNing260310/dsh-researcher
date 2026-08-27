@@ -227,10 +227,10 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
           final: 'NOT_RUN',
         }
         const stageVerifier = JSON.parse(JSON.stringify(artifact.host_verifier))
-        stageVerifier.exit_code = 1
-        stageVerifier.failure_markers = ['[exit code: 1]']
-        stageVerifier.workspace.before_tree_sha256 = artifact.worktree.before_tree_sha256
-        stageVerifier.workspace.after_tree_sha256 = artifact.worktree.before_tree_sha256
+        stageVerifier.exit_code = item.final_verifier_exit
+        stageVerifier.failure_markers = item.final_verifier_exit === 0 ? [] : ['[exit code: ' + item.final_verifier_exit + ']']
+        stageVerifier.workspace.before_tree_sha256 = artifact.worktree.after_tree_sha256
+        stageVerifier.workspace.after_tree_sha256 = artifact.worktree.after_tree_sha256
         const stageBudget = {
           ...JSON.parse(JSON.stringify(artifact.budget_evidence)),
           outer_monotonic: {
@@ -241,7 +241,7 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
         }
         const stageFinalization = JSON.parse(JSON.stringify(artifact.outer_finalization))
         stageFinalization.stage = 'observe'
-        stageFinalization.expected_host_verifier_exit = item.baseline_exit
+        stageFinalization.expected_host_verifier_exit = item.final_verifier_exit
         stageFinalization.host_verifier.actual_exit_code = stageVerifier.exit_code
         stageFinalization.budget.wall_elapsed_sec = stageBudget.outer_monotonic.elapsed_sec
         const stageArtifact = {
@@ -256,8 +256,8 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
           outer_finalized: true,
           worktree: {
             ...JSON.parse(JSON.stringify(artifact.worktree)),
-            after: JSON.parse(JSON.stringify(artifact.worktree.before)),
-            after_tree_sha256: artifact.worktree.before_tree_sha256,
+            after: JSON.parse(JSON.stringify(artifact.worktree.after)),
+            after_tree_sha256: artifact.worktree.after_tree_sha256,
           },
           stage: 'observe',
           final_outcome: 'NOT_RUN',
@@ -284,8 +284,8 @@ test('public scorer CLI accepts --run, writes bundle score.json, honors --out, a
         fs.mkdirSync(path.join(directory, 'stage1', 'post'), { recursive: true })
         fs.writeFileSync(path.join(directory, 'stage1', 'post', 'git-status.txt'), '')
         fs.writeFileSync(path.join(directory, 'stage1', 'post', 'diff.patch'), '')
-        fs.writeFileSync(path.join(directory, 'stage1', 'post', 'tree-hash.txt'), artifact.worktree.before_tree_sha256 + '\n')
-        writeJson(path.join('stage1', 'post', 'worktree.json'), artifact.worktree.before)
+        fs.writeFileSync(path.join(directory, 'stage1', 'post', 'tree-hash.txt'), artifact.worktree.after_tree_sha256 + '\n')
+        writeJson(path.join('stage1', 'post', 'worktree.json'), artifact.worktree.after)
         writeJson(path.join('stage1', 'post', 'verifier.json'), stageVerifier)
         writeJson(path.join('stage1', 'post', 'dsh-home-inventory.json'), {
           schema: 'dsh-researcher/goal-governor-e1/directory-inventory/v1',

@@ -205,6 +205,11 @@ const worktree = (changed, allowedChanges) => {
     before,
     after,
     allowed_changes: [...allowedChanges],
+    workspace_binding: {
+      schema: 'dsh-researcher/goal-governor-e1/workspace-binding/v1',
+      platform: 'posix',
+      root_sha256: digest('/synthetic/e1-workspace'),
+    },
     before_tree_sha256: snapshotTreeHash(before),
     after_tree_sha256: snapshotTreeHash(after),
   }
@@ -307,7 +312,7 @@ const makeManifest = () => {
   const manifest = {
     schema: MANIFEST_SCHEMA,
     protocol: 'docs/goal-governor-evaluation-protocol.md',
-    protocol_version: '1.5',
+    protocol_version: '1.6',
     status: { infrastructure: 'READY', live_e1: 'NOT_RUN', outcome: 'NOT_PROVEN', portability: 'NOT_PROVEN' },
     runtime: {
       client: 'dsh', version: '0.1.1-rc.2', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',

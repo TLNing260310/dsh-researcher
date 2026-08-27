@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.8.0-alpha.10-dev.0 (unreleased) — E1 v1.5 Negative Evidence and v1.6 Repair
+
+- Preserved the official Flash v1.5 result as `1 PASS / 4 FAIL / 1 INVALID`; no v1.5 artifact is rescored or promoted to PASS.
+- Added a non-disclosing workspace-root hash binding so the offline scorer can validate DSH absolute edit paths without publishing personal absolute paths.
+- Corrected the `resume-replay:observe` outer verifier policy to expect the post-correction final verifier exit.
+- Strengthened the frozen `already-satisfied` and `no-progress` prompts to require explicit, non-overlapping Governor sequences.
+- Promoted canonical Project Cognition revision 9 and preregistered protocol v1.6. E1, outcome value, and portability remain NOT PROVEN.
+
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 
 - Added an English-first README with a Chinese counterpart, a problem-led first screen, deterministic mechanism visuals, and a lower-friction ten-minute trial form.

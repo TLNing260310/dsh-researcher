@@ -210,7 +210,12 @@ const deriveChildTimeout = (admission, processStartedWallMs, maximumRunMs, guard
   return { deadline_ms: deadlineMs, deadline_utc: new Date(deadlineMs).toISOString(), timeout_ms: timeoutMs }
 }
 
-const staticArtifact = ({ runtime, manifest, lock, fixtureBaseline, state, contract, registry, before, after, entry, hostVerifier, runtimeProvenance, budgetEvidence, costAdmissions, attemptIdentity }) => ({
+const canonicalWorkspaceRoot = (workspace) => {
+  const resolved = path.resolve(workspace).replace(/\\/g, '/').replace(/\/$/, '')
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved
+}
+
+const staticArtifact = ({ runtime, manifest, lock, fixtureBaseline, state, contract, registry, before, after, entry, hostVerifier, runtimeProvenance, budgetEvidence, costAdmissions, attemptIdentity, workspace }) => ({
   schema: RUN_ARTIFACT_SCHEMA,
   case_id: entry.id,
   run_lock: lock,
@@ -235,6 +240,11 @@ const staticArtifact = ({ runtime, manifest, lock, fixtureBaseline, state, contr
     before,
     after,
     allowed_changes: entry.allowed_changes,
+    workspace_binding: {
+      schema: 'dsh-researcher/goal-governor-e1/workspace-binding/v1',
+      platform: process.platform === 'win32' ? 'win32' : 'posix',
+      root_sha256: crypto.createHash('sha256').update(canonicalWorkspaceRoot(workspace)).digest('hex'),
+    },
     before_tree_sha256: treeHash(before),
     after_tree_sha256: treeHash(after),
   },
@@ -634,12 +644,17 @@ const main = () => {
       start_sequence: startedReceipt.sequence,
       start_receipt_hash: startedReceipt.receipt_hash,
     },
+    workspace,
   })
   staticFields.runner_exit_code = child.status
   staticFields.runner_signal = child.signal || null
   staticFields.runner_timed_out = Boolean(child.error && child.error.code === 'ETIMEDOUT')
   staticFields.runner_error = child.error ? { code: child.error.code || 'SPAWN_ERROR', message: child.error.message } : null
-  const expectedVerifierExit = stage === 'observe' ? entry.baseline_exit : entry.final_verifier_exit
+  // The observe stage intentionally ends after the model has made the passing
+  // correction and submitted its observation. It stops before completing the
+  // attempt/decision, not before changing the worktree, so the external
+  // verifier must already match the case's final expected exit.
+  const expectedVerifierExit = entry.final_verifier_exit
   const outerErrors = []
   const reject = (code, message) => outerErrors.push({ code, message })
   if (!hostVerifier.integrity.ok || !hostVerifier.workspace.unchanged || hostVerifier.spawn_error || hostVerifier.timed_out) reject('TRUSTED_VERIFIER_DRIFT', 'external verifier integrity or execution failed')

@@ -127,7 +127,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   const manifest = readJson('evaluation', 'goal-governor-e1', 'manifest.json')
   assert.deepEqual(validateManifest(manifest), [])
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.5')
+  assert.equal(manifest.protocol_version, '1.6')
   assert.deepEqual(manifest.budget, {
     max_tokens: 250000,
     max_cache_read_tokens: 220000,
@@ -163,7 +163,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   }
 })
 
-test('protocol v1.5 layered cost enforcement and superseded protocol provenance cannot drift silently', () => {
+test('protocol v1.6 layered cost enforcement and superseded protocol provenance cannot drift silently', () => {
   const runner = read('evaluation', 'goal-governor-e1', 'run-e1.js')
   const child = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
   const scorer = read('evaluation', 'goal-governor-e1', 'score-e1.js')
@@ -295,19 +295,19 @@ test('current release identity and public evidence-status language do not drift'
   assert.equal(release.schema, 'dsh-researcher/current-release/v1')
   assert.equal(release.published_tag, 'v' + release.published_version)
   assert.ok([release.published_version, release.development_version].includes(pkg.version), 'package version must be the published release or the declared development version')
-  const currentVersion = new RegExp('Current release: `v?' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`')
+  const currentVersion = new RegExp('Current (?:published )?release: `v?' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`')
   const pinnedInstall = new RegExp('#v' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const firstRelease = changelog.match(/^##\s+([^\s(]+)/m)
   assert.match(readme, currentVersion)
-  assert.match(readmeZh, new RegExp('当前版本：`' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
+  assert.match(readmeZh, new RegExp('当前(?:已发布)?版本：`' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
   assert.match(readme, pinnedInstall)
   assert.match(validation, new RegExp('`' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
   assert.match(roadmap, new RegExp('`' + release.published_version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '`'))
   assert.equal(fs.existsSync(path.join(root, 'docs', 'releases', 'v' + release.published_version + '.md')), true)
-  assert.equal(firstRelease && firstRelease[1], release.published_version)
-  assert.match(readme, /Live E1[^\n]*NOT RUN|model productivity[^\n]*not proven/i)
+  assert.equal(firstRelease && firstRelease[1], pkg.version === release.development_version ? release.development_version : release.published_version)
+  assert.match(readme, /Live E1[^\n]*(?:INVALID|not proven)|model productivity[^\n]*not proven/i)
   assert.match(readmeZh, /真实模型端到端成功率[^\n]*尚未证明|真实模型端到端[^\n]*尚未证明/)
-  assert.match(validation, /Live conformance[^\n]*\*\*未完成 E1\*\*/)
+  assert.match(validation, /Live conformance[^\n]*\*\*v1\.5 INVALID；v1\.6 未运行\*\*/)
   assert.match(validation, /不得宣称[^\n]*真实 DSH E2E 已通过/)
   assert.match(governor, /尚未证明：真实 DSH 模型会话端到端成功率/)
   assert.doesNotMatch(governor, /\d+\s*项测试通过/)
@@ -332,8 +332,8 @@ test('canonical truth binds current live evidence without upgrading product clai
   for (const id of ['V3A', 'V3B', 'V4']) assert.equal(state.value_claims.find((item) => item.id === id).proof_status, 'hypothesis')
   assert.equal(state.value_claims.find((item) => item.id === 'V5').proof_status, 'refuted')
   for (const id of ['P0', 'P1']) assert.doesNotMatch(state.next_proofs.find((item) => item.id === id).statement, /protocol v1\.2/i)
-  assert.match(state.next_proofs.find((item) => item.id === 'P0').statement, /each protocol v1\.5 live run/i)
-  assert.match(state.known_unknowns.find((item) => item.id === 'U2').statement, /complete protocol v1\.5/i)
+  assert.match(state.next_proofs.find((item) => item.id === 'P0').statement, /each protocol v1\.6 live run/i)
+  assert.match(state.known_unknowns.find((item) => item.id === 'U2').statement, /complete protocol v1\.6/i)
 })
 
 test('CI and issue templates avoid duplicate tag verification and per-release placeholder drift', () => {

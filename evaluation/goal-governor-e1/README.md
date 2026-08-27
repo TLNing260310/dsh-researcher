@@ -87,7 +87,7 @@ effective connection URL from model-selection metadata.
 
 ### Model cost admission
 
-The manifest and run lock freeze protocol v1.5's `Asia/Shanghai` policy and
+The manifest and run lock freeze protocol v1.6's `Asia/Shanghai` policy and
 the same four limits for every case: 250,000 total billable tokens, 220,000
 cache-read tokens, 24 native request attempts, and 900 seconds. On
 Monday through Friday, DeepSeek API is denied during `[09:00,12:00)` and

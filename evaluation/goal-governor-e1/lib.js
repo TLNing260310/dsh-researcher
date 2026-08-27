@@ -174,7 +174,7 @@ const validateManifest = (manifest) => {
   if (!isPlainObject(manifest) || manifest.schema !== MANIFEST_SCHEMA) throw new Error('invalid E1 manifest schema')
   assertExactKeys(manifest, ['schema', 'protocol', 'protocol_version', 'status', 'runtime', 'cost_policy', 'budget', 'fixture', 'trusted_verifier', 'visible_tool_contract', 'attempt_ledger', 'cases', 'artifacts', 'invalidity_rules', 'replay_semantics', 'lock_inputs'], 'manifest')
   if (manifest.protocol !== 'docs/goal-governor-evaluation-protocol.md') throw new Error('manifest must bind the canonical E1 protocol path')
-  if (manifest.protocol_version !== '1.5') throw new Error('manifest must bind E1 protocol version 1.5')
+  if (manifest.protocol_version !== '1.6') throw new Error('manifest must bind E1 protocol version 1.6')
   const status = manifest.status
   assertExactKeys(status, ['infrastructure', 'live_e1', 'outcome', 'portability'], 'manifest.status')
   if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'NOT_RUN' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {

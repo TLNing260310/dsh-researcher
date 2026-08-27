@@ -1,6 +1,6 @@
 {
   "schema": "dsh-researcher/evidence-sources/v1",
-  "required_fresh": ["E11", "E12"],
+  "required_fresh": ["E11", "E12", "E13"],
   "entries": [
     {
       "evidence_id": "E11",
@@ -14,6 +14,13 @@
       "files": [
         "docs/goal-governor-evaluation-protocol.md",
         "evaluation/goal-governor-e1/manifest.json"
+      ]
+    },
+    {
+      "evidence_id": "E13",
+      "files": [
+        "docs/evidence/e1-v1.5-live-results.md",
+        "docs/goal-governor-evaluation-protocol-v1.5.md"
       ]
     }
   ]

@@ -5,7 +5,7 @@
 [![CI](https://github.com/TLNing260310/dsh-researcher/actions/workflows/test.yml/badge.svg)](https://github.com/TLNing260310/dsh-researcher/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/v/release/TLNing260310/dsh-researcher?include_prereleases&sort=semver)](https://github.com/TLNing260310/dsh-researcher/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Live E1: not run](https://img.shields.io/badge/Live_E1-NOT_RUN-orange.svg)](./docs/validation-status.md)
+[![Live E1: invalid](https://img.shields.io/badge/Live_E1-INVALID-red.svg)](./docs/validation-status.md)
 
 ![dsh-researcher: project reality and evidence-gated done](./docs/assets/social-preview.png)
 
@@ -18,9 +18,9 @@
 
 They are independent. You can trial Project Research without adopting Goal Contracts.
 
-> **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. Live E1, net productivity gain, long-term Project Cognition value, and adapters beyond DSH are **not proven**.
+> **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. A complete v1.5 live attempt ran but was **INVALID**; E1 conformance, net productivity gain, long-term Project Cognition value, and adapters beyond DSH remain **not proven**.
 
-> **Latest runtime evidence:** protocol v1.4 reached official `deepseek-v4-flash`: `already-satisfied` and `forged-evidence` passed; `simple-done` correctly changed only `src/task.js` and passed the trusted verifier, but the frozen 40,000-token limit forced `STOPPED`, so the track is a valid **FAIL**. The remaining three tracks were not run. v1.5 was preregistered afterward with separate total-token, cache-read, request-attempt, and time limits; it has made zero live calls. See the preserved [official Flash partial result](./docs/evidence/e1-official-flash-partial-2026-08-26.md) and [v1.4 archive](./docs/goal-governor-evaluation-protocol-v1.4.md).
+> **Latest runtime evidence:** protocol v1.5 ran all six official `deepseek-v4-flash` tracks but scored `1 PASS / 4 FAIL / 1 INVALID`; the only PASS was `forged-evidence`. It exposed a portable absolute-path binding defect, unstable model call sequencing, and an incorrect resume-observe finalizer expectation. The original result is preserved and is not rescored. Protocol v1.6 fixes those infrastructure defects and is offline-ready, but has not run live. See the [v1.5 result record](./docs/evidence/e1-v1.5-live-results.md), [v1.5 archive](./docs/goal-governor-evaluation-protocol-v1.5.md), and current frozen protocol.
 
 ## The problem
 
@@ -160,7 +160,7 @@ The CLI actor label is not human authentication. Repository governance must keep
 | Unit, replay, integration, adversarial, installer, and package tests | PASS | The published mechanisms reject the covered drift and forged-evidence paths |
 | `project-cognition doctor .` | PASS | Current schema, hashes, projection, goals, and registry agree; it does not prove evidence freshness |
 | DSH Web Project Research smoke | Runtime boundary PASS; output probes FAIL | The exact tested runtime can become SAFE and reject drift; research quality is not established |
-| Goal Governor E1 infrastructure | v1.5 READY; v1.5 Live E1 NOT RUN | v1.4 remains 2 PASS / 1 FAIL / 3 NOT RUN; preflight, layered budgets, run lock, cost admission, bundle, replay, and scorer exist |
+| Goal Governor E1 infrastructure | v1.6 offline READY; v1.5 Live E1 INVALID | v1.5 remains 1 PASS / 4 FAIL / 1 INVALID; preflight, layered budgets, workspace binding, run lock, cost admission, bundle, replay, and scorer exist |
 | Outcome value and portability | NOT PROVEN | Requires Live E1, a non-inferential pilot, E2, then second-adapter conformance |
 
 Run the public offline checks without a model or network call:
@@ -209,4 +209,4 @@ You do not need a polished report. The most useful signals are whether the demo 
 - [Open a reproducible bug](https://github.com/TLNing260310/dsh-researcher/issues/new?template=bug-report.yml)
 - Report security issues privately under [SECURITY.md](./SECURITY.md).
 
-Current release: `v0.8.0-alpha.9`. Live E1 v1.5 remains NOT RUN in this release; outcome value and multi-client portability remain NOT PROVEN.
+Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5 live attempt. Post-release v1.5 evidence is INVALID and v1.6 is under development; outcome value and multi-client portability remain NOT PROVEN.

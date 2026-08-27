@@ -2,12 +2,25 @@
 
 const test = require('node:test')
 const assert = require('node:assert')
+const crypto = require('node:crypto')
 const { hashCanonical } = require('../lib/canonical-json.js')
-const { validateManifest } = require('../evaluation/goal-governor-e1/score-e1.js')
+const { validateManifest, normalizeToolMutationPath } = require('../evaluation/goal-governor-e1/score-e1.js')
 const { evaluateCostAdmission } = require('../evaluation/goal-governor-e1/cost-policy.js')
 const { cloneBundle, refreshFinalReplay, scoreTrustedBundle, snapshotTreeHash } = require('./helpers/e1-fixtures.js')
 
 const callsNamed = (artifact, name) => artifact.session_events.filter((event) => event.type === 'tool/call' && event.data.name === name)
+
+test('absolute DSH edit paths require the frozen workspace-root binding', () => {
+  const root = 'd:/e1/workspace'
+  const binding = {
+    schema: 'dsh-researcher/goal-governor-e1/workspace-binding/v1',
+    platform: 'win32',
+    root_sha256: crypto.createHash('sha256').update(root).digest('hex'),
+  }
+  assert.equal(normalizeToolMutationPath('D:\\e1\\workspace\\src\\task.js', ['src/task.js'], binding), 'src/task.js')
+  assert.equal(normalizeToolMutationPath('D:\\other\\src\\task.js', ['src/task.js'], binding), null)
+  assert.equal(normalizeToolMutationPath('D:\\e1\\workspace\\verify.mjs', ['src/task.js'], binding), null)
+})
 
 test('a fabricated call ID in an ordinary DONE trajectory is INVALID evidence', () => {
   const { manifest, artifacts, manifest_sha256 } = cloneBundle()

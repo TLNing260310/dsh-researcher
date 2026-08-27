@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 8,
+  "revision": 9,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -14,7 +14,7 @@
     ],
     "environment": [
       "Node.js 22.12 or newer",
-      "DeepSeek Harness 0.1.1-rc.2 is the pinned first client runtime; protocol v1.4 reached a partial official Flash result while complete protocol v1.5 conformance remains pending",
+      "DeepSeek Harness 0.1.1-rc.2 is the pinned first client runtime; protocol v1.4 reached a partial official Flash result, v1.5 produced preserved negative/invalid evidence, and complete protocol v1.6 conformance remains pending",
       "portable JSON/core modules and HostEvent v1 are client-independent; non-DSH adapters are not implemented"
     ]
   },
@@ -70,8 +70,8 @@
       "statement": "The DSH adapter can mechanically reject in-session fabricated or verifier-drifted evidence and reserves goal terminal authority for the host plugin.",
       "authority": "repository_observed",
       "proof_status": "supported",
-      "scope": "pure replay tests plus protocol v1.4 official Flash evidence under a trusted host operator and model-inaccessible evidence root: already-satisfied and forged-evidence passed, simple-done was a valid budget STOPPED failure, and three tracks were not run; signatures prove retained bytes against a supplied trust root, not provider identity or outcome value",
-      "confidence": 0.9,
+      "scope": "pure replay tests plus protocol v1.4 and v1.5 official Flash evidence under a trusted host operator and model-inaccessible evidence root: forged-evidence repeatedly refused false completion, while v1.5 overall remained INVALID and exposed path-binding, model-sequence, and resume-finalizer defects; this supports only the narrow rejection/host-authority mechanism, not six-track conformance, provider identity, or outcome value",
+      "confidence": 0.88,
       "evidence_refs": [
         "E1",
         "E2",
@@ -79,7 +79,8 @@
         "E7",
         "E9",
         "E11",
-        "E12"
+        "E12",
+        "E13"
       ],
       "invalidation_conditions": [
         "a live DSH model can complete through an ungoverned tool",
@@ -88,7 +89,7 @@
       ],
       "freshness": {
         "status": "unknown",
-        "checked_at": "2026-08-24"
+        "checked_at": "2026-08-27"
       }
     },
     {
@@ -390,8 +391,15 @@
     {
       "id": "E12",
       "kind": "test",
-      "ref": "Protocol v1.5 preregistration and alpha.9 release-candidate verification: the manifest freezes six cases and four budgets; repository tests, cognition and adapter doctor, file-backed freshness, and offline E1 preflight are release gates with zero model and network calls.",
-      "fingerprint": "f0d4912bbac43df1295248e87c508221d3981c5f7663ddd8e7cc633b354e0f89",
+      "ref": "Protocol v1.6 preregistration after preserved v1.5 negative evidence: the manifest freezes six cases and four budgets, adds a non-disclosing workspace-root binding, corrects resume observe finalization, and strengthens failed trajectory prompts; offline gates make zero model and network calls.",
+      "fingerprint": "40b5c6e69c962ef8c5c1bf57c91b02e5b8fbd86d97407547ca95aa4c9793e1f9",
+      "observed_at": "2026-08-27"
+    },
+    {
+      "id": "E13",
+      "kind": "test",
+      "ref": "Protocol v1.5 official Flash results are permanently recorded: r3 INVALID after a human-gate terminal handoff error; r4 scored 1 PASS / 4 FAIL / 1 INVALID, with forged-evidence PASS and explicit path-binding, model-sequence, no-progress, and resume-finalizer failures. Old bundles are not rescored.",
+      "fingerprint": "27f2fd475d39119346a696ca08dab8e3bffb228472c95e0d09acf0831e7936dd",
       "observed_at": "2026-08-27"
     }
   ],
@@ -403,12 +411,13 @@
     },
     {
       "id": "U2",
-      "statement": "The complete protocol v1.5 Live E1 set, external human gate, successful resume, and live/offline replay equivalence have not yet been proven end to end; protocol v1.4 remains a partial result.",
+      "statement": "The complete protocol v1.6 Live E1 set and successful resume/live-offline replay equivalence have not been proven end to end; v1.5 produced a valid direct-human gate event but its overall r4 bundle was INVALID.",
       "evidence_refs": [
         "E2",
         "E3",
         "E11",
-        "E12"
+        "E12",
+        "E13"
       ]
     },
     {
@@ -418,26 +427,28 @@
     },
     {
       "id": "U4",
-      "statement": "Protocol v1.4 reached official Flash on DSH 0.1.1-rc.2, but complete protocol v1.5 Gate 0 and six-track conformance remain unproven; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
+      "statement": "Protocols v1.4 and v1.5 reached official Flash on DSH 0.1.1-rc.2, but complete protocol v1.6 Gate 0 and six-track conformance remain unproven; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
       "evidence_refs": [
         "E3",
         "E9",
         "E11",
-        "E12"
+        "E12",
+        "E13"
       ]
     }
   ],
   "next_proofs": [
     {
       "id": "P0",
-      "statement": "Before each protocol v1.5 live run, complete current-candidate Gate 0 on DSH 0.1.1-rc.2 including DSH-dependent checks; verify immutable settings, locked provider/model/reasoning effort/base_url, public DeepSeek resolver, and absolute deadline against the frozen protocol; then create a candidate-bound external run lock and disjoint evidence root.",
+      "statement": "Before each protocol v1.6 live run, complete current-candidate Gate 0 on DSH 0.1.1-rc.2 including DSH-dependent checks; verify immutable settings, workspace-root binding, locked provider/model/reasoning effort/base_url, public DeepSeek resolver, and absolute deadline against the frozen protocol; then create a candidate-bound external run lock and disjoint evidence root.",
       "evidence_refs": [
         "E1",
         "E2",
         "E8",
         "E9",
         "E11",
-        "E12"
+        "E12",
+        "E13"
       ]
     },
     {
@@ -475,5 +486,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "ac14c7733753a4df0da612349e9424a25e23c6d66177bd99acba216d959c426f"
+  "state_hash": "03ecf056b495bbf2b00be26aa9346426d2e22642ab7f6cf38ad588c720ea5d8d"
 }
