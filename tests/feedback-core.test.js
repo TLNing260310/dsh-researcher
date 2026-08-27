@@ -2,7 +2,7 @@
 // and must never leak prompt/path content.
 const test = require('node:test')
 const assert = require('node:assert')
-const { buildBundle, extractMetrics, redactEvidence } = require('../lib/feedback-core.js')
+const { buildBundle, extractMetrics, redactEvidence, validateBundle } = require('../lib/feedback-core.js')
 
 const SESSION_EVENTS = [
   { type: 'session', agentPreset: 'researcher', time: 1000 },
@@ -76,6 +76,13 @@ test('level 2 adds redacted claims: statements kept, evidence reduced to basenam
 test('redactEvidence handles garbage and caps length', () => {
   assert.deepEqual(redactEvidence(null), [])
   assert.deepEqual(redactEvidence(['a/b/c.ts:10', 42, 'x']), ['c.ts:10', '42', 'x'])
+})
+
+test('feedback validator accepts generated bundles and rejects sensitive fields', () => {
+  const bundle = buildBundle(SESSION_EVENTS)
+  assert.deepEqual(validateBundle(bundle), [])
+  assert.match(validateBundle({ ...bundle, transcript: 'private' }).join('\n'), /forbidden sensitive field/)
+  assert.match(validateBundle({ ...bundle, level: 1, claims: [] }).join('\n'), /Level 1 bundles must not contain claims/)
 })
 
 test('completion comes only from a terminal goal decision event', () => {

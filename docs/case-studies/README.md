@@ -34,6 +34,8 @@
 
 外部真实用户案例：**0**。首个外部案例必须满足上面的收录标准，并保留负面或无价值结果。
 
+Pilot intake、有效性和隐私边界以冻结的 [Pilot 0 protocol](../pilots/pilot-0-protocol.md) 为准。不同意案例库收录或公开引用不影响一个结构完整的 Pilot 结果有效性。
+
 ## Admission boundary
 
 A case may enter the external evidence count only when it records a real repository, exact runtime/client/model versions, a redacted but reviewable report or evidence bundle, the decision changed (or not changed), and explicit owner consent to publish. Synthetic fixtures belong under `tests/` or `evaluation/`. A self-audit can calibrate the format but cannot establish adoption, independence, or product value.

@@ -1,6 +1,6 @@
 # Validation Status — dsh-researcher
 
-> 更新时间：2026-08-25（`0.8.0-alpha.8`）。本文件是公开证据账本：准确区分机械实现、Researcher smoke、Goal Governor E1、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
+> 更新时间：2026-08-27（`0.8.0-alpha.9`）。本文件是公开证据账本：准确区分机械实现、Researcher smoke、Goal Governor E1、结果价值与可移植性，不把一个层级的 PASS 外推到另一个层级。规范 claim 以 `.project-cognition/state.json` 为准。
 
 alpha.5 与 alpha.7 candidate 的本地 smoke 是 provisional evidence；在 owner review、seal、install 前，它们不会自动改写 canonical Project Cognition。这是 promotion 边界的实际应用，不是第二份规范真相。
 
@@ -45,13 +45,13 @@ alpha.5 与 alpha.7 candidate 的本地 smoke 是 provisional evidence；在 own
 - `PROJECT_COGNITION.md` 是否与 state 的确定性 projection 完全相同；
 - Goal Contracts 与 Verifier Registry 是否结构和 hash 有效。
 
-它不读取代码来判断 evidence ref 是否仍成立，也不重新计算 evidence fingerprint。因此 doctor PASS 只表示**表示完整性与投影一致性**。任何“证据仍新鲜”的声明必须另附：
+它不读取代码来判断 evidence ref 是否仍成立，也不重新计算 evidence fingerprint。因此 doctor PASS 只表示**表示完整性与投影一致性**。仓库发布门另行运行：
 
 ```text
-project-cognition cognition freshness <fingerprints.json> .
+npm run cognition:freshness
 ```
 
-没有 expected/observed fingerprint 的 evidence 会得到 `unknown`，不能因 state 中旧的 `checked_at` 自动当作 fresh。
+该命令只复验 `docs/evidence/evidence-sources.json` 声明的文件证据。没有 expected/observed fingerprint 的 evidence 会得到 `unknown`；人工和外部证据不会因旧的 `checked_at` 自动变成 fresh。
 
 ## Canonical value claims
 

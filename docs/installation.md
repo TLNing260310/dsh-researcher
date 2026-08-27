@@ -2,7 +2,7 @@
 
 安装器管理两个固定目标：`researcher` 与 `governed`。所有平台都由同一个 Node.js 入口执行，因此 PowerShell、Bash 和 npm release artifact 具有相同的预检、备份与回滚语义。
 
-> **包身份边界**：本项目没有发布到 npm registry。未加 scope 的 npm 包 `dsh-researcher` 指向另一位维护者的另一个仓库，与本项目无关。只使用 README 中固定到 `github:TLNing260310/dsh-researcher#<tag>` 的命令，或校验过 SHA-256 的 GitHub Release 制品。`main` 的 package metadata 使用私有 scoped identity `@tlning260310/dsh-researcher`，用于防止误发布，而不是 npm 可用性声明。现有 `v0.8.0-alpha.8` tag 早于该 metadata 调整；固定的 `github:` source 仍只解析本仓库。
+> **包身份边界**：本项目没有发布到 npm registry。未加 scope 的 npm 包 `dsh-researcher` 指向另一位维护者的另一个仓库，与本项目无关。只使用 README 中固定到 `github:TLNing260310/dsh-researcher#<tag>` 的命令，或校验过 SHA-256 的 GitHub Release 制品。package metadata 使用私有 scoped identity `@tlning260310/dsh-researcher`，用于防止误发布，而不是 npm 可用性声明。
 
 ## 支持边界
 

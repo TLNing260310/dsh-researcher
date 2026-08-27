@@ -1,0 +1,20 @@
+{
+  "schema": "dsh-researcher/evidence-sources/v1",
+  "required_fresh": ["E11", "E12"],
+  "entries": [
+    {
+      "evidence_id": "E11",
+      "files": [
+        "docs/evidence/e1-official-flash-partial-2026-08-26.md",
+        "docs/goal-governor-evaluation-protocol-v1.4.md"
+      ]
+    },
+    {
+      "evidence_id": "E12",
+      "files": [
+        "docs/goal-governor-evaluation-protocol.md",
+        "evaluation/goal-governor-e1/manifest.json"
+      ]
+    }
+  ]
+}

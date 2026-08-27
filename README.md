@@ -74,18 +74,18 @@ Requirements:
 - Node.js: `>=22.12.0`.
 - Use an isolated `DSH_HOME` and a non-critical repository copy first.
 
-This repository is **GitHub-distributed only**. The unscoped npm name `dsh-researcher` belongs to a different maintainer and repository. Do not use `npm install dsh-researcher`; use the pinned GitHub source or signed release assets below. `main` now uses the private scoped identity `@tlning260310/dsh-researcher` to prevent accidental publication under the wrong identity. The existing `v0.8.0-alpha.8` tag predates that metadata change, but its `github:` source remains unambiguous and never resolves the npm registry package.
+This repository is **GitHub-distributed only**. The unscoped npm name `dsh-researcher` belongs to a different maintainer and repository. Do not use `npm install dsh-researcher`; use the pinned GitHub source or signed release assets below. The private scoped identity `@tlning260310/dsh-researcher` prevents accidental publication under the wrong identity; this is a DSH preset bundle plus Node governance library, not a native marketplace-plugin claim.
 
 Preview every installer-owned change first:
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 --dry-run
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.9 --dry-run
 ```
 
 Install only after reviewing the preview:
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.8
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.9
 ```
 
 The installer refuses unknown DSH versions and existing presets by default. Backup, force-upgrade, uninstall, rollback, and SHA-256-bound release installation are documented in [Safe installation and recovery](./docs/installation.md).
@@ -119,8 +119,8 @@ The real smoke proves the runtime boundary, not report quality. Two local 14B pr
 The Quickstart generates external Cognition, Verifier Registry, Goal Contract, and `REVIEW.md` drafts. It does not approve a goal or promote project facts for you.
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition init .
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.8 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.9 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.9 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
 ```
 
 Review purpose, boundaries, MUST criteria, budget, and verifier definitions in the generated `REVIEW.md`, then follow its explicit approval commands. See the [five-minute Quickstart](./docs/quickstart.md).
@@ -173,7 +173,7 @@ npm run eval:e1:preflight
 
 The proof order is frozen as `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`. See [Validation Status](./docs/validation-status.md) and the protocol-owned [Goal Governor evaluation definition](./docs/goal-governor-evaluation-protocol.md).
 
-Client integrations share the [portable HostEvent and invocation contract](./docs/client-adapter-contract.md): one-shot `researcher.ask(...)`, persistent `researcher.mode.set/get(...)`, and client-native mode-switch commands reduce to the same host-owned state.
+Client integrations share the [portable HostEvent and invocation contract](./docs/client-adapter-contract.md): one-shot `researcher.ask(...)`, persistent `researcher.mode.set/get(...)`, and client-native mode-switch commands reduce to the same host-owned state. The package root exposes `adapterCore` for this experimental base envelope; it is not a governed-adapter conformance claim.
 
 ## How this differs from familiar tools
 
@@ -204,8 +204,9 @@ Spec Kit, OpenSpec, Kiro, Serena, Beads, and client-native Plan/Memory may be be
 You do not need a polished report. The most useful signals are whether the demo ran, where installation stopped, whether the workflow prevented a wrong completion, and whether it added only overhead.
 
 - [Submit a 10-minute trial report](https://github.com/TLNing260310/dsh-researcher/issues/new?template=trial-report.yml)
-- [Share a full real-world run](https://github.com/TLNing260310/dsh-researcher/issues/new?template=feedback.yml)
+- [Read the frozen Pilot 0 protocol](./docs/pilots/pilot-0-protocol.md)
+- [Share an admitted external Pilot result](https://github.com/TLNing260310/dsh-researcher/issues/new?template=feedback.yml)
 - [Open a reproducible bug](https://github.com/TLNing260310/dsh-researcher/issues/new?template=bug-report.yml)
 - Report security issues privately under [SECURITY.md](./SECURITY.md).
 
-Current release: `v0.8.0-alpha.8`. The alpha line is intentionally frozen until a meaningful evidence or onboarding milestone; documentation changes on `main` are not a new product claim.
+Current release: `v0.8.0-alpha.9`. Live E1 v1.5 remains NOT RUN in this release; outcome value and multi-client portability remain NOT PROVEN.

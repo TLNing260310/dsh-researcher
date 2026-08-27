@@ -16,6 +16,7 @@ Requirements: Node.js `>=22.12.0` and Git. Full DSH install/package lifecycle te
 ```bash
 npm test
 npm run doctor
+npm run cognition:freshness
 npm run eval:e1:preflight
 npm pack --dry-run
 ```
@@ -54,6 +55,10 @@ Do not silently weaken these ratified invariants:
 5. **I5:** A recorded goal terminal decision must equal the host reducer result derived from its preceding trusted evidence; terminal prose or labels cannot override the reducer.
 
 Changing an invariant requires an explicit owner-approved cognition revision, a migration note and new boundary tests.
+
+## Independent Pilot 0
+
+Pilot 0 starts only after Live E1 passes. Read the frozen [Pilot 0 protocol](./docs/pilots/pilot-0-protocol.md) before applying. Intake and results are public and opt-in; the project has no automatic telemetry. Generate a local Level-1 bundle with `researcher-feedback export`, inspect it, then run `researcher-feedback validate <file>` before choosing whether to attach it. A blocked or no-value result is useful and is not filtered out.
 
 ## Pull request checklist
 

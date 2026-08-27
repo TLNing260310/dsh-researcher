@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dsh-researcher/current-release/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "published_version", "published_tag", "development_version", "distribution", "artifact_kind"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/current-release/v1" },
+    "published_version": { "type": "string", "pattern": "^0\\.8\\.0-alpha\\.[0-9]+$" },
+    "published_tag": { "type": "string", "pattern": "^v0\\.8\\.0-alpha\\.[0-9]+$" },
+    "development_version": { "type": "string", "pattern": "^0\\.8\\.0-alpha\\.[0-9]+-dev\\.[0-9]+$" },
+    "distribution": { "const": "github-release-and-pinned-github-source" },
+    "artifact_kind": { "const": "dsh-preset-bundle-and-node-governance-library" }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "@tlning260310/dsh-researcher",
-  "version": "0.8.0-alpha.8",
+  "version": "0.8.0-alpha.9",
   "private": true,
   "description": "Read-only project research, durable project cognition, and evidence-gated definitions of done for AI coding agents on DeepSeek Harness.",
   "author": "TLNing260310",
@@ -8,7 +8,8 @@
   "main": "lib/index.js",
   "bin": {
     "dsh-researcher": "bin/install.js",
-    "project-cognition": "bin/project-cognition.js"
+    "project-cognition": "bin/project-cognition.js",
+    "researcher-feedback": "bin/feedback.js"
   },
   "files": [
     "bin/",
@@ -31,6 +32,7 @@
     "evaluation/results/experiment-cplus/limitations.md",
     "evaluation/results/experiment-cplus/score-report.json",
     "evaluation/goal-governor-e1/",
+    "release/current.json",
     ".project-cognition/state.json",
     ".project-cognition/verifiers.json",
     "PROJECT_COGNITION.md",
@@ -45,6 +47,7 @@
     "demo": "node scripts/demo-governor.js",
     "test": "node --test tests/*.test.js",
     "doctor": "node bin/project-cognition.js doctor . && node bin/project-cognition.js adapter doctor governed/adapter-manifest.json",
+    "cognition:freshness": "node scripts/check-cognition-freshness.js",
     "eval:e1:capture-tools": "node evaluation/goal-governor-e1/capture-visible-tools.js",
     "eval:e1:attest": "node evaluation/goal-governor-e1/attest-e1.js",
     "eval:e1:lock": "node evaluation/goal-governor-e1/lock.js",
@@ -52,7 +55,7 @@
     "eval:e1:score": "node evaluation/goal-governor-e1/score-e1.js",
     "eval:e1:live": "node evaluation/goal-governor-e1/run-e1.js --mode live",
     "release:artifacts": "node scripts/build-release-artifacts.js",
-    "check": "npm test && npm run doctor && npm run eval:e1:preflight"
+    "check": "npm test && npm run doctor && npm run cognition:freshness && npm run eval:e1:preflight"
   },
   "keywords": [
     "deepseek-harness",

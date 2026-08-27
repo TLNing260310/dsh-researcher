@@ -26,6 +26,8 @@ Every normalized event carries `seq`, `session_id`, optional `runtime_goal_id`, 
 
 The host must retain the native event stream. HostEvent is a deterministic projection used by portable reducers; it is not permission to discard native evidence or trust assistant prose.
 
+The package-root `adapterCore` export exposes this base envelope and the Researcher control reducer as an **experimental additive API**. It freezes the `ask` and `mode.set/get` user semantics, not a governed event profile or a compatibility claim. Typed verifier receipts, usage completeness, atomic sequencing, raw-first storage, and enforcement receipts remain requirements for the later E2-gated adapter API.
+
 ## Conformance boundary
 
 An adapter manifest v2 reports two different facts:

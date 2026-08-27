@@ -1,12 +1,19 @@
-name: Real-world Feedback
-description: Share a Researcher or Goal Governor run, including negative and no-value results
-title: "[Feedback] "
-labels: ["feedback"]
+name: External Pilot Result
+description: Submit an admitted independent Pilot result, including negative and no-value outcomes
+title: "[Pilot result] "
+labels: ["feedback", "pilot", "pilot:result"]
 body:
   - type: markdown
     attributes:
       value: |
-        Real outcomes matter more than polished reports. Anonymous or redacted evidence is welcome; never post private source code or secrets.
+        Real outcomes matter more than polished reports. GitHub is public: never post raw sessions, private repository names or URLs, source code, diffs, paths, prompts, credentials, customer data, or secrets.
+  - type: input
+    id: pilot_id
+    attributes:
+      label: Pilot ID
+      placeholder: P0-001
+    validations:
+      required: true
   - type: dropdown
     id: surface
     attributes:
@@ -21,28 +28,65 @@ body:
   - type: input
     id: versions
     attributes:
-      label: Versions
-      placeholder: latest dsh-researcher prerelease, DSH version, model/client
+      label: Exact version and installation
+      placeholder: frozen candidate tag / exact commit; GitHub tag or verified tarball; DSH, Node, OS, model/client
     validations:
       required: true
   - type: textarea
-    id: task
+    id: independence
     attributes:
-      label: What were you trying to decide or complete?
+      label: Independence and interests
+      description: Confirm you are not the owner/maintainer, have no write access, did not design this pilot/evaluation, and disclose compensation or another material relationship.
     validations:
       required: true
   - type: textarea
-    id: outcome
+    id: before
     attributes:
-      label: What changed in the real outcome?
-      description: Did it reveal an unknown fact, prevent a wrong change, stop unnecessary work, or add only overhead?
+      label: Decision or expectation before the run
+    validations:
+      required: true
+  - type: textarea
+    id: after
+    attributes:
+      label: Decision after the run and why
+    validations:
+      required: true
+  - type: dropdown
+    id: result_class
+    attributes:
+      label: Result class
+      options:
+        - Found a new fact
+        - Invalidated an assumption
+        - Prevented a wrong change
+        - Stopped unnecessary work
+        - No decision change
+        - Blocked
+        - Workflow was too heavy
+    validations:
+      required: true
+  - type: textarea
+    id: runtime
+    attributes:
+      label: Runtime Certificate and Governor terminal
+      description: Include the redacted SAFE/DEGRADED/UNSAFE certificate and terminal decision when applicable.
+    validations:
+      required: true
+  - type: input
+    id: time
+    attributes:
+      label: Time
+      description: time-to-SAFE, total active minutes, and maintainer-help minutes.
+      placeholder: SAFE 8m; active 42m; maintainer help 0m
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
-      label: Evidence
-      description: Redacted certificate, terminal decision, attempts, tests, diff summary or report excerpt.
+      label: Validated Level-1 evidence
+      description: Attach or summarize a locally validated feedback/v1 Level-1 bundle. Do not attach raw logs or Level-2 claim text without separate review.
+    validations:
+      required: true
   - type: textarea
     id: failures
     attributes:
@@ -50,10 +94,28 @@ body:
       description: Negative results are especially useful.
     validations:
       required: true
+  - type: dropdown
+    id: reuse
+    attributes:
+      label: Would you use it again?
+      options:
+        - Yes
+        - Maybe, after changes
+        - No
+    validations:
+      required: true
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: Optional publication consent
+      options:
+        - label: I consent to anonymous aggregate counting.
+        - label: I consent to a separately reviewed Case Library entry.
+        - label: I consent to a short public quotation.
   - type: checkboxes
     id: privacy
     attributes:
       label: Privacy confirmation
       options:
-        - label: I removed secrets, personal data and source material I am not allowed to share.
+        - label: I removed raw sessions, prompts, responses, source, diffs, paths, remotes, private URLs, secrets, personal/customer data, and material I cannot publish.
           required: true

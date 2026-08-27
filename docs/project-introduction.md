@@ -50,7 +50,7 @@ The repository has evidence that its mechanisms exist and reject several classes
 Accordingly, the honest maturity labels are:
 
 - Project Research: **isolated trial**, with runtime safety evidence and mixed model outcomes.
-- Goal Governor: **advanced experimental**, with mechanical evidence and Live E1 still not run.
+- Goal Governor: **advanced experimental**, with mechanical evidence, a frozen v1.4 partial live result, and v1.5 Live E1 still not run.
 - Long-term Project Cognition value: **hypothesis**.
 - Codex, Claude Code, Zed/Zcode and OpenClaw compatibility: **not delivered** until a second adapter passes conformance.
 

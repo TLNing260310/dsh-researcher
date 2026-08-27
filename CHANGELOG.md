@@ -1,11 +1,16 @@
 # Changelog
 
-### Main after alpha.8 — onboarding and discoverability, unreleased
+## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 
 - Added an English-first README with a Chinese counterpart, a problem-led first screen, deterministic mechanism visuals, and a lower-friction ten-minute trial form.
 - Made the npm identity boundary explicit. The unscoped registry name belongs to another project; this repository now uses private scoped package metadata while preserving pinned GitHub and verified release installation.
 - Added a self-audit calibration case that demonstrates evidence-graded reporting without counting itself as an external user case, Live E1, or outcome evidence.
-- Kept `v0.8.0-alpha.8` as the current release. These main-branch onboarding changes do not expand runtime claims or create a new release milestone.
+- Added exact DSH `0.1.1-rc.2` live-run isolation, credential separation, evidence references, resume repair, official Flash v1.4 partial-result preservation, and v1.5 layered budget preregistration.
+- Promoted canonical Project Cognition revision 8, added file-backed evidence freshness checks, and separated published and development version identities.
+- Exposed the experimental `adapterCore` package-root surface while preserving `dshAdapter`, function-call, and mode-switch semantics; no second client adapter is delivered.
+- Added local-only `researcher-feedback export/validate`, its JSON Schema, and a frozen opt-in Pilot 0 protocol. No telemetry or automatic upload was added.
+
+Release boundary: **E1 infrastructure v1.5: READY / Live E1 v1.5: NOT RUN / v1.4 historical result: 2 PASS, 1 FAIL, 3 NOT RUN / outcome value and multi-client portability: NOT PROVEN**.
 
 ## 0.8.0-alpha.8 (2026-08-25) — Windows Canonical-Path Hotfix
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.8` 的 protocol v1.4 official Flash 部分运行已形成可裁决结果：2 PASS、1 FAIL、3 NOT RUN。`simple-done` 正确完成局部修改并通过 verifier，但 40,000 total-token 上限先触发 `STOPPED`；该失败已冻结且不会重评分。v1.5 在任何新 live call 前预注册总 token、cache-read、native request 和 wall-time 四重预算，完整 E1 仍未运行。下一步是先验证 v1.5 六轨，而不是增加产品功能。证据见 [v1.4 partial evidence](./evidence/e1-official-flash-partial-2026-08-26.md) 与 [Validation Status](./validation-status.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.9` 对齐 canonical truth 与发布身份。protocol v1.4 official Flash 部分运行已形成可裁决结果：2 PASS、1 FAIL、3 NOT RUN。`simple-done` 正确完成局部修改并通过 verifier，但 40,000 total-token 上限先触发 `STOPPED`；该失败已冻结且不会重评分。v1.5 在任何新 live call 前预注册总 token、cache-read、native request 和 wall-time 四重预算，完整 E1 仍未运行。下一步是验证 v1.5 六轨。证据见 [v1.4 partial evidence](./evidence/e1-official-flash-partial-2026-08-26.md) 与 [Validation Status](./validation-status.md)。
 
 ## 路线纪律
 
@@ -33,7 +33,7 @@ productization decision
 
 **目的**：确认 canonical state、projection、Goal Contracts、Verifier Registry、adapter capability 与实验冻结产物完整。
 
-**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致，不证明 evidence freshness；若实验依赖 freshness，必须另附 fingerprint report。DSH `0.1.1-rc.2` 的隔离 CLI/version、preset discovery、local frozen settings/`watch=false`、`DEEPSEEK_BASE_URL`、公共 resolver、capture 与 flush 已在单轨 smoke 中实际通过；remote official Flash 的相同边界仍未验证。
+**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致；`npm run cognition:freshness` 另行复验 source manifest 列出的文件证据。DSH `0.1.1-rc.2` 的隔离 CLI/version、preset discovery、local frozen settings/`watch=false`、`DEEPSEEK_BASE_URL`、公共 resolver、capture 与 flush 已在单轨 smoke 中实际通过；protocol v1.4 已到达 remote official Flash，但 v1.5 的完整六轨边界仍未验证。
 
 ### E1 — Live DSH conformance
 

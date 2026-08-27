@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dsh-researcher/feedback/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generated_at", "level", "metrics"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/feedback/v1" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "level": { "enum": [1, 2] },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["researcher_version", "preset", "permission", "certificate", "session_duration_sec", "tool_calls", "checkpoint_calls", "claims_created", "claims_revised", "hypotheses_invalidated", "decision", "goal_decision", "session_completed", "error_codes"],
+      "properties": {
+        "researcher_version": { "type": "string", "minLength": 1 },
+        "preset": { "type": ["string", "null"] },
+        "permission": { "type": ["string", "null"] },
+        "certificate": { "type": ["string", "null"] },
+        "session_duration_sec": { "type": ["integer", "null"], "minimum": 0 },
+        "tool_calls": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "checkpoint_calls": { "type": "integer", "minimum": 0 },
+        "claims_created": { "type": "integer", "minimum": 0 },
+        "claims_revised": { "type": "integer", "minimum": 0 },
+        "hypotheses_invalidated": { "type": "integer", "minimum": 0 },
+        "decision": { "type": ["string", "null"] },
+        "goal_decision": { "type": ["string", "null"] },
+        "session_completed": { "type": "boolean" },
+        "error_codes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "statement", "tier", "verdict", "confidence", "evidence_basenames"],
+        "properties": {
+          "id": { "type": "string" },
+          "statement": { "type": "string", "maxLength": 300 },
+          "tier": { "type": ["string", "null"] },
+          "verdict": { "type": ["string", "null"] },
+          "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+          "evidence_basenames": { "type": "array", "items": { "type": "string" }, "maxItems": 6 }
+        }
+      }
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "level": { "const": 1 } } }, "then": { "not": { "required": ["claims"] } } },
+    { "if": { "properties": { "level": { "const": 2 } } }, "then": { "required": ["claims"] } }
+  ]
+}

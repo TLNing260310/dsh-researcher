@@ -19,12 +19,44 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const zlib = require('node:zlib')
-const { buildBundle } = require('../lib/feedback-core.js')
+const { buildBundle, validateBundle } = require('../lib/feedback-core.js')
+
+const MAX_BUNDLE_BYTES = 1024 * 1024
+
+const usage = () => {
+  console.error('usage: researcher-feedback export <session.jsonl.zstd> [--claims] [--out <file>]')
+  console.error('       researcher-feedback validate <feedback.json>')
+}
 
 const command = process.argv[2]
-if (command !== 'export') {
-  console.error('usage: node bin/feedback.js export <session.jsonl.zstd> [--claims] [--out <file>]')
+if (!['export', 'validate'].includes(command)) {
+  usage()
   process.exit(1)
+}
+
+if (command === 'validate') {
+  const input = process.argv[3]
+  if (!input || !fs.existsSync(input)) {
+    console.error('feedback bundle not found: ' + input)
+    process.exit(1)
+  }
+  const stat = fs.statSync(input)
+  if (!stat.isFile() || stat.size > MAX_BUNDLE_BYTES) {
+    console.error('feedback bundle must be a regular file no larger than 1 MiB')
+    process.exit(1)
+  }
+  let bundle
+  try { bundle = JSON.parse(fs.readFileSync(input, 'utf8')) } catch (error) {
+    console.error('feedback bundle is not valid JSON: ' + error.message)
+    process.exit(1)
+  }
+  const errors = validateBundle(bundle)
+  if (errors.length > 0) {
+    for (const error of errors) console.error('- ' + error)
+    process.exit(1)
+  }
+  console.log(JSON.stringify({ ok: true, schema: bundle.schema, level: bundle.level, bytes: stat.size }))
+  process.exit(0)
 }
 
 const sessionFile = process.argv[3]

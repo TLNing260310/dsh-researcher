@@ -1,0 +1,54 @@
+title: "[Pilot intake] "
+labels: ["pilot", "pilot:intake"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pilot 0 is a public, opt-in trial. Do not post a private repository name or URL, source code, paths, prompts, credentials, customer data, or secrets. Negative and no-value results are welcome.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface you want to try
+      options:
+        - Project Research
+        - Goal Governor / Governed Coding
+    validations:
+      required: true
+  - type: textarea
+    id: relationship
+    attributes:
+      label: Independence and relationship
+      description: State whether you maintain dsh-researcher, helped design its evaluations, have repository write access, or have compensation/another material relationship.
+    validations:
+      required: true
+  - type: textarea
+    id: project_shape
+    attributes:
+      label: Non-sensitive project shape
+      description: Language, rough size, and stage only. Do not name or link a private repository.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Expected environment
+      description: OS, Node, DSH, client, and model if known.
+    validations:
+      required: true
+  - type: dropdown
+    id: time
+    attributes:
+      label: Available active time
+      options:
+        - 30–45 minutes
+        - 45–60 minutes
+        - 60–90 minutes
+    validations:
+      required: true
+  - type: checkboxes
+    id: evidence
+    attributes:
+      label: Public evidence boundary
+      options:
+        - label: I can submit a locally inspected Level-1 bundle and structured result without private source material.
+          required: true
