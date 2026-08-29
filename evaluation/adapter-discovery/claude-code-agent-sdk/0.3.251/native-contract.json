@@ -5,6 +5,12 @@
   "npm_integrity": "sha512-DqSi8mH2tQYRlVV0G+lJnQ/WbjJZ/a+8cJ3vPuYoqh8esIIvXHm1ZOXV1UPGsFYRnbBytEoiSGitguEXd+sQ+Q==",
   "tarball_sha256": "e3ef10500a552356a2923f8bd6bc0dea54f5b6785aaa340157ccb2e1794c1a25",
   "sdk_types_sha256": "4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe",
+  "runtime_load_observation": {
+    "sdk_module_sha256": "9235fac983c29e614d7f572a578406dc5dbda006305faa99f9447f577738eb93",
+    "claude_code_version": "2.1.251",
+    "required_exports": ["query", "startup", "getSessionInfo", "getSessionMessages", "listSessions"],
+    "session_created": false
+  },
   "contract_members": ["PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "PermissionDenied", "SessionStart", "SessionEnd", "Stop", "canUseTool", "Query.interrupt", "options.resume", "tool_use_id", "session_id", "modelUsage"],
   "observed_contract_notes": [
     "tool hooks carry session_id and tool_use_id",

@@ -8,6 +8,7 @@ const { spawnSync } = require('node:child_process')
 
 const root = path.join(__dirname, '..')
 const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(root, ...parts), 'utf8'))
+const { sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
 
 test('adapter discovery is version locked, offline checked, and non-product', () => {
   const result = spawnSync(process.execPath, [path.join(root, 'scripts', 'check-adapter-discovery.js')], { cwd: root, encoding: 'utf8', windowsHide: true })
@@ -33,13 +34,18 @@ test('Codex discovery is scoped to app-server stdio and captures no model traffi
   assert.equal(discovery.capabilities.write_boundary.status, 'UNKNOWN')
 })
 
-test('Claude discovery refuses to fabricate a trace from package types', () => {
+test('Claude discovery binds a no-model runtime load without fabricating a session trace', () => {
   const base = ['evaluation', 'adapter-discovery', 'claude-code-agent-sdk', '0.3.251']
   const discovery = readJson(...base, 'discovery.json')
   const trace = readJson(...base, 'native-trace.json')
-  assert.equal(trace.capture_kind, 'not-captured')
+  assert.equal(trace.capture_kind, 'runtime-load-no-model')
   assert.equal(trace.model_calls, 0)
-  assert.match(trace.reason, /not installed/)
+  assert.equal(trace.prompt_submissions, 0)
+  assert.equal(trace.session_creations, 0)
+  assert.equal(trace.package.claude_code_version, '2.1.251')
+  assert.equal(trace.native_cli.version_output, '2.1.251 (Claude Code)')
+  for (const name of ['query', 'startup', 'getSessionInfo', 'getSessionMessages', 'listSessions']) assert.ok(trace.runtime_exports.includes(name))
+  assert.match(trace.claim_boundary, /no query, startup, session, prompt/i)
   assert.equal(discovery.result, 'HOLD')
   assert.match(discovery.claim_boundary, /No Claude Code adapter/)
 })
@@ -49,4 +55,16 @@ test('both discoveries preserve function-call and persistent-mode semantics', ()
     const discovery = readJson('evaluation', 'adapter-discovery', client, version, 'discovery.json')
     assert.deepEqual(discovery.invocation.function_call, ['researcher.ask', 'researcher.mode.set', 'researcher.mode.get'])
   }
+})
+
+test('Claude runtime-load capture strips credentials and proxy routing before invoking --version', () => {
+  const result = sanitizedEnvironment('isolated-config', {
+    PATH: 'safe-path',
+    ANTHROPIC_API_KEY: 'secret',
+    CLAUDE_CONFIG_DIR: 'user-config',
+    HTTPS_PROXY: 'https://proxy.invalid',
+    SERVICE_ACCESS_TOKEN: 'token',
+  })
+  assert.deepEqual(result.environment, { PATH: 'safe-path', CLAUDE_CONFIG_DIR: 'isolated-config' })
+  assert.deepEqual(result.removed, ['ANTHROPIC_API_KEY', 'CLAUDE_CONFIG_DIR', 'HTTPS_PROXY', 'SERVICE_ACCESS_TOKEN'])
 })

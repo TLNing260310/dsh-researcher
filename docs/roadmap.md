@@ -13,7 +13,8 @@
 
 接口 discovery 不属于产品扩展，但也不构成兼容声明。当前 Claude Code
 Agent SDK `0.3.251` 与 Codex App Server stdio `0.150.0-alpha.12.2` 均为
-`HOLD`：前者缺真实 runtime trace；后者已完成零模型 initialize/list trace，
+`HOLD`：前者已完成无会话 SDK/CLI runtime-load，但缺真实 query/tool/resume
+trace；后者已完成零模型 initialize/list trace，
 但 raw-first durable replay、human principal 和 write-boundary receipt 尚未证明。
 记录由 `npm run adapter:discovery:check` 离线校验，且不会修改 adapter
 manifest 或提供安装入口。

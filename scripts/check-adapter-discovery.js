@@ -27,6 +27,11 @@ const walkStrings = (value, visit) => {
   else if (plain(value)) Object.values(value).forEach((item) => walkStrings(item, visit))
 }
 
+const assertNoSensitiveStrings = (value, label) => walkStrings(value, (text) => {
+  if (/[A-Za-z]:\\|(?:^|\s)\/(?:Users|home)\//.test(text)) throw new Error(label + ': personal absolute path leaked')
+  if (/sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=]/i.test(text)) throw new Error(label + ': secret-shaped value leaked')
+})
+
 const validate = (file) => {
   const doc = readJson(file)
   exactKeys(doc, ['schema', 'client', 'surface', 'locked_runtime', 'sources', 'artifacts', 'invocation', 'capabilities', 'gaps', 'result', 'claim_boundary'], 'discovery')
@@ -51,12 +56,18 @@ const validate = (file) => {
   }
   const trace = readJson(path.resolve(path.dirname(file), doc.artifacts.native_trace.path))
   if (trace.model_calls !== 0) throw new Error(file + ': discovery trace must not call a model')
+  if (trace.network_calls_initiated_by_capture !== 0) throw new Error(file + ': discovery trace must not initiate a network request')
+  assertNoSensitiveStrings(trace, file + ': native trace')
+  if (doc.client === 'claude-code-agent-sdk') {
+    if (trace.capture_kind !== 'runtime-load-no-model' || trace.prompt_submissions !== 0 || trace.session_creations !== 0) throw new Error(file + ': Claude discovery must remain a no-session runtime load')
+    if (trace.package?.name !== '@anthropic-ai/claude-agent-sdk' || trace.package?.version !== doc.locked_runtime.version || trace.package?.claude_code_version !== '2.1.251') throw new Error(file + ': Claude SDK runtime identity drifted')
+    if (trace.native_cli?.package_version !== doc.locked_runtime.version || trace.native_cli?.version_output !== '2.1.251 (Claude Code)') throw new Error(file + ': Claude native CLI identity drifted')
+    for (const required of ['query', 'startup', 'getSessionInfo', 'getSessionMessages', 'listSessions']) if (!trace.runtime_exports?.includes(required)) throw new Error(file + ': Claude runtime export missing: ' + required)
+    if (!/no query, startup, session, prompt/i.test(trace.claim_boundary || '')) throw new Error(file + ': Claude capture claim boundary drifted')
+  }
   if (doc.result === 'DISCOVERY_QUALIFIED' && (trace.capture_kind !== 'live-no-model' || Object.values(doc.capabilities).some((item) => ['MISSING', 'UNKNOWN'].includes(item.status)))) throw new Error(file + ': qualified discovery lacks complete evidence')
   if (doc.result === 'NO_GO' && !doc.gaps.some((gap) => gap.severity === 'BLOCKING')) throw new Error(file + ': NO_GO requires a blocking gap')
-  walkStrings(doc, (value) => {
-    if (/[A-Za-z]:\\|(?:^|\s)\/(?:Users|home)\//.test(value)) throw new Error(file + ': personal absolute path leaked')
-    if (/sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=]/i.test(value)) throw new Error(file + ': secret-shaped value leaked')
-  })
+  assertNoSensitiveStrings(doc, file)
   return { client: doc.client, version: doc.locked_runtime.version, result: doc.result }
 }
 

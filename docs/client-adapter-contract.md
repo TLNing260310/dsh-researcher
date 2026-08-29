@@ -47,6 +47,7 @@ designs. Their only allowed results are `DISCOVERY_QUALIFIED`, `HOLD` and
 The current Claude Code Agent SDK `0.3.251` and Codex App Server stdio
 `0.150.0-alpha.12.2` records are both `HOLD`: Codex exposes a promising
 thread/turn/item and approval surface, but raw durable command replay, principal
-assurance and write enforcement are unproven; Claude has a locked type contract
-but no authentic runtime trace on this host. Run
+assurance and write enforcement are unproven; Claude's locked SDK module and
+bundled CLI load under a credential-stripped no-session capture, but no authentic
+query/tool/resume trace exists. Run
 `npm run adapter:discovery:check` to verify these boundaries offline.

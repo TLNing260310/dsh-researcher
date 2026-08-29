@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 17,
+  "revision": 18,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 package integrity and public type contract were mapped but no runtime trace was fabricated; Codex App Server stdio 0.150.0-alpha.12.2 generated its native schema and completed a redacted initialize/thread-list exchange with zero model calls. Both records are HOLD because durable raw replay, principal assurance, usage completeness or write-boundary enforcement remain unproven; the offline checker forbids treating discovery as an adapter or compatibility claim.",
-      "fingerprint": "072c61430dc1b2b05e1d036cce301a15953a56c02bd58e33541948c952c24b4f",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 package integrity and type contract were mapped, then the exact SDK module and bundled Claude Code 2.1.251 CLI loaded under a credential-stripped capture with zero query, prompt, session or model calls; Codex App Server stdio 0.150.0-alpha.12.2 generated its native schema and completed a redacted initialize/thread-list exchange with zero model calls. Both records remain HOLD because authentic query/tool/resume traces, durable raw replay, principal assurance, usage completeness or write-boundary enforcement remain unproven; the offline checker forbids treating discovery as an adapter or compatibility claim.",
+      "fingerprint": "444ff915cf0ef4a6f2cc4acf4d2ae3201d3a3216c0f358c0bb67da79b6791654",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "6b2c6d3f80e7d5af7c41c2ceda39e57b9ebe0b92a41748f481d3a3dda4e6b309"
+  "state_hash": "57d20e00ae8a64dd5279e50908de5db8f111c9ec994c1780bf138df7f384f3a4"
 }

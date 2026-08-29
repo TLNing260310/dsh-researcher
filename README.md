@@ -180,8 +180,9 @@ Client integrations share the [portable HostEvent and invocation contract](./doc
 Version-locked Claude and Codex discovery records now make the remaining gaps
 reviewable. Both are `HOLD`: Codex has a real zero-model app-server handshake but
 lacks durable raw command replay, principal and write receipts; Claude has a
-locked official SDK contract but no runtime trace on this host. These records do
-not change the DSH manifest or install another adapter.
+locked official SDK whose module and bundled CLI load without creating a session,
+but no authentic query/tool/resume trace. These records do not change the DSH
+manifest or install another adapter.
 
 ## How this differs from familiar tools
 

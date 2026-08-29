@@ -10,4 +10,6 @@ conformance result. Formal implementation remains gated on E2 PASS.
 
 Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
 invocation semantics, redaction boundaries, and the zero-model discovery rule.
-
+The Claude runtime-load capture is reproducible with
+`npm run adapter:discovery:capture:claude -- --sdk-root <exact-package-root>`;
+it imports the module and runs only the bundled CLI `--version` path.

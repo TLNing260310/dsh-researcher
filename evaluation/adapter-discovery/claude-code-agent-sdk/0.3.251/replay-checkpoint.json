@@ -3,5 +3,5 @@
   "status": "NOT_CAPTURED",
   "required_sequence": ["SessionStart", "PreToolUse", "PostToolUse|PostToolUseFailure", "SDKResultMessage", "SessionEnd|resume"],
   "required_hashes": ["raw_prefix_sha256", "host_event_prefix_sha256", "goal_state_sha256"],
-  "missing_evidence": ["installed Claude runtime", "model-free or prepaid authorized native session capture", "process-exit and resume replay", "hard-stop receipt verification"]
+  "missing_evidence": ["explicitly authorized native session capture", "process-exit and resume replay", "hard-stop receipt verification"]
 }

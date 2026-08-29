@@ -70,6 +70,8 @@
       "files": [
         "schemas/adapter-discovery-v1.schema.json",
         "scripts/check-adapter-discovery.js",
+        "scripts/capture-claude-agent-sdk-discovery.js",
+        "tests/adapter-discovery.test.js",
         "evaluation/adapter-discovery/README.md",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/discovery.json",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/native-trace.json",
