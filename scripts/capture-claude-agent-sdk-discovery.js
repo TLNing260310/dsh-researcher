@@ -7,10 +7,11 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 const { pathToFileURL } = require('node:url')
+const { CLAUDE_SDK_LOCK, assertLockedClaudeSdk } = require('./claude-agent-sdk-lock.js')
 
-const EXPECTED_PACKAGE = '@anthropic-ai/claude-agent-sdk'
-const EXPECTED_VERSION = '0.3.251'
-const EXPECTED_CLAUDE_CODE_VERSION = '2.1.251'
+const EXPECTED_VERSION = CLAUDE_SDK_LOCK.version
+const EXPECTED_CLAUDE_CODE_VERSION = CLAUDE_SDK_LOCK.claudeCodeVersion
+const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 
 const parseArgs = (argv) => {
   const result = {}
@@ -25,7 +26,6 @@ const parseArgs = (argv) => {
   return result
 }
 
-const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
 const requireString = (value, label) => {
   if (typeof value !== 'string' || value.trim() === '') throw new Error(label + ' is required')
@@ -56,13 +56,11 @@ const sanitizedEnvironment = (configRoot, source = process.env) => {
   return { environment, removed: removed.sort() }
 }
 
-const capture = async (sdkRoot) => {
-  const root = path.resolve(sdkRoot)
-  const packageFile = path.join(root, 'package.json')
-  const sdkFile = path.join(root, 'sdk.mjs')
-  if (!fs.existsSync(packageFile) || !fs.existsSync(sdkFile)) throw new Error('--sdk-root must contain package.json and sdk.mjs')
-  const pkg = readJson(packageFile)
-  if (pkg.name !== EXPECTED_PACKAGE || pkg.version !== EXPECTED_VERSION || pkg.claudeCodeVersion !== EXPECTED_CLAUDE_CODE_VERSION) throw new Error('SDK package identity/version drifted')
+const capture = async (sdkRoot, dependencies = {}) => {
+  const locked = (dependencies.assertLockedClaudeSdk || assertLockedClaudeSdk)(sdkRoot)
+  const { root, pkg } = locked
+  const packageFile = locked.files['package.json']
+  const sdkFile = locked.files['sdk.mjs']
 
   const module = await import(pathToFileURL(sdkFile).href)
   const exports = Object.keys(module).sort()
@@ -111,8 +109,8 @@ const capture = async (sdkRoot) => {
         name: pkg.name,
         version: pkg.version,
         claude_code_version: pkg.claudeCodeVersion,
-        package_json_sha256: sha256(packageFile),
-        sdk_module_sha256: sha256(sdkFile),
+        package_json_sha256: locked.hashes['package.json'],
+        sdk_module_sha256: locked.hashes['sdk.mjs'],
       },
       runtime_exports: exports,
       native_cli: {

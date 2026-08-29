@@ -12,6 +12,10 @@ Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
 invocation semantics, redaction boundaries, and claim boundaries. The checker
 itself makes zero model and network calls; this does not erase separately
 recorded live discovery attempts.
+Every Claude capture command first verifies the exact package name, version,
+Claude Code version, and SHA-256 of `package.json`, `sdk.mjs`, and `sdk.d.ts`
+against one shared lock. Same-version content drift is rejected before module
+import or child-process execution.
 The Claude runtime-load capture is reproducible with
 `npm run adapter:discovery:capture:claude -- --sdk-root <exact-package-root>`;
 it imports the module and runs only the bundled CLI `--version` path.

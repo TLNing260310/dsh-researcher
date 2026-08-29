@@ -4,6 +4,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
+const { CLAUDE_SDK_LOCK } = require('./claude-agent-sdk-lock.js')
 
 const root = path.resolve(__dirname, '..')
 const discoveryRoot = path.join(root, 'evaluation', 'adapter-discovery')
@@ -61,6 +62,7 @@ const validate = (file) => {
   if (doc.client === 'claude-code-agent-sdk') {
     if (trace.capture_kind !== 'runtime-load-no-model' || trace.prompt_submissions !== 0 || trace.session_creations !== 0) throw new Error(file + ': Claude discovery must remain a no-session runtime load')
     if (trace.package?.name !== '@anthropic-ai/claude-agent-sdk' || trace.package?.version !== doc.locked_runtime.version || trace.package?.claude_code_version !== '2.1.251') throw new Error(file + ': Claude SDK runtime identity drifted')
+    if (trace.package?.package_json_sha256 !== CLAUDE_SDK_LOCK.files['package.json'] || trace.package?.sdk_module_sha256 !== CLAUDE_SDK_LOCK.files['sdk.mjs']) throw new Error(file + ': Claude SDK runtime content lock drifted')
     if (trace.native_cli?.package_version !== doc.locked_runtime.version || trace.native_cli?.version_output !== '2.1.251 (Claude Code)') throw new Error(file + ': Claude native CLI identity drifted')
     for (const required of ['query', 'startup', 'getSessionInfo', 'getSessionMessages', 'listSessions']) if (!trace.runtime_exports?.includes(required)) throw new Error(file + ': Claude runtime export missing: ' + required)
     if (!/no query, startup, session, prompt/i.test(trace.claim_boundary || '')) throw new Error(file + ': Claude capture claim boundary drifted')
@@ -76,7 +78,7 @@ const validate = (file) => {
       { method: 'getSessionInfo', result_kind: 'undefined', found: false },
       { method: 'getSessionMessages', result_kind: 'array', result_count: 0 },
     ])) throw new Error(file + ': Claude empty session API results drifted')
-    if (sessionTrace.package?.package_json_sha256 !== trace.package?.package_json_sha256 || sessionTrace.package?.sdk_module_sha256 !== trace.package?.sdk_module_sha256 || sessionTrace.package?.sdk_types_sha256 !== '4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe') throw new Error(file + ': Claude session API package binding drifted')
+    if (sessionTrace.package?.package_json_sha256 !== CLAUDE_SDK_LOCK.files['package.json'] || sessionTrace.package?.sdk_module_sha256 !== CLAUDE_SDK_LOCK.files['sdk.mjs'] || sessionTrace.package?.sdk_types_sha256 !== CLAUDE_SDK_LOCK.files['sdk.d.ts']) throw new Error(file + ': Claude session API package binding drifted')
     if (!/empty isolated config.*no existing user session/i.test(sessionTrace.claim_boundary || '')) throw new Error(file + ': Claude session API claim boundary drifted')
     const fixtureBinding = doc.artifacts.local_session_fixture_trace
     if (!fixtureBinding) throw new Error(file + ': Claude local session fixture trace binding is missing')
@@ -90,8 +92,10 @@ const validate = (file) => {
     if (fixtureTrace.api_calls?.length !== 3 || listCall?.method !== 'listSessions' || listCall.result_count !== 1 || listCall.session?.session_id_matches !== true || listCall.session?.summary !== 'DSH synthetic session fixture' || listCall.session?.first_prompt !== 'DSH fixture prompt' || listCall.session?.cwd_matches_fixture !== true) throw new Error(file + ': Claude fixture listSessions result drifted')
     if (infoCall?.method !== 'getSessionInfo' || infoCall.found !== true || JSON.stringify(infoCall.session) !== JSON.stringify(listCall.session)) throw new Error(file + ': Claude fixture getSessionInfo result drifted')
     if (messagesCall?.method !== 'getSessionMessages' || messagesCall.result_count !== 2 || JSON.stringify(messagesCall.types) !== JSON.stringify(['user', 'assistant']) || messagesCall.ids_match_fixture !== true || messagesCall.session_ids_match !== true || JSON.stringify(messagesCall.parent_tool_use_ids) !== JSON.stringify([null, null])) throw new Error(file + ': Claude fixture getSessionMessages result drifted')
-    if (fixtureTrace.package?.package_json_sha256 !== trace.package?.package_json_sha256 || fixtureTrace.package?.sdk_module_sha256 !== trace.package?.sdk_module_sha256 || fixtureTrace.package?.sdk_types_sha256 !== sessionTrace.package?.sdk_types_sha256) throw new Error(file + ': Claude local session fixture package binding drifted')
+    if (fixtureTrace.package?.package_json_sha256 !== CLAUDE_SDK_LOCK.files['package.json'] || fixtureTrace.package?.sdk_module_sha256 !== CLAUDE_SDK_LOCK.files['sdk.mjs'] || fixtureTrace.package?.sdk_types_sha256 !== CLAUDE_SDK_LOCK.files['sdk.d.ts']) throw new Error(file + ': Claude local session fixture package binding drifted')
     if (!/host-authored local JSONL fixture.*not an authentic Claude Code session/i.test(fixtureTrace.claim_boundary || '')) throw new Error(file + ': Claude local session fixture claim boundary drifted')
+    const contract = readJson(path.resolve(path.dirname(file), doc.artifacts.native_contract.path))
+    if (contract.runtime_version !== CLAUDE_SDK_LOCK.version || contract.sdk_types_sha256 !== CLAUDE_SDK_LOCK.files['sdk.d.ts'] || contract.runtime_load_observation?.sdk_module_sha256 !== CLAUDE_SDK_LOCK.files['sdk.mjs'] || contract.runtime_load_observation?.claude_code_version !== CLAUDE_SDK_LOCK.claudeCodeVersion) throw new Error(file + ': Claude native contract content lock drifted')
     if (Object.values(doc.capabilities).some((item) => item.status === 'OBSERVED')) throw new Error(file + ': Claude capability was promoted by local parser-only evidence')
   }
   if (doc.client === 'codex-app-server-stdio') {

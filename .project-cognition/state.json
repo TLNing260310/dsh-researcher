@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 25,
+  "revision": 27,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 loaded without query, prompt, session or model use; its real listSessions, getSessionInfo and getSessionMessages functions first returned expected empty results under a fresh credential-stripped config, then parsed a deterministic three-entry host-authored JSONL fixture into one session, bounded metadata and a two-message parent chain without mutating the transcript. The raw transcript contains an isolated temporary cwd, so its stored reproducibility fingerprint normalizes that field; two independent captures produced identical bounded output and normalized hash. The fixture was not emitted by Claude Code or a model and proves only local parser behavior, not an authentic session, resume, replay, tool or approval path. Codex App Server stdio 0.150.0-alpha.12.2 completed a zero-model initialize/thread-list exchange and credential-stripped 413-file schema capture. Three later Codex turn-capture attempts produced no valid trace: one stopped before model invocation, while one persisted and one ephemeral turn entered post-completion paths before cleanup discarded the artifact; at most two Codex model turns may have been billed and exact usage is unknown. A zero-model in-memory App Server proves only its repaired capture-harness paths. Both client records remain HOLD, no capability is promoted to OBSERVED, and no adapter or compatibility claim follows.",
-      "fingerprint": "bc4516a3d23605fddac873fc6c7ab1a5ce6600984a237ebb4956e0f01c571671",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 loaded without query, prompt, session or model use; all three Claude capture paths now reject package.json, sdk.mjs or sdk.d.ts content drift before import or child execution using one shared exact SHA-256 lock. Its real listSessions, getSessionInfo and getSessionMessages functions first returned expected empty results under a fresh credential-stripped config, then parsed a deterministic three-entry host-authored JSONL fixture into one session, bounded metadata and a two-message parent chain without mutating the transcript. The raw transcript contains an isolated temporary cwd, so its stored reproducibility fingerprint normalizes that field; two independent captures produced identical bounded output and normalized hash. The fixture was not emitted by Claude Code or a model and proves only local parser behavior, not an authentic session, resume, replay, tool or approval path. Codex App Server stdio 0.150.0-alpha.12.2 completed a zero-model initialize/thread-list exchange and credential-stripped 413-file schema capture. Three later Codex turn-capture attempts produced no valid trace: one stopped before model invocation, while one persisted and one ephemeral turn entered post-completion paths before cleanup discarded the artifact; at most two Codex model turns may have been billed and exact usage is unknown. A zero-model in-memory App Server proves only its repaired capture-harness paths. Both client records remain HOLD, no capability is promoted to OBSERVED, and no adapter or compatibility claim follows.",
+      "fingerprint": "ad9c87d75aca3ccf1fa538edccb74cb829e00862a69466c6f56382f88b608da4",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "6e246810833b1c087b448c30dc13b0ec8d55de7e06e307b03e1e510c4949b44f"
+  "state_hash": "77da6a0c966ca84541d55ea47aa1362e800c196e6943a3a580216e2ac4f6bbf1"
 }

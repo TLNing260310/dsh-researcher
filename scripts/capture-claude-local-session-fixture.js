@@ -1,19 +1,14 @@
 #!/usr/bin/env node
 'use strict'
 
-const crypto = require('node:crypto')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 const { sanitizedEnvironment } = require('./capture-claude-agent-sdk-discovery.js')
+const { CLAUDE_SDK_LOCK, assertLockedClaudeSdk } = require('./claude-agent-sdk-lock.js')
 
-const EXPECTED_PACKAGE = '@anthropic-ai/claude-agent-sdk'
-const EXPECTED_VERSION = '0.3.251'
-const EXPECTED_CLAUDE_CODE_VERSION = '2.1.251'
-
-const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
-const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+const EXPECTED_VERSION = CLAUDE_SDK_LOCK.version
 
 const parseArgs = (argv) => {
   if (argv.length !== 2 || argv[0] !== '--sdk-root' || !argv[1] || argv[1].startsWith('--')) throw new Error('usage: --sdk-root <exact-package-root>')
@@ -21,13 +16,9 @@ const parseArgs = (argv) => {
 }
 
 const capture = (sdkRoot, dependencies = {}) => {
-  const root = path.resolve(sdkRoot)
-  const packageFile = path.join(root, 'package.json')
-  const sdkFile = path.join(root, 'sdk.mjs')
-  const typesFile = path.join(root, 'sdk.d.ts')
-  for (const file of [packageFile, sdkFile, typesFile]) if (!fs.existsSync(file) || !fs.statSync(file).isFile()) throw new Error('--sdk-root is missing ' + path.basename(file))
-  const pkg = readJson(packageFile)
-  if (pkg.name !== EXPECTED_PACKAGE || pkg.version !== EXPECTED_VERSION || pkg.claudeCodeVersion !== EXPECTED_CLAUDE_CODE_VERSION) throw new Error('SDK package identity/version drifted')
+  const locked = (dependencies.assertLockedClaudeSdk || assertLockedClaudeSdk)(sdkRoot)
+  const { pkg } = locked
+  const sdkFile = locked.files['sdk.mjs']
 
   const tempRoot = fs.mkdtempSync(path.join(dependencies.tempRoot || os.tmpdir(), 'dsh-claude-local-session-fixture-'))
   const configRoot = path.join(tempRoot, 'config')
@@ -68,9 +59,9 @@ const capture = (sdkRoot, dependencies = {}) => {
         name: pkg.name,
         version: pkg.version,
         claude_code_version: pkg.claudeCodeVersion,
-        package_json_sha256: sha256(packageFile),
-        sdk_module_sha256: sha256(sdkFile),
-        sdk_types_sha256: sha256(typesFile),
+        package_json_sha256: locked.hashes['package.json'],
+        sdk_module_sha256: locked.hashes['sdk.mjs'],
+        sdk_types_sha256: locked.hashes['sdk.d.ts'],
       },
       fixture: probe.fixture,
       api_calls: probe.calls,

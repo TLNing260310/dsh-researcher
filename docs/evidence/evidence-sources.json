@@ -71,6 +71,7 @@
         "schemas/adapter-discovery-v1.schema.json",
         "scripts/check-adapter-discovery.js",
         "scripts/capture-claude-agent-sdk-discovery.js",
+        "scripts/claude-agent-sdk-lock.js",
         "scripts/capture-claude-session-api-discovery.js",
         "scripts/claude-session-api-probe.mjs",
         "scripts/capture-claude-local-session-fixture.js",

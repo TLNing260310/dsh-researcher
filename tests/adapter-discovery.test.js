@@ -11,9 +11,10 @@ const { PassThrough, Writable } = require('node:stream')
 
 const root = path.join(__dirname, '..')
 const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(root, ...parts), 'utf8'))
-const { sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
+const { capture: captureClaudeRuntime, sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
 const { capture: captureClaudeSessionApi, parseArgs: parseClaudeSessionArgs } = require('../scripts/capture-claude-session-api-discovery.js')
 const { capture: captureClaudeLocalFixture, parseArgs: parseClaudeFixtureArgs } = require('../scripts/capture-claude-local-session-fixture.js')
+const { CLAUDE_SDK_LOCK, assertLockedClaudeSdk, inspectClaudeSdkRoot } = require('../scripts/claude-agent-sdk-lock.js')
 const { extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 
@@ -193,6 +194,7 @@ test('Claude isolated session capture strips credentials and preserves empty-res
   try {
     const trace = captureClaudeSessionApi(sdkRoot, {
       tempRoot,
+      assertLockedClaudeSdk: inspectClaudeSdkRoot,
       environment: { PATH: 'safe-path', ANTHROPIC_API_KEY: 'secret', CLAUDE_CONFIG_DIR: 'user-config', HTTPS_PROXY: 'https://proxy.invalid' },
       spawnSync(command, args, options) {
         assert.equal(command, process.execPath)
@@ -228,6 +230,7 @@ test('Claude local fixture capture preserves the synthetic-versus-native boundar
   try {
     const trace = captureClaudeLocalFixture(sdkRoot, {
       tempRoot,
+      assertLockedClaudeSdk: inspectClaudeSdkRoot,
       environment: { PATH: 'safe-path', ANTHROPIC_API_KEY: 'secret', CLAUDE_CONFIG_DIR: 'user-config', HTTPS_PROXY: 'https://proxy.invalid' },
       spawnSync(command, args, options) {
         assert.equal(command, process.execPath)
@@ -251,6 +254,26 @@ test('Claude local fixture capture preserves the synthetic-versus-native boundar
     assert.equal(trace.host_fixture_sessions, 1)
     assert.match(trace.claim_boundary, /not an authentic Claude Code session/i)
     assert.equal(trace.credential_boundary.removed_name_count, 3)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('every Claude capture entry rejects a tampered same-version SDK before execution', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-claude-lock-test-'))
+  try {
+    fs.writeFileSync(path.join(tempRoot, 'package.json'), JSON.stringify({ name: CLAUDE_SDK_LOCK.name, version: CLAUDE_SDK_LOCK.version, claudeCodeVersion: CLAUDE_SDK_LOCK.claudeCodeVersion }))
+    fs.writeFileSync(path.join(tempRoot, 'sdk.mjs'), 'export const listSessions = () => []\n')
+    fs.writeFileSync(path.join(tempRoot, 'sdk.d.ts'), 'export declare const listSessions: () => []\n')
+    assert.throws(() => assertLockedClaudeSdk(tempRoot), /SDK content hash drifted: package\.json/)
+    await assert.rejects(captureClaudeRuntime(tempRoot), /SDK content hash drifted: package\.json/)
+    assert.throws(() => captureClaudeSessionApi(tempRoot, { spawnSync() { throw new Error('must not spawn') } }), /SDK content hash drifted: package\.json/)
+    assert.throws(() => captureClaudeLocalFixture(tempRoot, { spawnSync() { throw new Error('must not spawn') } }), /SDK content hash drifted: package\.json/)
+    const inspected = inspectClaudeSdkRoot(tempRoot)
+    const fixtureLock = { name: CLAUDE_SDK_LOCK.name, version: CLAUDE_SDK_LOCK.version, claudeCodeVersion: CLAUDE_SDK_LOCK.claudeCodeVersion, files: inspected.hashes }
+    assert.equal(assertLockedClaudeSdk(tempRoot, fixtureLock).root, path.resolve(tempRoot))
+    fs.appendFileSync(path.join(tempRoot, 'sdk.mjs'), '// tampered\n')
+    assert.throws(() => assertLockedClaudeSdk(tempRoot, fixtureLock), /SDK content hash drifted: sdk\.mjs/)
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true })
   }
