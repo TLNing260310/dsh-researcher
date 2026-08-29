@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 13,
+  "revision": 14,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -14,7 +14,7 @@
     ],
     "environment": [
       "Node.js 22.12 or newer",
-      "DeepSeek Harness 0.1.1-rc.2 is the pinned first client runtime; protocols v1.4-v1.9 produced preserved partial, negative, or invalid official Flash evidence, and complete protocol v1.10 conformance remains pending",
+      "DeepSeek Harness 0.1.1-rc.2 is the pinned first client runtime; protocols v1.4-v1.10 produced preserved partial, negative, or invalid official Flash evidence, and the single complete protocol v1.11 replacement remains pending",
       "portable JSON/core modules and HostEvent v1 are client-independent; non-DSH adapters are not implemented"
     ]
   },
@@ -70,7 +70,7 @@
       "statement": "The DSH adapter can mechanically reject in-session fabricated or verifier-drifted evidence and reserves goal terminal authority for the host plugin.",
       "authority": "repository_observed",
       "proof_status": "supported",
-      "scope": "pure replay tests plus protocol v1.4-v1.9 official Flash evidence under a trusted host operator and model-inaccessible evidence root: forged evidence was refused, invalid duplicate attempts were rejected, v1.8 refused derived DONE without the formal decision tool, and v1.9 produced three PASS tracks without a false terminal. These incomplete/invalid bundles support only the narrow rejection and host-authority mechanism, not complete conformance, provider identity, or outcome value",
+      "scope": "pure replay tests plus protocol v1.4-v1.10 official Flash evidence under a trusted host operator and model-inaccessible evidence root: forged evidence was refused, invalid duplicate attempts were rejected, v1.8 refused derived DONE without the formal decision tool, and v1.10 produced four PASS tracks without a false terminal before a provider transport attempt made resume usage incomplete. These incomplete/invalid bundles support only the narrow rejection and host-authority mechanism, not complete conformance, provider identity, or outcome value",
       "confidence": 0.88,
       "evidence_refs": [
         "E1",
@@ -84,7 +84,8 @@
         "E14",
         "E15",
         "E16",
-        "E17"
+        "E17",
+        "E18"
       ],
       "invalidation_conditions": [
         "a live DSH model can complete through an ungoverned tool",
@@ -395,8 +396,8 @@
     {
       "id": "E12",
       "kind": "test",
-      "ref": "Protocol v1.10 preregistration after preserved v1.9 negative evidence: the manifest keeps the frozen cases, budgets, model route, and expected terminals; stage-one verifier expectations now come from the frozen manifest and STOPPED scoring reads the native DSH blockedReason code without weakening its exact value; offline gates make zero model and network calls.",
-      "fingerprint": "cdbcbfef27e8059fccd0ea08b90e6d158990a64764cf7ca83e0ffda5a2d30cd0",
+      "ref": "Protocol v1.11 preregistration after preserved v1.10 INVALID evidence: the manifest keeps the frozen cases, budgets, model route, expected terminals, runtime, and scorer; the protocol permits exactly one full replacement bundle and forbids track stitching or a second outcome-seeking retry; offline gates make zero model and network calls.",
+      "fingerprint": "af47eea5cbbc18b57b2d45dc22f9c12a01a0b04537fe6ba8342ca84f15d1be1f",
       "observed_at": "2026-08-29"
     },
     {
@@ -433,6 +434,13 @@
       "ref": "Protocol v1.9 official Flash evidence is permanently recorded as 3 PASS / 1 FAIL / 2 INVALID: already-satisfied, simple-done, and forged-evidence passed; no-progress reached STOPPED but the original scorer missed DSH goal.blockedReason.code; resume observe sealed a passing verifier boundary but continue was rejected by an obsolete hard-coded exit; governed-gate was not run and the old score is not rescored.",
       "fingerprint": "3061691c6688da4d2b552919916509801952391b368b5c11c4f2f5bc477ed078",
       "observed_at": "2026-08-29"
+    },
+    {
+      "id": "E18",
+      "kind": "test",
+      "ref": "Protocol v1.10 official Flash evidence is permanently recorded as 4 PASS / 0 FAIL / 2 INVALID: already-satisfied, simple-done, forged-evidence, and no-progress passed; resume observe encountered a provider TRANSPORT retry without auditable usage, so the host refused stage-one finalization; governed-gate was not run, the exact bundle has a verified external Ed25519 attestation, and the old score is not rescored.",
+      "fingerprint": "b06425405f454724f40c7b8796eb4ef7673f0036958b11eb9a037f41d3e09cae",
+      "observed_at": "2026-08-29"
     }
   ],
   "known_unknowns": [
@@ -443,7 +451,7 @@
     },
     {
       "id": "U2",
-      "statement": "The complete protocol v1.10 Live E1 set and successful resume/live-offline replay equivalence have not been proven end to end; v1.9 reached three PASS tracks but stopped after exposing scorer block-code and stage-one seal drift.",
+      "statement": "The complete protocol v1.11 Live E1 set and successful resume/live-offline replay equivalence have not been proven end to end; v1.10 reached four PASS tracks but provider transport usage incompleteness invalidated resume observe before the human-gate track ran.",
       "evidence_refs": [
         "E2",
         "E3",
@@ -453,7 +461,8 @@
         "E14",
         "E15",
         "E16",
-        "E17"
+        "E17",
+        "E18"
       ]
     },
     {
@@ -463,7 +472,7 @@
     },
     {
       "id": "U4",
-      "statement": "Protocols v1.4-v1.9 reached official Flash on DSH 0.1.1-rc.2, but complete protocol v1.10 Gate 0 and conformance remain unproven; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
+      "statement": "Protocols v1.4-v1.10 reached official Flash on DSH 0.1.1-rc.2, but complete protocol v1.11 replacement conformance remains unproven; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
       "evidence_refs": [
         "E3",
         "E9",
@@ -473,14 +482,15 @@
         "E14",
         "E15",
         "E16",
-        "E17"
+        "E17",
+        "E18"
       ]
     }
   ],
   "next_proofs": [
     {
       "id": "P0",
-      "statement": "Before each protocol v1.10 live run, complete current-candidate Gate 0 on DSH 0.1.1-rc.2 including DSH-dependent checks; verify immutable settings, workspace-root binding, locked provider/model/reasoning effort/base_url, public DeepSeek resolver, progress-only mutation feedback, manifest-bound resume seal, native block-code scoring, formal decision-tool terminal authority, and absolute deadline against the frozen protocol; then create a candidate-bound external run lock and disjoint evidence root.",
+      "statement": "Before the single protocol v1.11 complete replacement, complete current-candidate Gate 0 on DSH 0.1.1-rc.2 including DSH-dependent checks; verify immutable settings, workspace-root binding, locked provider/model/reasoning effort/base_url, public DeepSeek resolver, progress-only mutation feedback, manifest-bound resume seal, native block-code scoring, formal decision-tool terminal authority, and absolute deadline against the frozen protocol; then create a candidate-bound external run lock and disjoint evidence root.",
       "evidence_refs": [
         "E1",
         "E2",
@@ -492,7 +502,8 @@
         "E14",
         "E15",
         "E16",
-        "E17"
+        "E17",
+        "E18"
       ]
     },
     {
@@ -506,7 +517,8 @@
         "E14",
         "E15",
         "E16",
-        "E17"
+        "E17",
+        "E18"
       ]
     },
     {
@@ -534,5 +546,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "c1a1b031ec9b26b7c620c220640a74df008e176ae54168c6d837cbd82aa32f6f"
+  "state_hash": "31c8d9bd835f1084b2a25678841b519fa77c619f951eafd9da18378e266e9aa9"
 }

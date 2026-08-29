@@ -105,7 +105,7 @@ evaluation governance(G1–G7 gate · eval-lock · blind-doctor · 失败保留)
 | **trusted verifier** | `lib/verifier-core`:tool + canonical arguments + hash + result policy；DSH call-id pairing | ✅ forged/drift/error replay tests 通过 |
 | **DSH host adapter** | `lib/dsh-adapter` + `researcher/plugins/goal-governor` + `governed/` | ⚠️ exact rc.2 实跑发现并修复模型可见 Governor schema 与 resume stage-one 混合 replay domain；DSH recapture 后三条本地对照为可评分 FAIL、一条对抗轨 INVALID，rejected resume observe 的 live/durable checkpoint 一致且不签发 token/seal；完整 E1 与 remote route 仍待做 |
 | **E1 evidence integrity** | `evaluation/goal-governor-e1`:raw bundle commitment、外部 Ed25519 trust root、verdict-aware scorer | ✅ 离线/对抗测试通过；签名只证明所给公钥对应私钥签过这些字节及签后完整性，不证明密钥持有人身份、运行真实性或因果价值 |
-| **E1 model-route boundary** | run lock 冻结 `base_url`；outer 生成冻结 settings（`watch=false`）并设置 `DEEPSEEK_BASE_URL`；child 通过 DSH 公共 DeepSeek resolver 在 create/resume 与每次 followup 边界复验 | ✅ 离线/对抗路径与 exact rc.2 official Flash 已运行；⚠️ protocol v1.5 与不完整 v1.6-v1.9 均为 INVALID，v1.10 尚未 live，loopback 只约束第一跳，不证明本地服务不代理远程 |
+| **E1 model-route boundary** | run lock 冻结 `base_url`；outer 生成冻结 settings（`watch=false`）并设置 `DEEPSEEK_BASE_URL`；child 通过 DSH 公共 DeepSeek resolver 在 create/resume 与每次 followup 边界复验 | ✅ 离线/对抗路径与 exact rc.2 official Flash 已运行；⚠️ protocol v1.5 与不完整 v1.6-v1.10 均为 INVALID，v1.11 尚未 live，loopback 只约束第一跳，不证明本地服务不代理远程 |
 
 **原型边界(诚实声明)**:以上全部为**原型级实现**,不是商业级基础设施 —— 产品化(v0.9 capsule / Memory Bridge / 自动迁移)未做;应用层价值未验证。
 

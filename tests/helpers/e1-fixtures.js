@@ -312,7 +312,7 @@ const makeManifest = () => {
   const manifest = {
     schema: MANIFEST_SCHEMA,
     protocol: 'docs/goal-governor-evaluation-protocol.md',
-    protocol_version: '1.10',
+    protocol_version: '1.11',
     status: { infrastructure: 'READY', live_e1: 'NOT_RUN', outcome: 'NOT_PROVEN', portability: 'NOT_PROVEN' },
     runtime: {
       client: 'dsh', version: '0.1.1-rc.2', profile: 'headless', preset: 'governed', permission_mode: 'workspace-write',

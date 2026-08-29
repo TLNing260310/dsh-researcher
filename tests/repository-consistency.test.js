@@ -127,7 +127,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   const manifest = readJson('evaluation', 'goal-governor-e1', 'manifest.json')
   assert.deepEqual(validateManifest(manifest), [])
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.10')
+  assert.equal(manifest.protocol_version, '1.11')
   assert.deepEqual(manifest.budget, {
     max_tokens: 250000,
     max_cache_read_tokens: 220000,
@@ -163,7 +163,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   }
 })
 
-test('protocol v1.10 layered cost enforcement and superseded protocol provenance cannot drift silently', () => {
+test('protocol v1.11 layered cost enforcement and superseded protocol provenance cannot drift silently', () => {
   const runner = read('evaluation', 'goal-governor-e1', 'run-e1.js')
   const child = read('evaluation', 'goal-governor-e1', 'runner', 'e1-headless.mjs')
   const scorer = read('evaluation', 'goal-governor-e1', 'score-e1.js')
@@ -176,6 +176,7 @@ test('protocol v1.10 layered cost enforcement and superseded protocol provenance
   const archiveV17 = read('docs', 'goal-governor-evaluation-protocol-v1.7.md')
   const archiveV18 = read('docs', 'goal-governor-evaluation-protocol-v1.8.md')
   const archiveV19 = read('docs', 'goal-governor-evaluation-protocol-v1.9.md')
+  const archiveV110 = read('docs', 'goal-governor-evaluation-protocol-v1.10.md')
   for (const phase of ['pre-output', 'pre-spawn']) assert.match(runner, new RegExp("phase: '" + phase + "'"))
   assert.match(child, /resolveAdapterOptions/)
   assert.match(child, /commands\.execute\(agent, line, \[\], controller\.signal\)/)
@@ -220,6 +221,11 @@ test('protocol v1.10 layered cost enforcement and superseded protocol provenance
   assert.match(archiveV18, /request_goal_decision/)
   assert.match(archiveV19, /Goal Governor Value Evaluation Protocol v1\.9/)
   assert.match(archiveV19, /progress 与 diagnostics/)
+  assert.match(archiveV110, /Goal Governor Value Evaluation Protocol v1\.10/)
+  assert.match(archiveV110, /v1\.10 只修复这两个 host\/scorer 一致性缺口/)
+  const currentProtocol = read('docs', 'goal-governor-evaluation-protocol.md')
+  assert.match(currentProtocol, /只允许 \*\*一次\*\* replacement attempt/)
+  assert.match(currentProtocol, /任何 FAIL\/INVALID 都必须公开并停止/)
   assert.match(runner, /expectedVerifierExit:\s*entry\.final_verifier_exit/)
   assert.match(scorer, /blockedReason/)
 })
@@ -321,7 +327,7 @@ test('current release identity and public evidence-status language do not drift'
   assert.equal(firstRelease && firstRelease[1], pkg.version === release.development_version ? release.development_version : release.published_version)
   assert.match(readme, /Live E1[^\n]*(?:INVALID|not proven)|model productivity[^\n]*not proven/i)
   assert.match(readmeZh, /真实模型端到端成功率[^\n]*尚未证明|真实模型端到端[^\n]*尚未证明/)
-  assert.match(validation, /Live conformance[^\n]*\*\*v1\.5 INVALID；v1\.6-v1\.9 不完整且 INVALID；v1\.10 未运行\*\*/)
+  assert.match(validation, /Live conformance[^\n]*\*\*v1\.5 INVALID；v1\.6-v1\.10 不完整且 INVALID；v1\.11 未运行\*\*/)
   assert.match(validation, /不得宣称[^\n]*真实 DSH E2E 已通过/)
   assert.match(governor, /尚未证明：真实 DSH 模型会话端到端成功率/)
   assert.doesNotMatch(governor, /\d+\s*项测试通过/)
@@ -348,11 +354,12 @@ test('canonical truth binds current live evidence without upgrading product clai
   assert.ok(evidence.get('E15') && evidence.get('E15').fingerprint)
   assert.ok(evidence.get('E16') && evidence.get('E16').fingerprint)
   assert.ok(evidence.get('E17') && evidence.get('E17').fingerprint)
+  assert.ok(evidence.get('E18') && evidence.get('E18').fingerprint)
   for (const id of ['V3A', 'V3B', 'V4']) assert.equal(state.value_claims.find((item) => item.id === id).proof_status, 'hypothesis')
   assert.equal(state.value_claims.find((item) => item.id === 'V5').proof_status, 'refuted')
   for (const id of ['P0', 'P1']) assert.doesNotMatch(state.next_proofs.find((item) => item.id === id).statement, /protocol v1\.2/i)
-  assert.match(state.next_proofs.find((item) => item.id === 'P0').statement, /each protocol v1\.10 live run/i)
-  assert.match(state.known_unknowns.find((item) => item.id === 'U2').statement, /complete protocol v1\.10/i)
+  assert.match(state.next_proofs.find((item) => item.id === 'P0').statement, /single protocol v1\.11 complete replacement/i)
+  assert.match(state.known_unknowns.find((item) => item.id === 'U2').statement, /complete protocol v1\.11/i)
 })
 
 test('CI and issue templates avoid duplicate tag verification and per-release placeholder drift', () => {
