@@ -1,0 +1,57 @@
+{
+  "schema": "dsh-researcher/adapter-discovery-convergence/v1",
+  "status": "DISCOVERY_ONLY",
+  "governed": false,
+  "conformance_eligible": false,
+  "clients": [
+    {
+      "client": "claude-code-agent-sdk",
+      "version": "0.3.251",
+      "mapping_path": "claude-code-agent-sdk/0.3.251/expected-host-events.json",
+      "mapping_sha256": "0c686b078bdf8204b2585389f765619987967fd2777022248ee744d4512431de"
+    },
+    {
+      "client": "codex-app-server-stdio",
+      "version": "0.150.0-alpha.12.2",
+      "mapping_path": "codex-app-server-stdio/0.150.0-alpha.12.2/expected-host-events.json",
+      "mapping_sha256": "8f01621a4f9f8504df5c157173b7f6c3ce2a410aaf69e3d6281069b034dcb10c"
+    }
+  ],
+  "common_host_kinds": [
+    "goal_transition",
+    "session_resume",
+    "tool_call",
+    "tool_result",
+    "turn_end",
+    "usage",
+    "user_action"
+  ],
+  "requirements": {
+    "call_result_correlation": {
+      "status": "CANDIDATE",
+      "statement": "Both mappings name a native item or tool-use identity that could correlate tool_call and tool_result, but no common governed verifier has validated it."
+    },
+    "human_principal_receipt": {
+      "status": "GAP",
+      "statement": "Both mappings require a principal and decision receipt; neither discovery proves a host-authenticated human identity or durable receipt."
+    },
+    "usage_completeness": {
+      "status": "GAP",
+      "statement": "Both mappings expose candidate usage events; neither discovery proves coverage of every billable main, retry, or helper request."
+    },
+    "resume_prefix_checkpoint": {
+      "status": "GAP",
+      "statement": "Both mappings require a prefix checkpoint hash; neither discovery has a valid native restart-and-replay trace."
+    },
+    "terminal_enforcement": {
+      "status": "GAP",
+      "statement": "Both mappings expose interrupt and terminal events; neither discovery proves that writes are impossible after a Governor terminal."
+    },
+    "raw_first_durability": {
+      "status": "GAP",
+      "statement": "Neither discovery proves an immutable raw-first queue that can be replayed independently after process restart."
+    }
+  },
+  "unmapped_host_kinds": ["guard_violation"],
+  "claim_boundary": "This artifact proves only that two version-locked discovery documents share a candidate seven-kind HostEvent projection shape. It does not prove native semantic equivalence, event authenticity, governed enforcement, compatibility, portability, conformance, or outcome value."
+}

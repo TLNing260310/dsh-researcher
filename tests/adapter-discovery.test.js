@@ -19,6 +19,7 @@ const { capture: captureCodexContract, extractMethods, sanitizedEnvironment: san
 const { capture: captureCodexNative } = require('../scripts/capture-codex-app-server-discovery.js')
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 const { CODEX_CLI_LOCK, assertLockedCodexExecutable, inspectCodexExecutable } = require('../scripts/codex-cli-lock.js')
+const { validateConvergence } = require('../scripts/check-adapter-discovery.js')
 
 const fakeCodexAppServer = () => {
   const received = []
@@ -93,6 +94,40 @@ test('adapter discovery is version locked, offline checked, and non-product', ()
     { client: 'claude-code-agent-sdk', version: '0.3.251', result: 'HOLD' },
     { client: 'codex-app-server-stdio', version: '0.150.0-alpha.12.2', result: 'HOLD' },
   ])
+  assert.deepEqual(report.convergence, { status: 'DISCOVERY_ONLY', common_host_kinds: 7, gaps: 5 })
+})
+
+test('cross-client convergence remains a discovery shape with explicit enforcement gaps', () => {
+  const convergence = readJson('evaluation', 'adapter-discovery', 'host-event-convergence-v1.json')
+  assert.equal(convergence.governed, false)
+  assert.equal(convergence.conformance_eligible, false)
+  assert.deepEqual(convergence.unmapped_host_kinds, ['guard_violation'])
+  assert.deepEqual(convergence.common_host_kinds, ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'])
+  assert.equal(convergence.requirements.call_result_correlation.status, 'CANDIDATE')
+  for (const name of ['human_principal_receipt', 'usage_completeness', 'resume_prefix_checkpoint', 'terminal_enforcement', 'raw_first_durability']) assert.equal(convergence.requirements[name].status, 'GAP')
+  assert.match(convergence.claim_boundary, /does not prove.*compatibility.*portability.*conformance/i)
+})
+
+test('cross-client convergence rejects a forged common set and stale mapping bytes', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-adapter-convergence-test-'))
+  try {
+    const sourceRoot = path.join(root, 'evaluation', 'adapter-discovery')
+    const convergence = readJson('evaluation', 'adapter-discovery', 'host-event-convergence-v1.json')
+    for (const client of convergence.clients) {
+      const source = path.join(sourceRoot, client.mapping_path)
+      const target = path.join(tempRoot, client.mapping_path)
+      fs.mkdirSync(path.dirname(target), { recursive: true })
+      fs.copyFileSync(source, target)
+    }
+    const convergenceFile = path.join(tempRoot, 'host-event-convergence-v1.json')
+    fs.writeFileSync(convergenceFile, JSON.stringify({ ...convergence, common_host_kinds: convergence.common_host_kinds.slice(1) }))
+    assert.throws(() => validateConvergence(convergenceFile), /common HostEvent kinds/)
+    fs.writeFileSync(convergenceFile, JSON.stringify(convergence))
+    fs.appendFileSync(path.join(tempRoot, convergence.clients[0].mapping_path), '\n')
+    assert.throws(() => validateConvergence(convergenceFile), /hash drifted/)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
 })
 
 test('Codex discovery keeps its no-model baseline separate from invalid live-turn attempts', () => {

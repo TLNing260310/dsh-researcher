@@ -8,6 +8,12 @@ Allowed results are `DISCOVERY_QUALIFIED`, `HOLD`, and `NO_GO`. None of them is
 an adapter manifest, installation entry point, compatibility claim, or governed
 conformance result. Formal implementation remains gated on E2 PASS.
 
+`host-event-convergence-v1.json` is a derived discovery-only comparison. The
+offline checker reloads and hashes both version-locked `expected-host-events`
+documents, then requires their exact common candidate event-kind set. It also
+keeps shared enforcement gaps explicit. A common projection shape is not native
+semantic equivalence, compatibility, portability, or conformance evidence.
+
 Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
 invocation semantics, redaction boundaries, and claim boundaries. The checker
 itself makes zero model and network calls; this does not erase separately

@@ -52,3 +52,10 @@ method inventory are reproducible under a credential-stripped capture. Claude's 
 bundled CLI load under a credential-stripped no-session capture, but no authentic
 query/tool/resume trace exists. Run
 `npm run adapter:discovery:check` to verify these boundaries offline.
+
+The derived `evaluation/adapter-discovery/host-event-convergence-v1.json`
+currently confirms only that both locked discovery mappings name the same seven
+candidate HostEvent kinds. Its checker binds the source mapping bytes and keeps
+`guard_violation`, authenticated human receipts, usage completeness, raw-first
+durability, restart checkpoints and terminal write enforcement as unresolved
+boundaries. This comparison cannot promote either client or substitute for E2.

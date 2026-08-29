@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 29,
+  "revision": 30,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 retains one exact package/module/types SHA-256 lock across its three zero-model capture paths, including empty isolated session reads and deterministic parsing of a host-authored local fixture. Codex App Server stdio 0.150.0-alpha.12.2 now binds all schema, no-model native, and opt-in turn capture entries to an explicit win32-x64 executable version, byte size, and SHA-256 before process start while omitting its personal absolute path. Same-version executable tampering is rejected before spawn; other capture hosts fail closed until independently locked. A real zero-model initialize/empty-thread-list exchange and credential-stripped 413-file schema generation completed, and a Windows cleanup race found during recapture was repaired by waiting for process close before removing the isolated CODEX_HOME. Historical Codex turn attempts remain INVALID with at most two possibly billed turns and no retained native turn trace. Both client records remain HOLD, synthetic/parser-only evidence promotes no capability to OBSERVED, and no adapter, compatibility, portability, or governed-conformance claim follows.",
-      "fingerprint": "b29ac961db3ce35e187e9f8b4d4ce4d30b59f4cd57407749bb954b3fec246ec2",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 retains one exact package/module/types SHA-256 lock across its three zero-model capture paths, including empty isolated session reads and deterministic parsing of a host-authored local fixture. Codex App Server stdio 0.150.0-alpha.12.2 binds all schema, no-model native, and opt-in turn capture entries to an explicit win32-x64 executable version, byte size, and SHA-256 before process start while omitting its personal absolute path; same-version executable tampering is rejected before spawn and other capture hosts fail closed. A real zero-model initialize/empty-thread-list exchange and credential-stripped 413-file schema generation completed. A derived machine-checked convergence record reloads both exact expected-host-event mappings and establishes only a common seven-kind candidate projection. It leaves guard_violation unmapped and identifies authenticated human receipts, usage completeness, restart checkpoints, raw-first durability, and terminal write enforcement as shared gaps. Historical Codex turn attempts remain INVALID with no retained native turn trace. Both client records remain HOLD, synthetic/parser/discovery-shape evidence promotes no capability to OBSERVED, and no adapter, compatibility, portability, or governed-conformance claim follows.",
+      "fingerprint": "5481738ef85a88aaa4219b79e1cb04de49c2bcaa75be6da36e8dcd7674ee9976",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "3c0aa1e6e9cdf553180fb1f897d6a6ef1db6d2cd24087133f529beea006e0f96"
+  "state_hash": "03255cfafc34063c5d15c2e11ebb5b80ed1a8818c8242e68d8a82e16edd72459"
 }

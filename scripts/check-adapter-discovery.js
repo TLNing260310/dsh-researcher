@@ -14,6 +14,7 @@ const allowedResults = new Set(['DISCOVERY_QUALIFIED', 'HOLD', 'NO_GO'])
 const allowedEvidence = new Set(['OBSERVED', 'DOCUMENTED', 'MISSING', 'UNKNOWN'])
 const officialHosts = new Set(['developers.openai.com', 'learn.chatgpt.com', 'platform.claude.com', 'docs.anthropic.com', 'registry.npmjs.org'])
 const requiredCapabilities = ['ordered_events', 'stable_call_id', 'human_approval', 'hard_stop', 'event_replay', 'usage_coverage', 'write_boundary']
+const hostEventKinds = new Set(['user_action', 'tool_call', 'tool_result', 'goal_transition', 'usage', 'turn_end', 'session_resume', 'guard_violation'])
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
 const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
@@ -144,6 +145,35 @@ const validate = (file) => {
   return { client: doc.client, version: doc.locked_runtime.version, result: doc.result }
 }
 
+const validateConvergence = (file) => {
+  const doc = readJson(file)
+  if (doc.schema !== 'dsh-researcher/adapter-discovery-convergence/v1' || doc.status !== 'DISCOVERY_ONLY' || doc.governed !== false || doc.conformance_eligible !== false) throw new Error(file + ': convergence identity or boundary drifted')
+  if (!Array.isArray(doc.clients) || doc.clients.length !== 2) throw new Error(file + ': convergence must bind exactly two discovery clients')
+  const observedSets = []
+  for (const client of doc.clients) {
+    if (!relativeSafe(client.mapping_path) || !/^[a-f0-9]{64}$/.test(client.mapping_sha256)) throw new Error(file + ': invalid convergence mapping binding')
+    const target = path.resolve(path.dirname(file), client.mapping_path)
+    if (!target.startsWith(path.dirname(file) + path.sep) || !fs.existsSync(target) || sha256(target) !== client.mapping_sha256) throw new Error(file + ': convergence mapping missing or hash drifted: ' + client.mapping_path)
+    const mapping = readJson(target)
+    if (mapping.schema !== 'dsh-researcher/expected-host-events/v1' || mapping.client !== client.client) throw new Error(file + ': convergence mapping identity drifted: ' + client.client)
+    if (!Array.isArray(mapping.mappings) || mapping.mappings.length === 0) throw new Error(file + ': convergence mapping is empty: ' + client.client)
+    const kinds = mapping.mappings.map((item) => item.host_kind)
+    if (kinds.some((kind) => !hostEventKinds.has(kind)) || new Set(kinds).size !== kinds.length) throw new Error(file + ': convergence mapping has unsupported or duplicate HostEvent kinds: ' + client.client)
+    observedSets.push([...kinds].sort())
+  }
+  if (JSON.stringify(observedSets[0]) !== JSON.stringify(observedSets[1]) || JSON.stringify(doc.common_host_kinds) !== JSON.stringify(observedSets[0])) throw new Error(file + ': declared common HostEvent kinds do not equal both native mappings')
+  const requirementNames = ['call_result_correlation', 'human_principal_receipt', 'raw_first_durability', 'resume_prefix_checkpoint', 'terminal_enforcement', 'usage_completeness']
+  if (JSON.stringify(Object.keys(doc.requirements || {}).sort()) !== JSON.stringify(requirementNames)) throw new Error(file + ': convergence requirement set drifted')
+  for (const [name, requirement] of Object.entries(doc.requirements)) {
+    const expected = name === 'call_result_correlation' ? 'CANDIDATE' : 'GAP'
+    if (requirement.status !== expected || typeof requirement.statement !== 'string' || requirement.statement.length < 40) throw new Error(file + ': convergence requirement boundary drifted: ' + name)
+  }
+  if (JSON.stringify(doc.unmapped_host_kinds) !== JSON.stringify(['guard_violation'])) throw new Error(file + ': convergence unmapped HostEvent boundary drifted')
+  if (!/does not prove.*compatibility.*portability.*conformance/i.test(doc.claim_boundary || '')) throw new Error(file + ': convergence claim boundary drifted')
+  assertNoSensitiveStrings(doc, file)
+  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
+}
+
 const files = []
 if (fs.existsSync(discoveryRoot)) {
   for (const client of fs.readdirSync(discoveryRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
@@ -155,6 +185,7 @@ if (fs.existsSync(discoveryRoot)) {
 }
 if (files.length !== 2) throw new Error('adapter discovery must contain exactly the frozen Claude and Codex records')
 const records = files.sort().map(validate)
-process.stdout.write(JSON.stringify({ ok: true, schema, checker_model_calls: 0, checker_network_calls: 0, records }, null, 2) + '\n')
+const convergence = validateConvergence(path.join(discoveryRoot, 'host-event-convergence-v1.json'))
+process.stdout.write(JSON.stringify({ ok: true, schema, checker_model_calls: 0, checker_network_calls: 0, records, convergence }, null, 2) + '\n')
 
-module.exports = { schema, validate }
+module.exports = { schema, validate, validateConvergence }
