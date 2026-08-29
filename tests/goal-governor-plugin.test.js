@@ -316,6 +316,20 @@ test('executor integration lets the host—not the model—complete a replay-pro
   }))
   assert.equal(projectedBegin.decision.progress.attempts.active_attempt, 'projected-baseline')
   assert.deepEqual(projectedBegin.diagnostics, [])
+  const staleDecisionSession = { header: { cwd: root }, events: [
+    { seq: 1, type: 'goal/change', data: { operation: 'create', goal: { id: 'runtime-1' } } },
+    call(2, 'v-fail', 'pwsh', { command: 'npm test' }),
+    { seq: 3, type: 'tool/result', data: { message: { callId: 'v-fail', content: [{ type: 'text', text: '{"exit_code":1}' }] } } },
+    call(4, 'a-baseline', 'begin_goal_attempt', { attempt_id: 'baseline-fail', baseline: true, target_criteria: ['C1'], repo_revision: 'abc' }),
+    call(5, 'o-fail', 'submit_goal_observation', { attempt_id: 'baseline-fail', criterion_id: 'C1', verifier_id: 'tests.core', result: 'fail', evidence_refs: ['v-fail'], repo_revision: 'abc' }),
+    call(6, 'c-baseline', 'complete_goal_attempt', { attempt_id: 'baseline-fail' }),
+    call(7, 'd-stale', 'request_goal_decision', {}),
+  ] }
+  const projectedAfterDecision = JSON.parse(await tools.find((definition) => definition.name === 'begin_goal_attempt').execute({
+    attempt_id: 'change-after-decision', baseline: false, target_criteria: ['C1'], repo_revision: 'abc',
+  }, { agent: { session: staleDecisionSession }, callId: 'a-change' }))
+  assert.equal(projectedAfterDecision.decision.progress.attempts.active_attempt, 'change-after-decision')
+  assert.deepEqual(projectedAfterDecision.diagnostics, [])
   let concluded = false
   const output = JSON.parse(await tools.find((definition) => definition.name === 'request_goal_decision').execute({}, { agent: { session }, callId: 'd1', concludeTurn: () => { concluded = true } }))
   assert.equal(output.decision, 'ALREADY_SATISFIED')

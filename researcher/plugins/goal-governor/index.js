@@ -36,6 +36,7 @@ const jsonOutput = {
 const present = (title, kind, rawInput) => ({ card: 'generic', title, kind, ...(rawInput === undefined ? {} : { rawInput }) })
 const result = (value) => JSON.stringify(value)
 const replayStatus = (replay) => ({ decision: replay.decision, diagnostics: replay.diagnostics })
+const currentReplayStatus = (contract, replay) => ({ decision: decideGoal(contract, replay.events), diagnostics: replay.diagnostics })
 
 const isWithin = (root, target) => {
   const relative = path.relative(root, target)
@@ -133,11 +134,14 @@ const loadSelected = (ctx, agent, currentTool) => {
   return { root, runtimeGoal, contractPath, contract, registryPath, registry, cognition, replay }
 }
 
-const mutationReplayStatus = (ctx, exec, name, args) => replayStatus(loadSelected(ctx, exec.agent, {
-  callId: exec.callId,
-  name,
-  args,
-}).replay)
+const mutationReplayStatus = (ctx, exec, name, args) => {
+  const selected = loadSelected(ctx, exec.agent, { callId: exec.callId, name, args })
+  // replay.decision intentionally preserves the last explicit
+  // request_goal_decision snapshot. Mutation tools must instead describe the
+  // state derived after their projected current call, or the model can repeat
+  // a mutation that the durable log has already accepted.
+  return currentReplayStatus(selected.contract, selected.replay)
+}
 
 const gateResumeVerdict = (contract, replay) => {
   // The last request_goal_decision can legitimately predate the direct gate
@@ -378,5 +382,5 @@ module.exports = {
       return undefined
     })
   },
-  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, objectParameters, replayStatus, projectCurrentToolCall, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
+  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, objectParameters, replayStatus, currentReplayStatus, projectCurrentToolCall, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
 }

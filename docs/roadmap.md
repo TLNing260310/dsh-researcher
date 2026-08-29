@@ -1,13 +1,13 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.9` 已发布并对齐 canonical truth 与发布身份。protocol v1.5 official Flash 尝试为 `1 PASS / 4 FAIL / 1 INVALID`；v1.6 随后的新候选在第二条轨迹暴露 mutation tool 缺少 read-your-write，宿主正确拒绝 DONE 后主动停止剩余费用。旧结果冻结且不会重评分。v1.7 增加真实 call-ID 的恰好一次状态投影；下一步是完成测试与新候选，再用全新 Gate 0/run lock 完整重跑。证据见 [v1.5 result](./evidence/e1-v1.5-live-results.md)、[v1.6 result](./evidence/e1-v1.6-live-results.md) 与 [Validation Status](./validation-status.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.9` 已发布并对齐 canonical truth 与发布身份。protocol v1.5 official Flash 尝试为 `1 PASS / 4 FAIL / 1 INVALID`；v1.6 暴露当前 call 未投影，v1.7 证明 call 投影有效但 mutation feedback 仍复用历史 decision snapshot。两次宿主均正确拒绝 false DONE 并主动停止剩余费用；旧结果冻结且不会重评分。v1.8 改为从投影后的 GoalEvent 前缀派生 mutation feedback。证据见 [v1.5 result](./evidence/e1-v1.5-live-results.md)、[v1.6 result](./evidence/e1-v1.6-live-results.md)、[v1.7 result](./evidence/e1-v1.7-live-results.md) 与 [Validation Status](./validation-status.md)。
 
 ## 路线纪律
 
 - `.project-cognition/state.json` 是唯一 canonical project truth；Research Session Ledger、报告和 handoff 只是 provisional 输入，必须经 [owner promotion](./cognition-governance.md) 才能进入新 revision。
 - 冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 是 E1/E2/E3 轨迹、样本、estimand、阈值和 invalidity rule 的唯一来源。本路线不复制这些定义。
 - mechanical PASS 只说明实现按设计工作；不能替代 live conformance、outcome validation 或 portability validation。
-- live E1 必须通过当前冻结协议 v1.7 的模型路由、四重预算与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A/v1.5/v1.6 runtime 仅供审计，不得复用于新模型运行。
+- live E1 必须通过当前冻结协议 v1.8 的模型路由、四重预算与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A/v1.5/v1.6/v1.7 runtime 仅供审计，不得复用于新模型运行。
 - Project Cognition 的 longitudinal value 与 Goal Governor 的 incremental value 是两个 claim，必须分开识别。
 - 未通过前一 gate，不开发后一 gate 所需的产品扩展。
 
@@ -33,7 +33,7 @@ productization decision
 
 **目的**：确认 canonical state、projection、Goal Contracts、Verifier Registry、adapter capability 与实验冻结产物完整。
 
-**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致；`npm run cognition:freshness` 另行复验 source manifest 列出的文件证据。DSH `0.1.1-rc.2` 的隔离 CLI/version、preset discovery、frozen settings/`watch=false`、`DEEPSEEK_BASE_URL`、公共 resolver、capture 与 flush 已实际运行；protocol v1.5 与不完整 v1.6 均为 INVALID，v1.7 尚未 live。
+**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致；`npm run cognition:freshness` 另行复验 source manifest 列出的文件证据。DSH `0.1.1-rc.2` 的隔离 CLI/version、preset discovery、frozen settings/`watch=false`、`DEEPSEEK_BASE_URL`、公共 resolver、capture 与 flush 已实际运行；protocol v1.5、不完整 v1.6 与不完整 v1.7 均为 INVALID，v1.8 尚未 live。
 
 ### E1 — Live DSH conformance
 

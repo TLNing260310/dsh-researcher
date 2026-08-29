@@ -20,7 +20,7 @@ They are independent. You can trial Project Research without adopting Goal Contr
 
 > **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. A complete v1.5 live attempt ran but was **INVALID**; E1 conformance, net productivity gain, long-term Project Cognition value, and adapters beyond DSH remain **not proven**.
 
-> **Latest runtime evidence:** protocol v1.5 ran all six official `deepseek-v4-flash` tracks but scored `1 PASS / 4 FAIL / 1 INVALID`. Protocol v1.6 then finalized `already-satisfied` at its expected terminal, but `simple-done` exposed stale mutation-tool responses: durable replay rejected a duplicate attempt and the host correctly refused DONE. The remaining tracks were deliberately not run, so the incomplete bundle is INVALID. Both results are preserved and are not rescored. Protocol v1.7 adds call-ID-bound read-your-write projection and is offline-ready, but has not run live. See the [v1.5 result](./docs/evidence/e1-v1.5-live-results.md), [v1.6 result](./docs/evidence/e1-v1.6-live-results.md), and current frozen protocol.
+> **Latest runtime evidence:** protocol v1.5 ran all six official `deepseek-v4-flash` tracks but scored `1 PASS / 4 FAIL / 1 INVALID`. Protocol v1.6 exposed missing current-call read-your-write. Protocol v1.7 projected the real call successfully, but its mutation response still returned the previous decision snapshot; `simple-done` was a causally valid FAIL and the incomplete root remained INVALID. In both runs the host rejected false DONE, and all old results remain frozen. Protocol v1.8 derives mutation feedback from the projected state and is offline-ready, but has not run live. See the [v1.5 result](./docs/evidence/e1-v1.5-live-results.md), [v1.6 result](./docs/evidence/e1-v1.6-live-results.md), [v1.7 result](./docs/evidence/e1-v1.7-live-results.md), and current frozen protocol.
 
 ## The problem
 
@@ -160,7 +160,7 @@ The CLI actor label is not human authentication. Repository governance must keep
 | Unit, replay, integration, adversarial, installer, and package tests | PASS | The published mechanisms reject the covered drift and forged-evidence paths |
 | `project-cognition doctor .` | PASS | Current schema, hashes, projection, goals, and registry agree; it does not prove evidence freshness |
 | DSH Web Project Research smoke | Runtime boundary PASS; output probes FAIL | The exact tested runtime can become SAFE and reject drift; research quality is not established |
-| Goal Governor E1 infrastructure | v1.7 offline READY; v1.5 and incomplete v1.6 Live E1 INVALID | Negative evidence is preserved; preflight, layered budgets, workspace binding, run lock, cost admission, bundle, replay, read-your-write projection, and scorer exist |
+| Goal Governor E1 infrastructure | v1.8 offline READY; v1.5, incomplete v1.6, and incomplete v1.7 Live E1 INVALID | Negative evidence is preserved; preflight, layered budgets, workspace binding, run lock, cost admission, bundle, replay, projected-state feedback, and scorer exist |
 | Outcome value and portability | NOT PROVEN | Requires Live E1, a non-inferential pilot, E2, then second-adapter conformance |
 
 Run the public offline checks without a model or network call:
@@ -209,4 +209,4 @@ You do not need a polished report. The most useful signals are whether the demo 
 - [Open a reproducible bug](https://github.com/TLNing260310/dsh-researcher/issues/new?template=bug-report.yml)
 - Report security issues privately under [SECURITY.md](./SECURITY.md).
 
-Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5 and v1.6 live attempts. Both post-release results remain negative/incomplete evidence; v1.7 is under development. Outcome value and multi-client portability remain NOT PROVEN.
+Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5-v1.7 live attempts. All post-release results remain negative or incomplete evidence; v1.8 is under development. Outcome value and multi-client portability remain NOT PROVEN.
