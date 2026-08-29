@@ -15,8 +15,10 @@ const { capture: captureClaudeRuntime, sanitizedEnvironment } = require('../scri
 const { capture: captureClaudeSessionApi, parseArgs: parseClaudeSessionArgs } = require('../scripts/capture-claude-session-api-discovery.js')
 const { capture: captureClaudeLocalFixture, parseArgs: parseClaudeFixtureArgs } = require('../scripts/capture-claude-local-session-fixture.js')
 const { CLAUDE_SDK_LOCK, assertLockedClaudeSdk, inspectClaudeSdkRoot } = require('../scripts/claude-agent-sdk-lock.js')
-const { extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
+const { capture: captureCodexContract, extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
+const { capture: captureCodexNative } = require('../scripts/capture-codex-app-server-discovery.js')
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
+const { CODEX_CLI_LOCK, assertLockedCodexExecutable, inspectCodexExecutable } = require('../scripts/codex-cli-lock.js')
 
 const fakeCodexAppServer = () => {
   const received = []
@@ -101,10 +103,13 @@ test('Codex discovery keeps its no-model baseline separate from invalid live-tur
   assert.match(discovery.claim_boundary, /No Codex adapter/)
   assert.equal(trace.capture_kind, 'live-no-model')
   assert.equal(trace.model_calls, 0)
+  assert.equal(trace.executable.sha256, CODEX_CLI_LOCK.executables['win32-x64'].sha256)
+  assert.equal(trace.executable.path_recorded, false)
   assert.deepEqual(trace.requests.map((item) => item.method), ['initialize', 'initialized', 'thread/list'])
   assert.equal(discovery.capabilities.write_boundary.status, 'UNKNOWN')
   const capture = readJson(...base, 'schema-capture.json')
   assert.equal(capture.capture_kind, 'schema-generation-no-model')
+  assert.deepEqual(capture.executable, trace.executable)
   assert.equal(capture.model_calls, 0)
   assert.equal(capture.prompt_submissions, 0)
   assert.equal(capture.session_creations, 0)
@@ -119,8 +124,9 @@ test('Codex discovery keeps its no-model baseline separate from invalid live-tur
 
 test('Codex turn capture is explicit-use gated and hashes native ids before output', () => {
   assert.throws(() => parseArgs(['--unexpected']), /unknown argument/)
-  assert.deepEqual(parseArgs([]), { ackUsage: false })
-  assert.deepEqual(parseArgs(['--ack-codex-usage']), { ackUsage: true })
+  assert.deepEqual(parseArgs([]), { ackUsage: false, codexBin: null })
+  assert.deepEqual(parseArgs(['--ack-codex-usage']), { ackUsage: true, codexBin: null })
+  assert.throws(() => parseArgs(['--codex-bin', 'relative']), /absolute/)
   assert.equal(hashId(null), null)
   assert.equal(hashId('thread-a').length, 64)
   assert.equal(hashId('thread-a'), hashId('thread-a'))
@@ -131,7 +137,7 @@ test('Codex turn capture forms a redacted trace after refusal and process close 
   const fixture = fakeCodexAppServer()
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-codex-capture-test-'))
   try {
-    const trace = await captureCodexTurn({ ackUsage: true }, { spawnProcess: fixture.spawnProcess, synthetic: true, tempRoot, timeoutMs: 5000 })
+    const trace = await captureCodexTurn({ ackUsage: true, codexBin: null }, { spawnProcess: fixture.spawnProcess, synthetic: true, tempRoot, timeoutMs: 5000 })
     assert.equal(trace.capture_kind, 'synthetic-single-turn-no-model')
     assert.equal(trace.model_calls, 0)
     assert.equal(trace.prompt_submissions, 0)
@@ -147,6 +153,30 @@ test('Codex turn capture forms a redacted trace after refusal and process close 
     for (const secret of ['thread-native-secret', 'turn-native-secret', 'item-native-secret', 'approval-native-secret']) assert.doesNotMatch(serialized, new RegExp(secret))
     const refusal = fixture.received.find((message) => message.id === 'approval-native-secret')
     assert.equal(refusal.error.code, -32000)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('every Codex capture entry fails closed on a tampered same-version executable before spawn', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-codex-lock-test-'))
+  const executable = path.join(tempRoot, process.platform === 'win32' ? 'codex.exe' : 'codex')
+  try {
+    fs.writeFileSync(executable, 'fixture codex executable\n')
+    const inspected = inspectCodexExecutable(executable, { platform: 'fixture', arch: 'test' })
+    const fixtureLock = { version: CODEX_CLI_LOCK.version, versionOutput: CODEX_CLI_LOCK.versionOutput, executables: { 'fixture-test': {
+      basename: inspected.basename, size: inspected.size, sha256: inspected.sha256,
+    } } }
+    assert.equal(assertLockedCodexExecutable(executable, fixtureLock, { platform: 'fixture', arch: 'test' }).path, fs.realpathSync(executable))
+    const bytes = fs.readFileSync(executable)
+    bytes[0] ^= 1
+    fs.writeFileSync(executable, bytes)
+    assert.throws(() => assertLockedCodexExecutable(executable, fixtureLock, { platform: 'fixture', arch: 'test' }), /sha256 drifted/)
+    const neverSpawn = () => { throw new Error('must not spawn') }
+    const dependencies = { lock: fixtureLock, host: { platform: 'fixture', arch: 'test' }, spawnSync: neverSpawn, spawnProcess: neverSpawn }
+    assert.throws(() => captureCodexContract(executable, dependencies), /sha256 drifted/)
+    await assert.rejects(captureCodexNative(executable, dependencies), /sha256 drifted/)
+    await assert.rejects(captureCodexTurn({ ackUsage: true, codexBin: executable }, dependencies), /sha256 drifted/)
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true })
   }

@@ -2,9 +2,24 @@
   "schema": "dsh-researcher/adapter-native-trace/v1",
   "client": "codex-app-server-stdio",
   "runtime_version": "0.150.0-alpha.12.2",
+  "executable": {
+    "host": "win32-x64",
+    "basename": "codex.exe",
+    "size": 310753072,
+    "sha256": "34e9cfe7d5bbcec306fe6ab3fd502a713a7a1f0fb644c11ad2990fc80599fd4f",
+    "version_output": "codex-cli 0.150.0-alpha.12.2",
+    "path_recorded": false
+  },
   "capture_kind": "live-no-model",
   "model_calls": 0,
+  "prompt_submissions": 0,
+  "session_creations": 0,
   "network_calls_initiated_by_capture": 0,
+  "credential_boundary": {
+    "policy": "remove OpenAI, Codex, proxy, API-key, access-token, and auth-token environment names; use fresh temporary CODEX_HOME",
+    "removed_name_count": 9,
+    "names_not_disclosed": true
+  },
   "redaction": "values removed; only method names, ids, and result key names retained",
   "requests": [
     { "id": 1, "method": "initialize" },
@@ -14,5 +29,6 @@
   "responses": [
     { "id": 1, "result_keys": ["codexHome", "platformFamily", "platformOs", "userAgent"] },
     { "id": 2, "result_keys": ["backwardsCursor", "data", "nextCursor"] }
-  ]
+  ],
+  "claim_boundary": "Initialize and empty thread/list only. No thread creation, turn, prompt, item, approval, tool, model, resume, replay, user session, or governed adapter behavior is proven."
 }

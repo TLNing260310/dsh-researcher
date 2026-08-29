@@ -6,10 +6,11 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const readline = require('node:readline')
-const { spawn } = require('node:child_process')
+const { spawn, spawnSync } = require('node:child_process')
+const { CODEX_CLI_LOCK, assertLockedCodexExecutable, publicExecutableIdentity } = require('./codex-cli-lock.js')
 
-const EXPECTED_VERSION = '0.150.0-alpha.12.2'
-const EXPECTED_VERSION_OUTPUT = 'codex-cli ' + EXPECTED_VERSION
+const EXPECTED_VERSION = CODEX_CLI_LOCK.version
+const EXPECTED_VERSION_OUTPUT = CODEX_CLI_LOCK.versionOutput
 const PROMPT = 'Return exactly the single token OK. Do not call tools, inspect files, or modify anything.'
 const TIMEOUT_MS = 120000
 
@@ -18,19 +19,36 @@ const hashId = (value) => typeof value === 'string' && value.length > 0 ? sha256
 const keys = (value) => value && typeof value === 'object' && !Array.isArray(value) ? Object.keys(value).sort() : []
 
 const parseArgs = (args) => {
-  const allowed = new Set(['--ack-codex-usage'])
-  for (const arg of args) if (!allowed.has(arg)) throw new Error('unknown argument: ' + arg)
-  return { ackUsage: args.includes('--ack-codex-usage') }
+  let codexBin = null
+  let ackUsage = false
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index]
+    if (arg === '--ack-codex-usage') ackUsage = true
+    else if (arg === '--codex-bin' && codexBin === null && index + 1 < args.length) codexBin = args[++index]
+    else throw new Error('unknown argument: ' + arg)
+  }
+  if (codexBin !== null && !path.isAbsolute(codexBin)) throw new Error('--codex-bin must be an absolute file path')
+  return { ackUsage, codexBin }
 }
 
-const capture = ({ ackUsage }, dependencies = {}) => new Promise((resolve, reject) => {
+const capture = ({ ackUsage, codexBin = null }, dependencies = {}) => new Promise((resolve, reject) => {
   if (!ackUsage) throw new Error('refusing to start a model turn without --ack-codex-usage')
 
   const spawnProcess = dependencies.spawnProcess || spawn
+  const spawnVersion = dependencies.spawnSync || spawnSync
   const timeoutMs = dependencies.timeoutMs || TIMEOUT_MS
   const synthetic = dependencies.synthetic === true
+  let executable = { path: 'codex' }
+  let versionOutput = EXPECTED_VERSION_OUTPUT
+  if (!synthetic) {
+    executable = (dependencies.assertLockedCodexExecutable || assertLockedCodexExecutable)(codexBin, dependencies.lock || CODEX_CLI_LOCK, dependencies.host || {})
+    const version = spawnVersion(executable.path, ['--version'], { encoding: 'utf8', windowsHide: true, timeout: 30000 })
+    if (version.error || version.status !== 0) throw version.error || new Error('codex --version failed with status ' + version.status)
+    versionOutput = String(version.stdout || version.stderr).trim()
+    if (versionOutput !== EXPECTED_VERSION_OUTPUT) throw new Error('Codex CLI version drifted: ' + versionOutput)
+  }
   const workspace = fs.mkdtempSync(path.join(dependencies.tempRoot || os.tmpdir(), 'dsh-codex-turn-'))
-  const child = spawnProcess('codex', ['app-server', '--stdio'], {
+  const child = spawnProcess(executable.path, ['app-server', '--stdio'], {
     cwd: path.resolve(__dirname, '..'),
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
@@ -75,6 +93,7 @@ const capture = ({ ackUsage }, dependencies = {}) => new Promise((resolve, rejec
         schema: 'dsh-researcher/adapter-native-turn-trace/v1',
         client: 'codex-app-server-stdio',
         runtime_version: EXPECTED_VERSION,
+        executable: synthetic ? null : publicExecutableIdentity(executable, versionOutput),
         capture_kind: synthetic ? 'synthetic-single-turn-no-model' : 'live-single-turn-model',
         model_calls: synthetic ? 0 : 1,
         prompt_submissions: synthetic ? 0 : 1,
@@ -194,15 +213,7 @@ const capture = ({ ackUsage }, dependencies = {}) => new Promise((resolve, rejec
 const main = async () => {
   const options = parseArgs(process.argv.slice(2))
   if (!options.ackUsage) throw new Error('refusing to start a model turn without --ack-codex-usage')
-  const version = await new Promise((resolve, reject) => {
-    const child = spawn('codex', ['--version'], { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true })
-    let output = ''
-    child.stdout.on('data', (chunk) => { output += String(chunk) })
-    child.stderr.on('data', (chunk) => { output += String(chunk) })
-    child.on('error', reject)
-    child.on('exit', (code) => code === 0 ? resolve(output.trim().split(/\r?\n/).filter(Boolean).at(-1)) : reject(new Error('codex --version failed with code ' + code)))
-  })
-  if (version !== EXPECTED_VERSION_OUTPUT) throw new Error('Codex CLI version drifted: ' + version)
+  if (!options.codexBin) throw new Error('usage: --codex-bin <absolute-path> --ack-codex-usage')
   process.stdout.write(JSON.stringify(await capture(options), null, 2) + '\n')
 }
 

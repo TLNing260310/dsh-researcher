@@ -6,9 +6,10 @@ const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
+const { CODEX_CLI_LOCK, assertLockedCodexExecutable, parseCodexBin, publicExecutableIdentity } = require('./codex-cli-lock.js')
 
-const EXPECTED_VERSION = '0.150.0-alpha.12.2'
-const EXPECTED_VERSION_OUTPUT = 'codex-cli ' + EXPECTED_VERSION
+const EXPECTED_VERSION = CODEX_CLI_LOCK.version
+const EXPECTED_VERSION_OUTPUT = CODEX_CLI_LOCK.versionOutput
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex')
 const sha256File = (file) => sha256(fs.readFileSync(file))
@@ -63,14 +64,10 @@ const sanitizedEnvironment = (codexHome, source = process.env) => {
   return { environment, removed: removed.sort() }
 }
 
-const checkedSpawn = (command, args, options) => {
-  const result = spawnSync(command, args, { ...options, encoding: 'utf8', windowsHide: true, timeout: 30000 })
-  if (result.error) throw result.error
-  if (result.status !== 0) throw new Error(command + ' ' + args.join(' ') + ' failed with status ' + result.status + ': ' + String(result.stderr || '').trim().slice(-500))
-  return String(result.stdout || result.stderr).trim()
-}
-
-const capture = () => {
+const capture = (codexBin, dependencies = {}) => {
+  const assertLocked = dependencies.assertLockedCodexExecutable || assertLockedCodexExecutable
+  const spawnCommand = dependencies.spawnSync || spawnSync
+  const executable = assertLocked(codexBin, dependencies.lock || CODEX_CLI_LOCK, dependencies.host || {})
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-codex-contract-'))
   const codexHome = path.join(tempRoot, 'codex-home')
   const schemaRoot = path.join(tempRoot, 'schema')
@@ -78,9 +75,15 @@ const capture = () => {
   fs.mkdirSync(schemaRoot)
   try {
     const sanitized = sanitizedEnvironment(codexHome)
-    const versionOutput = checkedSpawn('codex', ['--version'], { env: sanitized.environment })
+    const run = (args, options) => {
+      const result = spawnCommand(executable.path, args, { ...options, encoding: 'utf8', windowsHide: true, timeout: 30000 })
+      if (result.error) throw result.error
+      if (result.status !== 0) throw new Error('Codex CLI failed with status ' + result.status + ': ' + String(result.stderr || '').trim().slice(-500))
+      return String(result.stdout || result.stderr).trim()
+    }
+    const versionOutput = run(['--version'], { env: sanitized.environment })
     if (versionOutput !== EXPECTED_VERSION_OUTPUT) throw new Error('Codex CLI version drifted: ' + versionOutput)
-    checkedSpawn('codex', ['app-server', 'generate-json-schema', '--out', schemaRoot, '--experimental'], { env: sanitized.environment })
+    run(['app-server', 'generate-json-schema', '--out', schemaRoot, '--experimental'], { env: sanitized.environment })
 
     const combined = readJson(path.join(schemaRoot, 'codex_app_server_protocol.v2.schemas.json'))
     const definitions = combined.definitions || {}
@@ -102,6 +105,7 @@ const capture = () => {
       schema: 'dsh-researcher/adapter-contract-capture/v1',
       client: 'codex-app-server-stdio',
       runtime_version: EXPECTED_VERSION,
+      executable: publicExecutableIdentity(executable, versionOutput),
       capture_kind: 'schema-generation-no-model',
       model_calls: 0,
       prompt_submissions: 0,
@@ -133,7 +137,10 @@ const capture = () => {
   }
 }
 
-const main = () => process.stdout.write(JSON.stringify(capture(), null, 2) + '\n')
+const main = () => {
+  const { codexBin } = parseCodexBin(process.argv.slice(2))
+  process.stdout.write(JSON.stringify(capture(codexBin), null, 2) + '\n')
+}
 
 if (require.main === module) {
   try { main() } catch (error) {

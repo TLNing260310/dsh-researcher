@@ -5,6 +5,7 @@ const fs = require('node:fs')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { CLAUDE_SDK_LOCK } = require('./claude-agent-sdk-lock.js')
+const { CODEX_CLI_LOCK } = require('./codex-cli-lock.js')
 
 const root = path.resolve(__dirname, '..')
 const discoveryRoot = path.join(root, 'evaluation', 'adapter-discovery')
@@ -99,6 +100,14 @@ const validate = (file) => {
     if (Object.values(doc.capabilities).some((item) => item.status === 'OBSERVED')) throw new Error(file + ': Claude capability was promoted by local parser-only evidence')
   }
   if (doc.client === 'codex-app-server-stdio') {
+    const lockedExecutable = CODEX_CLI_LOCK.executables['win32-x64']
+    const assertCodexExecutable = (identity, label) => {
+      if (identity?.host !== 'win32-x64' || identity.basename !== lockedExecutable.basename || identity.size !== lockedExecutable.size || identity.sha256 !== lockedExecutable.sha256 || identity.version_output !== CODEX_CLI_LOCK.versionOutput || identity.path_recorded !== false) throw new Error(file + ': Codex ' + label + ' executable content lock drifted')
+    }
+    if (JSON.stringify(doc.locked_runtime.executable_lock) !== JSON.stringify({ host: 'win32-x64', basename: lockedExecutable.basename, size: lockedExecutable.size, sha256: lockedExecutable.sha256, path_recorded: false })) throw new Error(file + ': Codex discovery executable lock drifted')
+    assertCodexExecutable(trace.executable, 'native trace')
+    if (trace.prompt_submissions !== 0 || trace.session_creations !== 0) throw new Error(file + ': Codex native trace must remain prompt/session-free')
+    if (!/empty thread\/list only/i.test(trace.claim_boundary || '')) throw new Error(file + ': Codex native trace claim boundary drifted')
     const attemptBinding = doc.artifacts.turn_capture_attempts
     if (!attemptBinding) throw new Error(file + ': Codex turn-attempt incident binding is missing')
     const attempts = readJson(path.resolve(path.dirname(file), attemptBinding.path))
@@ -113,6 +122,7 @@ const validate = (file) => {
     assertNoSensitiveStrings(capture, file + ': schema capture')
     if (capture.schema !== 'dsh-researcher/adapter-contract-capture/v1' || capture.client !== doc.client || capture.runtime_version !== doc.locked_runtime.version || capture.capture_kind !== 'schema-generation-no-model') throw new Error(file + ': Codex schema capture identity drifted')
     for (const field of ['model_calls', 'prompt_submissions', 'session_creations', 'network_calls_initiated_by_capture']) if (capture[field] !== 0) throw new Error(file + ': Codex schema capture must keep ' + field + '=0')
+    assertCodexExecutable(capture.executable, 'schema capture')
     if (capture.schema_bundle?.v2_schema_sha256 !== doc.locked_runtime.generated_schema_sha256 || capture.schema_bundle?.tree_sha256 !== doc.locked_runtime.generated_bundle_tree_sha256 || capture.schema_bundle?.file_count !== doc.locked_runtime.generated_bundle_file_count) throw new Error(file + ': Codex generated schema bundle drifted')
     const expectedInventory = {
       client_requests: [154, '2ef17afbf7e4dc11add3c4e8710baa8334e25ca9c46610d065c93b186d4e5625'],
@@ -122,6 +132,7 @@ const validate = (file) => {
     }
     for (const [group, [count, digest]] of Object.entries(expectedInventory)) if (capture.method_inventory?.[group]?.count !== count || capture.method_inventory?.[group]?.sha256 !== digest) throw new Error(file + ': Codex method inventory drifted: ' + group)
     const contract = readJson(path.resolve(path.dirname(file), doc.artifacts.native_contract.path))
+    assertCodexExecutable(contract.executable, 'native contract')
     for (const [captureGroup, contractGroup] of [['client_requests', 'requests'], ['server_requests', 'server_requests'], ['server_notifications', 'notifications']]) {
       for (const method of contract[contractGroup]) if (!capture.required_governance_subset?.[captureGroup]?.includes(method)) throw new Error(file + ': Codex governance subset lost ' + method)
     }

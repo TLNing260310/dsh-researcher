@@ -14,6 +14,13 @@ a credential-stripped temporary `CODEX_HOME`. The capture binds the v2 schema,
 bundle tree, method-inventory hashes and exact governance subset without
 creating a thread, turn, item, prompt or session.
 
+All current native and schema captures bind the exact `win32-x64` executable
+bytes as well as the CLI version, and never persist its personal absolute path.
+The capture entry points reject same-version byte drift before spawning Codex.
+No executable lock has yet been reviewed for Linux, macOS, or another
+architecture, so those capture hosts intentionally fail closed; this does not
+constitute a portability result for App Server itself.
+
 On 2026-08-29, three authorized turn-capture attempts tested the locked runtime.
 One persisted and one ephemeral turn reached a post-completion capture path,
 while a parameter-mismatch attempt stopped before model invocation. Both

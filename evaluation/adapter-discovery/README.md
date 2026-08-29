@@ -29,8 +29,14 @@ SDK functions to parse it. This checks non-empty local parser behavior without
 calling a model. Because Claude Code did not emit the fixture, it is not native
 session, event-ordering, resume, replay, or compatibility evidence.
 The Codex contract capture is reproducible with
-`npm run adapter:discovery:capture:codex-contract`; it uses a fresh temporary
+`npm run adapter:discovery:capture:codex-contract -- --codex-bin <absolute-path>`;
+the no-model native handshake uses the same argument with
+`adapter:discovery:capture:codex-native`. Both require an exact version and
+executable-byte SHA-256 lock before process start, use a fresh temporary
 `CODEX_HOME` and invokes only CLI version and local schema generation paths.
+The current content lock covers only `win32-x64`; other hosts fail closed until
+their exact executable is independently captured and reviewed. This is a
+capture-host boundary, not evidence that App Server is incompatible elsewhere.
 The opt-in Codex turn capture requires `--ack-codex-usage`, uses an ephemeral
 thread and read-only/network-disabled workspace, and is never part of
 `npm run check`. The 2026-08-29 attempts retained no valid trace and therefore

@@ -5,6 +5,13 @@
   "locked_runtime": {
     "package": "codex-cli",
     "version": "0.150.0-alpha.12.2",
+    "executable_lock": {
+      "host": "win32-x64",
+      "basename": "codex.exe",
+      "size": 310753072,
+      "sha256": "34e9cfe7d5bbcec306fe6ab3fd502a713a7a1f0fb644c11ad2990fc80599fd4f",
+      "path_recorded": false
+    },
     "contract_generator": "codex app-server generate-json-schema --experimental",
     "generated_schema_sha256": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596",
     "generated_bundle_tree_sha256": "0b26787868e7ebf46c77f24fc989ebd79d6ae7a8832893fd75887d995f232b48",
@@ -19,13 +26,13 @@
     }
   ],
   "artifacts": {
-    "native_trace": { "path": "native-trace.json", "sha256": "630dcc540eeab638f41d99aabca4078c3603cf11ee4e9416d10cd36f5602bc46" },
-    "native_contract": { "path": "native-contract.json", "sha256": "fbf566c767232469fdac6ce67152032896d9e8db771a53a757e6cc5423b850a7" },
-    "schema_capture": { "path": "schema-capture.json", "sha256": "daf138f9b7ca2589b5a678536cb8ec3203af8d856b3faa555a5a3651e4137806" },
+    "native_trace": { "path": "native-trace.json", "sha256": "dc05e12cefe822fb4739d48f16e44be2c787ee9afb0b985de6170b1e3e7ed547" },
+    "native_contract": { "path": "native-contract.json", "sha256": "1ca811fb333383cf806975356520780cb4f233950adaeb5b76c4c64d5cbeb629" },
+    "schema_capture": { "path": "schema-capture.json", "sha256": "207be4f0c0992c5224e228d52fa0593dbb457c07ca88a229f83759e1cfdc5ede" },
     "turn_capture_attempts": { "path": "turn-capture-attempts.json", "sha256": "f26f764864009833cdaae8f09c73370bb722c2cc0fcd0a6052d57847a1b48127" },
     "expected_host_events": { "path": "expected-host-events.json", "sha256": "8f01621a4f9f8504df5c157173b7f6c3ce2a410aaf69e3d6281069b034dcb10c" },
     "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "ac1f5ec5f133229dc04b91e936fc43166672bf9b3e5b8bd36491d2cc1dff6c88" },
-    "mapping_report": { "path": "mapping.md", "sha256": "7a64844cc4edaec6b13a0b1b9283b981db31485487b85637682f22d1cec00f74" }
+    "mapping_report": { "path": "mapping.md", "sha256": "e9b0f4f8b46981a3dff22770fac773ae7ff9b4898603d1a668a55b35c01dfb97" }
   },
   "invocation": {
     "function_call": ["researcher.ask", "researcher.mode.set", "researcher.mode.get"],
@@ -45,7 +52,8 @@
     { "id": "C-G2", "severity": "HIGH", "statement": "approval response correlation does not yet bind a stable authenticated human principal" },
     { "id": "C-G3", "severity": "HIGH", "statement": "adapter-owned write-policy and post-terminal enforcement receipts do not exist" },
     { "id": "C-G4", "severity": "MEDIUM", "statement": "usage notification presence does not yet prove coverage of every billable or helper request" },
-    { "id": "C-G5", "severity": "HIGH", "statement": "authorized native turn attempts reached completion paths but retained no valid event trace, so no runtime capability can be promoted to OBSERVED" }
+    { "id": "C-G5", "severity": "HIGH", "statement": "authorized native turn attempts reached completion paths but retained no valid event trace, so no runtime capability can be promoted to OBSERVED" },
+    { "id": "C-G6", "severity": "MEDIUM", "statement": "the reviewed executable-byte capture lock currently covers win32-x64 only; other capture hosts remain unverified" }
   ],
   "result": "HOLD",
   "claim_boundary": "Interface discovery plus an invalid turn-capture incident record only. No valid native turn trace is delivered. No Codex adapter, installation path, governed profile, or compatibility claim is delivered."

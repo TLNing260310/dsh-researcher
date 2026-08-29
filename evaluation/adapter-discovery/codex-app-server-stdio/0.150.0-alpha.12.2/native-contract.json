@@ -2,6 +2,14 @@
   "schema": "dsh-researcher/adapter-native-contract/v1",
   "client": "codex-app-server-stdio",
   "runtime_version": "0.150.0-alpha.12.2",
+  "executable": {
+    "host": "win32-x64",
+    "basename": "codex.exe",
+    "size": 310753072,
+    "sha256": "34e9cfe7d5bbcec306fe6ab3fd502a713a7a1f0fb644c11ad2990fc80599fd4f",
+    "version_output": "codex-cli 0.150.0-alpha.12.2",
+    "path_recorded": false
+  },
   "generator": "codex app-server generate-json-schema --experimental",
   "generated_v2_schema_sha256": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596",
   "generated_bundle": {

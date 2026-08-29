@@ -53,6 +53,7 @@
     "adapter:discovery:capture:claude-session": "node scripts/capture-claude-session-api-discovery.js",
     "adapter:discovery:capture:claude-fixture": "node scripts/capture-claude-local-session-fixture.js",
     "adapter:discovery:capture:codex-contract": "node scripts/capture-codex-app-server-contract.js",
+    "adapter:discovery:capture:codex-native": "node scripts/capture-codex-app-server-discovery.js",
     "adapter:discovery:capture:codex-turn": "node scripts/capture-codex-app-server-turn.js",
     "eval:e1:capture-tools": "node evaluation/goal-governor-e1/capture-visible-tools.js",
     "eval:e1:attest": "node evaluation/goal-governor-e1/attest-e1.js",

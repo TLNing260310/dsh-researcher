@@ -2,6 +2,14 @@
   "schema": "dsh-researcher/adapter-contract-capture/v1",
   "client": "codex-app-server-stdio",
   "runtime_version": "0.150.0-alpha.12.2",
+  "executable": {
+    "host": "win32-x64",
+    "basename": "codex.exe",
+    "size": 310753072,
+    "sha256": "34e9cfe7d5bbcec306fe6ab3fd502a713a7a1f0fb644c11ad2990fc80599fd4f",
+    "version_output": "codex-cli 0.150.0-alpha.12.2",
+    "path_recorded": false
+  },
   "capture_kind": "schema-generation-no-model",
   "model_calls": 0,
   "prompt_submissions": 0,
