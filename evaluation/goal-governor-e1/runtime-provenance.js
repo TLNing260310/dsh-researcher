@@ -68,13 +68,19 @@ const resolveDependencyRoot = (parentRoot, dependencyName, moduleRoot, optional)
       // canonical package root and verified manifest name below.
       let cursor = path.resolve(parentRoot)
       while (isWithin(moduleRoot, cursor)) {
-        const direct = path.join(cursor, 'node_modules', ...dependencyName.split('/'), 'package.json')
-        if (fs.existsSync(direct) && fs.statSync(direct).isFile()) {
+        const candidates = [path.join(cursor, 'node_modules', ...dependencyName.split('/'), 'package.json')]
+        // --dsh-module-root is itself a node_modules directory. Flat npm
+        // installs place ESM-only packages directly below it, while pnpm and
+        // nested installs are found by the normal ancestry candidate above.
+        if (cursor === moduleRoot) candidates.push(path.join(cursor, ...dependencyName.split('/'), 'package.json'))
+        for (const direct of candidates) {
+          if (!fs.existsSync(direct) || !fs.statSync(direct).isFile()) continue
           const manifest = readJson(direct)
           if (manifest.name !== dependencyName) throw new Error('pinned DSH dependency identity drifted: ' + dependencyName)
           entry = direct
           break
         }
+        if (entry) break
         if (cursor === moduleRoot || path.dirname(cursor) === cursor) break
         cursor = path.dirname(cursor)
       }

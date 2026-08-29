@@ -9,6 +9,7 @@
 - Promoted canonical Project Cognition revision 9 and preregistered protocol v1.6. E1, outcome value, and portability remain NOT PROVEN.
 - Preserved the incomplete v1.6 official Flash run: `already-satisfied` reached its expected host terminal, while `simple-done` exposed stale mutation-tool responses and correctly ended `NEEDS_HUMAN`; remaining tracks were not run and the bundle remains INVALID.
 - Added DSH-call-ID-bound read-your-write projection for Governor mutation tools, with idempotence and fail-closed missing-ID tests. v1.7 proved that mutation responses still reused the last explicit decision snapshot; v1.8 derived current state but exposed candidate `DONE`, causing Flash to stop before formal host completion. v1.9 returns progress/diagnostics only and explicitly routes closed attempts through `request_goal_decision`.
+- Fixed Gate 0 provenance discovery for ESM-only dependencies in a flat npm `node_modules` root; the runtime inventory still binds the canonical package root, manifest identity, content tree, and complete dependency closure.
 
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 
