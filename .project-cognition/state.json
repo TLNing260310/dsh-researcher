@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 18,
+  "revision": 19,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 package integrity and type contract were mapped, then the exact SDK module and bundled Claude Code 2.1.251 CLI loaded under a credential-stripped capture with zero query, prompt, session or model calls; Codex App Server stdio 0.150.0-alpha.12.2 generated its native schema and completed a redacted initialize/thread-list exchange with zero model calls. Both records remain HOLD because authentic query/tool/resume traces, durable raw replay, principal assurance, usage completeness or write-boundary enforcement remain unproven; the offline checker forbids treating discovery as an adapter or compatibility claim.",
-      "fingerprint": "444ff915cf0ef4a6f2cc4acf4d2ae3201d3a3216c0f358c0bb67da79b6791654",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 package integrity and type contract were mapped, then the exact SDK module and bundled Claude Code 2.1.251 CLI loaded under a credential-stripped capture with zero query, prompt, session or model calls. Codex App Server stdio 0.150.0-alpha.12.2 completed a redacted initialize/thread-list exchange and independently regenerated its 413-file experimental schema bundle under a fresh credential-stripped CODEX_HOME; the v2 schema, complete bundle tree, full method-inventory hashes and governance subset are bound with zero thread, turn, prompt, session or model calls. Both records remain HOLD because authentic query/tool/resume traces, durable raw replay, principal assurance, usage completeness or write-boundary enforcement remain unproven; the offline checker forbids treating discovery as an adapter or compatibility claim.",
+      "fingerprint": "e342e9a58ce5f42c63509f3eee514c12fe6cb0143d8cfce59536fc4df268ccf3",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "57d20e00ae8a64dd5279e50908de5db8f111c9ec994c1780bf138df7f384f3a4"
+  "state_hash": "48a3ce4604a88fbeca96f48fd89d4eaf4674ab312994d0f15c108c3bc35346c5"
 }

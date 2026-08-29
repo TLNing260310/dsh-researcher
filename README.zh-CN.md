@@ -216,7 +216,8 @@ npm run eval:e1:preflight
 
 Claude Agent SDK `0.3.251` 与 Codex App Server stdio
 `0.150.0-alpha.12.2` 已建立版本锁定 discovery，但均为 `HOLD`。Codex
-只有零模型握手 trace；Claude 的锁定 SDK 模块和随包 CLI 已真实加载，
+已有零模型握手 trace，并在隔离 `CODEX_HOME` 中重建完整 schema bundle 与
+method inventory；Claude 的锁定 SDK 模块和随包 CLI 已真实加载，
 但没有创建会话，也没有 query/tool/resume trace。两者都没有形成安装入口、
 adapter manifest 或兼容声明。
 

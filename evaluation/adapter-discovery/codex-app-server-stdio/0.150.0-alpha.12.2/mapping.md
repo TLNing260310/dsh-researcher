@@ -9,6 +9,11 @@ zero model calls. The contract exposes strong candidate boundaries: explicit
 thread/turn/item identities, request/response approvals, item lifecycle,
 interrupt, resume/read, and turn-bound usage.
 
+The locked CLI also regenerates the complete experimental schema bundle under
+a credential-stripped temporary `CODEX_HOME`. The capture binds the v2 schema,
+bundle tree, method-inventory hashes and exact governance subset without
+creating a thread, turn, item, prompt or session.
+
 The remaining governed gaps are material. Persisted `thread/read`/`resume`
 items are documented as lossy for some command executions; approval responses
 do not by themselves prove a stable human principal; and no adapter-owned
@@ -19,4 +24,3 @@ projection, and prove that the same prefix replays after process restart.
 Stable user semantics would be exposed through `researcher.ask()` and
 `researcher.mode.set/get()`. Native slash/UI affordances may be additive but
 cannot be the only control plane.
-

@@ -178,7 +178,8 @@ The proof order is frozen as `Gate 0 → E1 → non-inferential pilot → E2 →
 Client integrations share the [portable HostEvent and invocation contract](./docs/client-adapter-contract.md): one-shot `researcher.ask(...)`, persistent `researcher.mode.set/get(...)`, and client-native mode-switch commands reduce to the same host-owned state. The package root exposes `adapterCore` for this experimental base envelope; it is not a governed-adapter conformance claim.
 
 Version-locked Claude and Codex discovery records now make the remaining gaps
-reviewable. Both are `HOLD`: Codex has a real zero-model app-server handshake but
+reviewable. Both are `HOLD`: Codex has a real zero-model app-server handshake plus
+a credential-stripped regeneration of its complete schema/method inventory, but
 lacks durable raw command replay, principal and write receipts; Claude has a
 locked official SDK whose module and bundled CLI load without creating a session,
 but no authentic query/tool/resume trace. These records do not change the DSH

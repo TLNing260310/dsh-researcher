@@ -50,6 +50,7 @@
     "cognition:freshness": "node scripts/check-cognition-freshness.js",
     "adapter:discovery:check": "node scripts/check-adapter-discovery.js",
     "adapter:discovery:capture:claude": "node scripts/capture-claude-agent-sdk-discovery.js",
+    "adapter:discovery:capture:codex-contract": "node scripts/capture-codex-app-server-contract.js",
     "eval:e1:capture-tools": "node evaluation/goal-governor-e1/capture-visible-tools.js",
     "eval:e1:attest": "node evaluation/goal-governor-e1/attest-e1.js",
     "eval:e1:lock": "node evaluation/goal-governor-e1/lock.js",

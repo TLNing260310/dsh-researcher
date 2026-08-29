@@ -71,6 +71,7 @@
         "schemas/adapter-discovery-v1.schema.json",
         "scripts/check-adapter-discovery.js",
         "scripts/capture-claude-agent-sdk-discovery.js",
+        "scripts/capture-codex-app-server-contract.js",
         "tests/adapter-discovery.test.js",
         "evaluation/adapter-discovery/README.md",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/discovery.json",
@@ -82,6 +83,7 @@
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/discovery.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/native-trace.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/native-contract.json",
+        "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/schema-capture.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/expected-host-events.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/replay-checkpoint.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/mapping.md"

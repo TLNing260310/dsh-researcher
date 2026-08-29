@@ -1,0 +1,34 @@
+{
+  "schema": "dsh-researcher/adapter-contract-capture/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "capture_kind": "schema-generation-no-model",
+  "model_calls": 0,
+  "prompt_submissions": 0,
+  "session_creations": 0,
+  "network_calls_initiated_by_capture": 0,
+  "network_observation": "not instrumented; capture invokes only codex --version and local app-server schema generation",
+  "credential_boundary": {
+    "policy": "remove OpenAI, Codex, proxy, API-key, access-token, and auth-token environment names; use fresh temporary CODEX_HOME",
+    "removed_name_count": 9,
+    "names_not_disclosed": true
+  },
+  "generator": "codex app-server generate-json-schema --experimental",
+  "schema_bundle": {
+    "file_count": 413,
+    "tree_sha256": "0b26787868e7ebf46c77f24fc989ebd79d6ae7a8832893fd75887d995f232b48",
+    "v2_schema_sha256": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596"
+  },
+  "method_inventory": {
+    "client_requests": { "count": 154, "sha256": "2ef17afbf7e4dc11add3c4e8710baa8334e25ca9c46610d065c93b186d4e5625" },
+    "client_notifications": { "count": 1, "sha256": "a27ff6491cf8553bd55d6d031e204a811f1675c9064616e72cc522a56c140c77" },
+    "server_requests": { "count": 11, "sha256": "acd62ccbff44117c42ea6b6da69ad88b37a34db14c5679cc4e21f89a4616b5df" },
+    "server_notifications": { "count": 79, "sha256": "168d4ddfc362105b6435f4820b44596ba41623b43062814387384ab6da3004c4" }
+  },
+  "required_governance_subset": {
+    "client_requests": ["initialize", "thread/start", "thread/read", "thread/resume", "turn/start", "turn/interrupt"],
+    "server_requests": ["item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval", "item/tool/requestUserInput"],
+    "server_notifications": ["thread/started", "turn/started", "item/started", "item/completed", "turn/completed", "thread/tokenUsage/updated"]
+  },
+  "claim_boundary": "Schema generation and method inventory only; no thread, turn, item, approval, prompt, session, tool, model, resume, or replay path was invoked."
+}

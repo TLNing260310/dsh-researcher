@@ -13,3 +13,6 @@ invocation semantics, redaction boundaries, and the zero-model discovery rule.
 The Claude runtime-load capture is reproducible with
 `npm run adapter:discovery:capture:claude -- --sdk-root <exact-package-root>`;
 it imports the module and runs only the bundled CLI `--version` path.
+The Codex contract capture is reproducible with
+`npm run adapter:discovery:capture:codex-contract`; it uses a fresh temporary
+`CODEX_HOME` and invokes only CLI version and local schema generation paths.

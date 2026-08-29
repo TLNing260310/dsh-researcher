@@ -6,7 +6,9 @@
     "package": "codex-cli",
     "version": "0.150.0-alpha.12.2",
     "contract_generator": "codex app-server generate-json-schema --experimental",
-    "generated_schema_sha256": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596"
+    "generated_schema_sha256": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596",
+    "generated_bundle_tree_sha256": "0b26787868e7ebf46c77f24fc989ebd79d6ae7a8832893fd75887d995f232b48",
+    "generated_bundle_file_count": 413
   },
   "sources": [
     {
@@ -18,10 +20,11 @@
   ],
   "artifacts": {
     "native_trace": { "path": "native-trace.json", "sha256": "630dcc540eeab638f41d99aabca4078c3603cf11ee4e9416d10cd36f5602bc46" },
-    "native_contract": { "path": "native-contract.json", "sha256": "c5b3e126d0644fccaeaee77c3c1a78603bf095be1ca131230605525850688b46" },
+    "native_contract": { "path": "native-contract.json", "sha256": "fbf566c767232469fdac6ce67152032896d9e8db771a53a757e6cc5423b850a7" },
+    "schema_capture": { "path": "schema-capture.json", "sha256": "daf138f9b7ca2589b5a678536cb8ec3203af8d856b3faa555a5a3651e4137806" },
     "expected_host_events": { "path": "expected-host-events.json", "sha256": "8f01621a4f9f8504df5c157173b7f6c3ce2a410aaf69e3d6281069b034dcb10c" },
     "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "be0397c1e8c80d8a66a20f1541bffd0b0daa11e8ef29aded2373aba23f48229b" },
-    "mapping_report": { "path": "mapping.md", "sha256": "8afc01e9761e916bef6f1a01e2768ac67a4bb2e4b1cc112a26bb12d54fd92e21" }
+    "mapping_report": { "path": "mapping.md", "sha256": "7c1cc28950b79e2748a4dae1118f84cac01c9aefbc319cdc72b7b76b177cae99" }
   },
   "invocation": {
     "function_call": ["researcher.ask", "researcher.mode.set", "researcher.mode.get"],

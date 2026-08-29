@@ -65,6 +65,27 @@ const validate = (file) => {
     for (const required of ['query', 'startup', 'getSessionInfo', 'getSessionMessages', 'listSessions']) if (!trace.runtime_exports?.includes(required)) throw new Error(file + ': Claude runtime export missing: ' + required)
     if (!/no query, startup, session, prompt/i.test(trace.claim_boundary || '')) throw new Error(file + ': Claude capture claim boundary drifted')
   }
+  if (doc.client === 'codex-app-server-stdio') {
+    const captureBinding = doc.artifacts.schema_capture
+    if (!captureBinding) throw new Error(file + ': Codex schema capture binding is missing')
+    const capture = readJson(path.resolve(path.dirname(file), captureBinding.path))
+    assertNoSensitiveStrings(capture, file + ': schema capture')
+    if (capture.schema !== 'dsh-researcher/adapter-contract-capture/v1' || capture.client !== doc.client || capture.runtime_version !== doc.locked_runtime.version || capture.capture_kind !== 'schema-generation-no-model') throw new Error(file + ': Codex schema capture identity drifted')
+    for (const field of ['model_calls', 'prompt_submissions', 'session_creations', 'network_calls_initiated_by_capture']) if (capture[field] !== 0) throw new Error(file + ': Codex schema capture must keep ' + field + '=0')
+    if (capture.schema_bundle?.v2_schema_sha256 !== doc.locked_runtime.generated_schema_sha256 || capture.schema_bundle?.tree_sha256 !== doc.locked_runtime.generated_bundle_tree_sha256 || capture.schema_bundle?.file_count !== doc.locked_runtime.generated_bundle_file_count) throw new Error(file + ': Codex generated schema bundle drifted')
+    const expectedInventory = {
+      client_requests: [154, '2ef17afbf7e4dc11add3c4e8710baa8334e25ca9c46610d065c93b186d4e5625'],
+      client_notifications: [1, 'a27ff6491cf8553bd55d6d031e204a811f1675c9064616e72cc522a56c140c77'],
+      server_requests: [11, 'acd62ccbff44117c42ea6b6da69ad88b37a34db14c5679cc4e21f89a4616b5df'],
+      server_notifications: [79, '168d4ddfc362105b6435f4820b44596ba41623b43062814387384ab6da3004c4'],
+    }
+    for (const [group, [count, digest]] of Object.entries(expectedInventory)) if (capture.method_inventory?.[group]?.count !== count || capture.method_inventory?.[group]?.sha256 !== digest) throw new Error(file + ': Codex method inventory drifted: ' + group)
+    const contract = readJson(path.resolve(path.dirname(file), doc.artifacts.native_contract.path))
+    for (const [captureGroup, contractGroup] of [['client_requests', 'requests'], ['server_requests', 'server_requests'], ['server_notifications', 'notifications']]) {
+      for (const method of contract[contractGroup]) if (!capture.required_governance_subset?.[captureGroup]?.includes(method)) throw new Error(file + ': Codex governance subset lost ' + method)
+    }
+    if (!/no thread, turn, item, approval, prompt, session, tool, model, resume, or replay/i.test(capture.claim_boundary || '')) throw new Error(file + ': Codex schema capture claim boundary drifted')
+  }
   if (doc.result === 'DISCOVERY_QUALIFIED' && (trace.capture_kind !== 'live-no-model' || Object.values(doc.capabilities).some((item) => ['MISSING', 'UNKNOWN'].includes(item.status)))) throw new Error(file + ': qualified discovery lacks complete evidence')
   if (doc.result === 'NO_GO' && !doc.gaps.some((gap) => gap.severity === 'BLOCKING')) throw new Error(file + ': NO_GO requires a blocking gap')
   assertNoSensitiveStrings(doc, file)

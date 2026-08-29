@@ -36,7 +36,7 @@ alpha.5 与 alpha.7 candidate 的本地 smoke 是 provisional evidence；在 own
 | Guided Quickstart | alpha.7 生成仓库外 Cognition/Verifier/Goal review workspace；未审核 marker、零 hash、陈旧 binding 和路径逃逸均被测试拒绝 | 可避免手抄 hash，同时保持 verifier install、Goal approval 与 Cognition promotion 为显式 owner action | 引导器理解用户意图、自动批准合同、或证明治理带来净生产力增益 |
 | Deterministic public demo | `npm run demo` 在隔离 fixture 中真实启动两个 verifier 子进程，并将捕获的退出码经模拟 DSH event envelope 交给发布 adapter/reducer，得到 `CONTINUE → CONTINUE → DONE` | Agent 文字和真实失败 verifier 不能满足 MUST；匹配的真实进程结果可以形成 DONE | 完整 Live E1 或产品净收益；v1.4 official Flash 仅形成 `2 PASS / 1 FAIL / 3 NOT RUN` 部分结果 |
 | Portable Core | DSH 无关的 cognition/goal/verifier core、schemas、CLI、adapter contract | 核心抽象具备适配缝 | Codex、Claude Code、Zed/Zcode、OpenClaw 已兼容 |
-| Adapter discovery | Claude Agent SDK `0.3.251` package/type lock + credential-stripped SDK/CLI runtime-load（零 session/prompt/model）；Codex App Server stdio `0.150.0-alpha.12.2` schema + 零模型 initialize/list trace；artifact hash 与 claim boundary 离线校验 | 两个原生表面可映射到候选 HostEvent，且真实运行时入口可加载，但当前均为 `HOLD` | 已交付第二 adapter、真实 query/tool/resume trace、durable replay、human principal、usage completeness、write enforcement 或跨客户端价值 |
+| Adapter discovery | Claude Agent SDK `0.3.251` package/type lock + credential-stripped SDK/CLI runtime-load（零 session/prompt/model）；Codex App Server stdio `0.150.0-alpha.12.2` 零模型 initialize/list trace + 隔离 `CODEX_HOME` 下完整 schema bundle/method inventory 重建；artifact hash 与 claim boundary 离线校验 | 两个原生表面可映射到候选 HostEvent，真实运行时入口和生成合同可复验，但当前均为 `HOLD` | 已交付第二 adapter、真实 query/tool/resume trace、durable replay、human principal、usage completeness、write enforcement 或跨客户端价值 |
 
 当前 `npm test` 覆盖 unit、replay、integration 与 isolated package smoke；具体数量以当次测试输出为准，避免文档复制数字后漂移。
 
