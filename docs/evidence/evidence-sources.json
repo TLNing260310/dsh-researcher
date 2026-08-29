@@ -1,6 +1,6 @@
 {
   "schema": "dsh-researcher/evidence-sources/v1",
-  "required_fresh": ["E11", "E12", "E13", "E14", "E15", "E16", "E17", "E18", "E19", "E20"],
+  "required_fresh": ["E11", "E12", "E13", "E14", "E15", "E16", "E17", "E18", "E19", "E20", "E21"],
   "entries": [
     {
       "evidence_id": "E11",
@@ -83,6 +83,19 @@
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/expected-host-events.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/replay-checkpoint.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/mapping.md"
+      ]
+    },
+    {
+      "evidence_id": "E21",
+      "files": [
+        "docs/evidence/e1-v1.12-live-stop-enforcement-2026-08-29.md",
+        "evaluation/goal-governor-e1/manifest.json",
+        "evaluation/goal-governor-e1/manifest.schema.json",
+        "evaluation/goal-governor-e1/lib.js",
+        "evaluation/goal-governor-e1/run-e1.js",
+        "evaluation/goal-governor-e1/preflight.js",
+        "tests/helpers/e1-fixtures.js",
+        "tests/repository-consistency.test.js"
       ]
     }
   ]

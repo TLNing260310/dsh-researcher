@@ -2,7 +2,7 @@
 
 This directory contains experiment infrastructure, not a proof result. The
 machine status is intentionally frozen as `infrastructure=READY`,
-`live_e1=NOT_RUN`, and outcome/portability `NOT_PROVEN` until all protocol-defined real DSH runs
+`live_e1=STOPPED`, and outcome/portability `NOT_PROVEN`. Protocol v1.12 is offline-only and the live runner fails closed until a new explicit owner-reviewed proof plan authorizes a new candidate, Gate 0, and full run.
 are preserved and independently scored.
 
 ## Safe default

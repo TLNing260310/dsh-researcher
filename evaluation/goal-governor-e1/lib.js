@@ -177,8 +177,8 @@ const validateManifest = (manifest) => {
   if (manifest.protocol_version !== '1.12') throw new Error('manifest must bind E1 protocol version 1.12')
   const status = manifest.status
   assertExactKeys(status, ['infrastructure', 'live_e1', 'outcome', 'portability'], 'manifest.status')
-  if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'NOT_RUN' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {
-    throw new Error('manifest status must state infrastructure READY and live/outcome/portability not proven')
+  if (!isPlainObject(status) || status.infrastructure !== 'READY' || status.live_e1 !== 'STOPPED' || status.outcome !== 'NOT_PROVEN' || status.portability !== 'NOT_PROVEN') {
+    throw new Error('manifest status must state infrastructure READY, live E1 STOPPED, and outcome/portability not proven')
   }
   assertExactKeys(manifest.runtime, ['client', 'version', 'profile', 'preset', 'permission_mode', 'session_persistence', 'pack_chunks', 'compression', 'title_llm', 'model_compaction', 'tool_result_pruning', 'extra_local_tools', 'goal_round_driver'], 'manifest.runtime')
   if (manifest.runtime.client !== 'dsh' || manifest.runtime.version !== REQUIRED_DSH_VERSION || manifest.runtime.profile !== 'headless' || manifest.runtime.preset !== 'governed' || manifest.runtime.permission_mode !== 'workspace-write' || manifest.runtime.session_persistence !== 'jsonl' || manifest.runtime.pack_chunks !== false || manifest.runtime.compression !== 'none' || manifest.runtime.title_llm !== false || manifest.runtime.model_compaction !== false || manifest.runtime.tool_result_pruning !== true || manifest.runtime.extra_local_tools !== false || manifest.runtime.goal_round_driver !== 'runner-disarmed') {

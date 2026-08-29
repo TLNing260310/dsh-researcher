@@ -129,6 +129,7 @@ test('E1 manifest contains exactly the frozen six case identities and terminals'
   assert.deepEqual(validateManifest(manifest), [])
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
   assert.equal(manifest.protocol_version, '1.12')
+  assert.equal(manifest.status.live_e1, 'STOPPED')
   assert.deepEqual(manifest.budget, {
     max_tokens: 250000,
     max_cache_read_tokens: 220000,
@@ -235,7 +236,7 @@ test('protocol v1.12 layered cost enforcement and superseded protocol provenance
   assert.match(scorer, /foldScopedGoalEvents[\s\S]{0,260}artifact\.runtime_goal_id/)
 })
 
-test('E1 runner defaults to offline preflight and live mode fails before launch without cost acknowledgement', () => {
+test('E1 runner defaults to offline preflight and current protocol refuses every live launch before arguments or cost', () => {
   const entry = path.join(root, 'evaluation', 'goal-governor-e1', 'run-e1.js')
   const offline = spawnSync(process.execPath, [entry], { cwd: root, encoding: 'utf8', windowsHide: true })
   assert.equal(offline.status, 0, offline.stderr)
@@ -246,7 +247,12 @@ test('E1 runner defaults to offline preflight and live mode fails before launch 
 
   const refused = spawnSync(process.execPath, [entry, '--mode', 'live'], { cwd: root, encoding: 'utf8', windowsHide: true })
   assert.equal(refused.status, 1)
-  assert.match(refused.stderr, /requires the literal flag --ack-live-cost/)
+  assert.match(refused.stderr, /E1_LIVE_STOPPED/)
+
+  const acknowledged = spawnSync(process.execPath, [entry, '--mode', 'live', '--ack-live-cost'], { cwd: root, encoding: 'utf8', windowsHide: true })
+  assert.equal(acknowledged.status, 1)
+  assert.match(acknowledged.stderr, /E1_LIVE_STOPPED/)
+  assert.doesNotMatch(acknowledged.stderr, /--case is required|--run-lock is required/)
 })
 
 test('E1 runner and scorer share the honest external-TTY evidence contract', () => {

@@ -4,7 +4,7 @@
   "protocol_version": "1.12",
   "status": {
     "infrastructure": "READY",
-    "live_e1": "NOT_RUN",
+    "live_e1": "STOPPED",
     "outcome": "NOT_PROVEN",
     "portability": "NOT_PROVEN"
   },

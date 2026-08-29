@@ -154,6 +154,9 @@ const validatePortableSources = () => {
   }
   const outer = fs.readFileSync(path.join(EVAL_ROOT, 'run-e1.js'), 'utf8')
   for (const gate of ['--ack-live-cost', '--run-lock', '--case', '--output', 'verifyDshRuntime', 'verifyInstalledCandidate', 'outer_finalized', "path.join(caseDir, 'post', 'verifier.json')", 'process.hrtime.bigint']) assert.ok(outer.includes(gate), 'live outer runner omitted fail-closed gate ' + gate)
+  const authorizationAt = outer.indexOf('assertLiveAuthorized(manifest)')
+  const acknowledgementAt = outer.indexOf("if (args['ack-live-cost'] !== true)")
+  assert.ok(authorizationAt >= 0 && acknowledgementAt > authorizationAt, 'protocol STOPPED authority must be checked before cost acknowledgement or live argument handling')
   assert.ok(outer.includes("'--dsh-bin is forbidden"), 'outer must reject unbound CLI shims')
   const inner = fs.readFileSync(path.join(EVAL_ROOT, 'runner', 'e1-headless.mjs'), 'utf8')
   assert.ok(inner.includes('process.stdin.isTTY'), 'inner runner must enforce interactive TTY authority')

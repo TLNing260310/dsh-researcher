@@ -260,6 +260,13 @@ const usage = () => [
   '  governed-gate additionally requires --human-gate-stdin and external interactive TTY input (not cryptographic identity).',
 ].join('\n')
 
+const assertLiveAuthorized = (manifest) => {
+  if (manifest?.status?.live_e1 === 'AUTHORIZED') return
+  const error = new Error('E1_LIVE_STOPPED: protocol v1.12 does not authorize another paid Live E1; a new explicit owner-reviewed proof plan, candidate, Gate 0, and full-run lock are required')
+  error.code = 'E1_LIVE_STOPPED'
+  throw error
+}
+
 const main = () => {
   const args = parseArgs(process.argv.slice(2))
   const mode = args.mode || (args.live === true ? 'live' : 'preflight')
@@ -273,6 +280,12 @@ const main = () => {
     return
   }
   if (mode !== 'live') throw new Error('unknown --mode; expected preflight or live')
+
+  // Protocol authority is checked before arguments, paths, DSH, cost admission,
+  // or output mutation. Current v1.12 is intentionally STOPPED; a future proof
+  // plan must change the frozen manifest/validator in a reviewed candidate.
+  const manifest = validateManifest(readJson(MANIFEST_PATH))
+  assertLiveAuthorized(manifest)
 
   // Cost/state gates are checked before any DSH process or output mutation.
   if (args['ack-live-cost'] !== true) throw new Error('live mode requires the literal flag --ack-live-cost')
@@ -309,7 +322,6 @@ const main = () => {
     [dshModuleRoot, REPO_ROOT, 'DSH modules/repository'],
   ]) assertDisjoint(left, right, label)
 
-  const manifest = validateManifest(readJson(MANIFEST_PATH))
   const entry = manifest.cases.find((item) => item.id === caseId)
   const lockResult = verifyRunLock(runLockPath, { dshModuleRoot })
   const externalCredentialsFile = args['credentials-file'] === undefined
@@ -758,4 +770,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { main, deriveChildTimeout, frozenSettingsBytes, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail, verifierExitIsFinalizationError, applyModelCredentialBoundary, LOCAL_LOOPBACK_API_KEY }
+module.exports = { main, assertLiveAuthorized, deriveChildTimeout, frozenSettingsBytes, verifyInstalledCandidate, verifyDshRuntime, workspaceSnapshot, changedPaths, isWithin, canonicalWithMissingTail, verifierExitIsFinalizationError, applyModelCredentialBoundary, LOCAL_LOOPBACK_API_KEY }

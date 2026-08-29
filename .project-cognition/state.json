@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 16,
+  "revision": 17,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -398,8 +398,8 @@
     {
       "id": "E12",
       "kind": "test",
-      "ref": "Protocol v1.12 is an offline-only scorer correction after the v1.11 replacement ended INVALID: the manifest keeps the frozen cases, budgets, model route, expected terminals, runtime, and scorer semantics except that stage-one replay now scopes events at the runtime goal boundary; it does not rescore v1.11 or authorize paid E1, and offline gates make zero model and network calls.",
-      "fingerprint": "610c3ddf3c145992bebe1b5993e630d1f6f1a6ea89d8b91ab78ac14e2b1ce578",
+      "ref": "Protocol v1.12 is an offline-only scorer correction after the v1.11 replacement ended INVALID: the manifest keeps the frozen cases, budgets, model route, expected terminals, runtime, and scorer semantics except that stage-one replay now scopes events at the runtime goal boundary; it records live E1 as STOPPED, does not rescore v1.11 or authorize paid E1, and offline gates make zero model and network calls.",
+      "fingerprint": "f91ec311a86f889bf554edf154c7182d0ca0e8f0d38ef568fdf6f479e8d71a5a",
       "observed_at": "2026-08-29"
     },
     {
@@ -457,6 +457,13 @@
       "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 package integrity and public type contract were mapped but no runtime trace was fabricated; Codex App Server stdio 0.150.0-alpha.12.2 generated its native schema and completed a redacted initialize/thread-list exchange with zero model calls. Both records are HOLD because durable raw replay, principal assurance, usage completeness or write-boundary enforcement remain unproven; the offline checker forbids treating discovery as an adapter or compatibility claim.",
       "fingerprint": "072c61430dc1b2b05e1d036cce301a15953a56c02bd58e33541948c952c24b4f",
       "observed_at": "2026-08-29"
+    },
+    {
+      "id": "E21",
+      "kind": "test",
+      "ref": "Protocol v1.12 live-stop enforcement on 2026-08-29: the machine-readable manifest and validator now state live_e1=STOPPED, and the outer runner rejects live mode with E1_LIVE_STOPPED before cost acknowledgement, case/run-lock/path parsing, output mutation, DSH startup, or model access. Offline preflight and adversarial tests cover acknowledged and unacknowledged invocations with zero model and network calls; this proves only enforcement of the stop state, not E1 conformance.",
+      "fingerprint": "ef7bcab833b3d6122ca0067544f8210d15bb5fc84e4534b3d425e76c95278c2a",
+      "observed_at": "2026-08-29"
     }
   ],
   "known_unknowns": [
@@ -489,7 +496,7 @@
     },
     {
       "id": "U4",
-      "statement": "Protocols v1.4-v1.11 reached official Flash on DSH 0.1.1-rc.2, but complete E1 conformance remains unproven and the live round is stopped under protocol v1.12. Claude and Codex discovery are both HOLD rather than compatibility evidence; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
+      "statement": "Protocols v1.4-v1.11 reached official Flash on DSH 0.1.1-rc.2, but complete E1 conformance remains unproven and the live round is mechanically stopped under protocol v1.12 before any live argument or cost path. Claude and Codex discovery are both HOLD rather than compatibility evidence; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
       "evidence_refs": [
         "E3",
         "E9",
@@ -502,14 +509,15 @@
         "E17",
         "E18",
         "E19",
-        "E20"
+        "E20",
+        "E21"
       ]
     }
   ],
   "next_proofs": [
     {
       "id": "P0",
-      "statement": "Do not start another paid Live E1 under protocol v1.12. A future owner-authorized proof plan must first freeze a new protocol and candidate, then complete fresh Gate 0 on DSH 0.1.1-rc.2, create a candidate-bound run lock and disjoint evidence root, and rerun the complete six-track set without stitching old results.",
+      "statement": "Do not start another paid Live E1 under protocol v1.12; the runner now enforces this before argument or cost handling. A future owner-authorized proof plan must first freeze a new protocol and candidate, then complete fresh Gate 0 on DSH 0.1.1-rc.2, create a candidate-bound run lock and disjoint evidence root, and rerun the complete six-track set without stitching old results.",
       "evidence_refs": [
         "E1",
         "E2",
@@ -523,7 +531,8 @@
         "E16",
         "E17",
         "E18",
-        "E19"
+        "E19",
+        "E21"
       ]
     },
     {
@@ -539,7 +548,8 @@
         "E16",
         "E17",
         "E18",
-        "E19"
+        "E19",
+        "E21"
       ]
     },
     {
@@ -569,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "e11408a2be6bcbc336bc23f1b345ab6c4bf77d9758048bc4b6f4c0c024209b01"
+  "state_hash": "6b2c6d3f80e7d5af7c41c2ceda39e57b9ebe0b92a41748f481d3a3dda4e6b309"
 }
