@@ -9,7 +9,7 @@ alpha.5 与 alpha.7 candidate 的本地 smoke 是 provisional evidence；在 own
 | 层级 | 回答的问题 | 当前状态 |
 |---|---|---|
 | Mechanical | schema、hash、reducer、guard、replay、package 是否按设计工作 | **仓库内 PASS** |
-| Live conformance | 真实 DSH 模型会话是否覆盖冻结终态/失败轨迹，resume 与 replay 是否等价 | **v1.5 INVALID；v1.6-v1.8 不完整且 INVALID；v1.9 未运行** |
+| Live conformance | 真实 DSH 模型会话是否覆盖冻结终态/失败轨迹，resume 与 replay 是否等价 | **v1.5 INVALID；v1.6-v1.9 不完整且 INVALID；v1.10 未运行** |
 | Outcome validated | 机制是否改善真实维护结果且成本可接受 | **未完成 E2 / longitudinal study** |
 | Portable validated | 第二客户端是否保持治理语义，效果能否跨模型×客户端归因 | **未实现第二 adapter；未完成 E3** |
 
@@ -91,7 +91,7 @@ Experiment A 表明同一模型下 orchestration 会显著改变成本和输出�
 
 轨迹、样本、estimand、阈值和 invalidity rule 只以冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 为准。E1 包含协议定义的全部轨迹；本文件不另存一份清单。Project Cognition 的 V3A 使用独立 longitudinal protocol，不由 E2 代替。
 
-`alpha.5` 与 `alpha.7` pre-release candidate 运行了独立的 Researcher Web 本地 smoke；随后 exact rc.2 的本地 probes 完成了 local route/capture/replay 的真实负面探测。protocol v1.5 使用 alpha.9 发布包、remote official Flash 和真实 TTY gate 运行完整尝试但统一 bundle 为 `1 PASS / 4 FAIL / 1 INVALID`，详见 [v1.5 record](./evidence/e1-v1.5-live-results.md)。v1.6 暴露当前 call 未投影，v1.7 暴露 mutation feedback 复用历史 decision，v1.8 则派生正确 DONE 但模型未调用正式 decision 工具；三次均主动早停，详见各自 [v1.6](./evidence/e1-v1.6-live-results.md)、[v1.7](./evidence/e1-v1.7-live-results.md)、[v1.8](./evidence/e1-v1.8-live-results.md) 记录。因此 E1 仍未通过。历史 Phase A/v1.5-v1.8 runtime 和 locks 只用于审计；v1.9 必须使用新候选、新 Gate 0 和完整新运行。
+`alpha.5` 与 `alpha.7` pre-release candidate 运行了独立的 Researcher Web 本地 smoke；随后 exact rc.2 的本地 probes 完成了 local route/capture/replay 的真实负面探测。protocol v1.5 使用 alpha.9 发布包、remote official Flash 和真实 TTY gate 运行完整尝试但统一 bundle 为 `1 PASS / 4 FAIL / 1 INVALID`。v1.6-v1.8 连续暴露 mutation feedback 缺陷。v1.9 证明三条轨可 PASS，但 no-progress scorer 未读取 DSH 原生 `goal.blockedReason.code`，resume continue 又被旧的 stage-one verifier exit 硬编码拒绝，原结果为 `3 PASS / 1 FAIL / 2 INVALID`，详见 [v1.9 record](./evidence/e1-v1.9-live-results.md)。因此 E1 仍未通过。历史 Phase A/v1.5-v1.9 runtime 和 locks 只用于审计；v1.10 必须使用新候选、新 Gate 0 和完整新运行。
 
 北京时间模型成本规则已在协议 v1.1、manifest、run lock 和 scorer 中冻结：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁止远程 DeepSeek；周末只免时段禁令，远程仍须 official Flash + 精确 `https://api.deepseek.com`，其他 gate 不免。它对官方 E1 runner 是 fail-closed 机械边界，但不是 OS 级网络隔离或计费证明；字面 loopback 也只证明 adapter 第一跳本机，不能证明本地服务不代理远程。正式 live E1 还应使用服务端限额、独立 key、账单告警及必要的出口控制。
 

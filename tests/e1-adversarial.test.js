@@ -286,6 +286,17 @@ test('STOPPED enforced with the wrong host block code is a causally valid FAIL',
   assert.ok(report.runs.find((item) => item.id === 'no-progress').failures.some((reason) => /block code "stopped"/.test(reason)))
 })
 
+test('STOPPED accepts the native DSH goal.blockedReason code location', () => {
+  const bundle = cloneBundle()
+  const block = bundle.artifacts['no-progress'].session_events.find((event) => event.type === 'goal/change' && event.data.operation === 'block')
+  block.data.goal = { ...block.data.goal, blockedReason: { code: block.data.code, message: 'host stopped the goal' } }
+  delete block.data.code
+  const report = scoreTrustedBundle(bundle)
+  const run = report.runs.find((item) => item.id === 'no-progress')
+  assert.equal(run.verdict, 'PASS')
+  assert.equal(run.failures.length, 0)
+})
+
 test('a simple DONE baseline that already passes is rejected by the frozen trajectory shape', () => {
   const bundle = cloneBundle()
   const run = bundle.artifacts['simple-done']

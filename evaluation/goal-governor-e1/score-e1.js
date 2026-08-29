@@ -916,7 +916,14 @@ const expectedHostOperation = (decision) => {
 
 const hostBlockCode = (event) => {
   const data = event && event.data
-  return data && (data.code || data.block_code || data.block && data.block.code || data.reason && data.reason.code || data.goal && data.goal.blocker && data.goal.blocker.code) || null
+  return data && (
+    data.code ||
+    data.block_code ||
+    data.block && data.block.code ||
+    data.reason && data.reason.code ||
+    data.goal && data.goal.blocker && data.goal.blocker.code ||
+    data.goal && data.goal.blockedReason && data.goal.blockedReason.code
+  ) || null
 }
 
 const checkHostTransitions = (artifact, events, decisions, invalid, failures) => {
@@ -1456,7 +1463,7 @@ const validateManifest = (manifest, options = {}) => {
   }
   if (!isPlainObject(manifest)) return ['manifest must be an object']
   if (manifest.schema !== MANIFEST_SCHEMA) invalid.push('manifest schema must equal ' + MANIFEST_SCHEMA)
-  if (manifest.protocol_version !== '1.9') invalid.push('manifest.protocol_version must equal 1.9')
+  if (manifest.protocol_version !== '1.10') invalid.push('manifest.protocol_version must equal 1.10')
   try { validateCostPolicy(manifest.cost_policy) } catch (error) { invalid.push('manifest cost policy: ' + error.message) }
   if (!isPlainObject(manifest.runtime)) invalid.push('manifest.runtime must be an object')
   else {

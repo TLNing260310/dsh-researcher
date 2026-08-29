@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.9 Repair
+## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.10 Repair
 
 - Preserved the official Flash v1.5 result as `1 PASS / 4 FAIL / 1 INVALID`; no v1.5 artifact is rescored or promoted to PASS.
 - Added a non-disclosing workspace-root hash binding so the offline scorer can validate DSH absolute edit paths without publishing personal absolute paths.
@@ -10,6 +10,7 @@
 - Preserved the incomplete v1.6 official Flash run: `already-satisfied` reached its expected host terminal, while `simple-done` exposed stale mutation-tool responses and correctly ended `NEEDS_HUMAN`; remaining tracks were not run and the bundle remains INVALID.
 - Added DSH-call-ID-bound read-your-write projection for Governor mutation tools, with idempotence and fail-closed missing-ID tests. v1.7 proved that mutation responses still reused the last explicit decision snapshot; v1.8 derived current state but exposed candidate `DONE`, causing Flash to stop before formal host completion. v1.9 returns progress/diagnostics only and explicitly routes closed attempts through `request_goal_decision`.
 - Fixed Gate 0 provenance discovery for ESM-only dependencies in a flat npm `node_modules` root; the runtime inventory still binds the canonical package root, manifest identity, content tree, and complete dependency closure.
+- Preserved the v1.9 official Flash bundle as `3 PASS / 1 FAIL / 2 INVALID`. v1.10 derives resume stage-one verifier expectations from the frozen manifest and recognizes DSH native `goal.blockedReason.code` without weakening the exact `stopped` requirement.
 
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 

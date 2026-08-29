@@ -59,7 +59,7 @@ const validateSchemas = () => {
   const scoreSchema = readJson(path.join(EVAL_ROOT, 'score-report.schema.json'))
   assert.equal(manifestSchema.properties.schema.const, MANIFEST_SCHEMA)
   assert.equal(lockSchema.properties.schema.const, RUN_LOCK_SCHEMA)
-  assert.equal(manifestSchema.properties.protocol_version.const, '1.9')
+  assert.equal(manifestSchema.properties.protocol_version.const, '1.10')
   assert.equal(manifestSchema.$defs.costPolicy.properties.timezone.const, 'Asia/Shanghai')
   assert.equal(manifestSchema.$defs.costPolicy.properties.remote.properties.model.const, 'deepseek-v4-flash')
   assert.equal(manifestSchema.$defs.costPolicy.properties.remote.properties.base_url.const, 'https://api.deepseek.com')
@@ -238,10 +238,11 @@ const validateStage1SealHelper = (caseDir, workspace, immutableFiles, verifierRe
   writeJson(path.join(caseDir, 'stage1', 'post', 'verifier.json'), verifierResult)
   writeJson(path.join(caseDir, 'stage1', 'post', 'dsh-home-inventory.json'), directoryInventory(dshHome))
   const created = createStage1Seal({ caseDir, runLockHash, contractHash })
-  const checked = validateStage1Seal({ caseDir, workspace, dshHome, runLockHash, contractHash, sessionId })
+  const expectedVerifierExit = verifierResult.exit_code
+  const checked = validateStage1Seal({ caseDir, workspace, dshHome, runLockHash, contractHash, sessionId, expectedVerifierExit })
   assert.equal(checked.seal_sha256, created.seal_sha256)
   fs.appendFileSync(path.join(caseDir, 'session.stage1.jsonl'), '{}\n')
-  assert.throws(() => validateStage1Seal({ caseDir, workspace, dshHome, runLockHash, contractHash, sessionId }), /drifted/)
+  assert.throws(() => validateStage1Seal({ caseDir, workspace, dshHome, runLockHash, contractHash, sessionId, expectedVerifierExit }), /drifted/)
 }
 
 const validateFixture = (manifest, entry, first, second) => {
@@ -309,7 +310,7 @@ const runPreflight = () => {
   validateSchemas()
   validatePortableSources()
   assert.equal(manifest.schema, MANIFEST_SCHEMA)
-  assert.equal(manifest.protocol_version, '1.9')
+  assert.equal(manifest.protocol_version, '1.10')
   assert.equal(manifest.artifacts.schema, RUN_ARTIFACT_SCHEMA)
   assert.equal(manifest.cost_policy.remote.model, 'deepseek-v4-flash')
   assert.equal(manifest.cost_policy.remote.base_url, 'https://api.deepseek.com')

@@ -52,7 +52,8 @@ const createStage1Seal = ({ caseDir, runLockHash, contractHash }) => {
   return { seal, seal_sha256: sha256File(output) }
 }
 
-const validateStage1Seal = ({ caseDir, workspace, dshHome, dshModuleRoot, runLockHash, contractHash, sessionId }) => {
+const validateStage1Seal = ({ caseDir, workspace, dshHome, dshModuleRoot, runLockHash, contractHash, sessionId, expectedVerifierExit }) => {
+  if (![0, 1].includes(expectedVerifierExit)) throw new Error('stage-one expected verifier exit must be frozen as 0 or 1')
   const file = sealPath(caseDir)
   if (!fs.existsSync(file)) throw new Error('resume continuation requires stage1/seal.json')
   const seal = readJson(file)
@@ -75,8 +76,8 @@ const validateStage1Seal = ({ caseDir, workspace, dshHome, dshModuleRoot, runLoc
   const recordedTreeHash = fs.readFileSync(path.join(caseDir, 'stage1', 'post', 'tree-hash.txt'), 'utf8').trim()
   if (treeHash(post) !== recordedTreeHash) throw new Error('stage-one post worktree hash is internally inconsistent')
   const verifier = readJson(path.join(caseDir, 'stage1', 'post', 'verifier.json'))
-  if (verifier.schema !== 'dsh-researcher/goal-governor-e1/external-verifier-result/v1' || verifier.exit_code !== 1 || verifier.integrity?.ok !== true || verifier.workspace?.unchanged !== true || verifier.workspace.after_tree_sha256 !== recordedTreeHash) throw new Error('stage-one host verifier result is invalid')
-  if (canonicalize(stageArtifact.host_verifier) !== canonicalize(verifier) || stageArtifact.outer_finalization.expected_host_verifier_exit !== 1) throw new Error('stage-one artifact does not bind its sealed host verifier result')
+  if (verifier.schema !== 'dsh-researcher/goal-governor-e1/external-verifier-result/v1' || verifier.exit_code !== expectedVerifierExit || verifier.integrity?.ok !== true || verifier.workspace?.unchanged !== true || verifier.workspace.after_tree_sha256 !== recordedTreeHash) throw new Error('stage-one host verifier result is invalid')
+  if (canonicalize(stageArtifact.host_verifier) !== canonicalize(verifier) || stageArtifact.outer_finalization.expected_host_verifier_exit !== expectedVerifierExit) throw new Error('stage-one artifact does not bind its sealed host verifier result')
   const dshHomeInventory = readJson(path.join(caseDir, 'stage1', 'post', 'dsh-home-inventory.json'))
   if (!dshHome || canonicalize(directoryInventory(dshHome, { allowedLinkRoot: dshModuleRoot })) !== canonicalize(dshHomeInventory)) throw new Error('current DSH_HOME is not byte-identical to the sealed stage-one inventory')
   const current = workspaceSnapshot(workspace)
