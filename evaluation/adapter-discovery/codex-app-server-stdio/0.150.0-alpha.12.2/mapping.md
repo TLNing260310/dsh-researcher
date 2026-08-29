@@ -14,7 +14,17 @@ a credential-stripped temporary `CODEX_HOME`. The capture binds the v2 schema,
 bundle tree, method-inventory hashes and exact governance subset without
 creating a thread, turn, item, prompt or session.
 
-The remaining governed gaps are material. Persisted `thread/read`/`resume`
+On 2026-08-29, three authorized turn-capture attempts tested the locked runtime.
+One persisted and one ephemeral turn reached a post-completion capture path,
+while a parameter-mismatch attempt stopped before model invocation. Both
+completed attempts lost their redacted event artifact to a Windows cleanup
+race. They are therefore recorded as **INVALID**, not treated as native trace
+evidence, and promote no capability from DOCUMENTED to OBSERVED. At most two
+Codex model turns may have been billed; exact usage is unknown because the
+trace was not retained.
+
+The remaining governed gaps are material. A valid redacted native turn trace
+still does not exist. Persisted `thread/read`/`resume`
 items are documented as lossy for some command executions; approval responses
 do not by themselves prove a stable human principal; and no adapter-owned
 write-policy or post-terminal enforcement receipt exists yet. A future spike

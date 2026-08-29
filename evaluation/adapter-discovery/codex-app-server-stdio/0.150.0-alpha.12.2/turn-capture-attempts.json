@@ -1,0 +1,43 @@
+{
+  "schema": "dsh-researcher/adapter-turn-capture-attempts/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "date": "2026-08-29",
+  "attempts": [
+    {
+      "attempt": 1,
+      "thread_kind": "persisted",
+      "model_turn_may_have_been_billed": true,
+      "last_verified_capture_state": "capture-owned thread deletion response received after turn completion",
+      "artifact_status": "INVALID",
+      "invalid_reason": "Windows temporary-workspace cleanup failed before the redacted trace was emitted"
+    },
+    {
+      "attempt": 2,
+      "thread_kind": "none",
+      "model_turn_may_have_been_billed": false,
+      "last_verified_capture_state": "thread/start rejected with JSON-RPC -32600",
+      "artifact_status": "INVALID",
+      "invalid_reason": "the locked alpha schema requires thread sandbox value read-only rather than readOnly"
+    },
+    {
+      "attempt": 3,
+      "thread_kind": "ephemeral",
+      "model_turn_may_have_been_billed": true,
+      "last_verified_capture_state": "turn/completed notification entered the capture finalizer",
+      "artifact_status": "INVALID",
+      "invalid_reason": "Windows temporary-workspace cleanup again failed before the redacted trace was emitted"
+    }
+  ],
+  "maximum_model_turns_that_may_have_been_billed": 2,
+  "valid_native_turn_trace": false,
+  "retained_raw_event_stream": false,
+  "capability_promotion_allowed": false,
+  "remediation": [
+    "model use requires --ack-codex-usage",
+    "new threads are ephemeral",
+    "thread sandbox uses the locked read-only enum while the turn policy uses readOnly",
+    "capture completion now waits for process close and records cleanup failure without discarding the trace"
+  ],
+  "claim_boundary": "This is an incident record, not a native trace. It supports no HostEvent mapping, governed capability, usage completeness, replay, or compatibility claim."
+}

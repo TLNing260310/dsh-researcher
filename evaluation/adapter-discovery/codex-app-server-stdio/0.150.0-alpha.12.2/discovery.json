@@ -22,9 +22,10 @@
     "native_trace": { "path": "native-trace.json", "sha256": "630dcc540eeab638f41d99aabca4078c3603cf11ee4e9416d10cd36f5602bc46" },
     "native_contract": { "path": "native-contract.json", "sha256": "fbf566c767232469fdac6ce67152032896d9e8db771a53a757e6cc5423b850a7" },
     "schema_capture": { "path": "schema-capture.json", "sha256": "daf138f9b7ca2589b5a678536cb8ec3203af8d856b3faa555a5a3651e4137806" },
+    "turn_capture_attempts": { "path": "turn-capture-attempts.json", "sha256": "e71818ff97bf5a8589757739b6acfc4075fd8be96d9fb1cf2cd8e70748f340fe" },
     "expected_host_events": { "path": "expected-host-events.json", "sha256": "8f01621a4f9f8504df5c157173b7f6c3ce2a410aaf69e3d6281069b034dcb10c" },
-    "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "be0397c1e8c80d8a66a20f1541bffd0b0daa11e8ef29aded2373aba23f48229b" },
-    "mapping_report": { "path": "mapping.md", "sha256": "7c1cc28950b79e2748a4dae1118f84cac01c9aefbc319cdc72b7b76b177cae99" }
+    "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "ac1f5ec5f133229dc04b91e936fc43166672bf9b3e5b8bd36491d2cc1dff6c88" },
+    "mapping_report": { "path": "mapping.md", "sha256": "ee63fda12c41f4cd656613e2241ad27b48e5aa1ba52b2cc92a178efafd18b13d" }
   },
   "invocation": {
     "function_call": ["researcher.ask", "researcher.mode.set", "researcher.mode.get"],
@@ -43,8 +44,9 @@
     { "id": "C-G1", "severity": "HIGH", "statement": "persisted ThreadItems are documented as lossy for some command executions; raw-first durable replay is unproven" },
     { "id": "C-G2", "severity": "HIGH", "statement": "approval response correlation does not yet bind a stable authenticated human principal" },
     { "id": "C-G3", "severity": "HIGH", "statement": "adapter-owned write-policy and post-terminal enforcement receipts do not exist" },
-    { "id": "C-G4", "severity": "MEDIUM", "statement": "usage notification presence does not yet prove coverage of every billable or helper request" }
+    { "id": "C-G4", "severity": "MEDIUM", "statement": "usage notification presence does not yet prove coverage of every billable or helper request" },
+    { "id": "C-G5", "severity": "HIGH", "statement": "authorized native turn attempts reached completion paths but retained no valid event trace, so no runtime capability can be promoted to OBSERVED" }
   ],
   "result": "HOLD",
-  "claim_boundary": "Interface discovery only. No Codex adapter, installation path, governed profile, or compatibility claim is delivered."
+  "claim_boundary": "Interface discovery plus an invalid turn-capture incident record only. No valid native turn trace is delivered. No Codex adapter, installation path, governed profile, or compatibility claim is delivered."
 }

@@ -10,20 +10,21 @@ const root = path.join(__dirname, '..')
 const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(root, ...parts), 'utf8'))
 const { sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
 const { extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
+const { hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 
 test('adapter discovery is version locked, offline checked, and non-product', () => {
   const result = spawnSync(process.execPath, [path.join(root, 'scripts', 'check-adapter-discovery.js')], { cwd: root, encoding: 'utf8', windowsHide: true })
   assert.equal(result.status, 0, result.stderr + result.stdout)
   const report = JSON.parse(result.stdout)
-  assert.equal(report.model_calls, 0)
-  assert.equal(report.network_calls, 0)
+  assert.equal(report.checker_model_calls, 0)
+  assert.equal(report.checker_network_calls, 0)
   assert.deepEqual(report.records, [
     { client: 'claude-code-agent-sdk', version: '0.3.251', result: 'HOLD' },
     { client: 'codex-app-server-stdio', version: '0.150.0-alpha.12.2', result: 'HOLD' },
   ])
 })
 
-test('Codex discovery is scoped to app-server stdio and captures no model traffic', () => {
+test('Codex discovery keeps its no-model baseline separate from invalid live-turn attempts', () => {
   const base = ['evaluation', 'adapter-discovery', 'codex-app-server-stdio', '0.150.0-alpha.12.2']
   const discovery = readJson(...base, 'discovery.json')
   const trace = readJson(...base, 'native-trace.json')
@@ -40,6 +41,21 @@ test('Codex discovery is scoped to app-server stdio and captures no model traffi
   assert.equal(capture.session_creations, 0)
   assert.equal(capture.schema_bundle.v2_schema_sha256, discovery.locked_runtime.generated_schema_sha256)
   assert.equal(capture.schema_bundle.tree_sha256, discovery.locked_runtime.generated_bundle_tree_sha256)
+  const attempts = readJson(...base, 'turn-capture-attempts.json')
+  assert.equal(attempts.valid_native_turn_trace, false)
+  assert.equal(attempts.maximum_model_turns_that_may_have_been_billed, 2)
+  assert.equal(discovery.result, 'HOLD')
+  assert.ok(Object.values(discovery.capabilities).every((item) => item.status !== 'OBSERVED'))
+})
+
+test('Codex turn capture is explicit-use gated and hashes native ids before output', () => {
+  assert.throws(() => parseArgs(['--unexpected']), /unknown argument/)
+  assert.deepEqual(parseArgs([]), { ackUsage: false })
+  assert.deepEqual(parseArgs(['--ack-codex-usage']), { ackUsage: true })
+  assert.equal(hashId(null), null)
+  assert.equal(hashId('thread-a').length, 64)
+  assert.equal(hashId('thread-a'), hashId('thread-a'))
+  assert.notEqual(hashId('thread-a'), hashId('thread-b'))
 })
 
 test('Claude discovery binds a no-model runtime load without fabricating a session trace', () => {

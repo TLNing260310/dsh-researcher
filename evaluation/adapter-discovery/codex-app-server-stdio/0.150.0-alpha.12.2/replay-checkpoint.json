@@ -3,5 +3,5 @@
   "status": "DESIGN_ONLY",
   "native_prefix": ["thread/started", "turn/started", "item/started", "item/completed", "thread/tokenUsage/updated", "turn/completed"],
   "required_hashes": ["raw_prefix_sha256", "host_event_prefix_sha256", "goal_state_sha256"],
-  "missing_evidence": ["a model-free capture cannot produce a real tool/turn prefix", "thread history is documented as lossy for some command interactions", "raw-first durable storage ownership is not yet implemented"]
+  "missing_evidence": ["authorized turn attempts did not retain a valid raw or redacted native event prefix", "thread history is documented as lossy for some command interactions", "raw-first durable storage ownership is not yet implemented"]
 }

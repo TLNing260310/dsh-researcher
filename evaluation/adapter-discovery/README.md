@@ -9,10 +9,16 @@ an adapter manifest, installation entry point, compatibility claim, or governed
 conformance result. Formal implementation remains gated on E2 PASS.
 
 Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
-invocation semantics, redaction boundaries, and the zero-model discovery rule.
+invocation semantics, redaction boundaries, and claim boundaries. The checker
+itself makes zero model and network calls; this does not erase separately
+recorded live discovery attempts.
 The Claude runtime-load capture is reproducible with
 `npm run adapter:discovery:capture:claude -- --sdk-root <exact-package-root>`;
 it imports the module and runs only the bundled CLI `--version` path.
 The Codex contract capture is reproducible with
 `npm run adapter:discovery:capture:codex-contract`; it uses a fresh temporary
 `CODEX_HOME` and invokes only CLI version and local schema generation paths.
+The opt-in Codex turn capture requires `--ack-codex-usage`, uses an ephemeral
+thread and read-only/network-disabled workspace, and is never part of
+`npm run check`. The 2026-08-29 attempts retained no valid trace and therefore
+remain an incident record rather than runtime evidence.

@@ -66,6 +66,14 @@ const validate = (file) => {
     if (!/no query, startup, session, prompt/i.test(trace.claim_boundary || '')) throw new Error(file + ': Claude capture claim boundary drifted')
   }
   if (doc.client === 'codex-app-server-stdio') {
+    const attemptBinding = doc.artifacts.turn_capture_attempts
+    if (!attemptBinding) throw new Error(file + ': Codex turn-attempt incident binding is missing')
+    const attempts = readJson(path.resolve(path.dirname(file), attemptBinding.path))
+    assertNoSensitiveStrings(attempts, file + ': turn capture attempts')
+    if (attempts.schema !== 'dsh-researcher/adapter-turn-capture-attempts/v1' || attempts.client !== doc.client || attempts.runtime_version !== doc.locked_runtime.version) throw new Error(file + ': Codex turn-attempt identity drifted')
+    if (attempts.valid_native_turn_trace !== false || attempts.retained_raw_event_stream !== false || attempts.capability_promotion_allowed !== false) throw new Error(file + ': invalid Codex attempts must not promote evidence')
+    if (attempts.maximum_model_turns_that_may_have_been_billed !== 2 || attempts.attempts?.length !== 3) throw new Error(file + ': Codex attempt accounting drifted')
+    if (Object.values(doc.capabilities).some((item) => item.status === 'OBSERVED')) throw new Error(file + ': Codex capability was promoted without a valid native turn trace')
     const captureBinding = doc.artifacts.schema_capture
     if (!captureBinding) throw new Error(file + ': Codex schema capture binding is missing')
     const capture = readJson(path.resolve(path.dirname(file), captureBinding.path))
@@ -103,6 +111,6 @@ if (fs.existsSync(discoveryRoot)) {
 }
 if (files.length !== 2) throw new Error('adapter discovery must contain exactly the frozen Claude and Codex records')
 const records = files.sort().map(validate)
-process.stdout.write(JSON.stringify({ ok: true, schema, model_calls: 0, network_calls: 0, records }, null, 2) + '\n')
+process.stdout.write(JSON.stringify({ ok: true, schema, checker_model_calls: 0, checker_network_calls: 0, records }, null, 2) + '\n')
 
 module.exports = { schema, validate }
