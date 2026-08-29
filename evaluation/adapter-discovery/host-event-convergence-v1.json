@@ -8,13 +8,13 @@
       "client": "claude-code-agent-sdk",
       "version": "0.3.251",
       "mapping_path": "claude-code-agent-sdk/0.3.251/expected-host-events.json",
-      "mapping_sha256": "0c686b078bdf8204b2585389f765619987967fd2777022248ee744d4512431de"
+      "mapping_sha256": "5baa70006a46488d9ad120685f8d8c578b8efe2981f6e00f217fbbbf58559d49"
     },
     {
       "client": "codex-app-server-stdio",
       "version": "0.150.0-alpha.12.2",
       "mapping_path": "codex-app-server-stdio/0.150.0-alpha.12.2/expected-host-events.json",
-      "mapping_sha256": "8f01621a4f9f8504df5c157173b7f6c3ce2a410aaf69e3d6281069b034dcb10c"
+      "mapping_sha256": "8471cf085c39da69ddbc1c0da3e7684685cb38e4253a3c676facc989c24b5e48"
     }
   ],
   "common_host_kinds": [
@@ -26,6 +26,15 @@
     "usage",
     "user_action"
   ],
+  "normalized_binding_contract": {
+    "goal_transition": ["session_id", "turn_id", "interrupt_receipt", "terminal_status"],
+    "session_resume": ["session_id", "resume_prefix_sha256"],
+    "tool_call": ["session_id", "turn_id", "call_id", "arguments_sha256"],
+    "tool_result": ["session_id", "turn_id", "call_id", "result_sha256", "terminal_status"],
+    "turn_end": ["session_id", "turn_id", "terminal_status"],
+    "usage": ["session_id", "turn_id", "usage_delta", "coverage_complete"],
+    "user_action": ["session_id", "turn_id", "call_id", "request_id", "principal_id", "decision_receipt"]
+  },
   "requirements": {
     "call_result_correlation": {
       "status": "CANDIDATE",

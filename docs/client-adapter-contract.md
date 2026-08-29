@@ -55,7 +55,11 @@ query/tool/resume trace exists. Run
 
 The derived `evaluation/adapter-discovery/host-event-convergence-v1.json`
 currently confirms only that both locked discovery mappings name the same seven
-candidate HostEvent kinds. Its checker binds the source mapping bytes and keeps
+candidate HostEvent kinds and target the same 28 normalized binding fields. The
+current locked documents mark 17 Claude fields and 25 Codex fields as
+`DOCUMENTED`; all others remain explicit `GAP`, and none is `OBSERVED`. These
+counts describe the reviewed interface documents, not runtime reliability or a
+client ranking. The checker binds the source mapping bytes and keeps
 `guard_violation`, authenticated human receipts, usage completeness, raw-first
 durability, restart checkpoints and terminal write enforcement as unresolved
 boundaries. This comparison cannot promote either client or substitute for E2.

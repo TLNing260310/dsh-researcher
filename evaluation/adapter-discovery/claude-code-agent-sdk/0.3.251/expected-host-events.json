@@ -2,12 +2,82 @@
   "schema": "dsh-researcher/expected-host-events/v1",
   "client": "claude-code-agent-sdk",
   "mappings": [
-    { "native": "PreToolUse", "host_kind": "tool_call", "required_bindings": ["session_id", "tool_use_id", "tool input hash"] },
-    { "native": "PostToolUse|PostToolUseFailure", "host_kind": "tool_result", "required_bindings": ["session_id", "tool_use_id", "result hash", "failure status"] },
-    { "native": "PermissionRequest + canUseTool response", "host_kind": "user_action", "required_bindings": ["session_id", "tool_use_id", "request id", "principal", "decision receipt"] },
-    { "native": "SDKResultMessage.modelUsage", "host_kind": "usage", "required_bindings": ["session_id", "turn correlation", "cumulative delta"] },
-    { "native": "SDKResultMessage", "host_kind": "turn_end", "required_bindings": ["session_id", "result subtype"] },
-    { "native": "SessionStart source=resume", "host_kind": "session_resume", "required_bindings": ["session_id", "prefix checkpoint hash"] },
-    { "native": "Query.interrupt receipt + Stop", "host_kind": "goal_transition", "required_bindings": ["session_id", "interrupt receipt", "terminal observation"] }
+    {
+      "native": "PreToolUse",
+      "host_kind": "tool_call",
+      "required_bindings": ["session_id", "tool_use_id", "tool input hash"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "turn_id": { "status": "GAP", "native": null },
+        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id" },
+        "arguments_sha256": { "status": "DOCUMENTED", "native": "tool input hash" }
+      }
+    },
+    {
+      "native": "PostToolUse|PostToolUseFailure",
+      "host_kind": "tool_result",
+      "required_bindings": ["session_id", "tool_use_id", "result hash", "failure status"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "turn_id": { "status": "GAP", "native": null },
+        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id" },
+        "result_sha256": { "status": "DOCUMENTED", "native": "tool_response hash" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "hook kind success|failure" }
+      }
+    },
+    {
+      "native": "PermissionRequest + canUseTool response",
+      "host_kind": "user_action",
+      "required_bindings": ["session_id", "tool_use_id", "request id", "principal", "decision receipt"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "turn_id": { "status": "GAP", "native": null },
+        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id" },
+        "request_id": { "status": "GAP", "native": null },
+        "principal_id": { "status": "GAP", "native": null },
+        "decision_receipt": { "status": "DOCUMENTED", "native": "canUseTool response" }
+      }
+    },
+    {
+      "native": "SDKResultMessage.modelUsage",
+      "host_kind": "usage",
+      "required_bindings": ["session_id", "turn correlation", "cumulative delta"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "turn_id": { "status": "GAP", "native": null },
+        "usage_delta": { "status": "DOCUMENTED", "native": "modelUsage" },
+        "coverage_complete": { "status": "GAP", "native": null }
+      }
+    },
+    {
+      "native": "SDKResultMessage",
+      "host_kind": "turn_end",
+      "required_bindings": ["session_id", "result subtype"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "turn_id": { "status": "GAP", "native": null },
+        "terminal_status": { "status": "DOCUMENTED", "native": "result subtype" }
+      }
+    },
+    {
+      "native": "SessionStart source=resume",
+      "host_kind": "session_resume",
+      "required_bindings": ["session_id", "prefix checkpoint hash"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "resume_prefix_sha256": { "status": "GAP", "native": null }
+      }
+    },
+    {
+      "native": "Query.interrupt receipt + Stop",
+      "host_kind": "goal_transition",
+      "required_bindings": ["session_id", "interrupt receipt", "terminal observation"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
+        "turn_id": { "status": "GAP", "native": null },
+        "interrupt_receipt": { "status": "GAP", "native": null },
+        "terminal_status": { "status": "DOCUMENTED", "native": "Stop" }
+      }
+    }
   ]
 }

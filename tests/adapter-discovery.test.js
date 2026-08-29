@@ -94,7 +94,14 @@ test('adapter discovery is version locked, offline checked, and non-product', ()
     { client: 'claude-code-agent-sdk', version: '0.3.251', result: 'HOLD' },
     { client: 'codex-app-server-stdio', version: '0.150.0-alpha.12.2', result: 'HOLD' },
   ])
-  assert.deepEqual(report.convergence, { status: 'DISCOVERY_ONLY', common_host_kinds: 7, gaps: 5 })
+  assert.deepEqual(report.convergence, {
+    status: 'DISCOVERY_ONLY', common_host_kinds: 7, binding_fields: 28,
+    binding_coverage: {
+      'claude-code-agent-sdk': { documented: 17, gaps: 11 },
+      'codex-app-server-stdio': { documented: 25, gaps: 3 },
+    },
+    shared_governance_gaps: 5,
+  })
 })
 
 test('cross-client convergence remains a discovery shape with explicit enforcement gaps', () => {
@@ -121,7 +128,11 @@ test('cross-client convergence rejects a forged common set and stale mapping byt
     }
     const convergenceFile = path.join(tempRoot, 'host-event-convergence-v1.json')
     fs.writeFileSync(convergenceFile, JSON.stringify({ ...convergence, common_host_kinds: convergence.common_host_kinds.slice(1) }))
-    assert.throws(() => validateConvergence(convergenceFile), /common HostEvent kinds/)
+    assert.throws(() => validateConvergence(convergenceFile), /normalized binding contract kinds drifted|common HostEvent kinds/)
+    const driftedContract = JSON.parse(JSON.stringify(convergence))
+    driftedContract.normalized_binding_contract.tool_call = driftedContract.normalized_binding_contract.tool_call.filter((field) => field !== 'call_id')
+    fs.writeFileSync(convergenceFile, JSON.stringify(driftedContract))
+    assert.throws(() => validateConvergence(convergenceFile), /normalized binding fields drifted/)
     fs.writeFileSync(convergenceFile, JSON.stringify(convergence))
     fs.appendFileSync(path.join(tempRoot, convergence.clients[0].mapping_path), '\n')
     assert.throws(() => validateConvergence(convergenceFile), /hash drifted/)

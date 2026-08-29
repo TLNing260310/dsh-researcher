@@ -39,7 +39,7 @@
     "native_contract": { "path": "native-contract.json", "sha256": "a2f09a10a58cc3dcaa71091e914fa7112850cbfb2147036d29ba27e685a5827f" },
     "session_api_trace": { "path": "session-api-trace.json", "sha256": "8dadbd204528f5e4d9c040ac7cc2be7121ec5f6e1cf2388d22cb56e055213500" },
     "local_session_fixture_trace": { "path": "local-session-fixture-trace.json", "sha256": "56b55db096ab7cdebb37131268904cbb3f9341494f9c38840a5ae886e46554b4" },
-    "expected_host_events": { "path": "expected-host-events.json", "sha256": "0c686b078bdf8204b2585389f765619987967fd2777022248ee744d4512431de" },
+    "expected_host_events": { "path": "expected-host-events.json", "sha256": "5baa70006a46488d9ad120685f8d8c578b8efe2981f6e00f217fbbbf58559d49" },
     "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "f0879609ee9cd96980bec8d250dde1736244ffff87e7003434ca12699146cfa2" },
     "mapping_report": { "path": "mapping.md", "sha256": "868f8165ed8a9b12cd6c47a47454ca63ff548b1ac611c1eeb4bbe6e8da5b33c8" }
   },

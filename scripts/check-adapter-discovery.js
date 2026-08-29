@@ -150,6 +150,14 @@ const validateConvergence = (file) => {
   if (doc.schema !== 'dsh-researcher/adapter-discovery-convergence/v1' || doc.status !== 'DISCOVERY_ONLY' || doc.governed !== false || doc.conformance_eligible !== false) throw new Error(file + ': convergence identity or boundary drifted')
   if (!Array.isArray(doc.clients) || doc.clients.length !== 2) throw new Error(file + ': convergence must bind exactly two discovery clients')
   const observedSets = []
+  const bindingCoverage = {}
+  const bindingContract = doc.normalized_binding_contract
+  if (!plain(bindingContract) || JSON.stringify(Object.keys(bindingContract).sort()) !== JSON.stringify([...doc.common_host_kinds].sort())) throw new Error(file + ': normalized binding contract kinds drifted')
+  let bindingFields = 0
+  for (const [kind, fields] of Object.entries(bindingContract)) {
+    if (!Array.isArray(fields) || fields.length === 0 || fields.some((field) => typeof field !== 'string' || field.length === 0) || new Set(fields).size !== fields.length) throw new Error(file + ': invalid normalized binding contract: ' + kind)
+    bindingFields += fields.length
+  }
   for (const client of doc.clients) {
     if (!relativeSafe(client.mapping_path) || !/^[a-f0-9]{64}$/.test(client.mapping_sha256)) throw new Error(file + ': invalid convergence mapping binding')
     const target = path.resolve(path.dirname(file), client.mapping_path)
@@ -159,6 +167,25 @@ const validateConvergence = (file) => {
     if (!Array.isArray(mapping.mappings) || mapping.mappings.length === 0) throw new Error(file + ': convergence mapping is empty: ' + client.client)
     const kinds = mapping.mappings.map((item) => item.host_kind)
     if (kinds.some((kind) => !hostEventKinds.has(kind)) || new Set(kinds).size !== kinds.length) throw new Error(file + ': convergence mapping has unsupported or duplicate HostEvent kinds: ' + client.client)
+    let documented = 0
+    let gaps = 0
+    for (const item of mapping.mappings) {
+      if (!Array.isArray(item.required_bindings) || item.required_bindings.length === 0 || !plain(item.normalized_bindings)) throw new Error(file + ': normalized binding map is missing: ' + client.client + '/' + item.host_kind)
+      const expectedFields = bindingContract[item.host_kind]
+      if (!expectedFields || JSON.stringify(Object.keys(item.normalized_bindings).sort()) !== JSON.stringify([...expectedFields].sort())) throw new Error(file + ': normalized binding fields drifted: ' + client.client + '/' + item.host_kind)
+      for (const [field, binding] of Object.entries(item.normalized_bindings)) {
+        if (!plain(binding) || !['DOCUMENTED', 'GAP'].includes(binding.status)) throw new Error(file + ': invalid normalized binding status: ' + client.client + '/' + item.host_kind + '/' + field)
+        if (binding.status === 'DOCUMENTED') {
+          if (typeof binding.native !== 'string' || binding.native.length === 0) throw new Error(file + ': documented normalized binding lacks a native source: ' + client.client + '/' + item.host_kind + '/' + field)
+          documented += 1
+        } else {
+          if (binding.native !== null) throw new Error(file + ': gap normalized binding must not invent a native source: ' + client.client + '/' + item.host_kind + '/' + field)
+          gaps += 1
+        }
+      }
+    }
+    if (documented + gaps !== bindingFields) throw new Error(file + ': normalized binding coverage is incomplete: ' + client.client)
+    bindingCoverage[client.client] = { documented, gaps }
     observedSets.push([...kinds].sort())
   }
   if (JSON.stringify(observedSets[0]) !== JSON.stringify(observedSets[1]) || JSON.stringify(doc.common_host_kinds) !== JSON.stringify(observedSets[0])) throw new Error(file + ': declared common HostEvent kinds do not equal both native mappings')
@@ -171,7 +198,7 @@ const validateConvergence = (file) => {
   if (JSON.stringify(doc.unmapped_host_kinds) !== JSON.stringify(['guard_violation'])) throw new Error(file + ': convergence unmapped HostEvent boundary drifted')
   if (!/does not prove.*compatibility.*portability.*conformance/i.test(doc.claim_boundary || '')) throw new Error(file + ': convergence claim boundary drifted')
   assertNoSensitiveStrings(doc, file)
-  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
+  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, binding_fields: bindingFields, binding_coverage: bindingCoverage, shared_governance_gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
 }
 
 const files = []

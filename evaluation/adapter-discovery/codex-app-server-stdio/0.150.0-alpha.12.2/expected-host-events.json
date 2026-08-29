@@ -2,12 +2,82 @@
   "schema": "dsh-researcher/expected-host-events/v1",
   "client": "codex-app-server-stdio",
   "mappings": [
-    { "native": "item/started commandExecution|fileChange|dynamicToolCall", "host_kind": "tool_call", "required_bindings": ["threadId", "turnId", "item.id", "arguments hash"] },
-    { "native": "item/completed commandExecution|fileChange|dynamicToolCall", "host_kind": "tool_result", "required_bindings": ["threadId", "turnId", "item.id", "result hash", "terminal status"] },
-    { "native": "item/*/requestApproval + JSON-RPC response", "host_kind": "user_action", "required_bindings": ["request id", "threadId", "turnId", "itemId", "principal", "decision receipt"] },
-    { "native": "thread/tokenUsage/updated", "host_kind": "usage", "required_bindings": ["threadId", "turnId", "last", "total"] },
-    { "native": "turn/completed", "host_kind": "turn_end", "required_bindings": ["threadId", "turn.id", "turn.status"] },
-    { "native": "thread/resume response", "host_kind": "session_resume", "required_bindings": ["thread.id", "prefix checkpoint hash"] },
-    { "native": "turn/interrupt response + terminal turn", "host_kind": "goal_transition", "required_bindings": ["threadId", "turnId", "interrupt receipt"] }
+    {
+      "native": "item/started commandExecution|fileChange|dynamicToolCall",
+      "host_kind": "tool_call",
+      "required_bindings": ["threadId", "turnId", "item.id", "arguments hash"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "threadId" },
+        "turn_id": { "status": "DOCUMENTED", "native": "turnId" },
+        "call_id": { "status": "DOCUMENTED", "native": "item.id" },
+        "arguments_sha256": { "status": "DOCUMENTED", "native": "arguments hash" }
+      }
+    },
+    {
+      "native": "item/completed commandExecution|fileChange|dynamicToolCall",
+      "host_kind": "tool_result",
+      "required_bindings": ["threadId", "turnId", "item.id", "result hash", "terminal status"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "threadId" },
+        "turn_id": { "status": "DOCUMENTED", "native": "turnId" },
+        "call_id": { "status": "DOCUMENTED", "native": "item.id" },
+        "result_sha256": { "status": "DOCUMENTED", "native": "result hash" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "item status" }
+      }
+    },
+    {
+      "native": "item/*/requestApproval + JSON-RPC response",
+      "host_kind": "user_action",
+      "required_bindings": ["request id", "threadId", "turnId", "itemId", "principal", "decision receipt"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "threadId" },
+        "turn_id": { "status": "DOCUMENTED", "native": "turnId" },
+        "call_id": { "status": "DOCUMENTED", "native": "itemId" },
+        "request_id": { "status": "DOCUMENTED", "native": "JSON-RPC request id" },
+        "principal_id": { "status": "GAP", "native": null },
+        "decision_receipt": { "status": "DOCUMENTED", "native": "JSON-RPC response" }
+      }
+    },
+    {
+      "native": "thread/tokenUsage/updated",
+      "host_kind": "usage",
+      "required_bindings": ["threadId", "turnId", "last", "total"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "threadId" },
+        "turn_id": { "status": "DOCUMENTED", "native": "turnId" },
+        "usage_delta": { "status": "DOCUMENTED", "native": "last + total" },
+        "coverage_complete": { "status": "GAP", "native": null }
+      }
+    },
+    {
+      "native": "turn/completed",
+      "host_kind": "turn_end",
+      "required_bindings": ["threadId", "turn.id", "turn.status"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "threadId" },
+        "turn_id": { "status": "DOCUMENTED", "native": "turn.id" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "turn.status" }
+      }
+    },
+    {
+      "native": "thread/resume response",
+      "host_kind": "session_resume",
+      "required_bindings": ["thread.id", "prefix checkpoint hash"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "thread.id" },
+        "resume_prefix_sha256": { "status": "GAP", "native": null }
+      }
+    },
+    {
+      "native": "turn/interrupt response + terminal turn",
+      "host_kind": "goal_transition",
+      "required_bindings": ["threadId", "turnId", "interrupt receipt"],
+      "normalized_bindings": {
+        "session_id": { "status": "DOCUMENTED", "native": "threadId" },
+        "turn_id": { "status": "DOCUMENTED", "native": "turnId" },
+        "interrupt_receipt": { "status": "DOCUMENTED", "native": "turn/interrupt response" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "terminal turn status" }
+      }
+    }
   ]
 }
