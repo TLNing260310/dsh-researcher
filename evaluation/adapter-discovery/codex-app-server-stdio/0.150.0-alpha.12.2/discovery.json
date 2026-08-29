@@ -30,7 +30,8 @@
     "native_contract": { "path": "native-contract.json", "sha256": "1ca811fb333383cf806975356520780cb4f233950adaeb5b76c4c64d5cbeb629" },
     "schema_capture": { "path": "schema-capture.json", "sha256": "207be4f0c0992c5224e228d52fa0593dbb457c07ca88a229f83759e1cfdc5ede" },
     "turn_capture_attempts": { "path": "turn-capture-attempts.json", "sha256": "f26f764864009833cdaae8f09c73370bb722c2cc0fcd0a6052d57847a1b48127" },
-    "expected_host_events": { "path": "expected-host-events.json", "sha256": "8471cf085c39da69ddbc1c0da3e7684685cb38e4253a3c676facc989c24b5e48" },
+    "expected_host_events": { "path": "expected-host-events.json", "sha256": "1e3a9559499fa7cdf0d8d2ead7ca8274eb9d1260165145a443ef8dae4ed721fb" },
+    "binding_provenance": { "path": "binding-provenance.json", "sha256": "1895efa115e74defcb1143148cffd7a8767b86e9164765b55ec00bf37a6b25ad" },
     "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "ac1f5ec5f133229dc04b91e936fc43166672bf9b3e5b8bd36491d2cc1dff6c88" },
     "mapping_report": { "path": "mapping.md", "sha256": "e9b0f4f8b46981a3dff22770fac773ae7ff9b4898603d1a668a55b35c01dfb97" }
   },

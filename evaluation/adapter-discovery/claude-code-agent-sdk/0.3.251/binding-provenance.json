@@ -1,0 +1,37 @@
+{
+  "schema": "dsh-researcher/adapter-binding-provenance/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "source_lock": {
+    "kind": "typescript-declaration",
+    "path_hint": "sdk.d.ts",
+    "sha256": "4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe"
+  },
+  "proofs": {
+    "base-hook.session-id": { "symbol": "BaseHookInput", "members": ["session_id"], "semantic_limit": null },
+    "base-hook.prompt-id": { "symbol": "BaseHookInput", "members": ["prompt_id"], "semantic_limit": "Optional prompt-grain correlation; absent before first user input and not a durable replay checkpoint." },
+    "pre-tool-use.tool-use-id": { "symbol": "PreToolUseHookInput", "members": ["tool_use_id"], "semantic_limit": null },
+    "pre-tool-use.tool-input": { "symbol": "PreToolUseHookInput", "members": ["tool_input"], "semantic_limit": "The SHA-256 value is adapter-derived from canonical bytes; the SDK does not supply the hash." },
+    "post-tool-use.tool-use-id": { "symbol": "PostToolUseHookInput|PostToolUseFailureHookInput", "members": ["tool_use_id"], "semantic_limit": null },
+    "post-tool-use.tool-response": { "symbol": "PostToolUseHookInput|PostToolUseFailureHookInput", "members": ["tool_response", "error"], "semantic_limit": "The SHA-256 value is adapter-derived from canonical success output or failure error bytes; the SDK does not supply the hash." },
+    "post-tool-use.outcome-discriminator": { "symbol": "PostToolUseHookInput|PostToolUseFailureHookInput", "members": ["hook_event_name"], "semantic_limit": "This distinguishes hook success/failure; it does not prove durable delivery." },
+    "can-use-tool.tool-use-id": { "symbol": "CanUseTool", "members": ["options.toolUseID"], "semantic_limit": null },
+    "can-use-tool.request-id": { "symbol": "CanUseTool", "members": ["options.requestId"], "semantic_limit": "Correlation ID is host-visible but is not a human principal identity." },
+    "permission-result.decision": { "symbol": "PermissionResult", "members": ["behavior", "decisionClassification", "toolUseID"], "semantic_limit": "The host must set decisionClassification from the actual user action; the type alone does not authenticate a principal or persist a receipt." },
+    "result.session-id": { "symbol": "SDKResultSuccess|SDKResultError", "members": ["session_id"], "semantic_limit": null },
+    "result.user-message-uuid": { "symbol": "SDKResultSuccess|SDKResultError", "members": ["user_message_uuid"], "semantic_limit": "Optional client-minted correlation; absent on synthetic, scheduled, unstamped, and some failure turns." },
+    "result.model-usage": { "symbol": "SDKResultSuccess|SDKResultError", "members": ["modelUsage"], "semantic_limit": "Cumulative query-pipeline estimate; excludes helper calls and resets on resume or clear." },
+    "result.terminal-status": { "symbol": "SDKResultSuccess|SDKResultError", "members": ["subtype", "terminal_reason", "stop_reason"], "semantic_limit": "A turn-complete signal, not proof of Governor hard-stop enforcement." },
+    "session-start.session-id": { "symbol": "SessionStartHookInput", "members": ["session_id", "source"], "semantic_limit": "source=resume identifies resume but supplies no prefix/checkpoint hash." },
+    "stop-hook.session-id": { "symbol": "StopHookInput", "members": ["session_id"], "semantic_limit": null },
+    "query.interrupt-receipt": { "symbol": "Query.interrupt|SDKControlInterruptResponse", "members": ["still_queued", "cancelled"], "semantic_limit": "Receipt exists only when the runtime advertises interrupt_receipt_v1; empty or optional coverage is insufficient for hard-stop proof." },
+    "stop-hook.discriminator": { "symbol": "StopHookInput", "members": ["hook_event_name"], "semantic_limit": "Stop observation does not itself prevent later writes." }
+  },
+  "gap_fields": ["coverage_complete", "principal_id", "resume_prefix_sha256"],
+  "capture": {
+    "model_calls": 0,
+    "network_calls": 0,
+    "reproduction": "Extract the named exported declarations from the exact sdk.d.ts content lock and compare each named member."
+  },
+  "claim_boundary": "DOCUMENTED means the exact locked declaration exposes the named source member. It does not mean the field was observed in a live trace, is authenticated, is complete, is durable, or satisfies governed conformance."
+}

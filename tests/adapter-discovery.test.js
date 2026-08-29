@@ -5,6 +5,7 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const os = require('node:os')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const { spawnSync } = require('node:child_process')
 const { EventEmitter } = require('node:events')
 const { PassThrough, Writable } = require('node:stream')
@@ -97,7 +98,7 @@ test('adapter discovery is version locked, offline checked, and non-product', ()
   assert.deepEqual(report.convergence, {
     status: 'DISCOVERY_ONLY', common_host_kinds: 7, binding_fields: 28,
     binding_coverage: {
-      'claude-code-agent-sdk': { documented: 17, gaps: 11 },
+      'claude-code-agent-sdk': { documented: 25, gaps: 3 },
       'codex-app-server-stdio': { documented: 25, gaps: 3 },
     },
     shared_governance_gaps: 5,
@@ -125,6 +126,9 @@ test('cross-client convergence rejects a forged common set and stale mapping byt
       const target = path.join(tempRoot, client.mapping_path)
       fs.mkdirSync(path.dirname(target), { recursive: true })
       fs.copyFileSync(source, target)
+      const mapping = JSON.parse(fs.readFileSync(source, 'utf8'))
+      fs.copyFileSync(path.join(path.dirname(source), mapping.binding_provenance_path), path.join(path.dirname(target), mapping.binding_provenance_path))
+      fs.copyFileSync(path.join(path.dirname(source), 'native-contract.json'), path.join(path.dirname(target), 'native-contract.json'))
     }
     const convergenceFile = path.join(tempRoot, 'host-event-convergence-v1.json')
     fs.writeFileSync(convergenceFile, JSON.stringify({ ...convergence, common_host_kinds: convergence.common_host_kinds.slice(1) }))
@@ -136,6 +140,36 @@ test('cross-client convergence rejects a forged common set and stale mapping byt
     fs.writeFileSync(convergenceFile, JSON.stringify(convergence))
     fs.appendFileSync(path.join(tempRoot, convergence.clients[0].mapping_path), '\n')
     assert.throws(() => validateConvergence(convergenceFile), /hash drifted/)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('cross-client convergence rejects invented or unbound field provenance', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-adapter-provenance-test-'))
+  try {
+    const sourceRoot = path.join(root, 'evaluation', 'adapter-discovery')
+    const convergence = readJson('evaluation', 'adapter-discovery', 'host-event-convergence-v1.json')
+    for (const client of convergence.clients) {
+      const sourceMapping = path.join(sourceRoot, client.mapping_path)
+      const targetMapping = path.join(tempRoot, client.mapping_path)
+      fs.mkdirSync(path.dirname(targetMapping), { recursive: true })
+      fs.copyFileSync(sourceMapping, targetMapping)
+      const mapping = JSON.parse(fs.readFileSync(sourceMapping, 'utf8'))
+      fs.copyFileSync(path.join(path.dirname(sourceMapping), mapping.binding_provenance_path), path.join(path.dirname(targetMapping), mapping.binding_provenance_path))
+      fs.copyFileSync(path.join(path.dirname(sourceMapping), 'native-contract.json'), path.join(path.dirname(targetMapping), 'native-contract.json'))
+    }
+    const convergenceFile = path.join(tempRoot, 'host-event-convergence-v1.json')
+    const copied = JSON.parse(JSON.stringify(convergence))
+    for (const client of copied.clients) client.mapping_sha256 = crypto.createHash('sha256').update(fs.readFileSync(path.join(tempRoot, client.mapping_path))).digest('hex')
+    fs.writeFileSync(convergenceFile, JSON.stringify(copied))
+    const claudeMappingPath = path.join(tempRoot, copied.clients.find((client) => client.client === 'claude-code-agent-sdk').mapping_path)
+    const claudeMapping = JSON.parse(fs.readFileSync(claudeMappingPath, 'utf8'))
+    claudeMapping.mappings[0].normalized_bindings.call_id.proof = 'invented.proof'
+    fs.writeFileSync(claudeMappingPath, JSON.stringify(claudeMapping))
+    copied.clients.find((client) => client.client === 'claude-code-agent-sdk').mapping_sha256 = crypto.createHash('sha256').update(fs.readFileSync(claudeMappingPath)).digest('hex')
+    fs.writeFileSync(convergenceFile, JSON.stringify(copied))
+    assert.throws(() => validateConvergence(convergenceFile), /lacks a valid provenance proof/)
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true })
   }

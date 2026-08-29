@@ -1,0 +1,56 @@
+{
+  "schema": "dsh-researcher/adapter-binding-provenance/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "source_lock": {
+    "kind": "generated-json-schema-bundle",
+    "generator": "codex app-server generate-json-schema --experimental",
+    "tree_sha256": "0b26787868e7ebf46c77f24fc989ebd79d6ae7a8832893fd75887d995f232b48",
+    "files": {
+      "codex_app_server_protocol.v2.schemas.json": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596",
+      "v2/ItemStartedNotification.json": "632d9d70cf866e2515c9c661da6cad1ecc3cfb59abfad0098938a74d22b9fbb9",
+      "v2/ItemCompletedNotification.json": "0f1d661f014aac04c3fc9c04b8ebe818494a6d22fc16fe564390d0969a900370",
+      "CommandExecutionRequestApprovalParams.json": "c9728280b8f3204fd729d0fb3d1ca7bb05b1150de26b3653f7163e6a9bd941e7",
+      "FileChangeRequestApprovalParams.json": "13848b26814c286ad6425a20d01c1691c86790e1f9e2529399677a8a22fe0d18",
+      "CommandExecutionRequestApprovalResponse.json": "6d0767113e22f311381809b6b236b0dde2b99b01992879c26bf7b1ea0e003cb7",
+      "FileChangeRequestApprovalResponse.json": "b95b03ee6be674e25cee2e863cc135a28620e1070addd2f34685aadee27cde08",
+      "v2/ThreadTokenUsageUpdatedNotification.json": "aba4f6c7e4a19b2b842c08ee793b57000c07dafd57b922ad0d8e7c76609108c2",
+      "v2/TurnCompletedNotification.json": "3390bf266f96a9087635417d4d03a0b0f3d33ba697bca0ce41d32f9b8e906b17",
+      "v2/ThreadResumeResponse.json": "99f49bae3a670aa900c52d68d94ac83ad2f59922ba711142f8bf59f008b5e99c",
+      "v2/TurnInterruptParams.json": "6dff382dae73d1dbc58406ed045605f647e7a49660e2540fbd2c6c24d60c5f2b",
+      "v2/TurnInterruptResponse.json": "531de6be06fe979b5963f249bab82498a175e614bf65ac12fb2e849dfe60bcf1"
+    }
+  },
+  "proofs": {
+    "item-started.thread-id": { "source": "v2/ItemStartedNotification.json", "pointer": "/properties/threadId", "semantic_limit": null },
+    "item-started.turn-id": { "source": "v2/ItemStartedNotification.json", "pointer": "/properties/turnId", "semantic_limit": null },
+    "item-completed.thread-id": { "source": "v2/ItemCompletedNotification.json", "pointer": "/properties/threadId", "semantic_limit": null },
+    "item-completed.turn-id": { "source": "v2/ItemCompletedNotification.json", "pointer": "/properties/turnId", "semantic_limit": null },
+    "item.id": { "source": "v2/ItemStartedNotification.json", "pointer": "/properties/item", "semantic_limit": "The discriminated ThreadItem variants expose id; live correlation remains unobserved in this discovery." },
+    "item.input": { "source": "v2/ItemStartedNotification.json", "pointer": "/properties/item", "semantic_limit": "The SHA-256 value is adapter-derived from the selected variant input; the server does not supply the hash." },
+    "item.output": { "source": "v2/ItemCompletedNotification.json", "pointer": "/properties/item", "semantic_limit": "The SHA-256 value is adapter-derived from the selected variant output; the server does not supply the hash." },
+    "item.status": { "source": "v2/ItemCompletedNotification.json", "pointer": "/properties/item", "semantic_limit": "Status belongs to a discriminated item variant; it does not prove durable delivery." },
+    "approval.thread-id": { "source": "CommandExecutionRequestApprovalParams.json|FileChangeRequestApprovalParams.json", "pointer": "/properties/threadId", "semantic_limit": null },
+    "approval.turn-id": { "source": "CommandExecutionRequestApprovalParams.json|FileChangeRequestApprovalParams.json", "pointer": "/properties/turnId", "semantic_limit": null },
+    "approval.item-id": { "source": "CommandExecutionRequestApprovalParams.json|FileChangeRequestApprovalParams.json", "pointer": "/properties/itemId", "semantic_limit": null },
+    "json-rpc.request-id": { "source": "codex_app_server_protocol.v2.schemas.json", "pointer": "JSON-RPC server request envelope id", "semantic_limit": "Request correlation is not a human principal identity." },
+    "approval.response": { "source": "CommandExecutionRequestApprovalResponse.json|FileChangeRequestApprovalResponse.json", "pointer": "/properties/decision", "semantic_limit": "A JSON-RPC decision response is not host-authenticated principal evidence or a durable signed receipt." },
+    "token-usage.thread-id": { "source": "v2/ThreadTokenUsageUpdatedNotification.json", "pointer": "/properties/threadId", "semantic_limit": null },
+    "token-usage.turn-id": { "source": "v2/ThreadTokenUsageUpdatedNotification.json", "pointer": "/properties/turnId", "semantic_limit": null },
+    "token-usage.counters": { "source": "v2/ThreadTokenUsageUpdatedNotification.json", "pointer": "/properties/tokenUsage", "semantic_limit": "Schema presence does not prove complete coverage of retries, helpers, or every billable request." },
+    "turn-completed.thread-id": { "source": "v2/TurnCompletedNotification.json", "pointer": "/properties/threadId", "semantic_limit": null },
+    "turn.id": { "source": "v2/TurnCompletedNotification.json", "pointer": "/definitions/Turn/properties/id", "semantic_limit": null },
+    "turn.status": { "source": "v2/TurnCompletedNotification.json", "pointer": "/definitions/Turn/properties/status", "semantic_limit": "Terminal observation does not itself prevent later writes." },
+    "thread-resume.thread-id": { "source": "v2/ThreadResumeResponse.json", "pointer": "/definitions/Thread/properties/id", "semantic_limit": "Resume returns persisted state but no prefix/checkpoint hash." },
+    "turn-interrupt.thread-id": { "source": "v2/TurnInterruptParams.json", "pointer": "/properties/threadId", "semantic_limit": null },
+    "turn-interrupt.turn-id": { "source": "v2/TurnInterruptParams.json", "pointer": "/properties/turnId", "semantic_limit": null },
+    "turn-interrupt.response": { "source": "v2/TurnInterruptResponse.json", "pointer": "/", "semantic_limit": "The typed response is an empty object; it acknowledges RPC completion but contains no hard-stop or queue-drain receipt." }
+  },
+  "gap_fields": ["coverage_complete", "principal_id", "resume_prefix_sha256"],
+  "capture": {
+    "model_calls": 0,
+    "network_calls": 0,
+    "reproduction": "Regenerate schemas with the exact executable lock, verify the bundle tree and listed file hashes, then resolve each named JSON pointer."
+  },
+  "claim_boundary": "DOCUMENTED means the exact version-locked generated schema exposes the named source member. It does not mean the field was observed in a valid live turn, is authenticated, is complete, is durable, or satisfies governed conformance."
+}

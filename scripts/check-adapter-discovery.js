@@ -145,6 +145,57 @@ const validate = (file) => {
   return { client: doc.client, version: doc.locked_runtime.version, result: doc.result }
 }
 
+const validateBindingProvenance = (mappingFile, mapping) => {
+  if (!relativeSafe(mapping.binding_provenance_path)) throw new Error(mappingFile + ': binding provenance path is missing or unsafe')
+  const file = path.resolve(path.dirname(mappingFile), mapping.binding_provenance_path)
+  if (!file.startsWith(path.dirname(mappingFile) + path.sep) || !fs.existsSync(file)) throw new Error(mappingFile + ': binding provenance is missing')
+  const doc = readJson(file)
+  exactKeys(doc, ['schema', 'client', 'runtime_version', 'source_lock', 'proofs', 'gap_fields', 'capture', 'claim_boundary'], file)
+  if (doc.schema !== 'dsh-researcher/adapter-binding-provenance/v1' || doc.client !== mapping.client || !plain(doc.proofs)) throw new Error(file + ': binding provenance identity drifted')
+  if (doc.capture?.model_calls !== 0 || doc.capture?.network_calls !== 0 || typeof doc.capture?.reproduction !== 'string') throw new Error(file + ': provenance capture boundary drifted')
+  if (!Array.isArray(doc.gap_fields) || new Set(doc.gap_fields).size !== doc.gap_fields.length || JSON.stringify([...doc.gap_fields].sort()) !== JSON.stringify(['coverage_complete', 'principal_id', 'resume_prefix_sha256'])) throw new Error(file + ': provenance gap field set drifted')
+  if (!/does not mean.*live.*authenticated.*complete.*durable.*conformance/i.test(doc.claim_boundary || '')) throw new Error(file + ': provenance claim boundary drifted')
+  const nativeContract = readJson(path.join(path.dirname(mappingFile), 'native-contract.json'))
+  if (doc.runtime_version !== nativeContract.runtime_version) throw new Error(file + ': provenance runtime lock drifted')
+  if (mapping.client === 'claude-code-agent-sdk') {
+    exactKeys(doc.source_lock, ['kind', 'path_hint', 'sha256'], file + ': Claude source lock')
+    if (doc.source_lock.kind !== 'typescript-declaration' || doc.source_lock.path_hint !== 'sdk.d.ts' || doc.source_lock.sha256 !== nativeContract.sdk_types_sha256 || doc.source_lock.sha256 !== CLAUDE_SDK_LOCK.files['sdk.d.ts']) throw new Error(file + ': Claude provenance source lock drifted')
+  } else if (mapping.client === 'codex-app-server-stdio') {
+    exactKeys(doc.source_lock, ['kind', 'generator', 'tree_sha256', 'files'], file + ': Codex source lock')
+    if (doc.source_lock.kind !== 'generated-json-schema-bundle' || doc.source_lock.generator !== nativeContract.generator || doc.source_lock.tree_sha256 !== nativeContract.generated_bundle.tree_sha256 || !plain(doc.source_lock.files)) throw new Error(file + ': Codex provenance source lock drifted')
+    if (doc.source_lock.files['codex_app_server_protocol.v2.schemas.json'] !== nativeContract.generated_v2_schema_sha256) throw new Error(file + ': Codex provenance v2 schema lock drifted')
+    for (const [source, digest] of Object.entries(doc.source_lock.files)) if (!relativeSafe(source) || !/^[a-f0-9]{64}$/.test(digest)) throw new Error(file + ': invalid Codex provenance file lock')
+  } else throw new Error(file + ': unsupported provenance client')
+  const usedProofs = new Set()
+  const observedGapFields = new Set()
+  for (const item of mapping.mappings) {
+    for (const [field, binding] of Object.entries(item.normalized_bindings)) {
+      if (binding.status === 'DOCUMENTED') {
+        if (typeof binding.proof !== 'string' || !plain(doc.proofs[binding.proof])) throw new Error(file + ': documented binding lacks a valid provenance proof: ' + item.host_kind + '/' + field)
+        usedProofs.add(binding.proof)
+      } else {
+        if (binding.proof !== null) throw new Error(file + ': gap binding must not claim provenance: ' + item.host_kind + '/' + field)
+        observedGapFields.add(field)
+      }
+    }
+  }
+  if (JSON.stringify([...observedGapFields].sort()) !== JSON.stringify([...doc.gap_fields].sort())) throw new Error(file + ': mapping gaps do not match provenance gaps')
+  if (JSON.stringify([...usedProofs].sort()) !== JSON.stringify(Object.keys(doc.proofs).sort())) throw new Error(file + ': provenance contains unused or unbound proofs')
+  for (const [id, proof] of Object.entries(doc.proofs)) {
+    if (!/^[a-z0-9.-]+$/.test(id) || typeof proof.semantic_limit !== 'string' && proof.semantic_limit !== null) throw new Error(file + ': invalid provenance proof: ' + id)
+    if (mapping.client === 'claude-code-agent-sdk') {
+      exactKeys(proof, ['symbol', 'members', 'semantic_limit'], file + ': Claude proof ' + id)
+      if (typeof proof.symbol !== 'string' || !Array.isArray(proof.members) || proof.members.length === 0 || proof.members.some((member) => typeof member !== 'string' || member.length === 0)) throw new Error(file + ': invalid Claude proof locator: ' + id)
+    } else {
+      exactKeys(proof, ['source', 'pointer', 'semantic_limit'], file + ': Codex proof ' + id)
+      if (typeof proof.source !== 'string' || typeof proof.pointer !== 'string' || proof.pointer.length === 0) throw new Error(file + ': invalid Codex proof locator: ' + id)
+      for (const source of proof.source.split('|')) if (!Object.hasOwn(doc.source_lock.files, source)) throw new Error(file + ': Codex proof uses an unlocked source: ' + id)
+    }
+  }
+  assertNoSensitiveStrings(doc, file)
+  return { path: file, proof_count: usedProofs.size, gap_fields: doc.gap_fields.length }
+}
+
 const validateConvergence = (file) => {
   const doc = readJson(file)
   if (doc.schema !== 'dsh-researcher/adapter-discovery-convergence/v1' || doc.status !== 'DISCOVERY_ONLY' || doc.governed !== false || doc.conformance_eligible !== false) throw new Error(file + ': convergence identity or boundary drifted')
@@ -165,6 +216,7 @@ const validateConvergence = (file) => {
     const mapping = readJson(target)
     if (mapping.schema !== 'dsh-researcher/expected-host-events/v1' || mapping.client !== client.client) throw new Error(file + ': convergence mapping identity drifted: ' + client.client)
     if (!Array.isArray(mapping.mappings) || mapping.mappings.length === 0) throw new Error(file + ': convergence mapping is empty: ' + client.client)
+    validateBindingProvenance(target, mapping)
     const kinds = mapping.mappings.map((item) => item.host_kind)
     if (kinds.some((kind) => !hostEventKinds.has(kind)) || new Set(kinds).size !== kinds.length) throw new Error(file + ': convergence mapping has unsupported or duplicate HostEvent kinds: ' + client.client)
     let documented = 0
@@ -176,10 +228,10 @@ const validateConvergence = (file) => {
       for (const [field, binding] of Object.entries(item.normalized_bindings)) {
         if (!plain(binding) || !['DOCUMENTED', 'GAP'].includes(binding.status)) throw new Error(file + ': invalid normalized binding status: ' + client.client + '/' + item.host_kind + '/' + field)
         if (binding.status === 'DOCUMENTED') {
-          if (typeof binding.native !== 'string' || binding.native.length === 0) throw new Error(file + ': documented normalized binding lacks a native source: ' + client.client + '/' + item.host_kind + '/' + field)
+          if (typeof binding.native !== 'string' || binding.native.length === 0 || typeof binding.proof !== 'string') throw new Error(file + ': documented normalized binding lacks a native source or proof: ' + client.client + '/' + item.host_kind + '/' + field)
           documented += 1
         } else {
-          if (binding.native !== null) throw new Error(file + ': gap normalized binding must not invent a native source: ' + client.client + '/' + item.host_kind + '/' + field)
+          if (binding.native !== null || binding.proof !== null) throw new Error(file + ': gap normalized binding must not invent a native source or proof: ' + client.client + '/' + item.host_kind + '/' + field)
           gaps += 1
         }
       }
@@ -215,4 +267,4 @@ const records = files.sort().map(validate)
 const convergence = validateConvergence(path.join(discoveryRoot, 'host-event-convergence-v1.json'))
 process.stdout.write(JSON.stringify({ ok: true, schema, checker_model_calls: 0, checker_network_calls: 0, records, convergence }, null, 2) + '\n')
 
-module.exports = { schema, validate, validateConvergence }
+module.exports = { schema, validate, validateBindingProvenance, validateConvergence }

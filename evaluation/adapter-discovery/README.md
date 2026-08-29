@@ -12,7 +12,12 @@ conformance result. Formal implementation remains gated on E2 PASS.
 offline checker reloads and hashes both version-locked `expected-host-events`
 documents, then requires their exact common candidate event-kind set. It also
 requires the same 28 normalized target binding fields across those event kinds
-and reports each client's `DOCUMENTED` versus `GAP` coverage without upgrading
+and requires every `DOCUMENTED` field to reference a proof in the adjacent
+`binding-provenance.json`. Each proof is tied to the exact Claude declaration
+hash or Codex generated-schema tree and bounded source-file hashes; every `GAP`
+must have no native value and no proof. These are reproducible contract proofs,
+not live observations or governed conformance evidence. The checker reports
+each client's `DOCUMENTED` versus `GAP` coverage without upgrading
 either to `OBSERVED`. A common projection target is not native semantic
 equivalence, compatibility, portability, or conformance evidence.
 

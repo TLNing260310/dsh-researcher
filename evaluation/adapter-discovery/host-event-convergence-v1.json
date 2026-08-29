@@ -8,13 +8,13 @@
       "client": "claude-code-agent-sdk",
       "version": "0.3.251",
       "mapping_path": "claude-code-agent-sdk/0.3.251/expected-host-events.json",
-      "mapping_sha256": "5baa70006a46488d9ad120685f8d8c578b8efe2981f6e00f217fbbbf58559d49"
+      "mapping_sha256": "d299ffba707de875d54c002724f88d604053254dc20f31f5bd0c8ac644ad633c"
     },
     {
       "client": "codex-app-server-stdio",
       "version": "0.150.0-alpha.12.2",
       "mapping_path": "codex-app-server-stdio/0.150.0-alpha.12.2/expected-host-events.json",
-      "mapping_sha256": "8471cf085c39da69ddbc1c0da3e7684685cb38e4253a3c676facc989c24b5e48"
+      "mapping_sha256": "1e3a9559499fa7cdf0d8d2ead7ca8274eb9d1260165145a443ef8dae4ed721fb"
     }
   ],
   "common_host_kinds": [

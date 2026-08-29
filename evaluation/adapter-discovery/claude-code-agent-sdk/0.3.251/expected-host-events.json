@@ -1,16 +1,17 @@
 {
   "schema": "dsh-researcher/expected-host-events/v1",
   "client": "claude-code-agent-sdk",
+  "binding_provenance_path": "binding-provenance.json",
   "mappings": [
     {
       "native": "PreToolUse",
       "host_kind": "tool_call",
       "required_bindings": ["session_id", "tool_use_id", "tool input hash"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "turn_id": { "status": "GAP", "native": null },
-        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id" },
-        "arguments_sha256": { "status": "DOCUMENTED", "native": "tool input hash" }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "base-hook.session-id" },
+        "turn_id": { "status": "DOCUMENTED", "native": "prompt_id", "proof": "base-hook.prompt-id" },
+        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id", "proof": "pre-tool-use.tool-use-id" },
+        "arguments_sha256": { "status": "DOCUMENTED", "native": "tool_input canonical hash", "proof": "pre-tool-use.tool-input" }
       }
     },
     {
@@ -18,11 +19,11 @@
       "host_kind": "tool_result",
       "required_bindings": ["session_id", "tool_use_id", "result hash", "failure status"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "turn_id": { "status": "GAP", "native": null },
-        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id" },
-        "result_sha256": { "status": "DOCUMENTED", "native": "tool_response hash" },
-        "terminal_status": { "status": "DOCUMENTED", "native": "hook kind success|failure" }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "base-hook.session-id" },
+        "turn_id": { "status": "DOCUMENTED", "native": "prompt_id", "proof": "base-hook.prompt-id" },
+        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id", "proof": "post-tool-use.tool-use-id" },
+        "result_sha256": { "status": "DOCUMENTED", "native": "tool_response|error canonical hash", "proof": "post-tool-use.tool-response" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "PostToolUse|PostToolUseFailure discriminator", "proof": "post-tool-use.outcome-discriminator" }
       }
     },
     {
@@ -30,12 +31,12 @@
       "host_kind": "user_action",
       "required_bindings": ["session_id", "tool_use_id", "request id", "principal", "decision receipt"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "turn_id": { "status": "GAP", "native": null },
-        "call_id": { "status": "DOCUMENTED", "native": "tool_use_id" },
-        "request_id": { "status": "GAP", "native": null },
-        "principal_id": { "status": "GAP", "native": null },
-        "decision_receipt": { "status": "DOCUMENTED", "native": "canUseTool response" }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "base-hook.session-id" },
+        "turn_id": { "status": "DOCUMENTED", "native": "prompt_id", "proof": "base-hook.prompt-id" },
+        "call_id": { "status": "DOCUMENTED", "native": "CanUseTool.options.toolUseID", "proof": "can-use-tool.tool-use-id" },
+        "request_id": { "status": "DOCUMENTED", "native": "CanUseTool.options.requestId", "proof": "can-use-tool.request-id" },
+        "principal_id": { "status": "GAP", "native": null, "proof": null },
+        "decision_receipt": { "status": "DOCUMENTED", "native": "PermissionResult.behavior + decisionClassification", "proof": "permission-result.decision" }
       }
     },
     {
@@ -43,10 +44,10 @@
       "host_kind": "usage",
       "required_bindings": ["session_id", "turn correlation", "cumulative delta"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "turn_id": { "status": "GAP", "native": null },
-        "usage_delta": { "status": "DOCUMENTED", "native": "modelUsage" },
-        "coverage_complete": { "status": "GAP", "native": null }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "result.session-id" },
+        "turn_id": { "status": "DOCUMENTED", "native": "user_message_uuid", "proof": "result.user-message-uuid" },
+        "usage_delta": { "status": "DOCUMENTED", "native": "modelUsage cumulative delta", "proof": "result.model-usage" },
+        "coverage_complete": { "status": "GAP", "native": null, "proof": null }
       }
     },
     {
@@ -54,9 +55,9 @@
       "host_kind": "turn_end",
       "required_bindings": ["session_id", "result subtype"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "turn_id": { "status": "GAP", "native": null },
-        "terminal_status": { "status": "DOCUMENTED", "native": "result subtype" }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "result.session-id" },
+        "turn_id": { "status": "DOCUMENTED", "native": "user_message_uuid", "proof": "result.user-message-uuid" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "result subtype + terminal_reason", "proof": "result.terminal-status" }
       }
     },
     {
@@ -64,8 +65,8 @@
       "host_kind": "session_resume",
       "required_bindings": ["session_id", "prefix checkpoint hash"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "resume_prefix_sha256": { "status": "GAP", "native": null }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "session-start.session-id" },
+        "resume_prefix_sha256": { "status": "GAP", "native": null, "proof": null }
       }
     },
     {
@@ -73,10 +74,10 @@
       "host_kind": "goal_transition",
       "required_bindings": ["session_id", "interrupt receipt", "terminal observation"],
       "normalized_bindings": {
-        "session_id": { "status": "DOCUMENTED", "native": "session_id" },
-        "turn_id": { "status": "GAP", "native": null },
-        "interrupt_receipt": { "status": "GAP", "native": null },
-        "terminal_status": { "status": "DOCUMENTED", "native": "Stop" }
+        "session_id": { "status": "DOCUMENTED", "native": "session_id", "proof": "stop-hook.session-id" },
+        "turn_id": { "status": "DOCUMENTED", "native": "prompt_id", "proof": "base-hook.prompt-id" },
+        "interrupt_receipt": { "status": "DOCUMENTED", "native": "SDKControlInterruptResponse", "proof": "query.interrupt-receipt" },
+        "terminal_status": { "status": "DOCUMENTED", "native": "Stop hook_event_name", "proof": "stop-hook.discriminator" }
       }
     }
   ]

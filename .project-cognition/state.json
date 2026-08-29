@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 31,
+  "revision": 34,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 retains one exact package/module/types SHA-256 lock across three zero-model capture paths; Codex App Server stdio 0.150.0-alpha.12.2 binds its capture entries to an explicit win32-x64 executable version, byte size and SHA-256 before spawn while omitting the personal absolute path. A real zero-model Codex initialize/empty-thread-list exchange and credential-stripped 413-file schema generation completed. The derived convergence checker now reloads both exact expected-host-event mappings, requires a shared seven-kind candidate projection and the same 28 normalized target binding fields, and rejects kind, field or source-byte drift. The reviewed documents mark 17 Claude fields and 25 Codex fields DOCUMENTED, with respectively 11 and 3 explicit GAP fields; these are interface-document coverage counts, not OBSERVED runtime reliability or a client ranking. guard_violation remains unmapped, while authenticated human receipts, usage completeness, restart checkpoints, raw-first durability and terminal write enforcement remain shared gaps. Historical Codex turn attempts remain INVALID with no retained native turn trace. Both clients remain HOLD and no adapter, compatibility, portability or governed-conformance claim follows.",
-      "fingerprint": "b0d07188edb3773069ed193574d94bb9b72efda00d9f3146bf6dba42e94311c0",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 retains one exact package/module/types SHA-256 lock across three zero-model capture paths; Codex App Server stdio 0.150.0-alpha.12.2 binds its capture entries to an explicit win32-x64 executable version, byte size and SHA-256 before spawn while omitting the personal absolute path. A real zero-model Codex initialize/empty-thread-list exchange and credential-stripped 413-file schema generation completed. The derived convergence checker reloads both exact expected-host-event mappings, requires a shared seven-kind candidate projection and the same 28 normalized target binding fields, and now requires each DOCUMENTED field to bind a reproducible proof locator locked to the exact Claude declaration hash or Codex generated-schema tree and source-file hashes. Both reviewed mappings expose 25 DOCUMENTED and 3 GAP fields: authenticated human principal, complete usage coverage and resume-prefix checkpoint remain absent. The proof locators are contract evidence only, not OBSERVED runtime reliability; they preserve explicit semantic limits for optional Claude prompt correlation, adapter-derived hashes, incomplete usage, empty Codex interrupt acknowledgement and non-durable receipts. guard_violation remains unmapped, while raw-first durability and terminal write enforcement remain shared system gaps. Historical Codex turn attempts remain INVALID with no retained native turn trace. Both clients remain HOLD and no adapter, compatibility, portability or governed-conformance claim follows.",
+      "fingerprint": "d092aab95aae06c06d3a2f1b6f5c4afcabef04dadd79a8993d0acb3b36a8896e",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "37018f508d320893505a39492270f474d26dd550d5b3ea4aac6b93a467611ab3"
+  "state_hash": "c08e894a4d43c6e62bd2a2bc9915939f68310cfc9f1176fa30adbc2ab83b842b"
 }
