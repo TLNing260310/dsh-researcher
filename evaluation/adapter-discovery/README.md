@@ -19,6 +19,11 @@ The separate `adapter:discovery:capture:claude-session` command invokes only
 `listSessions`, `getSessionInfo`, and `getSessionMessages` in a child process
 with a fresh config and empty project. Its empty results prove callability, not
 a native session, resume, replay, or compatibility.
+`adapter:discovery:capture:claude-fixture` writes one deterministic,
+host-authored JSONL transcript into another fresh config and asks the same real
+SDK functions to parse it. This checks non-empty local parser behavior without
+calling a model. Because Claude Code did not emit the fixture, it is not native
+session, event-ordering, resume, replay, or compatibility evidence.
 The Codex contract capture is reproducible with
 `npm run adapter:discovery:capture:codex-contract`; it uses a fresh temporary
 `CODEX_HOME` and invokes only CLI version and local schema generation paths.

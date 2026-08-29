@@ -78,7 +78,21 @@ const validate = (file) => {
     ])) throw new Error(file + ': Claude empty session API results drifted')
     if (sessionTrace.package?.package_json_sha256 !== trace.package?.package_json_sha256 || sessionTrace.package?.sdk_module_sha256 !== trace.package?.sdk_module_sha256 || sessionTrace.package?.sdk_types_sha256 !== '4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe') throw new Error(file + ': Claude session API package binding drifted')
     if (!/empty isolated config.*no existing user session/i.test(sessionTrace.claim_boundary || '')) throw new Error(file + ': Claude session API claim boundary drifted')
-    if (Object.values(doc.capabilities).some((item) => item.status === 'OBSERVED')) throw new Error(file + ': Claude capability was promoted by an empty session trace')
+    const fixtureBinding = doc.artifacts.local_session_fixture_trace
+    if (!fixtureBinding) throw new Error(file + ': Claude local session fixture trace binding is missing')
+    const fixtureTrace = readJson(path.resolve(path.dirname(file), fixtureBinding.path))
+    assertNoSensitiveStrings(fixtureTrace, file + ': local session fixture trace')
+    if (fixtureTrace.schema !== 'dsh-researcher/adapter-local-session-parser-trace/v1' || fixtureTrace.client !== doc.client || fixtureTrace.runtime_version !== doc.locked_runtime.version || fixtureTrace.capture_kind !== 'host-authored-local-session-fixture-no-model') throw new Error(file + ': Claude local session fixture identity drifted')
+    for (const field of ['model_calls', 'prompt_submissions', 'sdk_session_creations', 'network_calls_initiated_by_capture']) if (fixtureTrace[field] !== 0) throw new Error(file + ': Claude local session fixture must keep ' + field + '=0')
+    if (fixtureTrace.host_fixture_sessions !== 1 || fixtureTrace.isolated_config !== true || fixtureTrace.isolated_project !== true || fixtureTrace.user_session_data_read !== false) throw new Error(file + ': Claude local session fixture isolation drifted')
+    if (fixtureTrace.fixture?.provenance !== 'host-authored synthetic transcript; not emitted by Claude Code or a model' || fixtureTrace.fixture?.entry_count !== 3 || fixtureTrace.fixture?.path_normalization !== 'replace every fixture cwd with <isolated-project> before canonical JSONL hashing' || fixtureTrace.fixture?.normalized_transcript_sha256 !== '506d429359e8e566fabf8acc0703efb8df8e6899f022222477d5ad3feb11d221' || fixtureTrace.fixture?.unchanged_after_reads !== true) throw new Error(file + ': Claude local session fixture provenance drifted')
+    const [listCall, infoCall, messagesCall] = fixtureTrace.api_calls || []
+    if (fixtureTrace.api_calls?.length !== 3 || listCall?.method !== 'listSessions' || listCall.result_count !== 1 || listCall.session?.session_id_matches !== true || listCall.session?.summary !== 'DSH synthetic session fixture' || listCall.session?.first_prompt !== 'DSH fixture prompt' || listCall.session?.cwd_matches_fixture !== true) throw new Error(file + ': Claude fixture listSessions result drifted')
+    if (infoCall?.method !== 'getSessionInfo' || infoCall.found !== true || JSON.stringify(infoCall.session) !== JSON.stringify(listCall.session)) throw new Error(file + ': Claude fixture getSessionInfo result drifted')
+    if (messagesCall?.method !== 'getSessionMessages' || messagesCall.result_count !== 2 || JSON.stringify(messagesCall.types) !== JSON.stringify(['user', 'assistant']) || messagesCall.ids_match_fixture !== true || messagesCall.session_ids_match !== true || JSON.stringify(messagesCall.parent_tool_use_ids) !== JSON.stringify([null, null])) throw new Error(file + ': Claude fixture getSessionMessages result drifted')
+    if (fixtureTrace.package?.package_json_sha256 !== trace.package?.package_json_sha256 || fixtureTrace.package?.sdk_module_sha256 !== trace.package?.sdk_module_sha256 || fixtureTrace.package?.sdk_types_sha256 !== sessionTrace.package?.sdk_types_sha256) throw new Error(file + ': Claude local session fixture package binding drifted')
+    if (!/host-authored local JSONL fixture.*not an authentic Claude Code session/i.test(fixtureTrace.claim_boundary || '')) throw new Error(file + ': Claude local session fixture claim boundary drifted')
+    if (Object.values(doc.capabilities).some((item) => item.status === 'OBSERVED')) throw new Error(file + ': Claude capability was promoted by local parser-only evidence')
   }
   if (doc.client === 'codex-app-server-stdio') {
     const attemptBinding = doc.artifacts.turn_capture_attempts

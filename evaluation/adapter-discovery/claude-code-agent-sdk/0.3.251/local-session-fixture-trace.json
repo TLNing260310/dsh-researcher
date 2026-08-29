@@ -1,0 +1,72 @@
+{
+  "schema": "dsh-researcher/adapter-local-session-parser-trace/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "capture_kind": "host-authored-local-session-fixture-no-model",
+  "model_calls": 0,
+  "prompt_submissions": 0,
+  "sdk_session_creations": 0,
+  "host_fixture_sessions": 1,
+  "network_calls_initiated_by_capture": 0,
+  "network_observation": "not instrumented; the capture imports the locked SDK and invokes only local session-read APIs against a host-authored transcript",
+  "credential_boundary": {
+    "policy": "remove provider, Claude, proxy, API-key, access-token, and auth-token environment names; use fresh temporary CLAUDE_CONFIG_DIR",
+    "removed_name_count": 0,
+    "names_not_disclosed": true
+  },
+  "package": {
+    "name": "@anthropic-ai/claude-agent-sdk",
+    "version": "0.3.251",
+    "claude_code_version": "2.1.251",
+    "package_json_sha256": "0559ea545c7cbe07cf8fbc163cbacfa3bf6f79c767226302f6b64a27cdb7f92f",
+    "sdk_module_sha256": "9235fac983c29e614d7f572a578406dc5dbda006305faa99f9447f577738eb93",
+    "sdk_types_sha256": "4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe"
+  },
+  "fixture": {
+    "provenance": "host-authored synthetic transcript; not emitted by Claude Code or a model",
+    "entry_count": 3,
+    "path_normalization": "replace every fixture cwd with <isolated-project> before canonical JSONL hashing",
+    "normalized_transcript_sha256": "506d429359e8e566fabf8acc0703efb8df8e6899f022222477d5ad3feb11d221",
+    "unchanged_after_reads": true
+  },
+  "api_calls": [
+    {
+      "method": "listSessions",
+      "result_count": 1,
+      "session": {
+        "session_id_matches": true,
+        "summary": "DSH synthetic session fixture",
+        "custom_title": "DSH synthetic session fixture",
+        "first_prompt": "DSH fixture prompt",
+        "git_branch": "fixture-only",
+        "cwd_matches_fixture": true,
+        "created_at": 1787961600000
+      }
+    },
+    {
+      "method": "getSessionInfo",
+      "found": true,
+      "session": {
+        "session_id_matches": true,
+        "summary": "DSH synthetic session fixture",
+        "custom_title": "DSH synthetic session fixture",
+        "first_prompt": "DSH fixture prompt",
+        "git_branch": "fixture-only",
+        "cwd_matches_fixture": true,
+        "created_at": 1787961600000
+      }
+    },
+    {
+      "method": "getSessionMessages",
+      "result_count": 2,
+      "types": ["user", "assistant"],
+      "ids_match_fixture": true,
+      "session_ids_match": true,
+      "parent_tool_use_ids": [null, null]
+    }
+  ],
+  "isolated_config": true,
+  "isolated_project": true,
+  "user_session_data_read": false,
+  "claim_boundary": "The real locked SDK parsed one host-authored local JSONL fixture without model use and without mutating it. The fixture is not an authentic Claude Code session or native event stream and proves no resume, replay, tool, approval, compatibility, or conformance capability."
+}

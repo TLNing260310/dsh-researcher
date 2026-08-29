@@ -3,5 +3,5 @@
   "status": "NOT_CAPTURED",
   "required_sequence": ["SessionStart", "PreToolUse", "PostToolUse|PostToolUseFailure", "SDKResultMessage", "SessionEnd|resume"],
   "required_hashes": ["raw_prefix_sha256", "host_event_prefix_sha256", "goal_state_sha256"],
-  "missing_evidence": ["a non-empty explicitly authorized native session event prefix; isolated empty session reads are insufficient", "process-exit and resume replay", "hard-stop receipt verification"]
+  "missing_evidence": ["a non-empty explicitly authorized native session event prefix; isolated empty reads and a host-authored parser fixture are insufficient", "process-exit and resume replay", "hard-stop receipt verification"]
 }

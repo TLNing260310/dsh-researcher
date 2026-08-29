@@ -18,7 +18,15 @@ empty/absent results. This proves the locked local session-read API is callable
 without query or model use; it does not expose a non-empty native session,
 resume prefix, event ordering, tool correlation, or replay behavior.
 
-The governed gaps remain unresolved. Runtime loading, empty local session reads, and types do not prove raw event
+A second isolated capture wrote a deterministic three-entry JSONL transcript
+as a host fixture. The real locked SDK listed the one session, extracted its
+title, first prompt, branch and creation time, and reconstructed the two-message
+user-to-assistant chain without changing the transcript bytes. This establishes
+only non-empty local parser behavior. Claude Code and a model emitted none of
+the fixture, so it is not an authentic session or native lifecycle trace.
+
+The governed gaps remain unresolved. Runtime loading, isolated parser fixtures,
+and types do not prove raw event
 durability, identity assurance for a human approval, complete usage across
 helper calls, post-terminal hard stop, or path/write enforcement. The next
 discovery step requires an explicitly authorized no-secret native session trace

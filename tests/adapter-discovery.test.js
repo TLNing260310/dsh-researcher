@@ -13,6 +13,7 @@ const root = path.join(__dirname, '..')
 const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(root, ...parts), 'utf8'))
 const { sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
 const { capture: captureClaudeSessionApi, parseArgs: parseClaudeSessionArgs } = require('../scripts/capture-claude-session-api-discovery.js')
+const { capture: captureClaudeLocalFixture, parseArgs: parseClaudeFixtureArgs } = require('../scripts/capture-claude-local-session-fixture.js')
 const { extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 
@@ -170,6 +171,13 @@ test('Claude discovery binds a no-model runtime load without fabricating a sessi
   assert.equal(sessionTrace.session_creations, 0)
   assert.equal(sessionTrace.user_session_data_read, false)
   assert.deepEqual(sessionTrace.api_calls.map((item) => item.method), ['listSessions', 'getSessionInfo', 'getSessionMessages'])
+  const fixtureTrace = readJson(...base, 'local-session-fixture-trace.json')
+  assert.equal(fixtureTrace.capture_kind, 'host-authored-local-session-fixture-no-model')
+  assert.equal(fixtureTrace.model_calls, 0)
+  assert.equal(fixtureTrace.sdk_session_creations, 0)
+  assert.equal(fixtureTrace.host_fixture_sessions, 1)
+  assert.equal(fixtureTrace.fixture.unchanged_after_reads, true)
+  assert.deepEqual(fixtureTrace.api_calls.map((item) => item.result_count), [1, undefined, 2])
   assert.ok(Object.values(discovery.capabilities).every((item) => item.status !== 'OBSERVED'))
 })
 
@@ -202,6 +210,46 @@ test('Claude isolated session capture strips credentials and preserves empty-res
     })
     assert.equal(trace.model_calls, 0)
     assert.equal(trace.user_session_data_read, false)
+    assert.equal(trace.credential_boundary.removed_name_count, 3)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('Claude local fixture capture preserves the synthetic-versus-native boundary', () => {
+  assert.deepEqual(parseClaudeFixtureArgs(['--sdk-root', 'locked-root']), { sdkRoot: 'locked-root' })
+  assert.throws(() => parseClaudeFixtureArgs([]), /usage/)
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-claude-fixture-test-'))
+  const sdkRoot = path.join(tempRoot, 'sdk')
+  fs.mkdirSync(sdkRoot)
+  fs.writeFileSync(path.join(sdkRoot, 'package.json'), JSON.stringify({ name: '@anthropic-ai/claude-agent-sdk', version: '0.3.251', claudeCodeVersion: '2.1.251' }))
+  fs.writeFileSync(path.join(sdkRoot, 'sdk.mjs'), 'export {}\n')
+  fs.writeFileSync(path.join(sdkRoot, 'sdk.d.ts'), 'export {}\n')
+  try {
+    const trace = captureClaudeLocalFixture(sdkRoot, {
+      tempRoot,
+      environment: { PATH: 'safe-path', ANTHROPIC_API_KEY: 'secret', CLAUDE_CONFIG_DIR: 'user-config', HTTPS_PROXY: 'https://proxy.invalid' },
+      spawnSync(command, args, options) {
+        assert.equal(command, process.execPath)
+        assert.match(args[0], /claude-local-session-fixture-probe\.mjs$/)
+        assert.equal(options.env.PATH, 'safe-path')
+        assert.equal(options.env.ANTHROPIC_API_KEY, undefined)
+        assert.equal(options.env.HTTPS_PROXY, undefined)
+        return { status: 0, stdout: JSON.stringify({
+          schema: 'dsh-researcher/claude-local-session-fixture-probe/v1',
+          fixture: { provenance: 'host-authored synthetic transcript; not emitted by Claude Code or a model', entry_count: 3, path_normalization: 'replace every fixture cwd with <isolated-project> before canonical JSONL hashing', normalized_transcript_sha256: 'a'.repeat(64), unchanged_after_reads: true },
+          calls: [
+            { method: 'listSessions', result_count: 1 },
+            { method: 'getSessionInfo', found: true },
+            { method: 'getSessionMessages', result_count: 2 },
+          ],
+        }), stderr: '' }
+      },
+    })
+    assert.equal(trace.model_calls, 0)
+    assert.equal(trace.sdk_session_creations, 0)
+    assert.equal(trace.host_fixture_sessions, 1)
+    assert.match(trace.claim_boundary, /not an authentic Claude Code session/i)
     assert.equal(trace.credential_boundary.removed_name_count, 3)
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true })
