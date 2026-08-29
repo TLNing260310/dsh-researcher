@@ -33,7 +33,7 @@
     "expected_host_events": { "path": "expected-host-events.json", "sha256": "1d2f05a9e3ba816bb80c6565e9104b54d73364618e19c3d169e3c761cb2de5f1" },
     "binding_provenance": { "path": "binding-provenance.json", "sha256": "1895efa115e74defcb1143148cffd7a8767b86e9164765b55ec00bf37a6b25ad" },
     "event_cohesion": { "path": "event-cohesion.json", "sha256": "d8d24146286ece31b3cd27a47480c327da98f63414d9c99e257dd82a23c9eff6" },
-    "semantic_fixture": { "path": "semantic-fixture.json", "sha256": "a5b91285cbeac50b134f6f98437b8a0ce71a757e2f1863237c1737f4a0c9951d" },
+    "semantic_fixture": { "path": "semantic-fixture.json", "sha256": "5c995ec94916699fbb356db47109eee015a0d090d823bf74b9282a8e0c60d359" },
     "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "ac1f5ec5f133229dc04b91e936fc43166672bf9b3e5b8bd36491d2cc1dff6c88" },
     "mapping_report": { "path": "mapping.md", "sha256": "e9b0f4f8b46981a3dff22770fac773ae7ff9b4898603d1a668a55b35c01dfb97" }
   },

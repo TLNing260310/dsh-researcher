@@ -17,5 +17,9 @@
     { "native_seq": 9, "native_ref": "codex:interrupt-response:1", "type": "TurnInterruptResponse", "request_id": "codex-request-2" },
     { "native_seq": 10, "native_ref": "codex:turn-completed:2", "type": "TurnCompleted", "threadId": "codex-thread-fixture", "turnId": "codex-turn-2", "status": "interrupted" }
   ],
-  "expected_result_sha256": "3a940ab20573b098dee8c771cb295e6a0c32728bed8124bd4c2270e24a92b948"
+  "expected_result_sha256": "3a940ab20573b098dee8c771cb295e6a0c32728bed8124bd4c2270e24a92b948",
+  "replay": {
+    "split_after_native_seq": 8,
+    "expected_result_sha256": "a9a11d5c2b30854387b9e821c81502a706d61c5f26d3f818aaf07431963e20c2"
+  }
 }

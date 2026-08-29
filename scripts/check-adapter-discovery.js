@@ -7,7 +7,7 @@ const crypto = require('node:crypto')
 const { CLAUDE_SDK_LOCK } = require('./claude-agent-sdk-lock.js')
 const { CODEX_CLI_LOCK } = require('./codex-cli-lock.js')
 const { hashCanonical } = require('../lib/canonical-json.js')
-const { FIXTURE_SCHEMA, RESULT_SCHEMA, PROVENANCE, projectSemanticFixture } = require('../evaluation/adapter-discovery/semantic-fixture.js')
+const { FIXTURE_SCHEMA, RESULT_SCHEMA, REPLAY_RESULT_SCHEMA, PROVENANCE, projectSemanticFixture, replaySemanticFixture } = require('../evaluation/adapter-discovery/semantic-fixture.js')
 
 const root = path.resolve(__dirname, '..')
 const discoveryRoot = path.join(root, 'evaluation', 'adapter-discovery')
@@ -271,10 +271,12 @@ const semanticFixturePolicy = {
   'claude-code-agent-sdk': {
     summary: { projected: 6, unresolved: 1, cohesive: 5, conditional: 1, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
     unresolved: [['user_action', 'no_shared_native_join_key_between_permission_hook_and_callback']],
+    replay: { split_after_native_seq: 7, prefix_projected: 5, prefix_unresolved: 2, resolved: ['goal_transition'], retained: ['user_action'], changed: [] },
   },
   'codex-app-server-stdio': {
     summary: { projected: 8, unresolved: 0, cohesive: 8, conditional: 0, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
     unresolved: [],
+    replay: { split_after_native_seq: 8, prefix_projected: 6, prefix_unresolved: 1, resolved: ['goal_transition'], retained: [], changed: [] },
   },
 }
 
@@ -282,7 +284,8 @@ const validateSemanticFixture = (mappingFile, mapping) => {
   const file = path.join(path.dirname(mappingFile), 'semantic-fixture.json')
   if (!fs.existsSync(file)) throw new Error(mappingFile + ': semantic fixture is missing')
   const fixture = readJson(file)
-  exactKeys(fixture, ['schema', 'client', 'runtime_version', 'provenance', 'model_calls', 'network_calls', 'native_events', 'expected_result_sha256'], file)
+  exactKeys(fixture, ['schema', 'client', 'runtime_version', 'provenance', 'model_calls', 'network_calls', 'native_events', 'expected_result_sha256', 'replay'], file)
+  exactKeys(fixture.replay, ['split_after_native_seq', 'expected_result_sha256'], file + ': replay lock')
   const nativeContract = readJson(path.join(path.dirname(mappingFile), 'native-contract.json'))
   if (fixture.schema !== FIXTURE_SCHEMA || fixture.client !== mapping.client || fixture.runtime_version !== nativeContract.runtime_version) throw new Error(file + ': semantic fixture identity or runtime lock drifted')
   if (fixture.provenance !== PROVENANCE || fixture.model_calls !== 0 || fixture.network_calls !== 0 || !/^[a-f0-9]{64}$/.test(fixture.expected_result_sha256)) throw new Error(file + ': semantic fixture provenance, execution boundary, or result lock drifted')
@@ -295,7 +298,19 @@ const validateSemanticFixture = (mappingFile, mapping) => {
   const unresolved = result.unresolved.map((item) => [item.host_kind, item.reason])
   if (JSON.stringify(unresolved) !== JSON.stringify(policy.unresolved)) throw new Error(file + ': semantic projection unresolved boundary drifted')
   if (!/does not prove.*native emission.*authenticity.*completeness.*durability.*enforcement.*compatibility.*portability.*conformance.*outcome/i.test(result.claim_boundary || '')) throw new Error(file + ': semantic projection claim boundary drifted')
-  return { result_sha256: fixture.expected_result_sha256, ...result.summary }
+  const replay = replaySemanticFixture(fixture)
+  if (replay.schema !== REPLAY_RESULT_SCHEMA || replay.model_calls !== 0 || replay.network_calls !== 0 || hashCanonical(replay) !== fixture.replay.expected_result_sha256) throw new Error(file + ': semantic replay result boundary or hash drifted')
+  const replayObserved = {
+    split_after_native_seq: replay.checkpoint.split_after_native_seq,
+    prefix_projected: replay.prefix_summary.projected,
+    prefix_unresolved: replay.prefix_summary.unresolved,
+    resolved: replay.resolved_after_restart.map((item) => item.host_kind),
+    retained: replay.retained_unresolved.map((item) => item.host_kind),
+    changed: replay.changed_unresolved.map((item) => item.host_kind),
+  }
+  if (JSON.stringify(replayObserved) !== JSON.stringify(policy.replay) || replay.final_result_sha256 !== fixture.expected_result_sha256 || replay.projection_prefix_preserved !== true) throw new Error(file + ': semantic replay policy drifted')
+  if (!/not a native restart trace.*does not prove.*client emission.*checkpoint authenticity.*durable storage.*resume correctness.*enforcement.*compatibility.*portability.*conformance.*outcome/i.test(replay.claim_boundary || '')) throw new Error(file + ': semantic replay claim boundary drifted')
+  return { result_sha256: fixture.expected_result_sha256, replay_result_sha256: fixture.replay.expected_result_sha256, ...result.summary }
 }
 
 const validateConvergence = (file) => {

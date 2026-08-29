@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 36,
+  "revision": 37,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 retains exact package/module/types SHA-256 locks; Codex App Server stdio 0.150.0-alpha.12.2 retains an exact win32-x64 executable and 413-file generated-schema lock. The checker requires the same seven candidate HostEvent kinds and 28 normalized fields. Each client exposes 25 DOCUMENTED and 3 GAP fields; every documented field binds to a locked proof locator, while authenticated principal, complete usage coverage and resume-prefix checkpoint remain absent. The event-cohesion audit finds five single-event mappings for each client. Claude additionally has one host-context-only goal transition and one unjoined approval path because its permission hook and decision callback lack a shared native key; Codex has two native-key joins through JSON-RPC and thread/turn identity. A zero-model, zero-network projector now executes one host-authored native-shape fixture per client and locks the result hash. Claude yields six candidate projections plus one unresolved approval path; Codex yields eight candidate projections. Adversarial tests reject duplicate request IDs, missing fields and mismatched terminal turns. The fixtures were not emitted by either client or a model, so they prove only deterministic candidate assembly and fail-closed behavior, not native authenticity or reliability. Both clients remain HOLD; raw-first durability and terminal enforcement remain unresolved, and no adapter, compatibility, portability or conformance claim follows.",
-      "fingerprint": "cbb828602fcc60f3ab3ae61252f5fd61568b6debaab76c9c943d27924f49ced9",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 retains exact package/module/types SHA-256 locks; Codex App Server stdio 0.150.0-alpha.12.2 retains an exact win32-x64 executable and 413-file generated-schema lock. The checker requires the same seven candidate HostEvent kinds and 28 normalized fields. Each client exposes 25 DOCUMENTED and 3 GAP fields; authenticated principal, complete usage coverage and native resume-prefix checkpoint remain absent. The cohesion audit finds five single-event mappings for each client. Claude additionally has one host-context-only goal transition and one unjoined approval path; Codex has two native-key joins. A zero-model, zero-network projector executes one host-authored native-shape fixture per client. Each fixture now freezes a synthetic prefix/restart boundary, hashes native and projection prefixes, and recomputes the full result. Pending joins are classified as resolved, retained or changed-unresolved so a changed failure reason cannot be mistaken for success. Checkpoint drift, event reordering, missing fields, duplicate request IDs and a truncated terminal suffix are rejected or remain unresolved. The fixtures were not emitted by either client or a model, so they prove only deterministic fixture replay and fail-closed classification, not native checkpoint authenticity, durable restart, resume reliability or enforcement. Both clients remain HOLD, `resume_prefix_checkpoint` remains GAP, and no adapter, compatibility, portability or conformance claim follows.",
+      "fingerprint": "ee1528471d52c83b3d3421a0578986796429a378651c941eb8c783a9716a1bc2",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "130e856ef833eae954d69a830daf0d2a872731f94fbfd1fa8bd4868cba026077"
+  "state_hash": "39ad949d52a05aa1d3c85aeab4b85b8afc1d1f73c40da6c485f7c4c1b4b6467c"
 }

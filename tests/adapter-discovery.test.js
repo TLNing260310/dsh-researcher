@@ -21,7 +21,7 @@ const { capture: captureCodexNative } = require('../scripts/capture-codex-app-se
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 const { CODEX_CLI_LOCK, assertLockedCodexExecutable, inspectCodexExecutable } = require('../scripts/codex-cli-lock.js')
 const { validateConvergence } = require('../scripts/check-adapter-discovery.js')
-const { projectSemanticFixture } = require('../evaluation/adapter-discovery/semantic-fixture.js')
+const { projectSemanticFixture, checkpointFor, replaySemanticFixture } = require('../evaluation/adapter-discovery/semantic-fixture.js')
 
 const fakeCodexAppServer = () => {
   const received = []
@@ -107,8 +107,8 @@ test('adapter discovery is version locked, offline checked, and non-product', ()
       'codex-app-server-stdio': { single_event: 5, native_key_join: 2, host_context_join: 0, unjoined: 0, cohesive: 7, conditional: 0, gap: 0 },
     },
     semantic_fixtures: {
-      'claude-code-agent-sdk': { result_sha256: 'ebdee958c4ea4ceb014eaa51b57cbc11414f6cdcfad592761bb26f952f4d3323', projected: 6, unresolved: 1, cohesive: 5, conditional: 1, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
-      'codex-app-server-stdio': { result_sha256: '3a940ab20573b098dee8c771cb295e6a0c32728bed8124bd4c2270e24a92b948', projected: 8, unresolved: 0, cohesive: 8, conditional: 0, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
+      'claude-code-agent-sdk': { result_sha256: 'ebdee958c4ea4ceb014eaa51b57cbc11414f6cdcfad592761bb26f952f4d3323', replay_result_sha256: 'f3dd01f21761adf1519fb4df98b24eb69e5d72565fc8326af4e79d7de20aa538', projected: 6, unresolved: 1, cohesive: 5, conditional: 1, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
+      'codex-app-server-stdio': { result_sha256: '3a940ab20573b098dee8c771cb295e6a0c32728bed8124bd4c2270e24a92b948', replay_result_sha256: 'a9a11d5c2b30854387b9e821c81502a706d61c5f26d3f818aaf07431963e20c2', projected: 8, unresolved: 0, cohesive: 8, conditional: 0, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
     },
     shared_governance_gaps: 5,
   })
@@ -148,6 +148,42 @@ test('semantic discovery projection fails closed on duplicate, mismatched, and m
   permission.tool_use_id = 'claude-call-2'
   const claudeResult = projectSemanticFixture(claude)
   assert.deepEqual(claudeResult.unresolved.map((item) => item.reason), ['no_shared_native_join_key_between_permission_hook_and_callback'])
+})
+
+test('synthetic restart replay recomputes pending joins without upgrading native durability', () => {
+  const claude = readJson('evaluation', 'adapter-discovery', 'claude-code-agent-sdk', '0.3.251', 'semantic-fixture.json')
+  const codex = readJson('evaluation', 'adapter-discovery', 'codex-app-server-stdio', '0.150.0-alpha.12.2', 'semantic-fixture.json')
+  const claudeReplay = replaySemanticFixture(claude, checkpointFor(claude))
+  const codexReplay = replaySemanticFixture(codex, checkpointFor(codex))
+  assert.equal(claudeReplay.prefix_summary.unresolved, 2)
+  assert.deepEqual(claudeReplay.resolved_after_restart.map((item) => item.host_kind), ['goal_transition'])
+  assert.deepEqual(claudeReplay.retained_unresolved.map((item) => item.host_kind), ['user_action'])
+  assert.equal(codexReplay.prefix_summary.unresolved, 1)
+  assert.deepEqual(codexReplay.resolved_after_restart.map((item) => item.host_kind), ['goal_transition'])
+  assert.deepEqual(codexReplay.retained_unresolved, [])
+  assert.deepEqual(claudeReplay.changed_unresolved, [])
+  assert.deepEqual(codexReplay.changed_unresolved, [])
+  assert.equal(claudeReplay.projection_prefix_preserved, true)
+  assert.equal(codexReplay.projection_prefix_preserved, true)
+  assert.match(codexReplay.claim_boundary, /not a native restart trace.*does not prove.*durable storage/i)
+})
+
+test('synthetic restart replay rejects checkpoint drift, event reordering, and a truncated terminal suffix', () => {
+  const codex = readJson('evaluation', 'adapter-discovery', 'codex-app-server-stdio', '0.150.0-alpha.12.2', 'semantic-fixture.json')
+  const checkpoint = checkpointFor(codex)
+  assert.throws(() => replaySemanticFixture(codex, { ...checkpoint, native_prefix_sha256: '0'.repeat(64) }), /checkpoint mismatch/)
+
+  const reordered = JSON.parse(JSON.stringify(codex))
+  ;[reordered.native_events[7], reordered.native_events[8]] = [reordered.native_events[8], reordered.native_events[7]]
+  assert.throws(() => replaySemanticFixture(reordered), /native_seq must be unique and contiguous/)
+
+  const truncated = JSON.parse(JSON.stringify(codex))
+  truncated.native_events.pop()
+  const truncatedReplay = replaySemanticFixture(truncated)
+  assert.equal(truncatedReplay.final_summary.unresolved, 1)
+  assert.notEqual(truncatedReplay.final_result_sha256, codex.expected_result_sha256)
+  assert.deepEqual(truncatedReplay.resolved_after_restart, [])
+  assert.deepEqual(truncatedReplay.changed_unresolved.map((item) => [item.host_kind, item.reason, item.final_reasons]), [['goal_transition', 'missing_json_rpc_response', ['missing_matching_terminal_turn']]])
 })
 
 test('cross-client convergence remains a discovery shape with explicit enforcement gaps', () => {
