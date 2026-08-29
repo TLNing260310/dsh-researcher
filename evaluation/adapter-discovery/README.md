@@ -1,0 +1,13 @@
+# Adapter discovery
+
+This directory contains non-product discovery records only. A record locks one
+native client surface, records official sources and local contract evidence,
+maps expected HostEvent v1 projections, and names gaps before implementation.
+
+Allowed results are `DISCOVERY_QUALIFIED`, `HOLD`, and `NO_GO`. None of them is
+an adapter manifest, installation entry point, compatibility claim, or governed
+conformance result. Formal implementation remains gated on E2 PASS.
+
+Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
+invocation semantics, redaction boundaries, and the zero-model discovery rule.
+

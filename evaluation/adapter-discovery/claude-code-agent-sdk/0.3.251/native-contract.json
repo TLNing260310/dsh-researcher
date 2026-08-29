@@ -1,0 +1,17 @@
+{
+  "schema": "dsh-researcher/adapter-native-contract/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "npm_integrity": "sha512-DqSi8mH2tQYRlVV0G+lJnQ/WbjJZ/a+8cJ3vPuYoqh8esIIvXHm1ZOXV1UPGsFYRnbBytEoiSGitguEXd+sQ+Q==",
+  "tarball_sha256": "e3ef10500a552356a2923f8bd6bc0dea54f5b6785aaa340157ccb2e1794c1a25",
+  "sdk_types_sha256": "4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe",
+  "contract_members": ["PreToolUse", "PostToolUse", "PostToolUseFailure", "PermissionRequest", "PermissionDenied", "SessionStart", "SessionEnd", "Stop", "canUseTool", "Query.interrupt", "options.resume", "tool_use_id", "session_id", "modelUsage"],
+  "observed_contract_notes": [
+    "tool hooks carry session_id and tool_use_id",
+    "PreToolUse and canUseTool can mediate a tool before execution",
+    "PostToolUse and PostToolUseFailure report completion paths",
+    "query resume accepts a session ID and SessionStart distinguishes resume",
+    "Query.interrupt returns an optional receipt only when the runtime advertises the matching capability",
+    "result modelUsage is cumulative and excludes some helper calls, so strict usage completeness is not established by types alone"
+  ]
+}

@@ -23,5 +23,5 @@ test('canonical required evidence is fresh', () => {
   assert.equal(result.status, 0, result.stderr + result.stdout)
   const report = JSON.parse(result.stdout)
   assert.equal(report.ok, true)
-  assert.deepEqual(report.required_fresh, ['E11', 'E12', 'E13', 'E14', 'E15', 'E16', 'E17', 'E18', 'E19'])
+  assert.deepEqual(report.required_fresh, ['E11', 'E12', 'E13', 'E14', 'E15', 'E16', 'E17', 'E18', 'E19', 'E20'])
 })

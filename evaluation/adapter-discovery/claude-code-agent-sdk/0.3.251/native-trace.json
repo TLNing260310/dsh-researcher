@@ -1,0 +1,9 @@
+{
+  "schema": "dsh-researcher/adapter-native-trace/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "capture_kind": "not-captured",
+  "model_calls": 0,
+  "network_calls_initiated_by_capture": 0,
+  "reason": "Claude CLI/runtime is not installed on this host; no SDK session was fabricated from type declarations"
+}

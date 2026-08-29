@@ -1,0 +1,76 @@
+#!/usr/bin/env node
+'use strict'
+
+const fs = require('node:fs')
+const path = require('node:path')
+const crypto = require('node:crypto')
+
+const root = path.resolve(__dirname, '..')
+const discoveryRoot = path.join(root, 'evaluation', 'adapter-discovery')
+const schema = 'dsh-researcher/adapter-discovery/v1'
+const allowedResults = new Set(['DISCOVERY_QUALIFIED', 'HOLD', 'NO_GO'])
+const allowedEvidence = new Set(['OBSERVED', 'DOCUMENTED', 'MISSING', 'UNKNOWN'])
+const officialHosts = new Set(['developers.openai.com', 'learn.chatgpt.com', 'platform.claude.com', 'docs.anthropic.com', 'registry.npmjs.org'])
+const requiredCapabilities = ['ordered_events', 'stable_call_id', 'human_approval', 'hard_stop', 'event_replay', 'usage_coverage', 'write_boundary']
+
+const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'))
+const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
+const plain = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+const relativeSafe = (value) => typeof value === 'string' && value.length > 0 && !path.isAbsolute(value) && !value.split(/[\\/]/).includes('..')
+const exactKeys = (value, keys, label) => {
+  if (!plain(value) || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([...keys].sort())) throw new Error(label + ' keys drifted')
+}
+
+const walkStrings = (value, visit) => {
+  if (typeof value === 'string') visit(value)
+  else if (Array.isArray(value)) value.forEach((item) => walkStrings(item, visit))
+  else if (plain(value)) Object.values(value).forEach((item) => walkStrings(item, visit))
+}
+
+const validate = (file) => {
+  const doc = readJson(file)
+  exactKeys(doc, ['schema', 'client', 'surface', 'locked_runtime', 'sources', 'artifacts', 'invocation', 'capabilities', 'gaps', 'result', 'claim_boundary'], 'discovery')
+  if (doc.schema !== schema || !allowedResults.has(doc.result)) throw new Error(file + ': schema/result invalid')
+  const expectedDirectory = path.join(discoveryRoot, doc.client, doc.locked_runtime.version)
+  if (path.resolve(path.dirname(file)) !== expectedDirectory) throw new Error(file + ': directory does not match client/version lock')
+  if (!Array.isArray(doc.sources) || doc.sources.length === 0) throw new Error(file + ': official sources missing')
+  for (const source of doc.sources) {
+    const parsed = new URL(source.url)
+    if (parsed.protocol !== 'https:' || !officialHosts.has(parsed.hostname)) throw new Error(file + ': non-official source ' + source.url)
+  }
+  if (!Array.isArray(doc.invocation.function_call) || !doc.invocation.function_call.includes('researcher.ask') || !doc.invocation.function_call.includes('researcher.mode.set') || !doc.invocation.function_call.includes('researcher.mode.get')) throw new Error(file + ': stable function invocation drifted')
+  const capabilityNames = Object.keys(doc.capabilities).sort()
+  if (JSON.stringify(capabilityNames) !== JSON.stringify([...requiredCapabilities].sort())) throw new Error(file + ': governed capability set drifted')
+  for (const [name, capability] of Object.entries(doc.capabilities)) {
+    if (!allowedEvidence.has(capability.status) || !Array.isArray(capability.evidence_refs) || capability.evidence_refs.length === 0) throw new Error(file + ': invalid capability ' + name)
+  }
+  for (const artifact of Object.values(doc.artifacts)) {
+    if (!relativeSafe(artifact.path) || !/^[a-f0-9]{64}$/.test(artifact.sha256)) throw new Error(file + ': invalid artifact binding')
+    const target = path.resolve(path.dirname(file), artifact.path)
+    if (!target.startsWith(path.dirname(file) + path.sep) || !fs.existsSync(target) || sha256(target) !== artifact.sha256) throw new Error(file + ': artifact missing or hash drifted: ' + artifact.path)
+  }
+  const trace = readJson(path.resolve(path.dirname(file), doc.artifacts.native_trace.path))
+  if (trace.model_calls !== 0) throw new Error(file + ': discovery trace must not call a model')
+  if (doc.result === 'DISCOVERY_QUALIFIED' && (trace.capture_kind !== 'live-no-model' || Object.values(doc.capabilities).some((item) => ['MISSING', 'UNKNOWN'].includes(item.status)))) throw new Error(file + ': qualified discovery lacks complete evidence')
+  if (doc.result === 'NO_GO' && !doc.gaps.some((gap) => gap.severity === 'BLOCKING')) throw new Error(file + ': NO_GO requires a blocking gap')
+  walkStrings(doc, (value) => {
+    if (/[A-Za-z]:\\|(?:^|\s)\/(?:Users|home)\//.test(value)) throw new Error(file + ': personal absolute path leaked')
+    if (/sk-[A-Za-z0-9_-]{12,}|api[_-]?key\s*[:=]/i.test(value)) throw new Error(file + ': secret-shaped value leaked')
+  })
+  return { client: doc.client, version: doc.locked_runtime.version, result: doc.result }
+}
+
+const files = []
+if (fs.existsSync(discoveryRoot)) {
+  for (const client of fs.readdirSync(discoveryRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+    for (const version of fs.readdirSync(path.join(discoveryRoot, client.name), { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
+      const file = path.join(discoveryRoot, client.name, version.name, 'discovery.json')
+      if (fs.existsSync(file)) files.push(file)
+    }
+  }
+}
+if (files.length !== 2) throw new Error('adapter discovery must contain exactly the frozen Claude and Codex records')
+const records = files.sort().map(validate)
+process.stdout.write(JSON.stringify({ ok: true, schema, model_calls: 0, network_calls: 0, records }, null, 2) + '\n')
+
+module.exports = { schema, validate }

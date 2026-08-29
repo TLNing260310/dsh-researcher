@@ -35,4 +35,18 @@ An adapter manifest v2 reports two different facts:
 - capability declaration: the adapter claims to provide human approval, hard stop, event storage, trusted verification, and project-root confinement;
 - conformance status: `PENDING`, `PASS`, or `FAIL`, backed by independently scoreable evidence.
 
-Only `conformance=PASS` plus all five capabilities produces `governed=true`. The DSH adapter is currently `PENDING` until Gate 0 and Live E1 complete. Claude Code is the frozen second-adapter target, but implementation is gated on E2 PASS; Codex, Zcode, and OpenClaw remain design candidates rather than compatibility claims.
+Only `conformance=PASS` plus all five capabilities produces `governed=true`. The DSH adapter is currently `PENDING` until Live E1 completes. Claude Code is the frozen second-adapter target, but implementation is gated on E2 PASS; Codex, Zcode, and OpenClaw remain design candidates rather than compatibility claims.
+
+## Discovery is not conformance
+
+Version-locked discovery records live under `evaluation/adapter-discovery/` and
+may contain official-source mappings, redacted no-model traces and replay
+designs. Their only allowed results are `DISCOVERY_QUALIFIED`, `HOLD` and
+`NO_GO`. They never update an adapter manifest or create an installation path.
+
+The current Claude Code Agent SDK `0.3.251` and Codex App Server stdio
+`0.150.0-alpha.12.2` records are both `HOLD`: Codex exposes a promising
+thread/turn/item and approval surface, but raw durable command replay, principal
+assurance and write enforcement are unproven; Claude has a locked type contract
+but no authentic runtime trace on this host. Run
+`npm run adapter:discovery:check` to verify these boundaries offline.

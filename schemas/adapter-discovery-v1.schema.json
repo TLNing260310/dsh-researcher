@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/TLNing260310/dsh-researcher/schemas/adapter-discovery-v1.schema.json",
+  "title": "Adapter Discovery v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "client", "surface", "locked_runtime", "sources", "artifacts", "invocation", "capabilities", "gaps", "result", "claim_boundary"],
+  "properties": {
+    "schema": { "const": "dsh-researcher/adapter-discovery/v1" },
+    "client": { "type": "string", "minLength": 1 },
+    "surface": { "type": "string", "minLength": 1 },
+    "locked_runtime": { "type": "object" },
+    "sources": { "type": "array", "minItems": 1 },
+    "artifacts": { "type": "object" },
+    "invocation": { "type": "object" },
+    "capabilities": { "type": "object" },
+    "gaps": { "type": "array" },
+    "result": { "enum": ["DISCOVERY_QUALIFIED", "HOLD", "NO_GO"] },
+    "claim_boundary": { "type": "string", "minLength": 1 }
+  }
+}

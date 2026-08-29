@@ -13,6 +13,7 @@
 - Preserved the v1.9 official Flash bundle as `3 PASS / 1 FAIL / 2 INVALID`. v1.10 derives resume stage-one verifier expectations from the frozen manifest and recognizes DSH native `goal.blockedReason.code` without weakening the exact `stopped` requirement.
 - Preserved the v1.10 official Flash result as `4 PASS / 0 FAIL / 2 INVALID`: all completed tracks passed, while a provider `TRANSPORT` retry without auditable usage correctly invalidated resume observe. v1.11 changes no runtime or threshold and preregisters exactly one complete replacement bundle before E1 stops.
 - Preserved the v1.11 replacement as INVALID and stopped further paid E1 runs. Its two-process resume reached host `DONE`, but the frozen scorer replayed stage one without the runtime-goal scope used by the runner. v1.12 applies that scope offline and adds a pre-goal-traffic regression test; diagnostic rescoring cannot overwrite v1.11 or establish 6/6.
+- Added version-locked, non-product adapter discovery for Claude Code Agent SDK `0.3.251` and Codex App Server stdio `0.150.0-alpha.12.2`. Codex completed a redacted no-model initialize/list trace; Claude locks official package/types without fabricating a runtime trace. Both remain `HOLD`, and the offline checker forbids compatibility or conformance claims.
 
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 

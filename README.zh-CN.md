@@ -17,7 +17,7 @@
 - **Project Research**：现在即可隔离试用的制度性只读研究模式。
 - **Goal Governor**：更高级的目标与完成条件治理；工程机制已经实现，净生产力收益仍在验证。
 
-> **当前边界**：DSH adapter、只读运行时和离线验证设施已有机械测试与真实 Web smoke；v1.5 官方 Flash 结果为 `1 PASS / 4 FAIL / 1 INVALID`，v1.6 又因 mutation tool 缺少 read-your-write 在第二条轨迹早停，整体仍为 INVALID。长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。本项目不是“更聪明的 Agent”，也不承诺自动消除模型幻觉。
+> **当前边界**：DSH adapter、只读运行时和离线验证设施已有机械测试与真实 Web smoke；v1.5 与不完整 v1.6-v1.11 均为 INVALID，v1.12 只做离线修正且 live round 已停止。长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。本项目不是“更聪明的 Agent”，也不承诺自动消除模型幻觉。
 
 ## 你可能正遇到这个问题
 
@@ -206,12 +206,18 @@ session ledger → draft revision → owner review → seal → regenerate proje
 ```bash
 npm run check
 npm run demo
+npm run adapter:discovery:check
 npm run eval:e1:preflight
 ```
 
 公开证明顺序固定为：`Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`。轨迹、阈值和 invalidity rules 只以冻结的 [Goal Governor Evaluation Protocol](./docs/goal-governor-evaluation-protocol.md) 为准，README 不复制实验定义。
 
 不同客户端共享同一份[可移植 HostEvent 与调用合同](./docs/client-adapter-contract.md)：单次 `researcher.ask(...)`、持续 `researcher.mode.set/get(...)` 与客户端原生命令最终进入同一个宿主状态机。包根导出的 `adapterCore` 仍是 experimental base envelope，不代表新客户端已经通过 governed conformance。
+
+Claude Agent SDK `0.3.251` 与 Codex App Server stdio
+`0.150.0-alpha.12.2` 已建立版本锁定 discovery，但均为 `HOLD`。Codex
+只有零模型握手 trace，Claude 只有官方 package/type 契约；两者都没有
+形成安装入口、adapter manifest 或兼容声明。
 
 ### Live 模型成本边界
 
@@ -233,7 +239,7 @@ GitHub Spec Kit、OpenSpec、Kiro、Serena、Beads 和客户端自带 Plan/Memor
 
 Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas、CLI）不依赖 DSH。但客户端 adapter 只有机械证明以下能力后才能称为 `governed`：host-owned approval、hard stop/pause、durable ordered events、trusted verifier binding、project-root confinement。缺少任一项时只能称为 advisory。
 
-当前只有 DSH adapter。Codex、Claude Code、Kiro、OpenClaw 和 Zed/Zcode 的 effect size 与 adapter 可行性仍是待验证假设，不是已交付兼容性。
+当前只有 DSH adapter。Codex 与 Claude Code discovery 均为 `HOLD`；Kiro、OpenClaw 和 Zed/Zcode 仍只是候选。它们的 effect size 与 adapter 可行性仍是待验证假设，不是已交付兼容性。
 
 ## 仓库地图
 

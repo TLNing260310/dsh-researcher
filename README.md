@@ -161,6 +161,7 @@ The CLI actor label is not human authentication. Repository governance must keep
 | `project-cognition doctor .` | PASS | Current schema, hashes, projection, goals, and registry agree; it does not prove evidence freshness |
 | DSH Web Project Research smoke | Runtime boundary PASS; output probes FAIL | The exact tested runtime can become SAFE and reject drift; research quality is not established |
 | Goal Governor E1 infrastructure | v1.12 offline READY; v1.5 and incomplete v1.6-v1.11 Live E1 INVALID | E1 live round is STOPPED; no six-track conformance claim and no additional paid retry is authorized |
+| Client adapter discovery | Claude SDK 0.3.251: HOLD; Codex App Server stdio 0.150.0-alpha.12.2: HOLD | Version-locked interface maps only; no second adapter or compatibility claim |
 | Outcome value and portability | NOT PROVEN | Requires Live E1, a non-inferential pilot, E2, then second-adapter conformance |
 
 Run the public offline checks without a model or network call:
@@ -168,12 +169,19 @@ Run the public offline checks without a model or network call:
 ```bash
 npm run check
 npm run demo
+npm run adapter:discovery:check
 npm run eval:e1:preflight
 ```
 
 The proof order is frozen as `Gate 0 → E1 → non-inferential pilot → E2 → second-adapter conformance → E3`. See [Validation Status](./docs/validation-status.md) and the protocol-owned [Goal Governor evaluation definition](./docs/goal-governor-evaluation-protocol.md).
 
 Client integrations share the [portable HostEvent and invocation contract](./docs/client-adapter-contract.md): one-shot `researcher.ask(...)`, persistent `researcher.mode.set/get(...)`, and client-native mode-switch commands reduce to the same host-owned state. The package root exposes `adapterCore` for this experimental base envelope; it is not a governed-adapter conformance claim.
+
+Version-locked Claude and Codex discovery records now make the remaining gaps
+reviewable. Both are `HOLD`: Codex has a real zero-model app-server handshake but
+lacks durable raw command replay, principal and write receipts; Claude has a
+locked official SDK contract but no runtime trace on this host. These records do
+not change the DSH manifest or install another adapter.
 
 ## How this differs from familiar tools
 

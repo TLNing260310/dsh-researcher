@@ -1,0 +1,13 @@
+{
+  "schema": "dsh-researcher/expected-host-events/v1",
+  "client": "claude-code-agent-sdk",
+  "mappings": [
+    { "native": "PreToolUse", "host_kind": "tool_call", "required_bindings": ["session_id", "tool_use_id", "tool input hash"] },
+    { "native": "PostToolUse|PostToolUseFailure", "host_kind": "tool_result", "required_bindings": ["session_id", "tool_use_id", "result hash", "failure status"] },
+    { "native": "PermissionRequest + canUseTool response", "host_kind": "user_action", "required_bindings": ["session_id", "tool_use_id", "request id", "principal", "decision receipt"] },
+    { "native": "SDKResultMessage.modelUsage", "host_kind": "usage", "required_bindings": ["session_id", "turn correlation", "cumulative delta"] },
+    { "native": "SDKResultMessage", "host_kind": "turn_end", "required_bindings": ["session_id", "result subtype"] },
+    { "native": "SessionStart source=resume", "host_kind": "session_resume", "required_bindings": ["session_id", "prefix checkpoint hash"] },
+    { "native": "Query.interrupt receipt + Stop", "host_kind": "goal_transition", "required_bindings": ["session_id", "interrupt receipt", "terminal observation"] }
+  ]
+}

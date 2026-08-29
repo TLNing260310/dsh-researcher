@@ -1,0 +1,66 @@
+{
+  "schema": "dsh-researcher/adapter-discovery/v1",
+  "client": "claude-code-agent-sdk",
+  "surface": "@anthropic-ai/claude-agent-sdk local Agent SDK; not Claude Managed Agents",
+  "locked_runtime": {
+    "package": "@anthropic-ai/claude-agent-sdk",
+    "version": "0.3.251",
+    "npm_integrity": "sha512-DqSi8mH2tQYRlVV0G+lJnQ/WbjJZ/a+8cJ3vPuYoqh8esIIvXHm1ZOXV1UPGsFYRnbBytEoiSGitguEXd+sQ+Q==",
+    "tarball_sha256": "e3ef10500a552356a2923f8bd6bc0dea54f5b6785aaa340157ccb2e1794c1a25"
+  },
+  "sources": [
+    {
+      "id": "ANT-CLI",
+      "url": "https://docs.anthropic.com/en/docs/claude-code/cli-usage",
+      "retrieved_at": "2026-08-29",
+      "supports": ["resume by session ID", "permission prompt tool", "non-interactive output"]
+    },
+    {
+      "id": "ANT-TOOL",
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+      "retrieved_at": "2026-08-29",
+      "supports": ["unique tool-use ID", "tool-result correlation"]
+    },
+    {
+      "id": "ANT-EVENTS",
+      "url": "https://platform.claude.com/docs/en/managed-agents/events-and-streaming",
+      "retrieved_at": "2026-08-29",
+      "supports": ["event persistence principles", "interrupt and resume reference; managed surface only"]
+    },
+    {
+      "id": "NPM-SDK",
+      "url": "https://registry.npmjs.org/@anthropic-ai/claude-agent-sdk/-/claude-agent-sdk-0.3.251.tgz",
+      "retrieved_at": "2026-08-29",
+      "supports": ["locked SDK type contract"]
+    }
+  ],
+  "artifacts": {
+    "native_trace": { "path": "native-trace.json", "sha256": "fdaf19a3ff006b565030bc800b6c3e82e59e1106f3194e85f4d1c8dbf861e33c" },
+    "native_contract": { "path": "native-contract.json", "sha256": "eb0b988c3278144ae231ac6d8451ef5aaecece083b9de371ca77bdce17924612" },
+    "expected_host_events": { "path": "expected-host-events.json", "sha256": "0c686b078bdf8204b2585389f765619987967fd2777022248ee744d4512431de" },
+    "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "e9183e63ad8862ba0c6b6418e8111df7f654ad2324011fe9a0f700aae0ee9c23" },
+    "mapping_report": { "path": "mapping.md", "sha256": "52d52dad8e64679eb8fb39b3aaea8aed89f61a42a6166ea2b1a4b54aa75adce9" }
+  },
+  "invocation": {
+    "function_call": ["researcher.ask", "researcher.mode.set", "researcher.mode.get"],
+    "native_aliases": ["future Claude command or MCP alias; not implemented"]
+  },
+  "capabilities": {
+    "ordered_events": { "status": "DOCUMENTED", "evidence_refs": ["native-contract.json"] },
+    "stable_call_id": { "status": "DOCUMENTED", "evidence_refs": ["ANT-TOOL", "native-contract.json"] },
+    "human_approval": { "status": "DOCUMENTED", "evidence_refs": ["ANT-CLI", "native-contract.json"] },
+    "hard_stop": { "status": "DOCUMENTED", "evidence_refs": ["native-contract.json"] },
+    "event_replay": { "status": "DOCUMENTED", "evidence_refs": ["ANT-CLI", "replay-checkpoint.json"] },
+    "usage_coverage": { "status": "UNKNOWN", "evidence_refs": ["native-contract.json", "mapping.md"] },
+    "write_boundary": { "status": "UNKNOWN", "evidence_refs": ["mapping.md"] }
+  },
+  "gaps": [
+    { "id": "A-G1", "severity": "HIGH", "statement": "no installed runtime or authentic native session trace exists on this host" },
+    { "id": "A-G2", "severity": "HIGH", "statement": "raw event durability and restart replay are not proven by the package types" },
+    { "id": "A-G3", "severity": "HIGH", "statement": "human principal assurance and post-terminal hard-stop receipts are not established" },
+    { "id": "A-G4", "severity": "HIGH", "statement": "modelUsage explicitly excludes some helper calls, so strict usage completeness is unknown" },
+    { "id": "A-G5", "severity": "HIGH", "statement": "project-root write enforcement is not demonstrated" }
+  ],
+  "result": "HOLD",
+  "claim_boundary": "Version-locked type discovery only. No Claude Code adapter, installation path, governed profile, or compatibility claim is delivered."
+}

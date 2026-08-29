@@ -348,6 +348,23 @@ test('adapter core and voluntary feedback interfaces are public without claiming
   assert.match(read('docs', 'pilots', 'pilot-0-protocol.md'), /no automatic telemetry|non-inferential/i)
 })
 
+test('version-locked client discovery remains HOLD and cannot silently become conformance', () => {
+  const claude = readJson('evaluation', 'adapter-discovery', 'claude-code-agent-sdk', '0.3.251', 'discovery.json')
+  const codex = readJson('evaluation', 'adapter-discovery', 'codex-app-server-stdio', '0.150.0-alpha.12.2', 'discovery.json')
+  const manifest = readJson('governed', 'adapter-manifest.json')
+  const contract = read('docs', 'client-adapter-contract.md')
+
+  assert.equal(claude.result, 'HOLD')
+  assert.equal(codex.result, 'HOLD')
+  assert.match(claude.claim_boundary, /No Claude Code adapter/i)
+  assert.match(codex.claim_boundary, /No Codex adapter/i)
+  assert.deepEqual(claude.invocation.function_call, ['researcher.ask', 'researcher.mode.set', 'researcher.mode.get'])
+  assert.deepEqual(codex.invocation.function_call, ['researcher.ask', 'researcher.mode.set', 'researcher.mode.get'])
+  assert.equal(manifest.client, 'dsh')
+  assert.equal(manifest.conformance.status, 'PENDING')
+  assert.match(contract, /Discovery is not conformance/i)
+})
+
 test('canonical truth binds current live evidence without upgrading product claims', () => {
   const state = readJson('.project-cognition', 'state.json')
   const evidence = new Map(state.evidence.map((item) => [item.id, item]))
@@ -361,6 +378,7 @@ test('canonical truth binds current live evidence without upgrading product clai
   assert.ok(evidence.get('E17') && evidence.get('E17').fingerprint)
   assert.ok(evidence.get('E18') && evidence.get('E18').fingerprint)
   assert.ok(evidence.get('E19') && evidence.get('E19').fingerprint)
+  assert.ok(evidence.get('E20') && evidence.get('E20').fingerprint)
   for (const id of ['V3A', 'V3B', 'V4']) assert.equal(state.value_claims.find((item) => item.id === id).proof_status, 'hypothesis')
   assert.equal(state.value_claims.find((item) => item.id === 'V5').proof_status, 'refuted')
   for (const id of ['P0', 'P1']) assert.doesNotMatch(state.next_proofs.find((item) => item.id === id).statement, /protocol v1\.2/i)

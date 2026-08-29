@@ -1,0 +1,13 @@
+{
+  "schema": "dsh-researcher/expected-host-events/v1",
+  "client": "codex-app-server-stdio",
+  "mappings": [
+    { "native": "item/started commandExecution|fileChange|dynamicToolCall", "host_kind": "tool_call", "required_bindings": ["threadId", "turnId", "item.id", "arguments hash"] },
+    { "native": "item/completed commandExecution|fileChange|dynamicToolCall", "host_kind": "tool_result", "required_bindings": ["threadId", "turnId", "item.id", "result hash", "terminal status"] },
+    { "native": "item/*/requestApproval + JSON-RPC response", "host_kind": "user_action", "required_bindings": ["request id", "threadId", "turnId", "itemId", "principal", "decision receipt"] },
+    { "native": "thread/tokenUsage/updated", "host_kind": "usage", "required_bindings": ["threadId", "turnId", "last", "total"] },
+    { "native": "turn/completed", "host_kind": "turn_end", "required_bindings": ["threadId", "turn.id", "turn.status"] },
+    { "native": "thread/resume response", "host_kind": "session_resume", "required_bindings": ["thread.id", "prefix checkpoint hash"] },
+    { "native": "turn/interrupt response + terminal turn", "host_kind": "goal_transition", "required_bindings": ["threadId", "turnId", "interrupt receipt"] }
+  ]
+}

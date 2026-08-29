@@ -104,6 +104,7 @@ evaluation governance(G1–G7 gate · eval-lock · blind-doctor · 失败保留)
 | **goal governor** | `lib/goal-core`:frozen revisions/event fold/MUST-SHOULD/human gates/attempt+no-progress stop、repo-revision linkage、terminal-prefix recomputation、progress card | ✅ 机械测试通过；v1 boundary strings 仅具语义约束，通用 runtime path enforcement 未实现；真实长期价值未证明 |
 | **trusted verifier** | `lib/verifier-core`:tool + canonical arguments + hash + result policy；DSH call-id pairing | ✅ forged/drift/error replay tests 通过 |
 | **DSH host adapter** | `lib/dsh-adapter` + `researcher/plugins/goal-governor` + `governed/` | ⚠️ exact rc.2 实跑发现并修复模型可见 Governor schema 与 resume stage-one 混合 replay domain；DSH recapture 后三条本地对照为可评分 FAIL、一条对抗轨 INVALID，rejected resume observe 的 live/durable checkpoint 一致且不签发 token/seal；完整 E1 与 remote route 仍待做 |
+| **adapter discovery** | `evaluation/adapter-discovery` + offline checker | ⚠️ Claude Agent SDK 0.3.251 与 Codex App Server stdio 0.150.0-alpha.12.2 均为 HOLD；只锁接口和 gap，不修改 manifest、不提供安装入口、不宣称兼容 |
 | **E1 evidence integrity** | `evaluation/goal-governor-e1`:raw bundle commitment、外部 Ed25519 trust root、verdict-aware scorer | ✅ 离线/对抗测试通过；签名只证明所给公钥对应私钥签过这些字节及签后完整性，不证明密钥持有人身份、运行真实性或因果价值 |
 | **E1 model-route boundary** | run lock 冻结 `base_url`；outer 生成冻结 settings（`watch=false`）并设置 `DEEPSEEK_BASE_URL`；child 通过 DSH 公共 DeepSeek resolver 在 create/resume 与每次 followup 边界复验 | ✅ 离线/对抗路径与 exact rc.2 official Flash 已运行；⚠️ protocol v1.5 与不完整 v1.6-v1.11 均为 INVALID，v1.12 仅离线修正且 live round 已停止，loopback 只约束第一跳，不证明本地服务不代理远程 |
 

@@ -1,0 +1,18 @@
+{
+  "schema": "dsh-researcher/adapter-native-contract/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "generator": "codex app-server generate-json-schema --experimental",
+  "generated_v2_schema_sha256": "920a565e47b9e694e9516d32ad5667d6dfec0e3292ba2edef2434d737b8bc596",
+  "requests": ["initialize", "thread/start", "thread/read", "thread/resume", "turn/start", "turn/interrupt"],
+  "server_requests": ["item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval", "item/tool/requestUserInput"],
+  "notifications": ["thread/started", "turn/started", "item/started", "item/completed", "turn/completed", "thread/tokenUsage/updated"],
+  "observed_contract_notes": [
+    "thread and turn IDs are explicit",
+    "thread item IDs are explicit and item lifecycle has started/completed notifications",
+    "approval requests are JSON-RPC requests with response correlation",
+    "thread/read and thread/resume can return persisted turns but stored ThreadItems are documented as lossy for some agent interactions",
+    "token usage notifications bind threadId and turnId",
+    "turn/interrupt exists but terminal write enforcement still requires an adapter-owned policy receipt"
+  ]
+}

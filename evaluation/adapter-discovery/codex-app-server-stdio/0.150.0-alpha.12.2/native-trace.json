@@ -1,0 +1,18 @@
+{
+  "schema": "dsh-researcher/adapter-native-trace/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "capture_kind": "live-no-model",
+  "model_calls": 0,
+  "network_calls_initiated_by_capture": 0,
+  "redaction": "values removed; only method names, ids, and result key names retained",
+  "requests": [
+    { "id": 1, "method": "initialize" },
+    { "id": null, "method": "initialized" },
+    { "id": 2, "method": "thread/list" }
+  ],
+  "responses": [
+    { "id": 1, "result_keys": ["codexHome", "platformFamily", "platformOs", "userAgent"] },
+    { "id": 2, "result_keys": ["backwardsCursor", "data", "nextCursor"] }
+  ]
+}

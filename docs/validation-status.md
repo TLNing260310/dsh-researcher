@@ -36,6 +36,7 @@ alpha.5 与 alpha.7 candidate 的本地 smoke 是 provisional evidence；在 own
 | Guided Quickstart | alpha.7 生成仓库外 Cognition/Verifier/Goal review workspace；未审核 marker、零 hash、陈旧 binding 和路径逃逸均被测试拒绝 | 可避免手抄 hash，同时保持 verifier install、Goal approval 与 Cognition promotion 为显式 owner action | 引导器理解用户意图、自动批准合同、或证明治理带来净生产力增益 |
 | Deterministic public demo | `npm run demo` 在隔离 fixture 中真实启动两个 verifier 子进程，并将捕获的退出码经模拟 DSH event envelope 交给发布 adapter/reducer，得到 `CONTINUE → CONTINUE → DONE` | Agent 文字和真实失败 verifier 不能满足 MUST；匹配的真实进程结果可以形成 DONE | 完整 Live E1 或产品净收益；v1.4 official Flash 仅形成 `2 PASS / 1 FAIL / 3 NOT RUN` 部分结果 |
 | Portable Core | DSH 无关的 cognition/goal/verifier core、schemas、CLI、adapter contract | 核心抽象具备适配缝 | Codex、Claude Code、Zed/Zcode、OpenClaw 已兼容 |
+| Adapter discovery | Claude Agent SDK `0.3.251` package/type lock；Codex App Server stdio `0.150.0-alpha.12.2` schema + 零模型 initialize/list trace；artifact hash 与 claim boundary 离线校验 | 两个原生表面可映射到候选 HostEvent，但当前均为 `HOLD` | 已交付第二 adapter、durable replay、human principal、usage completeness、write enforcement 或跨客户端价值 |
 
 当前 `npm test` 覆盖 unit、replay、integration 与 isolated package smoke；具体数量以当次测试输出为准，避免文档复制数字后漂移。
 
@@ -92,6 +93,8 @@ Experiment A 表明同一模型下 orchestration 会显著改变成本和输出�
 轨迹、样本、estimand、阈值和 invalidity rule 只以冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 为准。E1 包含协议定义的全部轨迹；本文件不另存一份清单。Project Cognition 的 V3A 使用独立 longitudinal protocol，不由 E2 代替。
 
 `alpha.5` 与 `alpha.7` pre-release candidate 运行了独立的 Researcher Web 本地 smoke；随后 exact rc.2 的本地 probes 完成了 local route/capture/replay 的真实负面探测。protocol v1.5 使用 alpha.9 发布包、remote official Flash 和真实 TTY gate 运行完整尝试但统一 bundle 为 `1 PASS / 4 FAIL / 1 INVALID`。v1.6-v1.8 连续暴露 mutation feedback 缺陷。v1.9 的 `3 PASS / 1 FAIL / 2 INVALID` 暴露 block-code 与 stage-one seal 漂移；v1.10 的 `4 PASS / 0 FAIL / 2 INVALID` 暴露 transport usage 与 replacement 规则；v1.11 唯一 replacement 的 resume 两进程到达 `DONE`，但 candidate scorer stage-one scope 漂移使原结果 INVALID，详见 [v1.11 record](./evidence/e1-v1.11-live-results.md)。v1.12 的 diagnostic rescore 只能证明 narrow scorer correction，不能改判或建立六轨 conformance。E1 live 已停止；Pilot、E2 和正式第二 adapter 仍被阶段门阻挡。
+
+Claude/Codex discovery 可在该阶段并行记录接口事实，但不越过阶段门：当前两个记录均为 `HOLD`，未修改 adapter manifest，也未建立安装或兼容入口。
 
 北京时间模型成本规则已在协议 v1.1、manifest、run lock 和 scorer 中冻结：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁止远程 DeepSeek；周末只免时段禁令，远程仍须 official Flash + 精确 `https://api.deepseek.com`，其他 gate 不免。它对官方 E1 runner 是 fail-closed 机械边界，但不是 OS 级网络隔离或计费证明；字面 loopback 也只证明 adapter 第一跳本机，不能证明本地服务不代理远程。正式 live E1 还应使用服务端限额、独立 key、账单告警及必要的出口控制。
 
