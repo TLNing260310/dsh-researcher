@@ -314,7 +314,8 @@ test('executor integration lets the host—not the model—complete a replay-pro
     agent: { session: { header: { cwd: root }, events: [{ seq: 1, type: 'goal/change', data: { operation: 'create', goal: { id: 'runtime-1' } } }] } },
     callId: 'projected-a1',
   }))
-  assert.equal(projectedBegin.decision.progress.attempts.active_attempt, 'projected-baseline')
+  assert.equal(projectedBegin.progress.attempts.active_attempt, 'projected-baseline')
+  assert.equal(Object.hasOwn(projectedBegin, 'decision'), false)
   assert.deepEqual(projectedBegin.diagnostics, [])
   const staleDecisionSession = { header: { cwd: root }, events: [
     { seq: 1, type: 'goal/change', data: { operation: 'create', goal: { id: 'runtime-1' } } },
@@ -328,8 +329,17 @@ test('executor integration lets the host—not the model—complete a replay-pro
   const projectedAfterDecision = JSON.parse(await tools.find((definition) => definition.name === 'begin_goal_attempt').execute({
     attempt_id: 'change-after-decision', baseline: false, target_criteria: ['C1'], repo_revision: 'abc',
   }, { agent: { session: staleDecisionSession }, callId: 'a-change' }))
-  assert.equal(projectedAfterDecision.decision.progress.attempts.active_attempt, 'change-after-decision')
+  assert.equal(projectedAfterDecision.progress.attempts.active_attempt, 'change-after-decision')
+  assert.equal(Object.hasOwn(projectedAfterDecision, 'decision'), false)
   assert.deepEqual(projectedAfterDecision.diagnostics, [])
+  const projectedComplete = JSON.parse(await tools.find((definition) => definition.name === 'complete_goal_attempt').execute({
+    attempt_id: 'change-after-decision',
+  }, {
+    agent: { session: { ...staleDecisionSession, events: [...staleDecisionSession.events, call(8, 'a-change', 'begin_goal_attempt', { attempt_id: 'change-after-decision', baseline: false, target_criteria: ['C1'], repo_revision: 'abc' })] } },
+    callId: 'c-change',
+  }))
+  assert.equal(Object.hasOwn(projectedComplete, 'decision'), false)
+  assert.match(projectedComplete.progress.next_action, /Call request_goal_decision now/)
   let concluded = false
   const output = JSON.parse(await tools.find((definition) => definition.name === 'request_goal_decision').execute({}, { agent: { session }, callId: 'd1', concludeTurn: () => { concluded = true } }))
   assert.equal(output.decision, 'ALREADY_SATISFIED')

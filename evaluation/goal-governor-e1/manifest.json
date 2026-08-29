@@ -1,7 +1,7 @@
 {
   "schema": "dsh-researcher/goal-governor-e1/manifest/v2",
   "protocol": "docs/goal-governor-evaluation-protocol.md",
-  "protocol_version": "1.8",
+  "protocol_version": "1.9",
   "status": {
     "infrastructure": "READY",
     "live_e1": "NOT_RUN",

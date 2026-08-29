@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.8 Repair
+## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.9 Repair
 
 - Preserved the official Flash v1.5 result as `1 PASS / 4 FAIL / 1 INVALID`; no v1.5 artifact is rescored or promoted to PASS.
 - Added a non-disclosing workspace-root hash binding so the offline scorer can validate DSH absolute edit paths without publishing personal absolute paths.
@@ -8,7 +8,7 @@
 - Strengthened the frozen `already-satisfied` and `no-progress` prompts to require explicit, non-overlapping Governor sequences.
 - Promoted canonical Project Cognition revision 9 and preregistered protocol v1.6. E1, outcome value, and portability remain NOT PROVEN.
 - Preserved the incomplete v1.6 official Flash run: `already-satisfied` reached its expected host terminal, while `simple-done` exposed stale mutation-tool responses and correctly ended `NEEDS_HUMAN`; remaining tracks were not run and the bundle remains INVALID.
-- Added DSH-call-ID-bound read-your-write projection for Governor mutation tools, with idempotence and fail-closed missing-ID tests. The v1.7 Flash run then proved that mutation responses still reused the last explicit decision snapshot; v1.8 now derives mutation feedback from the projected current GoalEvent prefix while keeping formal terminal authority in `request_goal_decision`.
+- Added DSH-call-ID-bound read-your-write projection for Governor mutation tools, with idempotence and fail-closed missing-ID tests. v1.7 proved that mutation responses still reused the last explicit decision snapshot; v1.8 derived current state but exposed candidate `DONE`, causing Flash to stop before formal host completion. v1.9 returns progress/diagnostics only and explicitly routes closed attempts through `request_goal_decision`.
 
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 
