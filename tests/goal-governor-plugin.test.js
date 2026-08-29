@@ -205,6 +205,27 @@ test('model-facing attempt status omits the replay event ledger', () => {
   assert.equal(Object.hasOwn(compact, 'events'), false)
 })
 
+test('governor mutation projection is read-your-write and call-id idempotent', () => {
+  const events = [{ seq: 1, type: 'goal/change', data: { operation: 'create', goal: { id: 'runtime-1' } } }]
+  const current = {
+    callId: 'call-current',
+    name: 'begin_goal_attempt',
+    args: { attempt_id: 'baseline', baseline: true, target_criteria: ['C1'], repo_revision: 'abc' },
+  }
+  const projected = plugin.__test.projectCurrentToolCall(events, current)
+  assert.equal(projected.length, 2)
+  assert.deepEqual(projected[1], {
+    seq: 2,
+    type: 'tool/call',
+    data: { callId: 'call-current', name: 'begin_goal_attempt', arguments: JSON.stringify(current.args) },
+  })
+  assert.equal(plugin.__test.projectCurrentToolCall(projected, current), projected)
+  assert.throws(
+    () => plugin.__test.projectCurrentToolCall(events, { ...current, callId: '' }),
+    /missing its DSH call ID/,
+  )
+})
+
 test('plugin composition exposes governor tools only on the executor role', () => {
   const compose = (role) => {
     const registeredTools = []
@@ -287,8 +308,16 @@ test('executor integration lets the host—not the model—complete a replay-pro
     inject: (_dependencies, callback) => callback({ commands: { register: () => {} } }),
   }
   plugin.apply(ctx, { role: 'executor' })
+  const projectedBegin = JSON.parse(await tools.find((definition) => definition.name === 'begin_goal_attempt').execute({
+    attempt_id: 'projected-baseline', baseline: true, target_criteria: ['C1'], repo_revision: 'abc',
+  }, {
+    agent: { session: { header: { cwd: root }, events: [{ seq: 1, type: 'goal/change', data: { operation: 'create', goal: { id: 'runtime-1' } } }] } },
+    callId: 'projected-a1',
+  }))
+  assert.equal(projectedBegin.decision.progress.attempts.active_attempt, 'projected-baseline')
+  assert.deepEqual(projectedBegin.diagnostics, [])
   let concluded = false
-  const output = JSON.parse(await tools.find((definition) => definition.name === 'request_goal_decision').execute({}, { agent: { session }, concludeTurn: () => { concluded = true } }))
+  const output = JSON.parse(await tools.find((definition) => definition.name === 'request_goal_decision').execute({}, { agent: { session }, callId: 'd1', concludeTurn: () => { concluded = true } }))
   assert.equal(output.decision, 'ALREADY_SATISFIED')
   assert.equal(completed, true)
   assert.equal(concluded, true)

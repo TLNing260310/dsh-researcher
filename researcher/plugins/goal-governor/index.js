@@ -93,7 +93,20 @@ const assertLatestGoalRevision = (root, contractPath, contract) => {
   if (latest !== contract.revision) throw new Error('selected Goal Contract revision ' + contract.revision + ' is stale; latest installed revision is ' + latest)
 }
 
-const loadSelected = (ctx, agent) => {
+const projectCurrentToolCall = (events, currentTool) => {
+  if (!currentTool) return events
+  const { callId, name, args } = currentTool
+  if (typeof callId !== 'string' || callId.length === 0) throw new Error('governor mutation is missing its DSH call ID')
+  if (events.some((event) => event && event.type === 'tool/call' && event.data && event.data.callId === callId)) return events
+  const lastSequence = events.reduce((maximum, event) => Number.isFinite(event && event.seq) ? Math.max(maximum, event.seq) : maximum, 0)
+  return [...events, {
+    seq: lastSequence + 1,
+    type: 'tool/call',
+    data: { callId, name, arguments: JSON.stringify(args) },
+  }]
+}
+
+const loadSelected = (ctx, agent, currentTool) => {
   const runtimeGoal = ctx.goals.get(agent)
   if (!runtimeGoal) throw new Error('no active DSH goal; run /researcher run <contract-path>')
   const pointer = parseGoalPointer(runtimeGoal.objective)
@@ -111,9 +124,20 @@ const loadSelected = (ctx, agent) => {
   const cognition = readJson(cognitionPath)
   validateState(cognition)
   if (cognition.state_hash !== contract.baseline.cognition_hash) throw new Error('Project Cognition state does not match the contract baseline; revise and re-approve the contract')
-  const replay = foldDshGoalEvents(contract, registry, scopeGoalEvents(agent.session.events, runtimeGoal))
+  // DSH may invoke a tool before the corresponding tool/call row becomes
+  // visible through agent.session.events. Project that authenticated current
+  // call exactly once so mutation responses are read-your-write. Durable
+  // replay remains authoritative after the handler returns.
+  const sessionEvents = projectCurrentToolCall(agent.session.events, currentTool)
+  const replay = foldDshGoalEvents(contract, registry, scopeGoalEvents(sessionEvents, runtimeGoal))
   return { root, runtimeGoal, contractPath, contract, registryPath, registry, cognition, replay }
 }
+
+const mutationReplayStatus = (ctx, exec, name, args) => replayStatus(loadSelected(ctx, exec.agent, {
+  callId: exec.callId,
+  name,
+  args,
+}).replay)
 
 const gateResumeVerdict = (contract, replay) => {
   // The last request_goal_decision can legitimately predate the direct gate
@@ -271,7 +295,7 @@ const registerTools = (ctx) => {
     baseline: { type: 'boolean', description: 'True only for the single leading baseline attempt.' },
     target_criteria: { type: 'array', items: { type: 'string' }, description: 'Frozen criterion IDs targeted by this attempt.' },
     repo_revision: { type: 'string', description: 'Exact repository revision from the active Goal Contract.' },
-  }, ['attempt_id', 'baseline', 'target_criteria', 'repo_revision']), (args, exec) => Promise.resolve(result(replayStatus(loadSelected(ctx, exec.agent).replay)))))
+  }, ['attempt_id', 'baseline', 'target_criteria', 'repo_revision']), (args, exec) => Promise.resolve(result(mutationReplayStatus(ctx, exec, 'begin_goal_attempt', args)))))
   ctx.tools.register(tool('submit_goal_observation', 'Submit an observation. A claimed pass/fail is accepted only when evidence_refs point to earlier DSH tool calls matching the frozen verifier invocation and result policy.', objectParameters({
     attempt_id: { type: 'string', description: 'The currently active attempt identity.' },
     criterion_id: { type: 'string', description: 'One frozen criterion ID from the Goal Contract.' },
@@ -279,17 +303,17 @@ const registerTools = (ctx) => {
     result: { type: 'string', enum: ['pass', 'fail', 'unknown'], description: 'Result claimed from the referenced real verifier evidence.' },
     evidence_refs: { type: 'array', items: { type: 'string' }, description: 'Earlier real DSH verifier call IDs from this session.' },
     repo_revision: { type: 'string', description: 'Exact repository revision evaluated by this observation.' },
-  }, ['attempt_id', 'criterion_id', 'verifier_id', 'result', 'evidence_refs', 'repo_revision']), (args, exec) => Promise.resolve(result(replayStatus(loadSelected(ctx, exec.agent).replay)))))
+  }, ['attempt_id', 'criterion_id', 'verifier_id', 'result', 'evidence_refs', 'repo_revision']), (args, exec) => Promise.resolve(result(mutationReplayStatus(ctx, exec, 'submit_goal_observation', args)))))
   ctx.tools.register(tool('complete_goal_attempt', 'Close the active attempt. This records evidence state but does not let the model declare success.', objectParameters({
     attempt_id: { type: 'string', description: 'The currently active attempt identity.' },
-  }, ['attempt_id']), (args, exec) => Promise.resolve(result(replayStatus(loadSelected(ctx, exec.agent).replay)))))
+  }, ['attempt_id']), (args, exec) => Promise.resolve(result(mutationReplayStatus(ctx, exec, 'complete_goal_attempt', args)))))
   ctx.tools.register(tool('report_goal_blocker', 'Report a suspected blocker. Model reports require direct /researcher confirm-blocker user authority before BLOCKED.', objectParameters({
     code: { type: 'string', description: 'Stable suspected-blocker code.' },
     detail: { type: 'string', description: 'Evidence-bounded blocker detail for direct user review.' },
-  }, ['code', 'detail']), (args, exec) => Promise.resolve(result(replayStatus(loadSelected(ctx, exec.agent).replay)))))
+  }, ['code', 'detail']), (args, exec) => Promise.resolve(result(mutationReplayStatus(ctx, exec, 'report_goal_blocker', args)))))
   ctx.tools.register(tool('request_goal_decision', 'Ask the host governor to compare trusted observations with the frozen contract. The host alone may continue, pause, stop, block, or complete the DSH goal.', objectParameters(), (_args, exec) => {
     try {
-      const selected = loadSelected(ctx, exec.agent)
+      const selected = loadSelected(ctx, exec.agent, { callId: exec.callId, name: 'request_goal_decision', args: {} })
       const decision = selected.replay.decision
       const goal = selected.runtimeGoal
       const ref = { id: goal.id, revision: goal.revision }
@@ -354,5 +378,5 @@ module.exports = {
       return undefined
     })
   },
-  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, objectParameters, replayStatus, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
+  __test: { isWithin, confinedFile, assertLatestGoalRevision, gateResumeVerdict, researchPrompt, objectParameters, replayStatus, projectCurrentToolCall, RESEARCH_ALLOWLIST, PAUSED_GOAL_ALLOWLIST },
 }

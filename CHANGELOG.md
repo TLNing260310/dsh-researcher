@@ -1,12 +1,14 @@
 # Changelog
 
-## 0.8.0-alpha.10-dev.0 (unreleased) — E1 v1.5 Negative Evidence and v1.6 Repair
+## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.7 Repair
 
 - Preserved the official Flash v1.5 result as `1 PASS / 4 FAIL / 1 INVALID`; no v1.5 artifact is rescored or promoted to PASS.
 - Added a non-disclosing workspace-root hash binding so the offline scorer can validate DSH absolute edit paths without publishing personal absolute paths.
 - Corrected the `resume-replay:observe` outer verifier policy to expect the post-correction final verifier exit.
 - Strengthened the frozen `already-satisfied` and `no-progress` prompts to require explicit, non-overlapping Governor sequences.
 - Promoted canonical Project Cognition revision 9 and preregistered protocol v1.6. E1, outcome value, and portability remain NOT PROVEN.
+- Preserved the incomplete v1.6 official Flash run: `already-satisfied` reached its expected host terminal, while `simple-done` exposed stale mutation-tool responses and correctly ended `NEEDS_HUMAN`; remaining tracks were not run and the bundle remains INVALID.
+- Added DSH-call-ID-bound read-your-write projection for Governor mutation tools, with idempotence and fail-closed missing-ID tests; preregistered protocol v1.7 for a complete fresh run.
 
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 

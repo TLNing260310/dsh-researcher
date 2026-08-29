@@ -160,7 +160,7 @@ test('E1 run-lock rejects endpoint aliases and a non-DeepSeek local provider', (
   assert.throws(() => validateRunLockShape(lock), /official DeepSeek adapter|provider/i)
 })
 
-test('E1 run-lock rejects a cost policy that drifts from protocol v1.6', () => {
+test('E1 run-lock rejects a cost policy that drifts from protocol v1.7', () => {
   const lock = syntheticRunLock()
   lock.cost_policy.restricted_windows[0].end = '12:01'
   assert.throws(() => validateRunLockShape(lock), /cost policy|restricted_windows|12:00/i)
