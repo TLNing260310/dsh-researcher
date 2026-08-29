@@ -21,6 +21,7 @@ const { capture: captureCodexNative } = require('../scripts/capture-codex-app-se
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 const { CODEX_CLI_LOCK, assertLockedCodexExecutable, inspectCodexExecutable } = require('../scripts/codex-cli-lock.js')
 const { validateConvergence } = require('../scripts/check-adapter-discovery.js')
+const { projectSemanticFixture } = require('../evaluation/adapter-discovery/semantic-fixture.js')
 
 const fakeCodexAppServer = () => {
   const received = []
@@ -105,8 +106,48 @@ test('adapter discovery is version locked, offline checked, and non-product', ()
       'claude-code-agent-sdk': { single_event: 5, native_key_join: 0, host_context_join: 1, unjoined: 1, cohesive: 5, conditional: 1, gap: 1 },
       'codex-app-server-stdio': { single_event: 5, native_key_join: 2, host_context_join: 0, unjoined: 0, cohesive: 7, conditional: 0, gap: 0 },
     },
+    semantic_fixtures: {
+      'claude-code-agent-sdk': { result_sha256: 'ebdee958c4ea4ceb014eaa51b57cbc11414f6cdcfad592761bb26f952f4d3323', projected: 6, unresolved: 1, cohesive: 5, conditional: 1, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
+      'codex-app-server-stdio': { result_sha256: '3a940ab20573b098dee8c771cb295e6a0c32728bed8124bd4c2270e24a92b948', projected: 8, unresolved: 0, cohesive: 8, conditional: 0, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
+    },
     shared_governance_gaps: 5,
   })
+})
+
+test('semantic discovery fixtures deterministically exercise candidate assembly without client or model output', () => {
+  const claude = readJson('evaluation', 'adapter-discovery', 'claude-code-agent-sdk', '0.3.251', 'semantic-fixture.json')
+  const codex = readJson('evaluation', 'adapter-discovery', 'codex-app-server-stdio', '0.150.0-alpha.12.2', 'semantic-fixture.json')
+  const claudeResult = projectSemanticFixture(claude)
+  const codexResult = projectSemanticFixture(codex)
+  assert.deepEqual(claudeResult.summary, { projected: 6, unresolved: 1, cohesive: 5, conditional: 1, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] })
+  assert.deepEqual(claudeResult.unresolved.map((item) => [item.host_kind, item.reason]), [['user_action', 'no_shared_native_join_key_between_permission_hook_and_callback']])
+  assert.deepEqual(codexResult.summary, { projected: 8, unresolved: 0, cohesive: 8, conditional: 0, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] })
+  assert.equal(codexResult.unresolved.length, 0)
+  assert.match(codexResult.claim_boundary, /does not prove.*native emission.*conformance/i)
+})
+
+test('semantic discovery projection fails closed on duplicate, mismatched, and missing native evidence', () => {
+  const codex = readJson('evaluation', 'adapter-discovery', 'codex-app-server-stdio', '0.150.0-alpha.12.2', 'semantic-fixture.json')
+  const duplicate = JSON.parse(JSON.stringify(codex))
+  duplicate.native_events.splice(3, 0, { ...duplicate.native_events[2], native_seq: 4, native_ref: 'codex:approval-request:duplicate' })
+  duplicate.native_events.slice(4).forEach((event, index) => { event.native_seq = index + 5 })
+  assert.throws(() => projectSemanticFixture(duplicate), /duplicate approval request request_id/)
+
+  const mismatched = JSON.parse(JSON.stringify(codex))
+  mismatched.native_events.find((event) => event.native_ref === 'codex:turn-completed:2').turnId = 'wrong-turn'
+  const mismatchResult = projectSemanticFixture(mismatched)
+  assert.ok(mismatchResult.unresolved.some((item) => item.host_kind === 'goal_transition' && item.reason === 'missing_matching_terminal_turn'))
+
+  const missing = JSON.parse(JSON.stringify(codex))
+  delete missing.native_events[0].itemId
+  assert.throws(() => projectSemanticFixture(missing), /ItemStarted missing itemId/)
+
+  const claude = readJson('evaluation', 'adapter-discovery', 'claude-code-agent-sdk', '0.3.251', 'semantic-fixture.json')
+  const permission = claude.native_events.find((event) => event.type === 'PermissionRequest')
+  permission.requestId = 'claude-request-1'
+  permission.tool_use_id = 'claude-call-2'
+  const claudeResult = projectSemanticFixture(claude)
+  assert.deepEqual(claudeResult.unresolved.map((item) => item.reason), ['no_shared_native_join_key_between_permission_hook_and_callback'])
 })
 
 test('cross-client convergence remains a discovery shape with explicit enforcement gaps', () => {
@@ -133,6 +174,7 @@ test('cross-client convergence rejects a forged common set and stale mapping byt
       const mapping = JSON.parse(fs.readFileSync(source, 'utf8'))
       fs.copyFileSync(path.join(path.dirname(source), mapping.binding_provenance_path), path.join(path.dirname(target), mapping.binding_provenance_path))
       fs.copyFileSync(path.join(path.dirname(source), mapping.event_cohesion_path), path.join(path.dirname(target), mapping.event_cohesion_path))
+      fs.copyFileSync(path.join(path.dirname(source), 'semantic-fixture.json'), path.join(path.dirname(target), 'semantic-fixture.json'))
       fs.copyFileSync(path.join(path.dirname(source), 'native-contract.json'), path.join(path.dirname(target), 'native-contract.json'))
     }
     const convergenceFile = path.join(tempRoot, 'host-event-convergence-v1.json')
@@ -163,6 +205,7 @@ test('cross-client convergence rejects invented or unbound field provenance', ()
       const mapping = JSON.parse(fs.readFileSync(sourceMapping, 'utf8'))
       fs.copyFileSync(path.join(path.dirname(sourceMapping), mapping.binding_provenance_path), path.join(path.dirname(targetMapping), mapping.binding_provenance_path))
       fs.copyFileSync(path.join(path.dirname(sourceMapping), mapping.event_cohesion_path), path.join(path.dirname(targetMapping), mapping.event_cohesion_path))
+      fs.copyFileSync(path.join(path.dirname(sourceMapping), 'semantic-fixture.json'), path.join(path.dirname(targetMapping), 'semantic-fixture.json'))
       fs.copyFileSync(path.join(path.dirname(sourceMapping), 'native-contract.json'), path.join(path.dirname(targetMapping), 'native-contract.json'))
     }
     const convergenceFile = path.join(tempRoot, 'host-event-convergence-v1.json')
@@ -192,7 +235,7 @@ test('event cohesion rejects promotion of an unjoined Claude approval path', () 
       fs.mkdirSync(path.dirname(targetMapping), { recursive: true })
       fs.copyFileSync(sourceMapping, targetMapping)
       const mapping = JSON.parse(fs.readFileSync(sourceMapping, 'utf8'))
-      for (const artifact of [mapping.binding_provenance_path, mapping.event_cohesion_path, 'native-contract.json']) fs.copyFileSync(path.join(path.dirname(sourceMapping), artifact), path.join(path.dirname(targetMapping), artifact))
+      for (const artifact of [mapping.binding_provenance_path, mapping.event_cohesion_path, 'semantic-fixture.json', 'native-contract.json']) fs.copyFileSync(path.join(path.dirname(sourceMapping), artifact), path.join(path.dirname(targetMapping), artifact))
     }
     const claudeClient = convergence.clients.find((client) => client.client === 'claude-code-agent-sdk')
     const claudeMappingPath = path.join(tempRoot, claudeClient.mapping_path)

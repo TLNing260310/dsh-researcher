@@ -1,0 +1,21 @@
+{
+  "schema": "dsh-researcher/adapter-semantic-fixture/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "provenance": "host-authored synthetic native-shape events; not emitted by the client or a model",
+  "model_calls": 0,
+  "network_calls": 0,
+  "native_events": [
+    { "native_seq": 1, "native_ref": "codex:item-started:1", "type": "ItemStarted", "threadId": "codex-thread-fixture", "turnId": "codex-turn-1", "itemId": "codex-item-1", "input": { "cmd": "verify" } },
+    { "native_seq": 2, "native_ref": "codex:item-completed:1", "type": "ItemCompleted", "threadId": "codex-thread-fixture", "turnId": "codex-turn-1", "itemId": "codex-item-1", "output": { "exitCode": 0 }, "status": "completed" },
+    { "native_seq": 3, "native_ref": "codex:approval-request:1", "type": "ApprovalRequest", "request_id": "codex-request-1", "threadId": "codex-thread-fixture", "turnId": "codex-turn-1", "itemId": "codex-item-2" },
+    { "native_seq": 4, "native_ref": "codex:approval-response:1", "type": "ApprovalResponse", "request_id": "codex-request-1", "decision": "accept" },
+    { "native_seq": 5, "native_ref": "codex:usage:1", "type": "TokenUsage", "threadId": "codex-thread-fixture", "turnId": "codex-turn-1", "tokenUsage": { "last": 15, "total": 15 } },
+    { "native_seq": 6, "native_ref": "codex:turn-completed:1", "type": "TurnCompleted", "threadId": "codex-thread-fixture", "turnId": "codex-turn-1", "status": "completed" },
+    { "native_seq": 7, "native_ref": "codex:resume:1", "type": "ThreadResume", "threadId": "codex-thread-fixture" },
+    { "native_seq": 8, "native_ref": "codex:interrupt-request:1", "type": "TurnInterruptRequest", "request_id": "codex-request-2", "threadId": "codex-thread-fixture", "turnId": "codex-turn-2" },
+    { "native_seq": 9, "native_ref": "codex:interrupt-response:1", "type": "TurnInterruptResponse", "request_id": "codex-request-2" },
+    { "native_seq": 10, "native_ref": "codex:turn-completed:2", "type": "TurnCompleted", "threadId": "codex-thread-fixture", "turnId": "codex-turn-2", "status": "interrupted" }
+  ],
+  "expected_result_sha256": "3a940ab20573b098dee8c771cb295e6a0c32728bed8124bd4c2270e24a92b948"
+}

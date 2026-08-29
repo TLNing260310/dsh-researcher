@@ -1,0 +1,19 @@
+{
+  "schema": "dsh-researcher/adapter-semantic-fixture/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "provenance": "host-authored synthetic native-shape events; not emitted by the client or a model",
+  "model_calls": 0,
+  "network_calls": 0,
+  "native_events": [
+    { "native_seq": 1, "native_ref": "claude:pre:1", "type": "PreToolUse", "session_id": "claude-session-fixture", "prompt_id": "claude-prompt-1", "tool_use_id": "claude-call-1", "tool_input": { "path": "fixture.txt" } },
+    { "native_seq": 2, "native_ref": "claude:post:1", "type": "PostToolUse", "session_id": "claude-session-fixture", "prompt_id": "claude-prompt-1", "tool_use_id": "claude-call-1", "tool_response": { "ok": true } },
+    { "native_seq": 3, "native_ref": "claude:permission-hook:1", "type": "PermissionRequest", "session_id": "claude-session-fixture", "prompt_id": "claude-prompt-1", "tool_name": "Write", "tool_input": { "path": "fixture.txt" } },
+    { "native_seq": 4, "native_ref": "claude:can-use-tool:1", "type": "CanUseTool", "toolUseID": "claude-call-2", "requestId": "claude-request-1", "decision": { "behavior": "allow", "decisionClassification": "user_temporary" } },
+    { "native_seq": 5, "native_ref": "claude:result:1", "type": "SDKResult", "session_id": "claude-session-fixture", "user_message_uuid": "claude-prompt-1", "modelUsage": { "fixture-model": { "inputTokens": 10, "outputTokens": 5 } }, "subtype": "success", "terminal_reason": "end_turn" },
+    { "native_seq": 6, "native_ref": "claude:resume:1", "type": "SessionStart", "source": "resume", "session_id": "claude-session-fixture" },
+    { "native_seq": 7, "native_ref": "claude:interrupt:1", "type": "InterruptResponse", "still_queued": [], "cancelled": [] },
+    { "native_seq": 8, "native_ref": "claude:stop:1", "type": "Stop", "session_id": "claude-session-fixture", "prompt_id": "claude-prompt-1" }
+  ],
+  "expected_result_sha256": "ebdee958c4ea4ceb014eaa51b57cbc11414f6cdcfad592761bb26f952f4d3323"
+}

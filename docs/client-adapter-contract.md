@@ -77,3 +77,12 @@ thread/turn identity. This makes Codex's discovery surface structurally more
 cohesive for a future adapter, but still does not establish principal identity,
 usage completeness, durable replay, hard-stop enforcement, conformance, or
 outcome value.
+
+The discovery checker now executes one locked synthetic semantic fixture per
+client. The fixtures are host-authored native-shape data with zero model and
+network calls, not captured client output. They verify deterministic projection
+and fail-closed behavior for duplicate IDs, missing bindings, and incorrect
+terminal joins. Claude produces six candidate projections plus one unresolved
+approval path; Codex produces eight candidate projections with no unresolved
+fixture event. Those counts describe only the chosen synthetic examples and do
+not upgrade either discovery from `HOLD` or create a product adapter.

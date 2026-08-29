@@ -6,6 +6,8 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const { CLAUDE_SDK_LOCK } = require('./claude-agent-sdk-lock.js')
 const { CODEX_CLI_LOCK } = require('./codex-cli-lock.js')
+const { hashCanonical } = require('../lib/canonical-json.js')
+const { FIXTURE_SCHEMA, RESULT_SCHEMA, PROVENANCE, projectSemanticFixture } = require('../evaluation/adapter-discovery/semantic-fixture.js')
 
 const root = path.resolve(__dirname, '..')
 const discoveryRoot = path.join(root, 'evaluation', 'adapter-discovery')
@@ -265,6 +267,37 @@ const validateEventCohesion = (mappingFile, mapping, provenance) => {
   return counts
 }
 
+const semanticFixturePolicy = {
+  'claude-code-agent-sdk': {
+    summary: { projected: 6, unresolved: 1, cohesive: 5, conditional: 1, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
+    unresolved: [['user_action', 'no_shared_native_join_key_between_permission_hook_and_callback']],
+  },
+  'codex-app-server-stdio': {
+    summary: { projected: 8, unresolved: 0, cohesive: 8, conditional: 0, host_kinds: ['goal_transition', 'session_resume', 'tool_call', 'tool_result', 'turn_end', 'usage', 'user_action'] },
+    unresolved: [],
+  },
+}
+
+const validateSemanticFixture = (mappingFile, mapping) => {
+  const file = path.join(path.dirname(mappingFile), 'semantic-fixture.json')
+  if (!fs.existsSync(file)) throw new Error(mappingFile + ': semantic fixture is missing')
+  const fixture = readJson(file)
+  exactKeys(fixture, ['schema', 'client', 'runtime_version', 'provenance', 'model_calls', 'network_calls', 'native_events', 'expected_result_sha256'], file)
+  const nativeContract = readJson(path.join(path.dirname(mappingFile), 'native-contract.json'))
+  if (fixture.schema !== FIXTURE_SCHEMA || fixture.client !== mapping.client || fixture.runtime_version !== nativeContract.runtime_version) throw new Error(file + ': semantic fixture identity or runtime lock drifted')
+  if (fixture.provenance !== PROVENANCE || fixture.model_calls !== 0 || fixture.network_calls !== 0 || !/^[a-f0-9]{64}$/.test(fixture.expected_result_sha256)) throw new Error(file + ': semantic fixture provenance, execution boundary, or result lock drifted')
+  assertNoSensitiveStrings(fixture, file)
+  const result = projectSemanticFixture(fixture)
+  if (result.schema !== RESULT_SCHEMA || result.client !== mapping.client || result.model_calls !== 0 || result.network_calls !== 0) throw new Error(file + ': semantic projection result boundary drifted')
+  if (hashCanonical(result) !== fixture.expected_result_sha256) throw new Error(file + ': semantic projection result hash drifted')
+  const policy = semanticFixturePolicy[mapping.client]
+  if (!policy || JSON.stringify(result.summary) !== JSON.stringify(policy.summary)) throw new Error(file + ': semantic projection summary drifted')
+  const unresolved = result.unresolved.map((item) => [item.host_kind, item.reason])
+  if (JSON.stringify(unresolved) !== JSON.stringify(policy.unresolved)) throw new Error(file + ': semantic projection unresolved boundary drifted')
+  if (!/does not prove.*native emission.*authenticity.*completeness.*durability.*enforcement.*compatibility.*portability.*conformance.*outcome/i.test(result.claim_boundary || '')) throw new Error(file + ': semantic projection claim boundary drifted')
+  return { result_sha256: fixture.expected_result_sha256, ...result.summary }
+}
+
 const validateConvergence = (file) => {
   const doc = readJson(file)
   if (doc.schema !== 'dsh-researcher/adapter-discovery-convergence/v1' || doc.status !== 'DISCOVERY_ONLY' || doc.governed !== false || doc.conformance_eligible !== false) throw new Error(file + ': convergence identity or boundary drifted')
@@ -272,6 +305,7 @@ const validateConvergence = (file) => {
   const observedSets = []
   const bindingCoverage = {}
   const eventCohesion = {}
+  const semanticFixtures = {}
   const bindingContract = doc.normalized_binding_contract
   if (!plain(bindingContract) || JSON.stringify(Object.keys(bindingContract).sort()) !== JSON.stringify([...doc.common_host_kinds].sort())) throw new Error(file + ': normalized binding contract kinds drifted')
   let bindingFields = 0
@@ -288,6 +322,7 @@ const validateConvergence = (file) => {
     if (!Array.isArray(mapping.mappings) || mapping.mappings.length === 0) throw new Error(file + ': convergence mapping is empty: ' + client.client)
     const provenance = validateBindingProvenance(target, mapping)
     eventCohesion[client.client] = validateEventCohesion(target, mapping, provenance)
+    semanticFixtures[client.client] = validateSemanticFixture(target, mapping)
     const kinds = mapping.mappings.map((item) => item.host_kind)
     if (kinds.some((kind) => !hostEventKinds.has(kind)) || new Set(kinds).size !== kinds.length) throw new Error(file + ': convergence mapping has unsupported or duplicate HostEvent kinds: ' + client.client)
     let documented = 0
@@ -321,7 +356,7 @@ const validateConvergence = (file) => {
   if (JSON.stringify(doc.unmapped_host_kinds) !== JSON.stringify(['guard_violation'])) throw new Error(file + ': convergence unmapped HostEvent boundary drifted')
   if (!/does not prove.*compatibility.*portability.*conformance/i.test(doc.claim_boundary || '')) throw new Error(file + ': convergence claim boundary drifted')
   assertNoSensitiveStrings(doc, file)
-  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, binding_fields: bindingFields, binding_coverage: bindingCoverage, event_cohesion: eventCohesion, shared_governance_gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
+  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, binding_fields: bindingFields, binding_coverage: bindingCoverage, event_cohesion: eventCohesion, semantic_fixtures: semanticFixtures, shared_governance_gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
 }
 
 const files = []
@@ -338,4 +373,4 @@ const records = files.sort().map(validate)
 const convergence = validateConvergence(path.join(discoveryRoot, 'host-event-convergence-v1.json'))
 process.stdout.write(JSON.stringify({ ok: true, schema, checker_model_calls: 0, checker_network_calls: 0, records, convergence }, null, 2) + '\n')
 
-module.exports = { schema, validate, validateBindingProvenance, validateEventCohesion, validateConvergence }
+module.exports = { schema, validate, validateBindingProvenance, validateEventCohesion, validateSemanticFixture, validateConvergence }

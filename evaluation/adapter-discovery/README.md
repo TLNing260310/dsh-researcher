@@ -31,6 +31,18 @@ the former lacks `toolUseID`/`requestId` while the latter lacks
 native-key joins. The checker freezes this result and rejects promotion of the
 Claude approval path into a cohesive native join.
 
+Each locked client also has a `semantic-fixture.json`. These are explicitly
+host-authored, synthetic native-shape events; neither client nor a model emitted
+them. The shared offline projector exercises deterministic candidate assembly,
+hashing, join rejection, and unresolved-event behavior. Its result is locked by
+SHA-256. Claude deliberately leaves the approval path unresolved and marks the
+interrupt-to-Stop path conditional; Codex resolves the two candidate joins only
+through matching JSON-RPC and thread/turn identities. Adversarial tests reject
+duplicate request IDs, missing fields, and mismatched terminal turns. This is
+executable discovery evidence only: it does not prove native emission,
+authenticity, durability, enforcement, compatibility, portability, conformance,
+or outcome value.
+
 Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
 invocation semantics, redaction boundaries, and claim boundaries. The checker
 itself makes zero model and network calls; this does not erase separately
