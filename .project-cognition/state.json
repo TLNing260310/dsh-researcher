@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 21,
+  "revision": 22,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 loaded without query, prompt, session or model use. Codex App Server stdio 0.150.0-alpha.12.2 completed a zero-model initialize/thread-list exchange and credential-stripped 413-file schema capture. Three later authorized turn-capture attempts produced no valid trace: one parameter mismatch stopped before model invocation, while one persisted and one ephemeral turn entered post-completion paths but Windows cleanup discarded the event artifact; at most two Codex model turns may have been billed and exact usage is unknown. The capture is now explicit-use gated, ephemeral, read-only and cleanup-safe, but was not rerun. Both client records remain HOLD, no capability is promoted to OBSERVED, and no adapter or compatibility claim follows.",
-      "fingerprint": "8b00239ea50e7500d1b3bd10798f0432cf487ce80d71882e012cf4f0f3957e8a",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 loaded without query, prompt, session or model use. Codex App Server stdio 0.150.0-alpha.12.2 completed a zero-model initialize/thread-list exchange and credential-stripped 413-file schema capture. Three later authorized turn-capture attempts produced no valid trace: one parameter mismatch stopped before model invocation, while one persisted and one ephemeral turn entered post-completion paths but Windows cleanup discarded the event artifact; at most two Codex model turns may have been billed and exact usage is unknown. The capture remains explicit-use gated and was not rerun. A zero-model in-memory App Server now proves its ephemeral/read-only request, safety refusal, identifier redaction, lifecycle folding, process-close, cleanup and trace-output code paths; this is synthetic harness evidence only. Both client records remain HOLD, no capability is promoted to OBSERVED, and no adapter or compatibility claim follows.",
+      "fingerprint": "65d45f4e74df59d94271a7ce797bf551ce66067aca95c07a8b34e67571130d2f",
       "observed_at": "2026-08-29"
     },
     {
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "16c6ca58377935da3f04a303d7156e187abbfe2915ff311a2d48c571bbe8eace"
+  "state_hash": "037e7191792cd2ec60bb1a350ae8a6b4bad3b5802f019c9348dc0efeedabe7d0"
 }

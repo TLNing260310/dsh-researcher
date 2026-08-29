@@ -21,4 +21,6 @@ The Codex contract capture is reproducible with
 The opt-in Codex turn capture requires `--ack-codex-usage`, uses an ephemeral
 thread and read-only/network-disabled workspace, and is never part of
 `npm run check`. The 2026-08-29 attempts retained no valid trace and therefore
-remain an incident record rather than runtime evidence.
+remain an incident record rather than runtime evidence. A zero-model in-memory
+protocol fixture verifies the repaired capture lifecycle, but cannot promote a
+native client capability to `OBSERVED`.

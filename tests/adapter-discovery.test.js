@@ -3,14 +3,80 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
+const { EventEmitter } = require('node:events')
+const { PassThrough, Writable } = require('node:stream')
 
 const root = path.join(__dirname, '..')
 const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(root, ...parts), 'utf8'))
 const { sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
 const { extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
-const { hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
+const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
+
+const fakeCodexAppServer = () => {
+  const received = []
+  const spawnProcess = (command, args, options) => {
+    assert.equal(command, 'codex')
+    assert.deepEqual(args, ['app-server', '--stdio'])
+    assert.equal(options.windowsHide, true)
+    const child = new EventEmitter()
+    child.stdout = new PassThrough()
+    child.stderr = new PassThrough()
+    child.exitCode = null
+    let pending = ''
+    let closed = false
+    const emit = (message) => setImmediate(() => child.stdout.write(JSON.stringify(message) + '\n'))
+    const completeTurn = () => {
+      emit({ method: 'item/started', params: { threadId: 'thread-native-secret', turnId: 'turn-native-secret', item: { id: 'item-native-secret', type: 'agentMessage' } } })
+      emit({ method: 'item/completed', params: { threadId: 'thread-native-secret', turnId: 'turn-native-secret', item: { id: 'item-native-secret', type: 'agentMessage' } } })
+      emit({ method: 'thread/tokenUsage/updated', params: { threadId: 'thread-native-secret', turnId: 'turn-native-secret', tokenUsage: { total: { totalTokens: 7 } } } })
+      emit({ method: 'turn/completed', params: { threadId: 'thread-native-secret', turn: { id: 'turn-native-secret', status: 'completed', items: [] } } })
+    }
+    const accept = (message) => {
+      received.push(message)
+      if (message.method === 'initialize') emit({ id: 1, result: { userAgent: 'fixture' } })
+      else if (message.method === 'thread/start') {
+        assert.equal(message.params.ephemeral, true)
+        assert.equal(message.params.sandbox, 'read-only')
+        emit({ id: 2, result: { thread: { id: 'thread-native-secret', ephemeral: true } } })
+        emit({ method: 'thread/started', params: { thread: { id: 'thread-native-secret', ephemeral: true } } })
+      } else if (message.method === 'turn/start') {
+        assert.deepEqual(message.params.sandboxPolicy, { type: 'readOnly', networkAccess: false })
+        emit({ id: 3, result: { turn: { id: 'turn-native-secret', status: 'inProgress', items: [] } } })
+        emit({ id: 'approval-native-secret', method: 'item/commandExecution/requestApproval', params: { threadId: 'thread-native-secret', turnId: 'turn-native-secret', itemId: 'item-native-secret' } })
+      } else if (message.id === 'approval-native-secret') {
+        assert.equal(message.error?.code, -32000)
+        assert.match(message.error?.message || '', /denied unexpected server request/)
+        completeTurn()
+      }
+    }
+    child.stdin = new Writable({
+      write(chunk, encoding, callback) {
+        pending += String(chunk)
+        const lines = pending.split('\n')
+        pending = lines.pop()
+        for (const line of lines) if (line) accept(JSON.parse(line))
+        callback()
+      },
+    })
+    child.kill = () => {
+      if (closed) return true
+      closed = true
+      setImmediate(() => {
+        child.exitCode = 0
+        child.stdout.end()
+        child.stderr.end()
+        child.emit('close', 0)
+        child.emit('exit', 0)
+      })
+      return true
+    }
+    return child
+  }
+  return { received, spawnProcess }
+}
 
 test('adapter discovery is version locked, offline checked, and non-product', () => {
   const result = spawnSync(process.execPath, [path.join(root, 'scripts', 'check-adapter-discovery.js')], { cwd: root, encoding: 'utf8', windowsHide: true })
@@ -56,6 +122,31 @@ test('Codex turn capture is explicit-use gated and hashes native ids before outp
   assert.equal(hashId('thread-a').length, 64)
   assert.equal(hashId('thread-a'), hashId('thread-a'))
   assert.notEqual(hashId('thread-a'), hashId('thread-b'))
+})
+
+test('Codex turn capture forms a redacted trace after refusal and process close without a model', async () => {
+  const fixture = fakeCodexAppServer()
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-codex-capture-test-'))
+  try {
+    const trace = await captureCodexTurn({ ackUsage: true }, { spawnProcess: fixture.spawnProcess, synthetic: true, tempRoot, timeoutMs: 5000 })
+    assert.equal(trace.capture_kind, 'synthetic-single-turn-no-model')
+    assert.equal(trace.model_calls, 0)
+    assert.equal(trace.prompt_submissions, 0)
+    assert.equal(trace.refused_server_requests, 1)
+    assert.equal(trace.auto_approved_requests, 0)
+    assert.equal(trace.cleanup.temporary_workspace_removed, true)
+    assert.equal(trace.cleanup.ephemeral_thread, true)
+    assert.deepEqual(trace.observed_item_types, ['agentMessage'])
+    assert.deepEqual(trace.observed_turn_statuses, ['completed'])
+    assert.equal(trace.correlation.thread_id_sha256, hashId('thread-native-secret'))
+    assert.equal(trace.correlation.turn_id_sha256, hashId('turn-native-secret'))
+    const serialized = JSON.stringify(trace)
+    for (const secret of ['thread-native-secret', 'turn-native-secret', 'item-native-secret', 'approval-native-secret']) assert.doesNotMatch(serialized, new RegExp(secret))
+    const refusal = fixture.received.find((message) => message.id === 'approval-native-secret')
+    assert.equal(refusal.error.code, -32000)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
 })
 
 test('Claude discovery binds a no-model runtime load without fabricating a session trace', () => {

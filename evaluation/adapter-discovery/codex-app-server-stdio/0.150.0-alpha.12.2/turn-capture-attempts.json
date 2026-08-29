@@ -37,7 +37,8 @@
     "model use requires --ack-codex-usage",
     "new threads are ephemeral",
     "thread sandbox uses the locked read-only enum while the turn policy uses readOnly",
-    "capture completion now waits for process close and records cleanup failure without discarding the trace"
+    "capture completion now waits for process close and records cleanup failure without discarding the trace",
+    "an in-memory no-model App Server fixture proves refusal, redaction, lifecycle folding, process close, and cleanup output paths without claiming native runtime evidence"
   ],
   "claim_boundary": "This is an incident record, not a native trace. It supports no HostEvent mapping, governed capability, usage completeness, replay, or compatibility claim."
 }

@@ -23,6 +23,13 @@ evidence, and promote no capability from DOCUMENTED to OBSERVED. At most two
 Codex model turns may have been billed; exact usage is unknown because the
 trace was not retained.
 
+The repaired capture path is covered by an in-memory, zero-model App Server
+fixture. It verifies ephemeral/read-only request construction, fail-closed
+server-request refusal, identifier hashing, item/turn/usage metadata folding,
+process-close ordering, cleanup, and trace formation. This is implementation
+evidence for the capture harness only; a synthetic peer cannot prove any native
+Codex capability or replace a real retained trace.
+
 The remaining governed gaps are material. A valid redacted native turn trace
 still does not exist. Persisted `thread/read`/`resume`
 items are documented as lossy for some command executions; approval responses

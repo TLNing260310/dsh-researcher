@@ -23,11 +23,14 @@ const parseArgs = (args) => {
   return { ackUsage: args.includes('--ack-codex-usage') }
 }
 
-const capture = ({ ackUsage }) => new Promise((resolve, reject) => {
+const capture = ({ ackUsage }, dependencies = {}) => new Promise((resolve, reject) => {
   if (!ackUsage) throw new Error('refusing to start a model turn without --ack-codex-usage')
 
-  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-codex-turn-'))
-  const child = spawn('codex', ['app-server', '--stdio'], {
+  const spawnProcess = dependencies.spawnProcess || spawn
+  const timeoutMs = dependencies.timeoutMs || TIMEOUT_MS
+  const synthetic = dependencies.synthetic === true
+  const workspace = fs.mkdtempSync(path.join(dependencies.tempRoot || os.tmpdir(), 'dsh-codex-turn-'))
+  const child = spawnProcess('codex', ['app-server', '--stdio'], {
     cwd: path.resolve(__dirname, '..'),
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
@@ -46,7 +49,8 @@ const capture = ({ ackUsage }) => new Promise((resolve, reject) => {
   let settled = false
 
   const send = (message, policy = null) => {
-    requests.push({ id: message.id ?? null, method: message.method || '<response>', policy })
+    const responseId = !message.method && Object.hasOwn(message, 'id') ? hashId(String(message.id)) : null
+    requests.push({ id: message.method ? message.id ?? null : null, response_id_sha256: responseId, method: message.method || '<response>', policy })
     child.stdin.write(JSON.stringify(message) + '\n')
   }
   const finish = (error) => {
@@ -71,10 +75,10 @@ const capture = ({ ackUsage }) => new Promise((resolve, reject) => {
         schema: 'dsh-researcher/adapter-native-turn-trace/v1',
         client: 'codex-app-server-stdio',
         runtime_version: EXPECTED_VERSION,
-        capture_kind: 'live-single-turn-model',
-        model_calls: 1,
-        prompt_submissions: 1,
-        network_observation: 'not instrumented; one authenticated Codex model turn was intentionally initiated',
+        capture_kind: synthetic ? 'synthetic-single-turn-no-model' : 'live-single-turn-model',
+        model_calls: synthetic ? 0 : 1,
+        prompt_submissions: synthetic ? 0 : 1,
+        network_observation: synthetic ? 'in-memory protocol fixture; no process or network call' : 'not instrumented; one authenticated Codex model turn was intentionally initiated',
         isolated_workspace: true,
         sandbox_policy: { type: 'readOnly', networkAccess: false },
         approval_policy: 'never',
@@ -90,7 +94,9 @@ const capture = ({ ackUsage }) => new Promise((resolve, reject) => {
         correlation: { thread_id_sha256: hashId(threadId), turn_id_sha256: hashId(turnId) },
         cleanup: { temporary_workspace_removed: temporaryWorkspaceRemoved, cleanup_error_code: cleanupErrorCode, ephemeral_thread: ephemeralThread, persisted_thread_created: false },
         redaction: 'prompt content, response text, reasoning, paths, account data, raw identifiers, token counts, and native payload values omitted',
-        claim_boundary: 'One text-only native turn lifecycle was observed. No tool, approval acceptance, write, resume, replay, hard-stop, usage-completeness, or governed adapter behavior is proven.',
+        claim_boundary: synthetic
+          ? 'Synthetic protocol lifecycle only. No native client behavior, model call, HostEvent mapping, compatibility, or governed adapter behavior is proven.'
+          : 'One text-only native turn lifecycle was observed. No tool, approval acceptance, write, resume, replay, hard-stop, usage-completeness, or governed adapter behavior is proven.',
       })
     }
     if (child.exitCode !== null) complete()
@@ -111,7 +117,7 @@ const capture = ({ ackUsage }) => new Promise((resolve, reject) => {
   const timer = setTimeout(() => {
     if (threadId && turnId) send({ jsonrpc: '2.0', id: 90, method: 'turn/interrupt', params: { threadId, turnId } }, 'timeout-interrupt')
     setTimeout(() => finish(new Error('timed out waiting for app-server turn')), 1000).unref()
-  }, TIMEOUT_MS)
+  }, timeoutMs)
 
   child.stderr.on('data', (chunk) => { stderr = (stderr + String(chunk)).slice(-8192) })
   child.on('error', finish)
