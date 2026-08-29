@@ -21,6 +21,16 @@ each client's `DOCUMENTED` versus `GAP` coverage without upgrading
 either to `OBSERVED`. A common projection target is not native semantic
 equivalence, compatibility, portability, or conformance evidence.
 
+The adjacent `event-cohesion.json` adds a separate assembly audit. A field can
+be documented yet unusable in one trustworthy HostEvent when its source frames
+have no shared native key. Under the locked contracts, Claude has five
+single-event mappings, one host-context-only mapping, and one unjoined mapping:
+`PermissionRequestHookInput` cannot be natively joined to `canUseTool` because
+the former lacks `toolUseID`/`requestId` while the latter lacks
+`session_id`/`prompt_id`. Codex has five single-event mappings and two
+native-key joins. The checker freezes this result and rejects promotion of the
+Claude approval path into a cohesive native join.
+
 Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
 invocation semantics, redaction boundaries, and claim boundaries. The checker
 itself makes zero model and network calls; this does not erase separately

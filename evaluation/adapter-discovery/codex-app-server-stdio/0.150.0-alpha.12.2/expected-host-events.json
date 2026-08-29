@@ -2,6 +2,7 @@
   "schema": "dsh-researcher/expected-host-events/v1",
   "client": "codex-app-server-stdio",
   "binding_provenance_path": "binding-provenance.json",
+  "event_cohesion_path": "event-cohesion.json",
   "mappings": [
     {
       "native": "item/started commandExecution|fileChange|dynamicToolCall",

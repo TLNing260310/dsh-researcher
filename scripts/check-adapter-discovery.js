@@ -193,7 +193,76 @@ const validateBindingProvenance = (mappingFile, mapping) => {
     }
   }
   assertNoSensitiveStrings(doc, file)
-  return { path: file, proof_count: usedProofs.size, gap_fields: doc.gap_fields.length }
+  return { path: file, proof_count: usedProofs.size, proof_ids: new Set(Object.keys(doc.proofs)), gap_fields: doc.gap_fields.length }
+}
+
+const cohesionPolicy = {
+  'claude-code-agent-sdk': {
+    tool_call: ['SINGLE_EVENT', 'COHESIVE'],
+    tool_result: ['SINGLE_EVENT', 'COHESIVE'],
+    user_action: ['UNJOINED', 'GAP'],
+    usage: ['SINGLE_EVENT', 'COHESIVE'],
+    turn_end: ['SINGLE_EVENT', 'COHESIVE'],
+    session_resume: ['SINGLE_EVENT', 'COHESIVE'],
+    goal_transition: ['HOST_CONTEXT_JOIN', 'CONDITIONAL'],
+  },
+  'codex-app-server-stdio': {
+    tool_call: ['SINGLE_EVENT', 'COHESIVE'],
+    tool_result: ['SINGLE_EVENT', 'COHESIVE'],
+    user_action: ['NATIVE_KEY_JOIN', 'COHESIVE'],
+    usage: ['SINGLE_EVENT', 'COHESIVE'],
+    turn_end: ['SINGLE_EVENT', 'COHESIVE'],
+    session_resume: ['SINGLE_EVENT', 'COHESIVE'],
+    goal_transition: ['NATIVE_KEY_JOIN', 'COHESIVE'],
+  },
+}
+
+const validateEventCohesion = (mappingFile, mapping, provenance) => {
+  if (!relativeSafe(mapping.event_cohesion_path)) throw new Error(mappingFile + ': event cohesion path is missing or unsafe')
+  const file = path.resolve(path.dirname(mappingFile), mapping.event_cohesion_path)
+  if (!file.startsWith(path.dirname(mappingFile) + path.sep) || !fs.existsSync(file)) throw new Error(mappingFile + ': event cohesion artifact is missing')
+  const doc = readJson(file)
+  exactKeys(doc, ['schema', 'client', 'runtime_version', 'mapping_sha256', 'events', 'negative_contract_checks', 'summary', 'claim_boundary'], file)
+  if (doc.schema !== 'dsh-researcher/adapter-event-cohesion/v1' || doc.client !== mapping.client || doc.mapping_sha256 !== sha256(mappingFile)) throw new Error(file + ': event cohesion identity or mapping lock drifted')
+  const nativeContract = readJson(path.join(path.dirname(mappingFile), 'native-contract.json'))
+  if (doc.runtime_version !== nativeContract.runtime_version || !Array.isArray(doc.events) || doc.events.length !== mapping.mappings.length) throw new Error(file + ': event cohesion runtime or event count drifted')
+  const mappingByKind = new Map(mapping.mappings.map((item) => [item.host_kind, item]))
+  const policy = cohesionPolicy[mapping.client]
+  if (!policy) throw new Error(file + ': event cohesion client has no frozen policy')
+  const counts = { single_event: 0, native_key_join: 0, host_context_join: 0, unjoined: 0, cohesive: 0, conditional: 0, gap: 0 }
+  const seen = new Set()
+  for (const event of doc.events) {
+    exactKeys(event, ['host_kind', 'source_frames', 'assembly', 'status', 'documented_binding_proofs', 'join_proofs', 'limitation'], file + ': cohesion event')
+    if (seen.has(event.host_kind) || !mappingByKind.has(event.host_kind)) throw new Error(file + ': duplicate or unknown cohesion host kind: ' + event.host_kind)
+    seen.add(event.host_kind)
+    const [expectedAssembly, expectedStatus] = policy[event.host_kind] || []
+    if (event.assembly !== expectedAssembly || event.status !== expectedStatus) throw new Error(file + ': cohesion policy promotion or drift: ' + event.host_kind)
+    if (!Array.isArray(event.source_frames) || event.source_frames.length === 0 || event.source_frames.some((source) => typeof source !== 'string' || source.length === 0) || typeof event.limitation !== 'string' || event.limitation.length < 30) throw new Error(file + ': invalid cohesion source or limitation: ' + event.host_kind)
+    const expectedProofs = [...new Set(Object.values(mappingByKind.get(event.host_kind).normalized_bindings).filter((binding) => binding.status === 'DOCUMENTED').map((binding) => binding.proof))].sort()
+    if (!Array.isArray(event.documented_binding_proofs) || JSON.stringify([...event.documented_binding_proofs].sort()) !== JSON.stringify(expectedProofs)) throw new Error(file + ': cohesion binding proof coverage drifted: ' + event.host_kind)
+    if (!Array.isArray(event.join_proofs) || event.join_proofs.some((proof) => !provenance.proof_ids.has(proof))) throw new Error(file + ': cohesion join uses an unknown contract proof: ' + event.host_kind)
+    if (event.assembly === 'NATIVE_KEY_JOIN' && event.join_proofs.length === 0) throw new Error(file + ': native-key join lacks a contract proof: ' + event.host_kind)
+    if (event.assembly !== 'NATIVE_KEY_JOIN' && event.join_proofs.length !== 0) throw new Error(file + ': non-native join must not claim native join proofs: ' + event.host_kind)
+    counts[event.assembly.toLowerCase()] += 1
+    counts[event.status.toLowerCase()] += 1
+  }
+  if (!Array.isArray(doc.negative_contract_checks)) throw new Error(file + ': cohesion negative contract checks are missing')
+  const expectedNegativeChecks = mapping.client === 'claude-code-agent-sdk' ? [
+    ['PermissionRequestHookInput', ['prompt_id', 'session_id', 'tool_input', 'tool_name'], ['requestId', 'request_id', 'tool_use_id'], 'user_action remains UNJOINED'],
+    ['CanUseTool.options', ['requestId', 'toolUseID'], ['prompt_id', 'session_id'], 'user_action remains UNJOINED'],
+    ['SDKControlInterruptResponse', ['cancelled', 'still_queued'], ['prompt_id', 'request_id', 'session_id'], 'goal_transition remains HOST_CONTEXT_JOIN'],
+    ['StopHookInput', ['hook_event_name', 'prompt_id', 'session_id'], ['interrupt_receipt_id', 'request_id'], 'goal_transition remains HOST_CONTEXT_JOIN'],
+  ] : []
+  const normalizedNegativeChecks = doc.negative_contract_checks.map((check) => {
+    exactKeys(check, ['symbol', 'present', 'absent', 'supports'], file + ': negative contract check')
+    if (typeof check.symbol !== 'string' || !Array.isArray(check.present) || !Array.isArray(check.absent) || typeof check.supports !== 'string' || check.present.some((field) => check.absent.includes(field))) throw new Error(file + ': invalid negative contract check')
+    return [check.symbol, [...check.present].sort(), [...check.absent].sort(), check.supports]
+  })
+  if (JSON.stringify(normalizedNegativeChecks) !== JSON.stringify(expectedNegativeChecks)) throw new Error(file + ': negative contract evidence drifted')
+  if (seen.size !== Object.keys(policy).length || JSON.stringify(doc.summary) !== JSON.stringify(counts)) throw new Error(file + ': event cohesion summary or host-kind coverage drifted')
+  if (!/does not prove.*live.*authenticity.*completeness.*durability.*enforcement.*compatibility.*portability.*conformance.*outcome/i.test(doc.claim_boundary || '')) throw new Error(file + ': event cohesion claim boundary drifted')
+  assertNoSensitiveStrings(doc, file)
+  return counts
 }
 
 const validateConvergence = (file) => {
@@ -202,6 +271,7 @@ const validateConvergence = (file) => {
   if (!Array.isArray(doc.clients) || doc.clients.length !== 2) throw new Error(file + ': convergence must bind exactly two discovery clients')
   const observedSets = []
   const bindingCoverage = {}
+  const eventCohesion = {}
   const bindingContract = doc.normalized_binding_contract
   if (!plain(bindingContract) || JSON.stringify(Object.keys(bindingContract).sort()) !== JSON.stringify([...doc.common_host_kinds].sort())) throw new Error(file + ': normalized binding contract kinds drifted')
   let bindingFields = 0
@@ -216,7 +286,8 @@ const validateConvergence = (file) => {
     const mapping = readJson(target)
     if (mapping.schema !== 'dsh-researcher/expected-host-events/v1' || mapping.client !== client.client) throw new Error(file + ': convergence mapping identity drifted: ' + client.client)
     if (!Array.isArray(mapping.mappings) || mapping.mappings.length === 0) throw new Error(file + ': convergence mapping is empty: ' + client.client)
-    validateBindingProvenance(target, mapping)
+    const provenance = validateBindingProvenance(target, mapping)
+    eventCohesion[client.client] = validateEventCohesion(target, mapping, provenance)
     const kinds = mapping.mappings.map((item) => item.host_kind)
     if (kinds.some((kind) => !hostEventKinds.has(kind)) || new Set(kinds).size !== kinds.length) throw new Error(file + ': convergence mapping has unsupported or duplicate HostEvent kinds: ' + client.client)
     let documented = 0
@@ -250,7 +321,7 @@ const validateConvergence = (file) => {
   if (JSON.stringify(doc.unmapped_host_kinds) !== JSON.stringify(['guard_violation'])) throw new Error(file + ': convergence unmapped HostEvent boundary drifted')
   if (!/does not prove.*compatibility.*portability.*conformance/i.test(doc.claim_boundary || '')) throw new Error(file + ': convergence claim boundary drifted')
   assertNoSensitiveStrings(doc, file)
-  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, binding_fields: bindingFields, binding_coverage: bindingCoverage, shared_governance_gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
+  return { status: doc.status, common_host_kinds: doc.common_host_kinds.length, binding_fields: bindingFields, binding_coverage: bindingCoverage, event_cohesion: eventCohesion, shared_governance_gaps: Object.values(doc.requirements).filter((item) => item.status === 'GAP').length }
 }
 
 const files = []
@@ -267,4 +338,4 @@ const records = files.sort().map(validate)
 const convergence = validateConvergence(path.join(discoveryRoot, 'host-event-convergence-v1.json'))
 process.stdout.write(JSON.stringify({ ok: true, schema, checker_model_calls: 0, checker_network_calls: 0, records, convergence }, null, 2) + '\n')
 
-module.exports = { schema, validate, validateBindingProvenance, validateConvergence }
+module.exports = { schema, validate, validateBindingProvenance, validateEventCohesion, validateConvergence }

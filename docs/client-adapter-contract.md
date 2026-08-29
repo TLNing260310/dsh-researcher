@@ -65,3 +65,15 @@ ranking. The checker binds the source mapping bytes and keeps
 `guard_violation`, authenticated human receipts, usage completeness, raw-first
 durability, restart checkpoints and terminal write enforcement as unresolved
 boundaries. This comparison cannot promote either client or substitute for E2.
+
+Field presence is not event integrity. The locked event-cohesion audit finds
+that Claude can assemble five mappings from one native frame, but its approval
+path is unjoined: `PermissionRequestHookInput` has session/prompt context and no
+`toolUseID` or `requestId`, while `canUseTool` has the call/request IDs and
+decision without `session_id` or `prompt_id`. Its interrupt-return-to-Stop join
+also depends on host context rather than a shared native receipt ID. Codex has
+five single-frame mappings plus two native-key joins through JSON-RPC and
+thread/turn identity. This makes Codex's discovery surface structurally more
+cohesive for a future adapter, but still does not establish principal identity,
+usage completeness, durable replay, hard-stop enforcement, conformance, or
+outcome value.

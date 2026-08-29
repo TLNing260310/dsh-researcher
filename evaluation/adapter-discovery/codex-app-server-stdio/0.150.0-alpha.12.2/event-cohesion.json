@@ -1,0 +1,82 @@
+{
+  "schema": "dsh-researcher/adapter-event-cohesion/v1",
+  "client": "codex-app-server-stdio",
+  "runtime_version": "0.150.0-alpha.12.2",
+  "mapping_sha256": "1d2f05a9e3ba816bb80c6565e9104b54d73364618e19c3d169e3c761cb2de5f1",
+  "events": [
+    {
+      "host_kind": "tool_call",
+      "source_frames": ["item/started"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["item-started.thread-id", "item-started.turn-id", "item.id", "item.input"],
+      "join_proofs": [],
+      "limitation": "The schema is cohesive; a valid live item trace has not been retained."
+    },
+    {
+      "host_kind": "tool_result",
+      "source_frames": ["item/completed"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["item-completed.thread-id", "item-completed.turn-id", "item.id", "item.output", "item.status"],
+      "join_proofs": [],
+      "limitation": "The schema is cohesive; durable delivery and call/result uniqueness remain unobserved."
+    },
+    {
+      "host_kind": "user_action",
+      "source_frames": ["item/*/requestApproval JSON-RPC request", "JSON-RPC response"],
+      "assembly": "NATIVE_KEY_JOIN",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["approval.item-id", "approval.response", "approval.thread-id", "approval.turn-id", "json-rpc.request-id"],
+      "join_proofs": ["json-rpc.request-id"],
+      "limitation": "The request/response can correlate by JSON-RPC ID, but neither frame supplies an authenticated human principal."
+    },
+    {
+      "host_kind": "usage",
+      "source_frames": ["thread/tokenUsage/updated"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["token-usage.counters", "token-usage.thread-id", "token-usage.turn-id"],
+      "join_proofs": [],
+      "limitation": "The schema is cohesive but does not prove complete billable-call coverage."
+    },
+    {
+      "host_kind": "turn_end",
+      "source_frames": ["turn/completed"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["turn-completed.thread-id", "turn.id", "turn.status"],
+      "join_proofs": [],
+      "limitation": "Terminal observation does not prove post-terminal write enforcement."
+    },
+    {
+      "host_kind": "session_resume",
+      "source_frames": ["thread/resume response"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["thread-resume.thread-id"],
+      "join_proofs": [],
+      "limitation": "The response is cohesive but incomplete because it supplies no resume prefix checkpoint hash."
+    },
+    {
+      "host_kind": "goal_transition",
+      "source_frames": ["turn/interrupt request and response", "turn/completed"],
+      "assembly": "NATIVE_KEY_JOIN",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["turn-interrupt.response", "turn-interrupt.thread-id", "turn-interrupt.turn-id", "turn.status"],
+      "join_proofs": ["turn-interrupt.thread-id", "turn-interrupt.turn-id", "turn.status"],
+      "limitation": "JSON-RPC acknowledges interrupt handling and thread/turn IDs correlate the terminal event, but the empty interrupt response does not prove queue drain or hard-stop enforcement."
+    }
+  ],
+  "negative_contract_checks": [],
+  "summary": {
+    "single_event": 5,
+    "native_key_join": 2,
+    "host_context_join": 0,
+    "unjoined": 0,
+    "cohesive": 7,
+    "conditional": 0,
+    "gap": 0
+  },
+  "claim_boundary": "Cohesion describes whether documented binding sources can be assembled from one frame or a contract-declared native key. It does not prove live emission, authenticity, completeness, durability, hard enforcement, compatibility, portability, conformance, or outcome value."
+}

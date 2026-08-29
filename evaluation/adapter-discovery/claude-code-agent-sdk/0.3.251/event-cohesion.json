@@ -1,0 +1,107 @@
+{
+  "schema": "dsh-researcher/adapter-event-cohesion/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "mapping_sha256": "056374089d5a33559a7e3e16e17f6bff062d72a075a27e4f73785499b71442d6",
+  "events": [
+    {
+      "host_kind": "tool_call",
+      "source_frames": ["PreToolUseHookInput"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["base-hook.prompt-id", "base-hook.session-id", "pre-tool-use.tool-input", "pre-tool-use.tool-use-id"],
+      "join_proofs": [],
+      "limitation": "prompt_id is optional; cohesion does not make an absent turn correlation present."
+    },
+    {
+      "host_kind": "tool_result",
+      "source_frames": ["PostToolUseHookInput", "PostToolUseFailureHookInput"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["base-hook.prompt-id", "base-hook.session-id", "post-tool-use.outcome-discriminator", "post-tool-use.tool-response", "post-tool-use.tool-use-id"],
+      "join_proofs": [],
+      "limitation": "Each union branch is internally cohesive; delivery durability remains unproved."
+    },
+    {
+      "host_kind": "user_action",
+      "source_frames": ["PermissionRequestHookInput", "CanUseTool callback and PermissionResult"],
+      "assembly": "UNJOINED",
+      "status": "GAP",
+      "documented_binding_proofs": ["base-hook.prompt-id", "base-hook.session-id", "can-use-tool.request-id", "can-use-tool.tool-use-id", "permission-result.decision"],
+      "join_proofs": [],
+      "limitation": "PermissionRequestHookInput carries session/prompt context but no toolUseID or requestId; CanUseTool carries toolUseID/requestId and the response but no session_id or prompt_id. The locked declaration exposes no shared native key between these frames."
+    },
+    {
+      "host_kind": "usage",
+      "source_frames": ["SDKResultSuccess or SDKResultError"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["result.model-usage", "result.session-id", "result.user-message-uuid"],
+      "join_proofs": [],
+      "limitation": "user_message_uuid is optional and modelUsage is incomplete for helper calls."
+    },
+    {
+      "host_kind": "turn_end",
+      "source_frames": ["SDKResultSuccess or SDKResultError"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["result.session-id", "result.terminal-status", "result.user-message-uuid"],
+      "join_proofs": [],
+      "limitation": "user_message_uuid is optional and the result is not a Governor hard-stop receipt."
+    },
+    {
+      "host_kind": "session_resume",
+      "source_frames": ["SessionStartHookInput source=resume"],
+      "assembly": "SINGLE_EVENT",
+      "status": "COHESIVE",
+      "documented_binding_proofs": ["session-start.session-id"],
+      "join_proofs": [],
+      "limitation": "The event is cohesive but incomplete because it contains no resume prefix checkpoint hash."
+    },
+    {
+      "host_kind": "goal_transition",
+      "source_frames": ["Query.interrupt return", "StopHookInput"],
+      "assembly": "HOST_CONTEXT_JOIN",
+      "status": "CONDITIONAL",
+      "documented_binding_proofs": ["base-hook.prompt-id", "query.interrupt-receipt", "stop-hook.discriminator", "stop-hook.session-id"],
+      "join_proofs": [],
+      "limitation": "The interrupt response has no session_id, prompt_id or receipt ID shared with StopHookInput. A host may correlate its own Query handle and active turn, but the native frames do not prove that join."
+    }
+  ],
+  "negative_contract_checks": [
+    {
+      "symbol": "PermissionRequestHookInput",
+      "present": ["prompt_id", "session_id", "tool_input", "tool_name"],
+      "absent": ["requestId", "request_id", "tool_use_id"],
+      "supports": "user_action remains UNJOINED"
+    },
+    {
+      "symbol": "CanUseTool.options",
+      "present": ["requestId", "toolUseID"],
+      "absent": ["prompt_id", "session_id"],
+      "supports": "user_action remains UNJOINED"
+    },
+    {
+      "symbol": "SDKControlInterruptResponse",
+      "present": ["cancelled", "still_queued"],
+      "absent": ["prompt_id", "request_id", "session_id"],
+      "supports": "goal_transition remains HOST_CONTEXT_JOIN"
+    },
+    {
+      "symbol": "StopHookInput",
+      "present": ["hook_event_name", "prompt_id", "session_id"],
+      "absent": ["interrupt_receipt_id", "request_id"],
+      "supports": "goal_transition remains HOST_CONTEXT_JOIN"
+    }
+  ],
+  "summary": {
+    "single_event": 5,
+    "native_key_join": 0,
+    "host_context_join": 1,
+    "unjoined": 1,
+    "cohesive": 5,
+    "conditional": 1,
+    "gap": 1
+  },
+  "claim_boundary": "Cohesion describes whether documented binding sources can be assembled from one frame or a contract-declared native key. It does not prove live emission, authenticity, completeness, durability, hard enforcement, compatibility, portability, conformance, or outcome value."
+}

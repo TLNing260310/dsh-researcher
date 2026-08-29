@@ -91,6 +91,7 @@
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/local-session-fixture-trace.json",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/expected-host-events.json",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/binding-provenance.json",
+        "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/event-cohesion.json",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/replay-checkpoint.json",
         "evaluation/adapter-discovery/claude-code-agent-sdk/0.3.251/mapping.md",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/discovery.json",
@@ -100,6 +101,7 @@
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/turn-capture-attempts.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/expected-host-events.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/binding-provenance.json",
+        "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/event-cohesion.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/replay-checkpoint.json",
         "evaluation/adapter-discovery/codex-app-server-stdio/0.150.0-alpha.12.2/mapping.md"
       ]
