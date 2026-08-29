@@ -37,9 +37,10 @@
   "artifacts": {
     "native_trace": { "path": "native-trace.json", "sha256": "267b059561f28f744f1f097fa0dabb734264959df3c12ac9eeaf455e347b1a65" },
     "native_contract": { "path": "native-contract.json", "sha256": "a2f09a10a58cc3dcaa71091e914fa7112850cbfb2147036d29ba27e685a5827f" },
+    "session_api_trace": { "path": "session-api-trace.json", "sha256": "8dadbd204528f5e4d9c040ac7cc2be7121ec5f6e1cf2388d22cb56e055213500" },
     "expected_host_events": { "path": "expected-host-events.json", "sha256": "0c686b078bdf8204b2585389f765619987967fd2777022248ee744d4512431de" },
-    "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "363ea5c58fd12c1de9afbc8b214607631556acc4aa8ded3c17b6bd780b3e2500" },
-    "mapping_report": { "path": "mapping.md", "sha256": "6000ae2a08e082946542b60c158c693a3bc610361d73d1938336f3f4b2489355" }
+    "replay_checkpoint": { "path": "replay-checkpoint.json", "sha256": "9aa2f34db50c4f2ab05edaa35154212870a2e4f37139e2df24a5c913a06f3dd6" },
+    "mapping_report": { "path": "mapping.md", "sha256": "6275c844b629c471023c753ae553a476ef162eb3496e9750562d1b5c37872838" }
   },
   "invocation": {
     "function_call": ["researcher.ask", "researcher.mode.set", "researcher.mode.get"],
@@ -55,12 +56,12 @@
     "write_boundary": { "status": "UNKNOWN", "evidence_refs": ["mapping.md"] }
   },
   "gaps": [
-    { "id": "A-G1", "severity": "HIGH", "statement": "the locked SDK and native CLI load successfully, but no authentic query/session/tool trace has been captured" },
+    { "id": "A-G1", "severity": "HIGH", "statement": "the locked SDK, native CLI, and isolated empty session-read APIs execute successfully, but no non-empty authentic query/session/tool trace has been captured" },
     { "id": "A-G2", "severity": "HIGH", "statement": "raw event durability and restart replay are not proven by the package types" },
     { "id": "A-G3", "severity": "HIGH", "statement": "human principal assurance and post-terminal hard-stop receipts are not established" },
     { "id": "A-G4", "severity": "HIGH", "statement": "modelUsage explicitly excludes some helper calls, so strict usage completeness is unknown" },
     { "id": "A-G5", "severity": "HIGH", "statement": "project-root write enforcement is not demonstrated" }
   ],
   "result": "HOLD",
-  "claim_boundary": "Version-locked type and runtime-load discovery only. No Claude Code adapter, installation path, governed profile, native session evidence, or compatibility claim is delivered."
+  "claim_boundary": "Version-locked type, runtime-load, and isolated empty session-read discovery only. No Claude Code adapter, installation path, governed profile, non-empty native session evidence, or compatibility claim is delivered."
 }

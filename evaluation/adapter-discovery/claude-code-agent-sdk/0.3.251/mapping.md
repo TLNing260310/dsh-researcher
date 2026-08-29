@@ -11,7 +11,14 @@ The type contract is promising: tool hooks carry `session_id` and
 resume, SessionStart source, and interrupt controls exist. Official Anthropic
 documentation also describes CLI resume and permission-prompt surfaces.
 
-The governed gaps remain unresolved. Runtime loading and types do not prove raw event
+The exact SDK also executed `listSessions`, `getSessionInfo`, and
+`getSessionMessages` in a credential-stripped child process using a fresh
+`CLAUDE_CONFIG_DIR` and empty project directory. All returned their expected
+empty/absent results. This proves the locked local session-read API is callable
+without query or model use; it does not expose a non-empty native session,
+resume prefix, event ordering, tool correlation, or replay behavior.
+
+The governed gaps remain unresolved. Runtime loading, empty local session reads, and types do not prove raw event
 durability, identity assurance for a human approval, complete usage across
 helper calls, post-terminal hard stop, or path/write enforcement. The next
 discovery step requires an explicitly authorized no-secret native session trace

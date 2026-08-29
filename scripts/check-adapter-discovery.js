@@ -64,6 +64,21 @@ const validate = (file) => {
     if (trace.native_cli?.package_version !== doc.locked_runtime.version || trace.native_cli?.version_output !== '2.1.251 (Claude Code)') throw new Error(file + ': Claude native CLI identity drifted')
     for (const required of ['query', 'startup', 'getSessionInfo', 'getSessionMessages', 'listSessions']) if (!trace.runtime_exports?.includes(required)) throw new Error(file + ': Claude runtime export missing: ' + required)
     if (!/no query, startup, session, prompt/i.test(trace.claim_boundary || '')) throw new Error(file + ': Claude capture claim boundary drifted')
+    const sessionBinding = doc.artifacts.session_api_trace
+    if (!sessionBinding) throw new Error(file + ': Claude session API trace binding is missing')
+    const sessionTrace = readJson(path.resolve(path.dirname(file), sessionBinding.path))
+    assertNoSensitiveStrings(sessionTrace, file + ': session API trace')
+    if (sessionTrace.schema !== 'dsh-researcher/adapter-native-session-api-trace/v1' || sessionTrace.client !== doc.client || sessionTrace.runtime_version !== doc.locked_runtime.version || sessionTrace.capture_kind !== 'isolated-session-read-no-model') throw new Error(file + ': Claude session API trace identity drifted')
+    for (const field of ['model_calls', 'prompt_submissions', 'session_creations', 'network_calls_initiated_by_capture']) if (sessionTrace[field] !== 0) throw new Error(file + ': Claude session API trace must keep ' + field + '=0')
+    if (sessionTrace.isolated_config !== true || sessionTrace.isolated_project !== true || sessionTrace.user_session_data_read !== false) throw new Error(file + ': Claude session API isolation drifted')
+    if (JSON.stringify(sessionTrace.api_calls) !== JSON.stringify([
+      { method: 'listSessions', result_kind: 'array', result_count: 0 },
+      { method: 'getSessionInfo', result_kind: 'undefined', found: false },
+      { method: 'getSessionMessages', result_kind: 'array', result_count: 0 },
+    ])) throw new Error(file + ': Claude empty session API results drifted')
+    if (sessionTrace.package?.package_json_sha256 !== trace.package?.package_json_sha256 || sessionTrace.package?.sdk_module_sha256 !== trace.package?.sdk_module_sha256 || sessionTrace.package?.sdk_types_sha256 !== '4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe') throw new Error(file + ': Claude session API package binding drifted')
+    if (!/empty isolated config.*no existing user session/i.test(sessionTrace.claim_boundary || '')) throw new Error(file + ': Claude session API claim boundary drifted')
+    if (Object.values(doc.capabilities).some((item) => item.status === 'OBSERVED')) throw new Error(file + ': Claude capability was promoted by an empty session trace')
   }
   if (doc.client === 'codex-app-server-stdio') {
     const attemptBinding = doc.artifacts.turn_capture_attempts

@@ -1,0 +1,33 @@
+{
+  "schema": "dsh-researcher/adapter-native-session-api-trace/v1",
+  "client": "claude-code-agent-sdk",
+  "runtime_version": "0.3.251",
+  "capture_kind": "isolated-session-read-no-model",
+  "model_calls": 0,
+  "prompt_submissions": 0,
+  "session_creations": 0,
+  "network_calls_initiated_by_capture": 0,
+  "network_observation": "not instrumented; the capture invokes only documented local session-read APIs against a fresh config and empty project directory",
+  "credential_boundary": {
+    "policy": "remove provider, Claude, proxy, API-key, access-token, and auth-token environment names; use fresh temporary CLAUDE_CONFIG_DIR",
+    "removed_name_count": 0,
+    "names_not_disclosed": true
+  },
+  "package": {
+    "name": "@anthropic-ai/claude-agent-sdk",
+    "version": "0.3.251",
+    "claude_code_version": "2.1.251",
+    "package_json_sha256": "0559ea545c7cbe07cf8fbc163cbacfa3bf6f79c767226302f6b64a27cdb7f92f",
+    "sdk_module_sha256": "9235fac983c29e614d7f572a578406dc5dbda006305faa99f9447f577738eb93",
+    "sdk_types_sha256": "4b30226ce2ea3d4ff0b81b4f3a229fa9fc1d60bf464452263608d26547a72cfe"
+  },
+  "api_calls": [
+    { "method": "listSessions", "result_kind": "array", "result_count": 0 },
+    { "method": "getSessionInfo", "result_kind": "undefined", "found": false },
+    { "method": "getSessionMessages", "result_kind": "array", "result_count": 0 }
+  ],
+  "isolated_config": true,
+  "isolated_project": true,
+  "user_session_data_read": false,
+  "claim_boundary": "Real SDK local session-read functions executed only against an empty isolated config. No existing user session, query, prompt, tool, model, approval, resume, replay, or native event stream was observed."
+}

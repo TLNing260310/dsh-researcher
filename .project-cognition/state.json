@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 22,
+  "revision": 23,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -141,7 +141,7 @@
       "statement": "The same portable contracts and reducers can support Codex, Claude Code, Zed/Zcode, OpenClaw, or similar clients when an adapter proves all five governed capabilities.",
       "authority": "model_inferred",
       "proof_status": "hypothesis",
-      "scope": "architecture portability; only the DSH adapter exists. Version-locked Claude Code Agent SDK 0.3.251 and Codex App Server stdio 0.150.0-alpha.12.2 discovery records map candidate interfaces but are both HOLD. Two Codex turn attempts may have reached a billable completion path, but cleanup failure discarded their trace, so they are INVALID discovery incidents and establish no observed capability, compatibility, or conformance",
+      "scope": "architecture portability; only the DSH adapter exists. Version-locked Claude Code Agent SDK 0.3.251 and Codex App Server stdio 0.150.0-alpha.12.2 discovery records map candidate interfaces but are both HOLD. Claude's real SDK session-read functions returned expected empty results under an isolated config, proving only local callability and not a non-empty session or replay. Two Codex turn attempts may have reached a billable completion path, but cleanup failure discarded their trace, so they are INVALID discovery incidents. Neither client establishes an observed governed capability, compatibility, or conformance",
       "confidence": 0.55,
       "evidence_refs": [
         "E1",
@@ -454,8 +454,8 @@
     {
       "id": "E20",
       "kind": "test",
-      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 loaded without query, prompt, session or model use. Codex App Server stdio 0.150.0-alpha.12.2 completed a zero-model initialize/thread-list exchange and credential-stripped 413-file schema capture. Three later authorized turn-capture attempts produced no valid trace: one parameter mismatch stopped before model invocation, while one persisted and one ephemeral turn entered post-completion paths but Windows cleanup discarded the event artifact; at most two Codex model turns may have been billed and exact usage is unknown. The capture remains explicit-use gated and was not rerun. A zero-model in-memory App Server now proves its ephemeral/read-only request, safety refusal, identifier redaction, lifecycle folding, process-close, cleanup and trace-output code paths; this is synthetic harness evidence only. Both client records remain HOLD, no capability is promoted to OBSERVED, and no adapter or compatibility claim follows.",
-      "fingerprint": "65d45f4e74df59d94271a7ce797bf551ce66067aca95c07a8b34e67571130d2f",
+      "ref": "Version-locked adapter discovery on 2026-08-29: Claude Code Agent SDK 0.3.251 loaded without query, prompt, session or model use, then its real listSessions, getSessionInfo and getSessionMessages functions executed in a credential-stripped child process against a fresh config and empty project, returning only expected empty/absent results with no user session read or model use. This proves local session-read callability, not a non-empty session, resume, replay, tool or approval path. Codex App Server stdio 0.150.0-alpha.12.2 completed a zero-model initialize/thread-list exchange and credential-stripped 413-file schema capture. Three later Codex turn-capture attempts produced no valid trace: one stopped before model invocation, while one persisted and one ephemeral turn entered post-completion paths before cleanup discarded the artifact; at most two Codex model turns may have been billed and exact usage is unknown. A zero-model in-memory App Server proves only its repaired capture-harness paths. Both client records remain HOLD, no capability is promoted to OBSERVED, and no adapter or compatibility claim follows.",
+      "fingerprint": "75c194c7726cfaf840a0df9389004726aa3e34191d3a4491b04df0eb71557183",
       "observed_at": "2026-08-29"
     },
     {
@@ -496,7 +496,7 @@
     },
     {
       "id": "U4",
-      "statement": "Protocols v1.4-v1.11 reached official Flash on DSH 0.1.1-rc.2, but complete E1 conformance remains unproven and the live round is mechanically stopped under protocol v1.12 before any live argument or cost path. Claude and Codex discovery are both HOLD rather than compatibility evidence; the Codex turn attempts retained no valid event trace and their exact account usage is unknown. Repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
+      "statement": "Protocols v1.4-v1.11 reached official Flash on DSH 0.1.1-rc.2, but complete E1 conformance remains unproven and the live round is mechanically stopped under protocol v1.12 before any live argument or cost path. Claude and Codex discovery are both HOLD rather than compatibility evidence: Claude has only empty isolated session-read results, while the Codex turn attempts retained no valid event trace and their exact account usage is unknown. Repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
       "evidence_refs": [
         "E3",
         "E9",
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "037e7191792cd2ec60bb1a350ae8a6b4bad3b5802f019c9348dc0efeedabe7d0"
+  "state_hash": "e589a0a49a01a35112623aa2ba354bd8b7a3c29fa9c23de07c7c5b36f2f1a9bb"
 }

@@ -12,6 +12,7 @@ const { PassThrough, Writable } = require('node:stream')
 const root = path.join(__dirname, '..')
 const readJson = (...parts) => JSON.parse(fs.readFileSync(path.join(root, ...parts), 'utf8'))
 const { sanitizedEnvironment } = require('../scripts/capture-claude-agent-sdk-discovery.js')
+const { capture: captureClaudeSessionApi, parseArgs: parseClaudeSessionArgs } = require('../scripts/capture-claude-session-api-discovery.js')
 const { extractMethods, sanitizedEnvironment: sanitizedCodexEnvironment, summarizeMethods } = require('../scripts/capture-codex-app-server-contract.js')
 const { capture: captureCodexTurn, hashId, parseArgs } = require('../scripts/capture-codex-app-server-turn.js')
 
@@ -163,6 +164,48 @@ test('Claude discovery binds a no-model runtime load without fabricating a sessi
   assert.match(trace.claim_boundary, /no query, startup, session, prompt/i)
   assert.equal(discovery.result, 'HOLD')
   assert.match(discovery.claim_boundary, /No Claude Code adapter/)
+  const sessionTrace = readJson(...base, 'session-api-trace.json')
+  assert.equal(sessionTrace.capture_kind, 'isolated-session-read-no-model')
+  assert.equal(sessionTrace.model_calls, 0)
+  assert.equal(sessionTrace.session_creations, 0)
+  assert.equal(sessionTrace.user_session_data_read, false)
+  assert.deepEqual(sessionTrace.api_calls.map((item) => item.method), ['listSessions', 'getSessionInfo', 'getSessionMessages'])
+  assert.ok(Object.values(discovery.capabilities).every((item) => item.status !== 'OBSERVED'))
+})
+
+test('Claude isolated session capture strips credentials and preserves empty-result boundaries', () => {
+  assert.deepEqual(parseClaudeSessionArgs(['--sdk-root', 'locked-root']), { sdkRoot: 'locked-root' })
+  assert.throws(() => parseClaudeSessionArgs([]), /usage/)
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dsh-claude-session-test-'))
+  const sdkRoot = path.join(tempRoot, 'sdk')
+  fs.mkdirSync(sdkRoot)
+  fs.writeFileSync(path.join(sdkRoot, 'package.json'), JSON.stringify({ name: '@anthropic-ai/claude-agent-sdk', version: '0.3.251', claudeCodeVersion: '2.1.251' }))
+  fs.writeFileSync(path.join(sdkRoot, 'sdk.mjs'), 'export {}\n')
+  fs.writeFileSync(path.join(sdkRoot, 'sdk.d.ts'), 'export {}\n')
+  try {
+    const trace = captureClaudeSessionApi(sdkRoot, {
+      tempRoot,
+      environment: { PATH: 'safe-path', ANTHROPIC_API_KEY: 'secret', CLAUDE_CONFIG_DIR: 'user-config', HTTPS_PROXY: 'https://proxy.invalid' },
+      spawnSync(command, args, options) {
+        assert.equal(command, process.execPath)
+        assert.match(args[0], /claude-session-api-probe\.mjs$/)
+        assert.equal(options.env.PATH, 'safe-path')
+        assert.ok(options.env.CLAUDE_CONFIG_DIR.startsWith(tempRoot))
+        assert.equal(options.env.ANTHROPIC_API_KEY, undefined)
+        assert.equal(options.env.HTTPS_PROXY, undefined)
+        return { status: 0, stdout: JSON.stringify({ schema: 'dsh-researcher/claude-session-api-probe/v1', calls: [
+          { method: 'listSessions', result_kind: 'array', result_count: 0 },
+          { method: 'getSessionInfo', result_kind: 'undefined', found: false },
+          { method: 'getSessionMessages', result_kind: 'array', result_count: 0 },
+        ] }), stderr: '' }
+      },
+    })
+    assert.equal(trace.model_calls, 0)
+    assert.equal(trace.user_session_data_read, false)
+    assert.equal(trace.credential_boundary.removed_name_count, 3)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
 })
 
 test('both discoveries preserve function-call and persistent-mode semantics', () => {
