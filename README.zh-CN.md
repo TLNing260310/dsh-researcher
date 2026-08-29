@@ -198,7 +198,7 @@ session ledger → draft revision → owner review → seal → regenerate proje
 | 单元、replay、集成与 package smoke | PASS | 哈希、revision、预算、人工 gate、伪证据拒绝、host completion 和隔离安装按设计工作 |
 | `project-cognition doctor .` | PASS | canonical state、schema、hash、projection、Goal 与 registry 当前一致；不证明引用证据仍新鲜 |
 | DSH Web Project Research smoke | PASS（运行时边界）；本地输出 probe FAIL | 精确发布 runtime 可达 SAFE 并拒绝权限漂移/未认证终态；两个本地 14B probe 未产出合格报告 |
-| Goal Governor E1 infrastructure | v1.11 离线 READY；v1.5 与不完整 v1.6-v1.10 Live E1 均 INVALID | v1.10 有四轨 PASS，但 provider transport 重试缺 usage 使 resume observe 无效；旧结果不重评分，也不按轨拼接 |
+| Goal Governor E1 infrastructure | v1.12 离线 READY；v1.5 与不完整 v1.6-v1.11 Live E1 均 INVALID | v1.11 的 resume 两进程完成但 candidate scorer scope 漂移；E1 live 已停止，不授权追加付费重试 |
 | Experiment C+ | causal-invalid，永久保留 | 基础设施能运行，同时评测会拒绝 snapshot leakage 和伪正向结论 |
 
 本地复核不会调用模型或网络：
@@ -264,5 +264,5 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 - DeepSeek Harness：目标版本 `0.1.1-rc.2`；不得在 Gate 0/live conformance 完成前写成“已经验证”。
 - Node.js：`>=22.12.0`。
-- 当前已发布版本：`0.8.0-alpha.9`；它发布时 Live E1 尚未运行。发布后的 v1.5 与不完整 v1.6-v1.10 根结果均为 INVALID，v1.11 正在开发；结果价值与多客户端可移植性仍为 NOT PROVEN。
+- 当前已发布版本：`0.8.0-alpha.9`；它发布时 Live E1 尚未运行。发布后的 v1.5 与不完整 v1.6-v1.11 根结果均为 INVALID；v1.12 仅作离线修正，E1 live 已停止；结果价值与多客户端可移植性仍为 NOT PROVEN。
 - License：MIT。

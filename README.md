@@ -20,7 +20,7 @@ They are independent. You can trial Project Research without adopting Goal Contr
 
 > **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. A complete v1.5 live attempt ran but was **INVALID**; E1 conformance, net productivity gain, long-term Project Cognition value, and adapters beyond DSH remain **not proven**.
 
-> **Latest runtime evidence:** protocol v1.10 ran official `deepseek-v4-flash` under a new lock and stopped at `4 PASS / 0 FAIL / 2 INVALID`. The four completed tracks passed, including native STOPPED scoring; `resume-replay:observe` was invalidated when a provider transport retry lacked auditable usage, and `governed-gate` was not run after 6/6 became impossible. The original score remains frozen. Protocol v1.11 preregisters one complete replacement run—never per-track stitching or unlimited retries—and is offline-ready, not live-proven. See the [v1.10 result](./docs/evidence/e1-v1.10-live-results.md) and current frozen protocol.
+> **Latest runtime evidence:** protocol v1.11 used its single preregistered replacement opportunity. `resume-replay` completed observe, process exit, same-session continue and host `DONE`, but the frozen candidate scorer incorrectly included pre-goal setup events only in its stage-one verification path and returned INVALID. The other five tracks were not run, and the E1 round is stopped rather than retried. Protocol v1.12 fixes that offline scorer scope; a diagnostic rescore passes the one track but cannot rewrite v1.11 or prove 6/6. See the [v1.11 result](./docs/evidence/e1-v1.11-live-results.md).
 
 ## The problem
 
@@ -160,7 +160,7 @@ The CLI actor label is not human authentication. Repository governance must keep
 | Unit, replay, integration, adversarial, installer, and package tests | PASS | The published mechanisms reject the covered drift and forged-evidence paths |
 | `project-cognition doctor .` | PASS | Current schema, hashes, projection, goals, and registry agree; it does not prove evidence freshness |
 | DSH Web Project Research smoke | Runtime boundary PASS; output probes FAIL | The exact tested runtime can become SAFE and reject drift; research quality is not established |
-| Goal Governor E1 infrastructure | v1.11 offline READY; v1.5 and incomplete v1.6-v1.10 Live E1 INVALID | Negative evidence is preserved; v1.10 reached four PASS tracks but did not prove six-track conformance |
+| Goal Governor E1 infrastructure | v1.12 offline READY; v1.5 and incomplete v1.6-v1.11 Live E1 INVALID | E1 live round is STOPPED; no six-track conformance claim and no additional paid retry is authorized |
 | Outcome value and portability | NOT PROVEN | Requires Live E1, a non-inferential pilot, E2, then second-adapter conformance |
 
 Run the public offline checks without a model or network call:
@@ -209,4 +209,4 @@ You do not need a polished report. The most useful signals are whether the demo 
 - [Open a reproducible bug](https://github.com/TLNing260310/dsh-researcher/issues/new?template=bug-report.yml)
 - Report security issues privately under [SECURITY.md](./SECURITY.md).
 
-Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5-v1.10 live attempts. All post-release results remain negative or incomplete evidence; v1.11 is under development. Outcome value and multi-client portability remain NOT PROVEN.
+Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5-v1.11 live attempts. All post-release results remain negative or incomplete evidence; v1.12 is an offline correction and E1 live is stopped. Outcome value and multi-client portability remain NOT PROVEN.

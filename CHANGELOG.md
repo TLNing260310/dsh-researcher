@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.11 Replacement Gate
+## 0.8.0-alpha.10-dev.0 (unreleased) — E1 Negative Evidence and v1.12 Offline Correction
 
 - Preserved the official Flash v1.5 result as `1 PASS / 4 FAIL / 1 INVALID`; no v1.5 artifact is rescored or promoted to PASS.
 - Added a non-disclosing workspace-root hash binding so the offline scorer can validate DSH absolute edit paths without publishing personal absolute paths.
@@ -12,6 +12,7 @@
 - Fixed Gate 0 provenance discovery for ESM-only dependencies in a flat npm `node_modules` root; the runtime inventory still binds the canonical package root, manifest identity, content tree, and complete dependency closure.
 - Preserved the v1.9 official Flash bundle as `3 PASS / 1 FAIL / 2 INVALID`. v1.10 derives resume stage-one verifier expectations from the frozen manifest and recognizes DSH native `goal.blockedReason.code` without weakening the exact `stopped` requirement.
 - Preserved the v1.10 official Flash result as `4 PASS / 0 FAIL / 2 INVALID`: all completed tracks passed, while a provider `TRANSPORT` retry without auditable usage correctly invalidated resume observe. v1.11 changes no runtime or threshold and preregisters exactly one complete replacement bundle before E1 stops.
+- Preserved the v1.11 replacement as INVALID and stopped further paid E1 runs. Its two-process resume reached host `DONE`, but the frozen scorer replayed stage one without the runtime-goal scope used by the runner. v1.12 applies that scope offline and adds a pre-goal-traffic regression test; diagnostic rescoring cannot overwrite v1.11 or establish 6/6.
 
 ## 0.8.0-alpha.9 (2026-08-27) — Truth Alignment and E1 v1.5 Readiness
 

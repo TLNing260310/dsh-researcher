@@ -8,7 +8,7 @@ const os = require('node:os')
 const path = require('node:path')
 const { spawnSync } = require('node:child_process')
 
-const { CASE_PROTOCOL, deriveCausalStatus, scoreBundle } = require('../evaluation/goal-governor-e1/score-e1.js')
+const { CASE_PROTOCOL, deriveCausalStatus, scoreBundle, foldScopedGoalEvents } = require('../evaluation/goal-governor-e1/score-e1.js')
 const { createStage1Seal } = require('../evaluation/goal-governor-e1/stage1-seal.js')
 const { beginAttempt, finishAttempt } = require('../evaluation/goal-governor-e1/attempt-ledger.js')
 const { sha256File } = require('../evaluation/goal-governor-e1/lib.js')
@@ -27,6 +27,28 @@ test('synthetic E1 scorer passes six trajectory shapes without claiming live con
   assert.equal(report.cases_passed, 6)
   assert.deepEqual(report.runs.map((run) => run.id), CASE_PROTOCOL.map((item) => item.id))
   assert.ok(report.runs.every((run) => run.verdict === 'PASS'))
+})
+
+test('resume stage replay excludes pre-goal session traffic from checkpoint and elapsed usage', () => {
+  const artifact = cloneBundle().artifacts['resume-replay']
+  const preGoal = {
+    type: 'usage_recorded',
+    seq: -1,
+    data: { tokens: 999999, elapsed_sec: 999 },
+  }
+  const withPreGoal = foldScopedGoalEvents(
+    artifact.goal_contract,
+    artifact.verifier_registry,
+    [preGoal, ...artifact.session_events],
+    artifact.runtime_goal_id,
+  )
+  const withoutPreGoal = foldScopedGoalEvents(
+    artifact.goal_contract,
+    artifact.verifier_registry,
+    artifact.session_events,
+    artifact.runtime_goal_id,
+  )
+  assert.deepEqual(withPreGoal, withoutPreGoal)
 })
 
 test('the six trusted tracks expose the frozen attempt, gate, forgery, stop, and resume shapes', () => {

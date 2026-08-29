@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 14,
+  "revision": 15,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -14,7 +14,7 @@
     ],
     "environment": [
       "Node.js 22.12 or newer",
-      "DeepSeek Harness 0.1.1-rc.2 is the pinned first client runtime; protocols v1.4-v1.10 produced preserved partial, negative, or invalid official Flash evidence, and the single complete protocol v1.11 replacement remains pending",
+      "DeepSeek Harness 0.1.1-rc.2 is the pinned first client runtime; protocols v1.4-v1.11 produced preserved partial, negative, or invalid official Flash evidence, and protocol v1.12 is an offline-only scorer correction with the E1 live round stopped",
       "portable JSON/core modules and HostEvent v1 are client-independent; non-DSH adapters are not implemented"
     ]
   },
@@ -70,7 +70,7 @@
       "statement": "The DSH adapter can mechanically reject in-session fabricated or verifier-drifted evidence and reserves goal terminal authority for the host plugin.",
       "authority": "repository_observed",
       "proof_status": "supported",
-      "scope": "pure replay tests plus protocol v1.4-v1.10 official Flash evidence under a trusted host operator and model-inaccessible evidence root: forged evidence was refused, invalid duplicate attempts were rejected, v1.8 refused derived DONE without the formal decision tool, and v1.10 produced four PASS tracks without a false terminal before a provider transport attempt made resume usage incomplete. These incomplete/invalid bundles support only the narrow rejection and host-authority mechanism, not complete conformance, provider identity, or outcome value",
+      "scope": "pure replay tests plus protocol v1.4-v1.11 official Flash evidence under a trusted host operator and model-inaccessible evidence root: forged evidence was refused, invalid duplicate attempts were rejected, v1.8 refused derived DONE without the formal decision tool, v1.10 produced four PASS tracks without a false terminal, and v1.11 resumed the same session to a host-owned DONE before its frozen scorer rejected a mismatched replay domain. A later offline diagnostic supports only the narrow scope correction and cannot upgrade the original INVALID result. These incomplete/invalid bundles support only rejection, replay, and host-authority mechanisms, not complete conformance, provider identity, or outcome value",
       "confidence": 0.88,
       "evidence_refs": [
         "E1",
@@ -85,7 +85,8 @@
         "E15",
         "E16",
         "E17",
-        "E18"
+        "E18",
+        "E19"
       ],
       "invalidation_conditions": [
         "a live DSH model can complete through an ungoverned tool",
@@ -396,8 +397,8 @@
     {
       "id": "E12",
       "kind": "test",
-      "ref": "Protocol v1.11 preregistration after preserved v1.10 INVALID evidence: the manifest keeps the frozen cases, budgets, model route, expected terminals, runtime, and scorer; the protocol permits exactly one full replacement bundle and forbids track stitching or a second outcome-seeking retry; offline gates make zero model and network calls.",
-      "fingerprint": "af47eea5cbbc18b57b2d45dc22f9c12a01a0b04537fe6ba8342ca84f15d1be1f",
+      "ref": "Protocol v1.12 is an offline-only scorer correction after the v1.11 replacement ended INVALID: the manifest keeps the frozen cases, budgets, model route, expected terminals, runtime, and scorer semantics except that stage-one replay now scopes events at the runtime goal boundary; it does not rescore v1.11 or authorize paid E1, and offline gates make zero model and network calls.",
+      "fingerprint": "610c3ddf3c145992bebe1b5993e630d1f6f1a6ea89d8b91ab78ac14e2b1ce578",
       "observed_at": "2026-08-29"
     },
     {
@@ -441,6 +442,13 @@
       "ref": "Protocol v1.10 official Flash evidence is permanently recorded as 4 PASS / 0 FAIL / 2 INVALID: already-satisfied, simple-done, forged-evidence, and no-progress passed; resume observe encountered a provider TRANSPORT retry without auditable usage, so the host refused stage-one finalization; governed-gate was not run, the exact bundle has a verified external Ed25519 attestation, and the old score is not rescored.",
       "fingerprint": "b06425405f454724f40c7b8796eb4ef7673f0036958b11eb9a037f41d3e09cae",
       "observed_at": "2026-08-29"
+    },
+    {
+      "id": "E19",
+      "kind": "test",
+      "ref": "Protocol v1.11 used its only preregistered replacement and is permanently recorded INVALID: resume observe and continue used the same session, preserved the sealed prefix, reached host-owned DONE with complete native usage and only the allowed write, but the frozen scorer folded pre-goal setup into its stage-one checkpoint and budget replay. The original score remains authoritative; an offline v1.12 diagnostic PASS only isolates the scorer scope defect and cannot upgrade the result. The other five tracks were not run and the E1 live round stopped.",
+      "fingerprint": "220d49735d3be65521bfc0836797d3fd5a7e76a066bb85c4a69138c4fb5a3cc8",
+      "observed_at": "2026-08-29"
     }
   ],
   "known_unknowns": [
@@ -451,7 +459,7 @@
     },
     {
       "id": "U2",
-      "statement": "The complete protocol v1.11 Live E1 set and successful resume/live-offline replay equivalence have not been proven end to end; v1.10 reached four PASS tracks but provider transport usage incompleteness invalidated resume observe before the human-gate track ran.",
+      "statement": "A complete six-track Live E1 set, successful human gate, and admissible end-to-end resume/live-offline replay equivalence have not been proven; v1.11 resumed one real session to host-owned DONE, but its frozen scorer rejected the bundle and the preregistered stop rule ended the round before the other five tracks ran.",
       "evidence_refs": [
         "E2",
         "E3",
@@ -462,7 +470,8 @@
         "E15",
         "E16",
         "E17",
-        "E18"
+        "E18",
+        "E19"
       ]
     },
     {
@@ -472,7 +481,7 @@
     },
     {
       "id": "U4",
-      "statement": "Protocols v1.4-v1.10 reached official Flash on DSH 0.1.1-rc.2, but complete protocol v1.11 replacement conformance remains unproven; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
+      "statement": "Protocols v1.4-v1.11 reached official Flash on DSH 0.1.1-rc.2, but complete E1 conformance remains unproven and the live round is stopped under protocol v1.12; repository guards also cannot prove an honest host clock/OS scheduler, OS egress control, that a loopback service does not proxy remotely, or provider billing identity.",
       "evidence_refs": [
         "E3",
         "E9",
@@ -483,14 +492,15 @@
         "E15",
         "E16",
         "E17",
-        "E18"
+        "E18",
+        "E19"
       ]
     }
   ],
   "next_proofs": [
     {
       "id": "P0",
-      "statement": "Before the single protocol v1.11 complete replacement, complete current-candidate Gate 0 on DSH 0.1.1-rc.2 including DSH-dependent checks; verify immutable settings, workspace-root binding, locked provider/model/reasoning effort/base_url, public DeepSeek resolver, progress-only mutation feedback, manifest-bound resume seal, native block-code scoring, formal decision-tool terminal authority, and absolute deadline against the frozen protocol; then create a candidate-bound external run lock and disjoint evidence root.",
+      "statement": "Do not start another paid Live E1 under protocol v1.12. A future owner-authorized proof plan must first freeze a new protocol and candidate, then complete fresh Gate 0 on DSH 0.1.1-rc.2, create a candidate-bound run lock and disjoint evidence root, and rerun the complete six-track set without stitching old results.",
       "evidence_refs": [
         "E1",
         "E2",
@@ -503,12 +513,13 @@
         "E15",
         "E16",
         "E17",
-        "E18"
+        "E18",
+        "E19"
       ]
     },
     {
       "id": "P1",
-      "statement": "Run every live DSH E1 trajectory defined by the frozen Goal Governor Evaluation Protocol; the protocol is the sole source for trajectory definitions.",
+      "statement": "Keep the full six-track E1 proof requirement, but treat it as stopped and blocked until a new explicit owner-authorized proof plan replaces protocol v1.12; the frozen protocol remains the sole source for trajectory definitions.",
       "evidence_refs": [
         "E2",
         "E3",
@@ -518,7 +529,8 @@
         "E15",
         "E16",
         "E17",
-        "E18"
+        "E18",
+        "E19"
       ]
     },
     {
@@ -546,5 +558,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "31c8d9bd835f1084b2a25678841b519fa77c619f951eafd9da18378e266e9aa9"
+  "state_hash": "fb68723fbb7e23ad000d9f4fb4c7c1603e72996a607227c28b25f48d9712c62c"
 }

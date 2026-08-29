@@ -1,13 +1,13 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.9` 已发布并对齐 canonical truth 与发布身份。protocol v1.10 official Flash 运行到 `4 PASS / 0 FAIL / 2 INVALID`；四条已完成轨均 PASS，但 resume observe 的 provider transport 重试缺少可审计 usage，宿主正确拒绝 finalization，gate 随后未运行。旧结果冻结且不会重评分。v1.11 不改 runtime 或阈值，只预注册一次完整 replacement 的上限。证据见 [v1.10](./evidence/e1-v1.10-live-results.md) 与 [Validation Status](./validation-status.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.9` 已发布并对齐 canonical truth 与发布身份。protocol v1.11 使用唯一 replacement：`resume-replay` 两进程到达宿主 `DONE`，但冻结 scorer 的 stage-one 特殊路径遗漏 runtime-goal scope，原结果 INVALID；其余五轨依停止规则未运行。v1.12 已离线修复 scorer，但不重评分旧结果，也不授权追加 paid E1。证据见 [v1.11](./evidence/e1-v1.11-live-results.md) 与 [Validation Status](./validation-status.md)。
 
 ## 路线纪律
 
 - `.project-cognition/state.json` 是唯一 canonical project truth；Research Session Ledger、报告和 handoff 只是 provisional 输入，必须经 [owner promotion](./cognition-governance.md) 才能进入新 revision。
 - 冻结的 [Goal Governor Evaluation Protocol](./goal-governor-evaluation-protocol.md) 是 E1/E2/E3 轨迹、样本、estimand、阈值和 invalidity rule 的唯一来源。本路线不复制这些定义。
 - mechanical PASS 只说明实现按设计工作；不能替代 live conformance、outcome validation 或 portability validation。
-- live E1 必须通过当前冻结协议 v1.11 的模型路由、四重预算与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A/v1.5-v1.10 runtime 仅供审计，不得复用于新模型运行。
+- 当前 E1 live round 已停止。v1.12 只保留离线 runner/scorer 基础；若未来由新的显式 proof plan 重启，仍须遵守模型路由、四重预算与成本准入：工作日 `[09:00,12:00)`、`[14:00,18:00)` 禁远程，周末仅免该时段禁令；remote 固定 official Flash + `https://api.deepseek.com`，local 固定 `deepseek-official` DeepSeek-compatible adapter + 无尾斜杠字面 loopback `base_url`。历史 Phase A/v1.5-v1.11 runtime 仅供审计。
 - Project Cognition 的 longitudinal value 与 Goal Governor 的 incremental value 是两个 claim，必须分开识别。
 - 未通过前一 gate，不开发后一 gate 所需的产品扩展。
 
@@ -33,7 +33,7 @@ productization decision
 
 **目的**：确认 canonical state、projection、Goal Contracts、Verifier Registry、adapter capability 与实验冻结产物完整。
 
-**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致；`npm run cognition:freshness` 另行复验 source manifest 列出的文件证据。DSH `0.1.1-rc.2` 的隔离 CLI/version、preset discovery、frozen settings/`watch=false`、`DEEPSEEK_BASE_URL`、公共 resolver、capture 与 flush 已实际运行；protocol v1.5 与不完整 v1.6-v1.10 均为 INVALID，v1.11 尚未 live，且只允许一次完整 replacement。
+**通过条件**：冻结协议列出的 Gate 0 全部 PASS。`project-cognition doctor .` 只证明表示完整性和 projection 一致；`npm run cognition:freshness` 另行复验 source manifest 列出的文件证据。DSH `0.1.1-rc.2` 的隔离 CLI/version、preset discovery、frozen settings/`watch=false`、`DEEPSEEK_BASE_URL`、公共 resolver、capture 与 flush 已实际运行；protocol v1.5 与不完整 v1.6-v1.11 均为 INVALID，v1.12 仅离线 READY，当前没有新的 live 授权。
 
 ### E1 — Live DSH conformance
 

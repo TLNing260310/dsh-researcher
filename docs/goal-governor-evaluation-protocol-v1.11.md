@@ -1,8 +1,8 @@
-# Goal Governor Value Evaluation Protocol v1.12
+# Goal Governor Value Evaluation Protocol v1.11
 
-Status: **v1.12 offline correction; E1 live round STOPPED (2026-08-29)**. v1.11 使用唯一 preregistered replacement，首先运行 `resume-replay`：两个进程、同一 session、stage-one seal、完整 native usage、允许路径和宿主 `DONE` 均形成，但冻结 candidate scorer 的 stage-one 特殊路径没有先按 runtime goal 切分事件，因此把 pre-goal setup 纳入 checkpoint/elapsed usage，原结果为 INVALID。按 v1.11 停止规则其余五轨未运行，且不再创建 replacement。v1.12 只修复 scorer 的 stage-one scope；它不迁移或重评分 v1.11，不授权新的 paid E1，不修改 runtime、六轨、阈值、模型、成本策略或期望终态。未来若要重启 E1，必须由新的显式 proof plan 授权，并从新 candidate、Gate 0、run lock 和完整六轨开始。
+Status: **frozen v1.11 for DSH rc.2 E1 execution (2026-08-29)**. v1.4 已产生可裁决的部分 Live E1（2 PASS、1 FAIL、3 NOT RUN）。v1.5 的首个完整六轨尝试 r4 被离线 scorer 判为 `1 PASS / 4 FAIL / 1 INVALID`。v1.6-v1.8 暴露三层 mutation feedback 缺陷。v1.9 的 official Flash bundle 在受控早停时为 `3 PASS / 1 FAIL / 2 INVALID`。v1.10 修复 stage-one verifier exit 与 DSH 原生 block-code 读取后，四条已完成轨均 PASS；`resume-replay:observe` 遇到一次 provider `TRANSPORT` 后成功重试，但失败 attempt 没有 auditable usage，宿主正确拒绝 finalization，最终为 `4 PASS / 0 FAIL / 2 INVALID`。旧 score 永久保留且不重评分。v1.11 不修改 runtime、六轨、阈值、模型、成本策略、scorer 或期望终态；它只在看任何 replacement 结果前预注册一次完整 replacement 的上限与停止规则。本文固定主张、对照、无效条件、成本准入和继续/停止阈值；修改 runtime、轨迹、主指标、任务、阈值或成本策略必须再次 bump protocol、重新生成 run lock 并完整重跑，不能追着结果改口径。
 
-v1 和 v1.1 均在任何 live run 发生前被 supersede。v1.2 在首个模型消息前发现 fixture hash domain 冲突；v1.3 的本地 smoke 发现协议外自动续轮；v1.4 产生部分可裁决结果；v1.5 首次完整尝试产生负面结果；v1.6-v1.8 的受控早停产生三层 mutation feedback 负面证据；v1.9 首次证明 progress-only feedback 能让三条已完成轨得到 PASS，同时暴露 resume seal 与原生 block-code 读取漂移；v1.10 证明对应修正能让四条已完成轨 PASS，同时暴露 provider transport 无 usage 时的预注册 replacement 缺口；v1.11 的唯一 replacement 暴露 scorer stage-one scope 漂移并依规则停止。精确历史身份见 [v1](./goal-governor-evaluation-protocol-v1.md)、[v1.1](./goal-governor-evaluation-protocol-v1.1.md)、[v1.2](./goal-governor-evaluation-protocol-v1.2.md)、[v1.3](./goal-governor-evaluation-protocol-v1.3.md)、[v1.4](./goal-governor-evaluation-protocol-v1.4.md)、[v1.5](./goal-governor-evaluation-protocol-v1.5.md)、[v1.6](./goal-governor-evaluation-protocol-v1.6.md)、[v1.7](./goal-governor-evaluation-protocol-v1.7.md)、[v1.8](./goal-governor-evaluation-protocol-v1.8.md)、[v1.9](./goal-governor-evaluation-protocol-v1.9.md)、[v1.10](./goal-governor-evaluation-protocol-v1.10.md)、[v1.11](./goal-governor-evaluation-protocol-v1.11.md) archive records。v1.12 不迁移或重评分旧 bundle；stage-one scorer 与 runner 统一在 `runtime_goal_id` 创建边界后 fold。mutation tool、resume seal 与原生 block-code 的既有规则保持不变。
+v1 和 v1.1 均在任何 live run 发生前被 supersede。v1.2 在首个模型消息前发现 fixture hash domain 冲突；v1.3 的本地 smoke 发现协议外自动续轮；v1.4 产生部分可裁决结果；v1.5 首次完整尝试产生负面结果；v1.6-v1.8 的受控早停产生三层 mutation feedback 负面证据；v1.9 首次证明 progress-only feedback 能让三条已完成轨得到 PASS，同时暴露 resume seal 与原生 block-code 读取漂移；v1.10 证明对应修正能让四条已完成轨 PASS，同时暴露 provider transport 无 usage 时的预注册 replacement 缺口。精确历史身份见 [v1](./goal-governor-evaluation-protocol-v1.md)、[v1.1](./goal-governor-evaluation-protocol-v1.1.md)、[v1.2](./goal-governor-evaluation-protocol-v1.2.md)、[v1.3](./goal-governor-evaluation-protocol-v1.3.md)、[v1.4](./goal-governor-evaluation-protocol-v1.4.md)、[v1.5](./goal-governor-evaluation-protocol-v1.5.md)、[v1.6](./goal-governor-evaluation-protocol-v1.6.md)、[v1.7](./goal-governor-evaluation-protocol-v1.7.md)、[v1.8](./goal-governor-evaluation-protocol-v1.8.md)、[v1.9](./goal-governor-evaluation-protocol-v1.9.md)、[v1.10](./goal-governor-evaluation-protocol-v1.10.md) archive records。v1.11 不迁移或重评分旧 bundle；mutation tool 继续返回投影后的当前 progress 与 diagnostics，但不返回候选 `decision`，关闭 attempt 后仍必须调用正式 `request_goal_decision`。resume stage-one seal 从 run-lock manifest 接受冻结的 final verifier exit；scorer 读取 DSH 原生 `data.goal.blockedReason.code`，但仍要求 STOPPED 的值精确为 `stopped`。
 
 E1 runner 是六条冻结轨迹的唯一 prompt 驱动者。`/researcher run` 绑定合同后，runner 必须通过 DSH 公共 Goal 服务把该 Goal 置为 `disarmed`，每次人工 gate resume 后再次确认 `disarmed`，然后才发送协议定义的 followup。任何 `source.kind=goal` 的自动续轮、额外 runner prompt 或无法证明的 activation 状态均使证据无效。
 
@@ -52,11 +52,11 @@ E1 结果只允许三种状态：
 
 不得用 reducer 单测替代模型未执行的 live 轨迹，也不得删除 FAIL/INVALID bundle 后只报告成功运行。
 
-### v1.11 complete-replacement rule（已关闭）
+### v1.11 complete-replacement rule
 
 v1.10 r2 是本规则生效前的原始 INVALID bundle，永久保留。v1.11 只允许 **一次** replacement attempt，且必须在看 replacement 结果前满足：新 candidate-bound run lock、新外部 evidence root、重新 Gate 0、六轨从零完整运行、统一离线评分和外部 attestation。不得继承 v1.10 的四条 PASS，不得只补跑失败轨，不得删除或重评分 v1.10。
 
-这一次 replacement 已因 candidate scorer 的 stage-one scope INVALID 而结束 E1 当前轮次。只有 `6/6 PASS` 才能进入 Pilot；当前不得继续创建第二个 replacement 来挑选有利结果。v1.12 的工程修复不得把 v1.11 replacement 追溯改判。
+这一次 replacement 无论得到 PASS、FAIL 或 INVALID 都结束 E1 当前轮次。只有 `6/6 PASS` 才进入 Pilot；任何 FAIL/INVALID 都必须公开并停止，不允许继续创建第二个 replacement 来挑选有利结果。若未来确有新的 runtime/scorer 缺陷，只能形成新的工程修复与协议版本，不得把 v1.11 replacement 追溯改判。
 
 ### E1 model route 与成本准入
 
@@ -64,7 +64,7 @@ v1.10 r2 是本规则生效前的原始 INVALID bundle，永久保留。v1.11 �
 
 - 六轨采用相同的四重硬边界：总 billable tokens `<250,000`（input、output、cache read、cache write；reasoning 已包含在 output）、cache-read tokens `<220,000`、native model request attempts `<24`、宿主单调时钟 `<900s`。任一边界达到即为可裁决 FAIL，不能由模型最终文字覆盖。
 - 总 token 上限仍写入 Goal Contract，由 Governor 在轨迹内停止；cache-read 和 request-attempt 上限由外层宿主从 DSH native events 独立重建并在 finalization/scorer 双重执行。缺 usage、重试遗漏或汇总与原始事件不一致均为 INVALID，不得假定未记录的调用免费。
-- 这些上限沿用 v1.5 的预注册定义，不是对旧 bundle 的解释修订。选择依据是给固定六轨留出协议开销，同时保留独立的缓存、请求与时间成本保护；未来通过 v1.12 或后继显式授权协议也只能证明该冻结预算下的 runtime conformance，不能证明产品净收益。
+- 这些上限沿用 v1.5 的预注册定义，不是对旧 bundle 的解释修订。选择依据是给固定六轨留出协议开销，同时保留独立的缓存、请求与时间成本保护；通过 v1.11 只能证明该冻结预算下的 runtime conformance，不能证明产品净收益。
 
 - 时间统一按 `Asia/Shanghai`（UTC+08:00）解释。周一至周五 `[09:00,12:00)` 与 `[14:00,18:00)` 禁止 DeepSeek API；这些窗口内只允许 `local-loopback` 路由。
 - run lock 必须冻结 `base_url`。远程路由精确固定为 `provider=deepseek-official`、`model=deepseek-v4-flash`、`base_url=https://api.deepseek.com`。`local-loopback` 也只能使用 DSH 的 `deepseek-official` DeepSeek-compatible adapter；其 `base_url` 必须是无尾斜杠、显式端口、无认证/查询/fragment 的字面 `127/8` 或 `[::1]` HTTP(S) URL。仅把 provider/model 名称写成“local”不构成证明。
@@ -136,4 +136,6 @@ C 相对 B 必须同时满足：
 
 每个结果包必须保存 protocol hash、repo/T0、model/client/version、contract/cognition/registry hashes、session log、verifier call IDs、terminal decision、invalidity reasons 和成本。Scorer 必须先输出 `causal_validity`，无效时不得输出“supported”。E1 的证据真实性以实验操作者和模型不可写的外部 bundle root 可信为前提；scorer 校验协议一致性、内部完整性与会话内伪证据。可选的 bundle 外 Ed25519 attestation 只证明所给外部 trust root 签过这些原始字节并检测签后篡改，不能识别由不诚实签署者生成的自洽伪包，不能证明 DSH 运行或产生无条件 causal validity；该传输/留存增强不改变本协议的轨迹、阈值或信任假设。正式结果必须同时披露这一 trust assumption，并由独立 CI/不可变存储保留原包。
 
-历史 Phase A 与 v1.5-v1.11 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行。v1.12 runner/scorer 目前仅供离线验证；没有新的显式 proof plan 时不得启动 paid E1。
+历史 Phase A 与 v1.5-v1.10 协议、锁、运行包和 `evaluation/runtime/eval-headless.mjs` 只用于审计既有结果。它们不得用于任何新的本地或远程模型运行，也不得替代 v1.11 E1 runner、run lock、成本准入和 scorer。
+
+

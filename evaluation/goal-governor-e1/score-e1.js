@@ -135,6 +135,10 @@ const commandId = (event) => event && event.data && (event.data.commandId || eve
 const hashBytes = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex')
 const shaPattern = /^[a-f0-9]{64}$/
 
+const foldScopedGoalEvents = (contract, registry, events, runtimeGoalId) => {
+  return foldDshGoalEvents(contract, registry, scopeGoalEvents(events, { id: runtimeGoalId }))
+}
+
 const normalizeRepoPath = (raw) => {
   if (typeof raw !== 'string' || raw.length === 0) throw new Error('path must be a non-empty string')
   if (/\0|[\u0000-\u001f]/.test(raw)) throw new Error('path contains a control character')
@@ -1463,7 +1467,7 @@ const validateManifest = (manifest, options = {}) => {
   }
   if (!isPlainObject(manifest)) return ['manifest must be an object']
   if (manifest.schema !== MANIFEST_SCHEMA) invalid.push('manifest schema must equal ' + MANIFEST_SCHEMA)
-  if (manifest.protocol_version !== '1.11') invalid.push('manifest.protocol_version must equal 1.11')
+  if (manifest.protocol_version !== '1.12') invalid.push('manifest.protocol_version must equal 1.12')
   try { validateCostPolicy(manifest.cost_policy) } catch (error) { invalid.push('manifest cost policy: ' + error.message) }
   if (!isPlainObject(manifest.runtime)) invalid.push('manifest.runtime must be an object')
   else {
@@ -2044,7 +2048,12 @@ const verifyResumeStage1 = ({ caseDir, artifact, finalRaw, manifest, manifestCas
   let prefixReplay = null
   if (Array.isArray(stageEvents) && isPlainObject(finalPrefix)) {
     try {
-      prefixReplay = foldDshGoalEvents(artifact.goal_contract, artifact.verifier_registry, stageRawVerification.trusted_events.length > 0 ? stageRawVerification.trusted_events : stageEvents)
+      prefixReplay = foldScopedGoalEvents(
+        artifact.goal_contract,
+        artifact.verifier_registry,
+        stageRawVerification.trusted_events.length > 0 ? stageRawVerification.trusted_events : stageEvents,
+        artifact.runtime_goal_id,
+      )
       const derived = {
         session_id: artifact.session_id,
         goal_id: artifact.goal_contract.goal_id,
@@ -2483,4 +2492,5 @@ module.exports = {
   normalizeRepoPath,
   normalizeToolMutationPath,
   pathMatches,
+  foldScopedGoalEvents,
 }
