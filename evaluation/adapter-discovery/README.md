@@ -43,6 +43,15 @@ executable discovery evidence only: it does not prove native emission,
 authenticity, durability, enforcement, compatibility, portability, conformance,
 or outcome value.
 
+The same fixtures now freeze one synthetic prefix/restart boundary. The checker
+hashes the native-shape prefix and its projection, then recomputes the complete
+fixture from the beginning. Pending joins are classified as resolved, retained,
+or changed-unresolved; the last category prevents a changed failure reason from
+being mistaken for success. Checkpoint drift, event reordering and a truncated
+terminal suffix are adversarially tested. This remains host-authored replay of
+fixture bytes. It does not satisfy either client's `replay-checkpoint.json` or
+the convergence requirement for a valid native restart-and-replay trace.
+
 Run `npm run adapter:discovery:check` to verify artifact hashes, source domains,
 invocation semantics, redaction boundaries, and claim boundaries. The checker
 itself makes zero model and network calls; this does not erase separately

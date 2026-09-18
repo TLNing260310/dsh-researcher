@@ -4,8 +4,11 @@ const { hashCanonical } = require('../../lib/canonical-json.js')
 
 const FIXTURE_SCHEMA = 'dsh-researcher/adapter-semantic-fixture/v1'
 const RESULT_SCHEMA = 'dsh-researcher/adapter-semantic-fixture-result/v1'
+const REPLAY_RESULT_SCHEMA = 'dsh-researcher/adapter-semantic-replay-result/v1'
+const REPLAY_CHECKPOINT_SCHEMA = 'dsh-researcher/adapter-semantic-replay-checkpoint/v1'
 const PROVENANCE = 'host-authored synthetic native-shape events; not emitted by the client or a model'
 const CLAIM_BOUNDARY = 'Synthetic semantic projection validates only deterministic candidate assembly and failure behavior. It does not prove native emission, authenticity, completeness, durability, enforcement, compatibility, portability, conformance, or outcome value.'
+const REPLAY_CLAIM_BOUNDARY = 'Synthetic prefix replay validates only deterministic recomputation over host-authored fixture bytes. It is not a native restart trace and does not prove client emission, checkpoint authenticity, durable storage, resume correctness, enforcement, compatibility, portability, conformance, or outcome value.'
 
 const plain = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const requiredString = (value, label) => {
@@ -20,6 +23,9 @@ const validateFixture = (fixture) => {
   if (!plain(fixture) || fixture.schema !== FIXTURE_SCHEMA || !['claude-code-agent-sdk', 'codex-app-server-stdio'].includes(fixture.client)) throw new Error('invalid semantic fixture identity')
   if (fixture.provenance !== PROVENANCE || fixture.model_calls !== 0 || fixture.network_calls !== 0) throw new Error('semantic fixture must remain host-authored, zero-model and zero-network')
   if (!Array.isArray(fixture.native_events) || fixture.native_events.length === 0) throw new Error('semantic fixture native_events are missing')
+  if (fixture.replay !== undefined) {
+    if (!plain(fixture.replay) || !Number.isInteger(fixture.replay.split_after_native_seq) || fixture.replay.split_after_native_seq < 1 || fixture.replay.split_after_native_seq >= fixture.native_events.length || !/^[a-f0-9]{64}$/.test(fixture.replay.expected_result_sha256 || '')) throw new Error('semantic fixture replay lock is invalid')
+  }
   const seenSeq = new Set()
   const seenRefs = new Set()
   for (let index = 0; index < fixture.native_events.length; index += 1) {
@@ -164,4 +170,69 @@ const projectSemanticFixture = (fixture) => {
   return { schema: RESULT_SCHEMA, client: fixture.client, model_calls: 0, network_calls: 0, projections, unresolved: unresolvedEvents, summary, claim_boundary: CLAIM_BOUNDARY }
 }
 
-module.exports = { FIXTURE_SCHEMA, RESULT_SCHEMA, PROVENANCE, CLAIM_BOUNDARY, projectSemanticFixture }
+const checkpointFor = (fixture) => {
+  validateFixture(fixture)
+  if (!plain(fixture.replay)) throw new Error('semantic fixture replay lock is missing')
+  const split = fixture.replay.split_after_native_seq
+  const prefixEvents = fixture.native_events.slice(0, split)
+  const prefixResult = projectSemanticFixture({
+    schema: fixture.schema,
+    client: fixture.client,
+    runtime_version: fixture.runtime_version,
+    provenance: fixture.provenance,
+    model_calls: fixture.model_calls,
+    network_calls: fixture.network_calls,
+    native_events: prefixEvents,
+  })
+  return {
+    schema: REPLAY_CHECKPOINT_SCHEMA,
+    client: fixture.client,
+    split_after_native_seq: split,
+    native_prefix_sha256: hashCanonical(prefixEvents),
+    projection_prefix_sha256: hashCanonical(prefixResult),
+  }
+}
+
+const replaySemanticFixture = (fixture, suppliedCheckpoint = null) => {
+  const checkpoint = checkpointFor(fixture)
+  if (suppliedCheckpoint !== null && hashCanonical(suppliedCheckpoint) !== hashCanonical(checkpoint)) throw new Error('synthetic replay checkpoint mismatch')
+  const split = checkpoint.split_after_native_seq
+  const prefixFixture = { ...fixture, native_events: fixture.native_events.slice(0, split) }
+  delete prefixFixture.replay
+  delete prefixFixture.expected_result_sha256
+  const prefixResult = projectSemanticFixture(prefixFixture)
+  const finalResult = projectSemanticFixture(fixture)
+  const finalUnresolved = new Set(finalResult.unresolved.map((item) => item.host_kind + '\u0000' + item.reason))
+  const finalUnresolvedByKind = new Map()
+  for (const item of finalResult.unresolved) {
+    const reasons = finalUnresolvedByKind.get(item.host_kind) || []
+    reasons.push(item.reason)
+    finalUnresolvedByKind.set(item.host_kind, reasons)
+  }
+  const pendingBeforeRestart = prefixResult.unresolved.map((item) => ({ host_kind: item.host_kind, reason: item.reason, native_refs: item.native_refs }))
+  const resolvedAfterRestart = pendingBeforeRestart.filter((item) => !finalUnresolvedByKind.has(item.host_kind))
+  const retainedUnresolved = pendingBeforeRestart.filter((item) => finalUnresolved.has(item.host_kind + '\u0000' + item.reason))
+  const changedUnresolved = pendingBeforeRestart
+    .filter((item) => finalUnresolvedByKind.has(item.host_kind) && !finalUnresolved.has(item.host_kind + '\u0000' + item.reason))
+    .map((item) => ({ ...item, final_reasons: [...finalUnresolvedByKind.get(item.host_kind)].sort() }))
+  const finalProjectionHashes = new Set(finalResult.projections.map(hashCanonical))
+  const projectionPrefixPreserved = prefixResult.projections.every((item) => finalProjectionHashes.has(hashCanonical(item)))
+  return {
+    schema: REPLAY_RESULT_SCHEMA,
+    client: fixture.client,
+    model_calls: 0,
+    network_calls: 0,
+    checkpoint,
+    prefix_summary: prefixResult.summary,
+    pending_before_restart: pendingBeforeRestart,
+    final_result_sha256: hashCanonical(finalResult),
+    final_summary: finalResult.summary,
+    resolved_after_restart: resolvedAfterRestart,
+    retained_unresolved: retainedUnresolved,
+    changed_unresolved: changedUnresolved,
+    projection_prefix_preserved: projectionPrefixPreserved,
+    claim_boundary: REPLAY_CLAIM_BOUNDARY,
+  }
+}
+
+module.exports = { FIXTURE_SCHEMA, RESULT_SCHEMA, REPLAY_RESULT_SCHEMA, REPLAY_CHECKPOINT_SCHEMA, PROVENANCE, CLAIM_BOUNDARY, REPLAY_CLAIM_BOUNDARY, projectSemanticFixture, checkpointFor, replaySemanticFixture }

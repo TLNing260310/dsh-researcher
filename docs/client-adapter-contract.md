@@ -86,3 +86,10 @@ terminal joins. Claude produces six candidate projections plus one unresolved
 approval path; Codex produces eight candidate projections with no unresolved
 fixture event. Those counts describe only the chosen synthetic examples and do
 not upgrade either discovery from `HOLD` or create a product adapter.
+
+Each fixture also has one hash-locked synthetic restart boundary. Full replay
+must preserve every completed prefix projection and distinguish a genuinely
+resolved pending join from a retained or merely changed unresolved condition.
+This catches checkpoint drift, event reordering and missing terminal suffixes,
+but it is not raw-first persistence or a native process-exit/resume trace.
+Accordingly `resume_prefix_checkpoint` remains a convergence `GAP`.

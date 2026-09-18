@@ -15,5 +15,9 @@
     { "native_seq": 7, "native_ref": "claude:interrupt:1", "type": "InterruptResponse", "still_queued": [], "cancelled": [] },
     { "native_seq": 8, "native_ref": "claude:stop:1", "type": "Stop", "session_id": "claude-session-fixture", "prompt_id": "claude-prompt-1" }
   ],
-  "expected_result_sha256": "ebdee958c4ea4ceb014eaa51b57cbc11414f6cdcfad592761bb26f952f4d3323"
+  "expected_result_sha256": "ebdee958c4ea4ceb014eaa51b57cbc11414f6cdcfad592761bb26f952f4d3323",
+  "replay": {
+    "split_after_native_seq": 7,
+    "expected_result_sha256": "f3dd01f21761adf1519fb4df98b24eb69e5d72565fc8326af4e79d7de20aa538"
+  }
 }
