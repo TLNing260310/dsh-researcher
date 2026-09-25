@@ -1,0 +1,270 @@
+[
+  {
+    "lens": "SEC-1",
+    "name": "租户隔离与对象级授权 (Tenancy Isolation & Object-Level Authorization)",
+    "domain": "security-boundary",
+    "trigger": "当被审代码存在用户/租户/组织概念并对外暴露对象读写入口（REST、GraphQL、gRPC、CLI、内部 RPC）时，用这条透镜穿透每个入口的授权判定路径。",
+    "questions": [
+      "每个对外路由/处理器在触及数据层之前，都能在源码中指到一行显式的授权判定（如 require_scope、authorize(tenant_id)、policy check）并给出 path:line。",
+      "对象标识符来自服务端会话/令牌里的 tenant_id 或 subject，而不是直接采信请求体或查询串中的 tenant 参数，能指到赋值处 path:line。",
+      "同租户隔离由数据库层强制：ORM 存在 default_scope / row-level security / 强制 tenant_id 谓词，能在模型定义或迁移文件中指到 path:line。",
+      "/admin、/internal、/metrics、/debug/pprof、/actuator、/health 路由在源码或入口配置中带有独立的认证守卫，能指到 path:line。",
+      "授权断言在测试中存在反例用例（把 A 租户令牌打到 B 租户对象 ID 上），能指到测试文件的 path:line。"
+    ],
+    "failure_modes": [
+      { "name": "BOLA / API1:2023 Broken Object Level Authorization", "source": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/" },
+      { "name": "CWE-639 Authorization Bypass Through User-Controlled Key", "source": "https://cwe.mitre.org/data/definitions/639.html" },
+      { "name": "CWE-862 Missing Authorization", "source": "https://cwe.mitre.org/data/definitions/862.html" },
+      { "name": "OWASP Top 10 A01:2021 Broken Access Control", "source": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/" },
+      { "name": "NIST SP 800-207 Zero Trust Architecture: per-request policy decision", "source": "https://csrc.nist.gov/pubs/sp/800/207/final" }
+    ],
+    "alternatives": [
+      { "option": "在数据访问层用 row-level security / 强制 tenant_id 谓词（Postgres RLS、Hibernate filter）做纵深防御", "buys": "漏写一次应用层检查不会直接变成跨租户数据泄露", "costs": "每个连接需正确设置会话变量，迁移与本地调试复杂度上升，错误配置会静默返回空集" },
+      { "option": "把授权判定收敛到统一策略引擎（OPA/Cedar/OpenFGA）单一决策点", "buys": "策略可审计、可测试、可在多入口之间保持一致", "costs": "每请求多一跳判定延迟，策略与业务对象属性需持续同步" },
+      { "option": "用不可枚举的代理 ID（UUIDv7/ULID 对外、自增主键对内）", "buys": "降低横向枚举成功率，日志与探测更难定位真实对象", "costs": "不是授权替代品，仍会因令牌泄漏而完全失效，且破坏按序分页" }
+    ],
+    "evidence_anchors": [
+      "路由/控制器注册文件与中间件链（app.use、@app.route、Router、FastAPI dependencies、gRPC interceptor 注册处）",
+      "授权守卫实现：decorators、guards、policies、middleware、interceptors 文件",
+      "ORM 模型定义与迁移里的 tenant_id 列、default_scope、RLS policy、查询构造器封装",
+      "请求 DTO / schema 定义（tenant_id、org_id、owner 字段是否出现在入参契约中）",
+      "OpenAPI / protobuf 文档、网关路由表与 ingress 注解",
+      "测试目录中的授权反例用例与 fixture 中的多租户种子数据"
+    ],
+    "tags": {
+      "structure": ["multi-tenant", "middleware-chain", "orm-scope", "policy-engine"],
+      "symptom": ["bola", "idor", "missing-authz", "cross-tenant-leak", "unauthenticated-admin-endpoint"],
+      "stack": ["django", "spring", "rails", "fastapi", "express", "grpc", "graphql", "kubernetes", "postgres"],
+      "store": ["postgres", "mysql", "mongodb", "dynamodb", "redis", "object-storage"],
+      "surface": ["rest-api", "graphql", "grpc", "admin-ui", "metrics-endpoint", "webhook", "cli"]
+    },
+    "sources": [
+      { "title": "OWASP API Security Top 10 2023 - API1 Broken Object Level Authorization", "url": "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/", "license": "sharealike" },
+      { "title": "OWASP Top 10 2021 - A01 Broken Access Control", "url": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/", "license": "sharealike" },
+      { "title": "OWASP Authorization Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "CWE-639 Authorization Bypass Through User-Controlled Key", "url": "https://cwe.mitre.org/data/definitions/639.html", "license": "attribution" },
+      { "title": "CWE Top 25 Most Dangerous Software Weaknesses", "url": "https://cwe.mitre.org/top25/", "license": "attribution" },
+      { "title": "NIST SP 800-207 Zero Trust Architecture", "url": "https://csrc.nist.gov/pubs/sp/800/207/final", "license": "public_domain" },
+      { "title": "Kubernetes Documentation - RBAC Authorization", "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/", "license": "attribution" },
+      { "title": "PostgreSQL Documentation - Row Security Policies", "url": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html", "license": "permissive" }
+    ],
+    "provenance": { "collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03" }
+  },
+  {
+    "lens": "SEC-2",
+    "name": "输入边界与注入面 (Input Boundary & Injection Surface)",
+    "domain": "security-boundary",
+    "trigger": "当被审代码把外部可控数据送进查询、模板、解释器、URL 抓取、XML/对象反序列化或 shell 时，用这条透镜逐个数据流验证边界处是否做了结构隔离。",
+    "questions": [
+      "每个 SQL/NoSQL 调用点都以占位符或参数绑定方式构造（$1、?、%s 绑定、ORM filter），能在源码指到 path:line。",
+      "所有出站 HTTP 客户端调用集中在少数封装文件里，能在 path:line 指到该封装及其调用清单。",
+      "反序列化入口使用类型白名单或纯数据格式（JSON schema、SafeLoader、allowlist），能指到白名单定义处 path:line。",
+      "XML/HTML 解析器在构造时关闭了外部实体与 DTD 解析（resolve_entities=False、XMLConstants.FEATURE_SECURE_PROCESSING、disallow-doctype-decl），能指到 path:line。",
+      "面向该服务的测试中存在注入尝试用例（含 payload 的 fixtures 或 SAST/DAST 规则文件），能指到测试或规则文件的 path:line。",
+      "用户输入进入日志、SQL 或 HTML 输出之前经过统一编码/转义层，能指到该层实现与调用处 path:line。"
+    ],
+    "failure_modes": [
+      { "name": "CWE-89 SQL Injection", "source": "https://cwe.mitre.org/data/definitions/89.html" },
+      { "name": "CWE-918 Server-Side Request Forgery (SSRF)", "source": "https://cwe.mitre.org/data/definitions/918.html" },
+      { "name": "CWE-502 Deserialization of Untrusted Data", "source": "https://cwe.mitre.org/data/definitions/502.html" },
+      { "name": "CWE-611 Improper Restriction of XML External Entity Reference (XXE)", "source": "https://cwe.mitre.org/data/definitions/611.html" },
+      { "name": "OWASP Top 10 A03:2021 Injection", "source": "https://owasp.org/Top10/A03_2021-Injection/" },
+      { "name": "OWASP Top 10 A10:2021 Server-Side Request Forgery (SSRF)", "source": "https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/" }
+    ],
+    "alternatives": [
+      { "option": "以参数绑定/预编译语句替代字符串拼接查询", "buys": "参数值在协议层与语句结构分离，注入面消失", "costs": "动态表名与排序方向等结构片段仍需白名单，某些 ORM 原始接口会绕过绑定" },
+      { "option": "出站请求统一走受控出口代理并做目标地址白名单 + DNS 解析后二次校验", "buys": "阻断内网元数据端点（169.254.169.254）与 DNS rebinding 类绕过", "costs": "引入代理的可用性与延迟成本，重定向链需逐跳校验" },
+      { "option": "用纯数据序列化格式（JSON/CBOR）+ schema 校验替代原生对象反序列化", "buys": "消除 gadget chain 与类型混淆类反序列化利用", "costs": "破坏既有二进制兼容性，需重写线格式与迁移存量数据" },
+      { "option": "解析器显式关闭 DTD 与外部实体，改用安全默认的解析库", "buys": "消除 XXE 与实体扩展类资源耗尽路径", "costs": "依赖库行为差异需回归测试覆盖，部分遗留协议依赖 DTD 校验" }
+    ],
+    "evidence_anchors": [
+      "SQL/查询构造处：raw、execute、query、$queryRaw、createNativeQuery、拼接字符串与 f-string 语句",
+      "出站客户端封装：requests/axios/fetch/HttpClient 的调用点与 URL 拼装处",
+      "反序列化调用：pickle.loads、yaml.load、ObjectInputStream、unserialize、Marshal.load",
+      "XML 解析器构造与配置：DocumentBuilderFactory、lxml etree、SAXReader、xml.etree 参数",
+      "shell/命令执行：subprocess、os.system、exec、Runtime.exec、child_process.spawn 的 shell 参数",
+      "SAST/依赖扫描配置：semgrep 规则、CodeQL 查询、bandit 配置、.trivyignore",
+      "CI 中的安全扫描 job 定义与告警阈值"
+    ],
+    "tags": {
+      "structure": ["data-flow", "query-builder", "http-client-wrapper", "parser-config"],
+      "symptom": ["sqli", "ssrf", "insecure-deserialization", "xxe", "command-injection", "path-traversal"],
+      "stack": ["python", "java", "nodejs", "php", "ruby", "go", "spring", "django", "rails", "express"],
+      "store": ["postgres", "mysql", "mongodb", "redis", "elasticsearch", "ldap", "object-storage"],
+      "surface": ["rest-api", "graphql", "file-upload", "webhook", "xml-api", "message-queue", "cli"]
+    },
+    "sources": [
+      { "title": "OWASP Top 10 2021 - A03 Injection", "url": "https://owasp.org/Top10/A03_2021-Injection/", "license": "sharealike" },
+      { "title": "OWASP Top 10 2021 - A10 Server-Side Request Forgery (SSRF)", "url": "https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/", "license": "sharealike" },
+      { "title": "OWASP SQL Injection Prevention Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "OWASP Server-Side Request Forgery Prevention Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "OWASP Deserialization Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "OWASP XML External Entity Prevention Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "CWE Top 25 Most Dangerous Software Weaknesses", "url": "https://cwe.mitre.org/top25/", "license": "attribution" },
+      { "title": "OWASP Top 10 2021 - A08 Software and Data Integrity Failures", "url": "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/", "license": "sharealike" }
+    ],
+    "provenance": { "collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03" }
+  },
+  {
+    "lens": "SEC-3",
+    "name": "密钥生命周期与轮换 (Secrets Lifecycle & Rotation)",
+    "domain": "security-boundary",
+    "trigger": "当被审仓库包含凭证读取路径（配置文件、环境变量、密钥管理客户端、CI secret、K8s Secret）或长期有效令牌时，用这条透镜验证密钥的来源、版本化引用与轮换可达性。",
+    "questions": [
+      "密钥读取集中在少数配置装配文件里，能在 path:line 指到统一读取入口（settings、config factory、vault client 初始化）。",
+      "仓库内引用的密钥来源是密钥管理器或 CI 注入的变量（Vault、AWS Secrets Manager、GCP Secret Manager、K8s Secret、GitHub OIDC），能指到 path:line。",
+      "轮换所需的版本/别名机制在代码或 IaC 中存在（secret version、alias/current、key id 参数），能指到 path:line。",
+      "存在过期时间或轮换周期的声明与校验（token TTL、key expiry、rotation lambda/schedule），能指到 path:line。",
+      "密钥加载路径在启动时做失败即拒绝（启动时报错而不是以空值降级），能指到校验处 path:line。",
+      "测试或示例配置中以假值占位（changeme、example、dummy、test-key），能在 path:line 指到占位值而非真实凭证。"
+    ],
+    "failure_modes": [
+      { "name": "CWE-798 Use of Hard-coded Credentials", "source": "https://cwe.mitre.org/data/definitions/798.html" },
+      { "name": "CWE-321 Use of Hard-coded Cryptographic Key", "source": "https://cwe.mitre.org/data/definitions/321.html" },
+      { "name": "OWASP Top 10 A02:2021 Cryptographic Failures", "source": "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/" },
+      { "name": "OWASP Secrets Management Cheat Sheet", "source": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html" },
+      { "name": "NIST SP 800-57 Part 1 Rev.5 Recommendation for Key Management", "source": "https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final" },
+      { "name": "OWASP Top 10 A05:2021 Security Misconfiguration", "source": "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/" }
+    ],
+    "alternatives": [
+      { "option": "外置到托管密钥管理器并按版本号引用（Vault KV v2 / AWS Secrets Manager version stage）", "buys": "轮换与吊销不改代码，访问可审计，密钥不落仓库", "costs": "引入启动期网络依赖与客户端库，需处理缓存、超时与本地开发替身" },
+      { "option": "用短生命周期动态凭证 + OIDC 联合身份替代静态长期密钥", "buys": "消除长期凭证泄漏窗口，权限随工作负载身份收敛", "costs": "依赖平台身份提供方，调试链路变长，需处理刷新失败路径" },
+      { "option": "引入密封/加密配置（SOPS、Sealed Secrets、age）使密文可入库", "buys": "GitOps 流程不变而明文不进版本库", "costs": "引入解密密钥本身的托管问题，密钥丢失会导致不可恢复" },
+      { "option": "在 CI 中加入凭证扫描门禁（gitleaks/trufflehog）", "buys": "在提交与流水线阶段拦住硬编码凭证", "costs": "误报需要维护基线，对已入库的历史泄漏无能为力" }
+    ],
+    "evidence_anchors": [
+      "配置文件与环境模板：.env、.env.example、application.yml、settings.py、config/*.toml、values.yaml、docker-compose.yml",
+      "硬编码候选串：password=、api_key=、secret=、token=、BEGIN PRIVATE KEY、AKIA、ghp_、sk- 前缀",
+      "密钥读取代码：os.environ、process.env、getenv、boto3 secretsmanager、hvac、SecretClient、k8s secret 挂载",
+      "IaC：terraform secretsmanager/ssm 资源、helm secret 模板、k8s Secret 与 external-secrets 清单、Vault policy 文件",
+      "CI/CD：workflow secrets 引用、OIDC trust 配置、部署脚本中的密钥注入步骤",
+      "日志与错误处理代码中是否打印凭证字段；密钥扫描工具的基线与忽略文件"
+    ],
+    "tags": {
+      "structure": ["config-layer", "secret-store-client", "iac-manifest", "ci-pipeline"],
+      "symptom": ["hardcoded-credential", "secret-in-repo", "no-rotation-path", "long-lived-token", "credential-in-logs"],
+      "stack": ["python", "java", "nodejs", "go", "terraform", "helm", "kubernetes", "github-actions", "docker"],
+      "store": ["vault", "aws-secrets-manager", "gcp-secret-manager", "azure-keyvault", "k8s-secret", "env-file"],
+      "surface": ["ci-pipeline", "container-image", "config-file", "runtime-env", "logs"]
+    },
+    "sources": [
+      { "title": "OWASP Secrets Management Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "OWASP Key Management Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "OWASP Top 10 2021 - A02 Cryptographic Failures", "url": "https://owasp.org/Top10/A02_2021-Cryptographic_Failures/", "license": "sharealike" },
+      { "title": "CWE-798 Use of Hard-coded Credentials", "url": "https://cwe.mitre.org/data/definitions/798.html", "license": "attribution" },
+      { "title": "NIST SP 800-57 Part 1 Rev.5 Recommendation for Key Management", "url": "https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final", "license": "public_domain" },
+      { "title": "Kubernetes Documentation - Good practices for Kubernetes Secrets", "url": "https://kubernetes.io/docs/concepts/security/secrets-good-practices/", "license": "attribution" },
+      { "title": "Kubernetes Documentation - Encrypting Confidential Data at Rest", "url": "https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/", "license": "attribution" },
+      { "title": "CWE Top 25 Most Dangerous Software Weaknesses", "url": "https://cwe.mitre.org/top25/", "license": "attribution" }
+    ],
+    "provenance": { "collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03" }
+  },
+  {
+    "lens": "SEC-4",
+    "name": "供应链与依赖可信 (Supply Chain & Dependency Trust)",
+    "domain": "security-boundary",
+    "trigger": "当被审仓库带有依赖清单、容器镜像、构建流水线或制品发布步骤时，用这条透镜核对版本解析是否可复现、构件是否可追溯到来源。",
+    "questions": [
+      "仓库提交了完整锁定文件（package-lock.json、pnpm-lock.yaml、poetry.lock、go.sum、Cargo.lock、Pipfile.lock），能在 path:line 指到其存在与清单引用。",
+      "CI 与 Dockerfile 使用锁定文件安装（npm ci、pip install --require-hashes、go mod verify、bundle install --frozen），能指到 path:line。",
+      "基础镜像以 digest 或明确版本标签固定（FROM image@sha256:... 或 image:1.2.3），能指到 Dockerfile 的 path:line。",
+      "流水线中存在 SBOM 生成与漏洞扫描步骤（syft、cyclonedx、trivy、grype、osv-scanner、dependabot），能指到配置文件 path:line。",
+      "依赖清单中的版本约束为精确版本或可解析范围（==、=、~），能在清单 path:line 指到约束写法。",
+      "构建产物或发布流程带签名/来源证明（cosign、sigstore、SLSA provenance、npm provenance），能在 path:line 指到签名步骤。"
+    ],
+    "failure_modes": [
+      { "name": "xz/liblzma backdoor: build-to-build injection in the upstream release tarball (CVE-2024-3094)", "source": "https://www.openwall.com/lists/oss-security/2024/03/29/4" },
+      { "name": "CWE-1104 Use of Unmaintained Third Party Components", "source": "https://cwe.mitre.org/data/definitions/1104.html" },
+      { "name": "OWASP Top 10 A06:2021 Vulnerable and Outdated Components", "source": "https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/" },
+      { "name": "OWASP Top 10 A08:2021 Software and Data Integrity Failures", "source": "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/" },
+      { "name": "NIST SP 800-218 Secure Software Development Framework (SSDF) PW.4 / PS.3", "source": "https://csrc.nist.gov/pubs/sp/800/218/final" },
+      { "name": "Semantic Versioning 2.0.0 - pre-release and build metadata semantics", "source": "https://semver.org/" }
+    ],
+    "alternatives": [
+      { "option": "提交并强制校验锁文件哈希，CI 用 npm ci / --require-hashes 安装", "buys": "同一锁文件解析出同一依赖树，安装期篡改可见", "costs": "升级需显式重锁，安全补丁进入变慢，私有 registry 需额外配置" },
+      { "option": "基础镜像与工具镜像按 digest 固定", "buys": "标签被重新推送不会静默改变运行时内容", "costs": "失去自动补丁，需要自动化 bump 与定期重建机制" },
+      { "option": "对制品做签名与来源证明校验（cosign/SLSA provenance）后再部署", "buys": "阻断上游被投毒或构建平台被篡改后的制品进入生产", "costs": "需要密钥与 PKI 管理、准入控制改造，验证失败会挡住紧急发布" },
+      { "option": "引入 SBOM 与持续漏洞扫描并设置升级 SLA", "buys": "新增 CVE 可在小时级被发现并排序修复", "costs": "噪声与误报治理成本，需要负责人与例外流程" }
+    ],
+    "evidence_anchors": [
+      "依赖清单与锁定文件：package.json、package-lock.json、pnpm-lock.yaml、go.mod、go.sum、requirements.txt、poetry.lock、Cargo.toml、pom.xml、build.gradle",
+      "版本约束写法：^、~、*、latest、浮动 tag、git+https 依赖、file: 依赖、registry 覆盖配置（.npmrc、pip.conf）",
+      "安装脚本：postinstall、preinstall、setup.py、build.rs、Makefile 中的下载与执行步骤",
+      "Dockerfile 与镜像引用：FROM 行、镜像 tag/digest、多阶段构建中的 curl | sh",
+      "CI 配置：.github/workflows、.gitlab-ci.yml、Jenkinsfile 中的安装命令、缓存策略、扫描 job、签名步骤",
+      "SBOM/扫描产物与配置：syft.yaml、.trivyignore、osv-scanner.toml、dependabot.yml、renovate.json"
+    ],
+    "tags": {
+      "structure": ["lockfile", "container-build", "ci-pipeline", "artifact-registry", "sbom"],
+      "symptom": ["floating-version", "missing-lockfile", "unsigned-artifact", "build-script-execution", "unpinned-base-image", "stale-dependency"],
+      "stack": ["npm", "pnpm", "yarn", "pip", "poetry", "go", "cargo", "maven", "gradle", "docker", "github-actions"],
+      "store": ["npm-registry", "pypi", "maven-central", "container-registry", "git-submodule", "vendor-directory"],
+      "surface": ["ci-pipeline", "container-image", "build-script", "release-process", "dependency-manifest"]
+    },
+    "sources": [
+      { "title": "openwall oss-security: xz/liblzma backdoor report (CVE-2024-3094)", "url": "https://www.openwall.com/lists/oss-security/2024/03/29/4", "license": "permissive" },
+      { "title": "OWASP Top 10 2021 - A06 Vulnerable and Outdated Components", "url": "https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/", "license": "sharealike" },
+      { "title": "OWASP Top 10 2021 - A08 Software and Data Integrity Failures", "url": "https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/", "license": "sharealike" },
+      { "title": "OWASP Vulnerable Dependency Management Cheat Sheet", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Vulnerable_Dependency_Management_Cheat_Sheet.html", "license": "sharealike" },
+      { "title": "NIST SP 800-218 Secure Software Development Framework v1.1", "url": "https://csrc.nist.gov/pubs/sp/800/218/final", "license": "public_domain" },
+      { "title": "CWE-1104 Use of Unmaintained Third Party Components", "url": "https://cwe.mitre.org/data/definitions/1104.html", "license": "attribution" },
+      { "title": "CWE Top 25 Most Dangerous Software Weaknesses", "url": "https://cwe.mitre.org/top25/", "license": "attribution" },
+      { "title": "Semantic Versioning 2.0.0", "url": "https://semver.org/", "license": "permissive" }
+    ],
+    "provenance": { "collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03" }
+  },
+  {
+    "lens": "SEC-5",
+    "name": "最小权限与混淆代理 (Least Privilege & Confused Deputy)",
+    "domain": "security-boundary",
+    "trigger": "当被审系统由多个内部服务、sidecar、job 或代理组成，且信任判定依赖网络位置、集群内网或服务网格，用这条透镜检查每次跨边界调用是否自带可验证身份与收窄的权限。",
+    "questions": [
+      "内部服务之间的每个调用点都携带调用方身份凭证（mTLS 客户端证书、工作负载令牌、签名的 service token），能在 path:line 指到注入点。",
+      "服务在授权决策中读取调用方身份而非仅判断来源 IP 或命名空间，能在 path:line 指到身份提取代码。",
+      "代调用方访问下游资源时会做 token exchange 或权限收窄（downscope、on-behalf-of、STS AssumeRole with session policy），能指到 path:line。",
+      "服务账户与 IAM role 绑定到具体工作负载（K8s serviceAccountName、IRSA、Workload Identity），且策略文件可在 path:line 指到其权限清单。",
+      "长生命周期静态凭证被替换为工作负载身份联合（OIDC federation、projected token），能在 path:line 指到联合配置。",
+      "集群内东西向流量有默认拒绝策略（NetworkPolicy、Cilium policy、mesh AuthorizationPolicy），能在清单 path:line 指到默认拒绝与本服务允许规则。"
+    ],
+    "failure_modes": [
+      { "name": "CWE-441 Confused Deputy", "source": "https://cwe.mitre.org/data/definitions/441.html" },
+      { "name": "CWE-269 Improper Privilege Management", "source": "https://cwe.mitre.org/data/definitions/269.html" },
+      { "name": "CWE-250 Execution with Unnecessary Privileges", "source": "https://cwe.mitre.org/data/definitions/250.html" },
+      { "name": "NIST SP 800-207 Zero Trust Architecture", "source": "https://csrc.nist.gov/pubs/sp/800/207/final" },
+      { "name": "OWASP Top 10 A01:2021 Broken Access Control (privilege escalation surface)", "source": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/" },
+      { "name": "OWASP Top 10 A07:2021 Identification and Authentication Failures", "source": "https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/" }
+    ],
+    "alternatives": [
+      { "option": "强制双向 TLS 并为每个工作负载签发短期身份证书（SPIFFE/SPIRE、Istio mTLS STRICT）", "buys": "身份由加密材料证明，网络嗅探或内网位置不再等价于可信", "costs": "证书签发与轮换基础设施、调试链路加密后的可观测性改造" },
+      { "option": "以 token exchange 换取受众受限的下游令牌（RFC 8693、STS AssumeRole + session policy）", "buys": "下游只见收窄权限，混同代理的越权半径被限制", "costs": "多一跳交换延迟，需要维护各下游的 audience 与 scope 映射" },
+      { "option": "为每个工作负载绑定独立服务账户与最小 IAM 策略（IRSA、Workload Identity）", "buys": "单点失陷不继承节点级或集群级宽权限", "costs": "策略数量膨胀，需要自动化生成与漂移检测" },
+      { "option": "默认拒绝的命名空间网络策略 + 显式允许清单", "buys": "阻断横向移动与未声明的服务间调用", "costs": "新服务上线需同步更新策略，否则出现难定位的连通性故障" }
+    ],
+    "evidence_anchors": [
+      "服务网格与 mTLS 配置：PeerAuthentication、DestinationRule、AuthorizationPolicy、meshconfig、sidecar 注入注解",
+      "K8s 清单：serviceAccountName、automountServiceAccountToken、RBAC Role/ClusterRole 与绑定、NetworkPolicy",
+      "云 IAM：terraform aws_iam_role/policy 资源、trust policy 中的条件键（aud、sub）、GCP service account binding、Azure role assignment",
+      "网关与代理配置：ingress、envoy filter、ext_authz、API gateway authorizer、请求头透传规则（X-Forwarded-For、x-user-id 的自定义头信任）",
+      "出站调用封装：HTTP 客户端构造处是否附加调用方身份、是否透传入站 Authorization 头",
+      "sidecar/init 容器、job 与 cronjob 的权限声明；容器 securityContext（privileged、runAsUser、capabilities）"
+    ],
+    "tags": {
+      "structure": ["service-mesh", "rbac", "iam-policy", "network-policy", "token-exchange", "sidecar"],
+      "symptom": ["confused-deputy", "implicit-network-trust", "over-privileged-workload", "token-passthrough", "lateral-movement"],
+      "stack": ["kubernetes", "istio", "linkerd", "spiffe", "terraform", "aws-iam", "gcp-iam", "azure-rbac", "envoy"],
+      "store": ["k8s-api", "sts", "secret-store", "metadata-service", "policy-store"],
+      "surface": ["internal-rpc", "gateway", "sidecar", "batch-job", "ci-runner", "mesh-east-west"]
+    },
+    "sources": [
+      { "title": "NIST SP 800-207 Zero Trust Architecture", "url": "https://csrc.nist.gov/pubs/sp/800/207/final", "license": "public_domain" },
+      { "title": "CWE-441 Confused Deputy", "url": "https://cwe.mitre.org/data/definitions/441.html", "license": "attribution" },
+      { "title": "CWE-269 Improper Privilege Management", "url": "https://cwe.mitre.org/data/definitions/269.html", "license": "attribution" },
+      { "title": "OWASP Top 10 2021 - A01 Broken Access Control", "url": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/", "license": "sharealike" },
+      { "title": "RFC 8693 OAuth 2.0 Token Exchange", "url": "https://www.rfc-editor.org/rfc/rfc8693.html", "license": "public_domain" },
+      { "title": "Kubernetes Documentation - Network Policies", "url": "https://kubernetes.io/docs/concepts/services-networking/network-policies/", "license": "attribution" },
+      { "title": "Kubernetes Documentation - RBAC Authorization", "url": "https://kubernetes.io/docs/reference/access-authn-authz/rbac/", "license": "attribution" },
+      { "title": "CWE Top 25 Most Dangerous Software Weaknesses", "url": "https://cwe.mitre.org/top25/", "license": "attribution" }
+    ],
+    "provenance": { "collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03" }
+  }
+]

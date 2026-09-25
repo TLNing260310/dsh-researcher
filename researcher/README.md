@@ -87,6 +87,6 @@ researcher/
 ├── plugins/goal-governor/index.js     # /researcher 入口 + portable Goal Governor 的 DSH host adapter
 ├── plugins/git-read/index.js          # 白名单只读 git 工具（唯一的子进程能力，无 shell）
 ├── skills/project-research-methodology/SKILL.md   # 六模块 + 十一部 + 自查清单
-├── skills/research-report-template/SKILL.md       # 十四节报告骨架
+├── skills/research-report-template/SKILL.md       # 七节 Project Cognition Report + 附录 A–D
 └── README.md
 ```

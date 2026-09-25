@@ -1,0 +1,486 @@
+[
+  {
+    "lens": "MP-1",
+    "name": "抽象边界形状与厂商协议差异 (Abstraction Boundary Shape vs Vendor Wire Formats)",
+    "domain": "multi-provider-adaptation",
+    "trigger": "仓库同时接入 ≥2 个模型 provider，或存在自建的 LLMClient / LLMProvider / adapter 抽象需要审查其边界形状时。",
+    "questions": [
+      "请求体构造是否集中在单一适配模块？给出该模块内按 provider 分支的字段映射行号。",
+      "system / developer 指令在适配层被放到哪个位置？给出 OpenAI chat(首条 role)、OpenAI responses(instructions 参数)、Anthropic(顶层 system)、Gemini(systemInstruction) 四种落点各自的代码行号。",
+      "工具 schema 数组被写进请求体的哪一行？它的键名只能是 tools/functions/toolConfig 之一时，选择发生在哪一行？",
+      "工具结果回灌时用的键名是什么？给出 OpenAI 的 role=tool+tool_call_id、Anthropic 的 role=user+tool_result、Gemini 的 functionResponse 三种回灌键各自的代码行号。",
+      "从 provider 响应体读出结束原因的那一行是什么？该行读到的原始字符串是否被映射到一个规范化枚举？",
+      "转换只发生在请求出口与响应入口两处，还是夹在流式 chunk 的转发路径中间？给出行号。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Extraneous Fetching antipattern",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/extraneous-fetching/"
+      },
+      {
+        "name": "Versioning and Compatibility (protocol version declared per request; UnsupportedProtocolVersionError)",
+        "source": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把 provider 差异全部收进一个规范化消息模型，适配器只做一次双向翻译",
+        "buys": "单点可测的字段映射表，新增 provider 不触碰业务代码",
+        "costs": "为承载差异需要一个显式 raw/metadata 逃生舱，模型会随之膨胀"
+      },
+      {
+        "option": "直连各家原生 SDK，在调用点按 provider 分支",
+        "buys": "零翻译层，厂商新增字段当天可用",
+        "costs": "业务代码产生 N 份分支与 N 份凭据读取路径，跨 provider 的会话历史无法复用"
+      },
+      {
+        "option": "在适配层前置一组协议一致性 transcript 测试，用真实响应体做金标准",
+        "buys": "把静默语义漂移变成红灯而不是线上事故",
+        "costs": "每个 provider 每个版本都要维护与刷新 fixture，凭据与录制成本上升"
+      }
+    ],
+    "evidence_anchors": [
+      "自建适配器的 provider 分支：researcher/plugins/*/index.js 与 lib/ 下按厂商命名的模块",
+      "preset 与 host 组合文件：researcher/agent.cordis.yml、researcher/preset.yml 中 model/provider 行的字段名与命名空间",
+      "工具定义到 provider tool schema 的转换点：grep 'parameters' / 'input_schema' / 'function_declarations' / 'toolConfig'",
+      "工具结果回灌键：grep 'tool_call_id' / 'tool_result' / 'functionResponse'",
+      "结束原因映射：grep 'finishReason' / 'finish_reason' / 'stopReason' / 'stop_reason' / 'STOP'",
+      "多模态 part 构造：grep 'image_url' / 'source' / 'inline_data' / 'input_image'",
+      "流式转发路径：grep 'text/event-stream' / 'stream' / 'chunk' / 'data:'"
+    ],
+    "tags": {
+      "structure": ["sdk", "sync-call-chain"],
+      "symptom": ["provider-leak", "version-skew"],
+      "stack": ["node", "python"],
+      "store": ["none"],
+      "surface": ["llm-adapter", "config", "stream"]
+    },
+    "sources": [
+      {
+        "title": "AI SDK: Language Model Middleware (wrapLanguageModel; provider-agnostic interception)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/middleware",
+        "license": "permissive"
+      },
+      {
+        "title": "AI SDK: Provider & Model Management (customProvider, providers registry, fallbackProvider)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/provider-management",
+        "license": "permissive"
+      },
+      {
+        "title": "Extraneous Fetching antipattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/extraneous-fetching/",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification 2026-07-28: Versioning and Compatibility",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {"collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03"}
+  },
+  {
+    "lens": "MP-2",
+    "name": "能力矩阵 vs 最大公约数 (Capability Matrix vs Lowest Common Denominator)",
+    "domain": "multi-provider-adaptation",
+    "trigger": "参数被无条件发给所有 provider，或仓库声称支持多模型却只有一份参数字典时。",
+    "questions": [
+      "能力矩阵写在哪个文件？给出矩阵键名（如 supportsTools / supportsReasoning / supportedParams）所在行号。",
+      "该矩阵是被代码读取并参与分支的，还是仅存在于文档与注释里？给读取点的行号。",
+      "当 provider 不支持某个已传入参数时，走的是抛错分支、降级分支还是丢弃分支？给出那一行。",
+      "降级/丢弃分支是否有对应测试用例？给出测试文件与该用例名所在行号。",
+      "不受支持的字段清单是否出现在返回值（warnings 字段）或日志里？给出行号。",
+      "矩阵里每个布尔位是否指向一个真实读取点？列出没有任何读取者的键名及其定义行号。"
+    ],
+    "failure_modes": [
+      {
+        "name": "CWE-754: Improper Check for Unusual or Exceptional Conditions",
+        "source": "https://cwe.mitre.org/data/definitions/754.html"
+      },
+      {
+        "name": "Improper Instantiation antipattern (per-request provider client construction)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "显式能力矩阵 + 启动期强校验，不支持的参数直接失败",
+        "buys": "失败前移到配置期与 CI，静默正确性降级变成硬错误",
+        "costs": "每新增 provider 必须补齐矩阵，跨 provider 的通用参数需要人工裁决"
+      },
+      {
+        "option": "每个 provider 一个独立包装接口，各自只暴露自有参数类型",
+        "buys": "类型系统直接禁止越界参数，无需运行时矩阵",
+        "costs": "调用方需要抽象层，共用逻辑要靠组合而非继承，代码量上升"
+      },
+      {
+        "option": "运行时能力探测（首次调用探测 + 结果缓存 + 落库）",
+        "buys": "无需人工维护矩阵，能发现文档未声明的能力",
+        "costs": "首次调用带探测开销与失败风险，探测结果需要失效策略与存储"
+      }
+    ],
+    "evidence_anchors": [
+      "能力矩阵定义处：grep 'capabilit' / 'supports' / 'features' / 'canUse' 命中的配置或模块",
+      "参数降级路径：grep 'warnings' / 'unsupported' / 'ignored' / 'drop' / 'fallback' 命中的分支",
+      "provider 客户端的构造位置与生命周期：grep 'new .*Client' / 'getClient' / 'createClient' 与它们的缓存层",
+      "默认参数注入中间件：grep 'defaultSettings' / 'defaults' / 'preset'",
+      "分辨率与上下文窗口声明：grep 'contextWindow' / 'maxTokens' / 'maxOutputTokens'"
+    ],
+    "tags": {
+      "structure": ["sdk", "sync-call-chain"],
+      "symptom": ["capability-lcd", "silent-field-drop", "provider-leak"],
+      "stack": ["node", "python"],
+      "store": ["none"],
+      "surface": ["llm-adapter", "config", "feature-flag"]
+    },
+    "sources": [
+      {
+        "title": "AI SDK Core: Settings (common settings; warnings property for unsupported settings)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/settings",
+        "license": "permissive"
+      },
+      {
+        "title": "CWE-754: Improper Check for Unusual or Exceptional Conditions",
+        "url": "https://cwe.mitre.org/data/definitions/754.html",
+        "license": "permissive"
+      },
+      {
+        "title": "Improper Instantiation antipattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {"collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03"}
+  },
+  {
+    "lens": "MP-3",
+    "name": "参数泄漏与语义漂移 (Parameter Leakage and Semantic Drift)",
+    "domain": "multi-provider-adaptation",
+    "trigger": "仓库里出现 providerOptions / extra_body / vendor 命名空间参数，或同一参数名在多个 provider 间共用时。",
+    "questions": [
+      "provider 私有参数在哪里声明？给出适配器接受的键名集合与真实实现读取的键名集合两处行号。",
+      "temperature / topP / maxOutputTokens 的取值区间与默认值在每个 provider 上是否各有文档或代码常量？给出行号。",
+      "未知命名空间的 providerOptions 键在传递前是否被校验？给出校验点或其缺失处所在行号。",
+      "把 A 厂商的私有参数发给 B 厂商时，发生的是抛错、忽略还是透传？给出那一行。",
+      "同一次调用同时给出通用参数与 provider 私有参数时，优先级规则落在哪一行（合并、覆盖还是不合并）？",
+      "失败时被记入日志或指标的 provider 参数值是否包含凭据、baseURL 或内网主机名？给出行号。"
+    ],
+    "failure_modes": [
+      {
+        "name": "CWE-754: Improper Check for Unusual or Exceptional Conditions",
+        "source": "https://cwe.mitre.org/data/definitions/754.html"
+      },
+      {
+        "name": "Retry Storm antipattern (retrying requests that cannot become valid)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "provider 参数按命名空间强隔离，并在调用期校验命名空间与目标 provider 一致",
+        "buys": "跨厂商参数错配在调用点立刻暴露，而不是变成一段静默的默认行为",
+        "costs": "每加一个私有参数都要补命名空间与文档，动态构造参数的场景需要额外校验"
+      },
+      {
+        "option": "只暴露跨 provider 已被证实语义一致的参数子集，其余参数走 raw 逃生舱",
+        "buys": "主路径语义稳定，跨 provider 行为可预期",
+        "costs": "最想用的厂商特性被推到逃生舱，需要显式标注意义不可移植"
+      },
+      {
+        "option": "把每次调用的规范化参数快照连同响应一起落库",
+        "buys": "语义漂移可回放归因，能定位是哪次改动改变了采样行为",
+        "costs": "存储与脱敏成本上升，快照格式本身需要版本化"
+      }
+    ],
+    "evidence_anchors": [
+      "provider 参数命名空间：grep 'providerOptions' / 'extra_body' / 'extraBody' / 'anthropic' / 'openai' / 'google'",
+      "参数优先级规则：grep 'precedence' / 'overrides' / 'merge' 附近的 reasoning/thinking 相关分支",
+      "凭据与端点注入点：grep 'apiKey' / 'api_key' / 'baseURL' / 'base_url' / 'endpoint'",
+      "调用日志与 trace 字段：grep 'logger' / 'span' / 'setAttribute' / 'telemetry'",
+      "配置文件中的模型与参数默认值：researcher/preset.yml、researcher/agent.cordis.yml、examples/ 下的示例配置"
+    ],
+    "tags": {
+      "structure": ["sdk", "sync-call-chain"],
+      "symptom": ["provider-leak", "config-drift"],
+      "stack": ["node", "python"],
+      "store": ["none"],
+      "surface": ["llm-adapter", "config", "observability"]
+    },
+    "sources": [
+      {
+        "title": "AI SDK: Provider Options (namespaced providerOptions; only the active provider's options are used)",
+        "url": "https://ai-sdk.dev/docs/foundations/provider-options",
+        "license": "permissive"
+      },
+      {
+        "title": "AI SDK Core: Reasoning (precedence rules; providerOptions take full precedence and are never merged)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/reasoning",
+        "license": "permissive"
+      },
+      {
+        "title": "CWE-754: Improper Check for Unusual or Exceptional Conditions",
+        "url": "https://cwe.mitre.org/data/definitions/754.html",
+        "license": "permissive"
+      },
+      {
+        "title": "Retry Storm Antipattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {"collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03"}
+  },
+  {
+    "lens": "MP-4",
+    "name": "厂商私有状态跨 provider 不可携带 (Vendor-Private State Is Not Portable)",
+    "domain": "multi-provider-adaptation",
+    "trigger": "会话历史被持久化并在多个 provider 之间来回切换，或响应里带有 thinking signature / encrypted reasoning / thought signature 一类不透明字段时。",
+    "questions": [
+      "跨消息块保留的 provider 私有字段（signature / encrypted_content / thoughtSignature）在序列化与反序列化时分别在哪一行被读写？",
+      "把历史消息展开成目标 provider 请求体时，非本 provider 的私有字段落在哪一行被处理？",
+      "当私有状态无法携带时，是否有一条拒绝继续并显式报错的分支？给出那一行。",
+      "如果选择只保留文本可见部分，该降级动作是否被记录为可观测事件？给出行号。",
+      "跨 provider 的持久化记录里，providerMetadata 字段是否随消息一起写入？给出 schema 或写库语句所在行号。",
+      "是否有一条测试覆盖从一个 provider 切到另一个 provider 的同一段对话历史？给出测试文件与该用例行号。"
+    ],
+    "failure_modes": [
+      {
+        "name": "CWE-391: Unchecked Error Condition",
+        "source": "https://cwe.mitre.org/data/definitions/391.html"
+      },
+      {
+        "name": "How Complex Systems Fail (18 points)",
+        "source": "https://how.complexsystems.fail/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "在持久化记录上绑定 provider 身份，跨 provider 续跑时显式重建上下文",
+        "buys": "不可移植状态变成一条有意的、可审计的重建动作，而不是隐式丢失",
+        "costs": "需要上下文重建逻辑，且重建后的推理质量与缓存命中都发生变化"
+      },
+      {
+        "option": "把不透明推理状态与 provider 标识一起落库，切 provider 时整段丢弃",
+        "buys": "实现简单，永不把异厂商的签名发出去",
+        "costs": "切换瞬间损失全部推理与缓存收益，成本与延迟出现台阶式变化"
+      },
+      {
+        "option": "在路由层把会话钉在单一 provider 上，用会话级粘性替代可携带性",
+        "buys": "完全绕开状态可移植问题，缓存命中率最高",
+        "costs": "故障转移退化成会话级重启，单 provider 故障会终止在途会话"
+      }
+    ],
+    "evidence_anchors": [
+      "私有状态的读写点：grep 'signature' / 'encrypted_content' / 'encryptedContent' / 'thoughtSignature' / 'providerMetadata'",
+      "消息持久化结构：schemas/ 下的状态与 observation schema，以及 lib/ 下的 store/记录写入模块",
+      "会话历史重放：grep 'messages' / 'history' / 'replay' / 'resume'",
+      "推理块渲染：grep 'reasoning' / 'thinking' / 'redacted'",
+      "跨 provider 切换测试：tests/ 下含 provider 名称或 fallback 的用例"
+    ],
+    "tags": {
+      "structure": ["sdk", "event-driven"],
+      "symptom": ["silent-field-drop", "stale-read", "provider-leak"],
+      "stack": ["node", "python"],
+      "store": ["none"],
+      "surface": ["llm-adapter", "stream", "agent-loop"]
+    },
+    "sources": [
+      {
+        "title": "AI SDK Core: Reasoning (reasoning parts, per-provider reasoning options and metadata)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/reasoning",
+        "license": "permissive"
+      },
+      {
+        "title": "AI SDK Core: Provider & Model Management (provider registry, fallbackProvider)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-core/provider-management",
+        "license": "permissive"
+      },
+      {
+        "title": "CWE-391: Unchecked Error Condition",
+        "url": "https://cwe.mitre.org/data/definitions/391.html",
+        "license": "permissive"
+      },
+      {
+        "title": "How Complex Systems Fail - Richard Cook",
+        "url": "https://how.complexsystems.fail/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {"collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03"}
+  },
+  {
+    "lens": "MP-5",
+    "name": "路由与故障转移正确性 (Routing and Failover Correctness)",
+    "domain": "multi-provider-adaptation",
+    "trigger": "存在多 provider 路由、模型降级链、或 provider 级重试与熔断配置时。",
+    "questions": [
+      "把失败分类为可重试与语义失败（请求无效/内容策略/上下文超限）的那张表在哪个文件？给出行号。",
+      "语义失败进入重试或切换 provider 分支的具体行号在哪里？",
+      "熔断器是否按 provider 分别持有独立状态？给出该状态对象的构造行号。",
+      "重试与熔断是否读取 Retry-After / retry-after-ms 头？给出读取行号。",
+      "每次尝试的失败是否让熔断计数递增一次？给出计数的键与递增处行号。",
+      "熔断打开时对外返回的是明确的降级信号还是静默的成功响应？给出行号。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Retry Storm antipattern",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/"
+      },
+      {
+        "name": "Metastable failure (Bronson et al., HotOS '21; study: retries are the most common sustaining effect, over 50% of incidents)",
+        "source": "https://www.usenix.org/publications/loginonline/metastable-failures-wild"
+      },
+      {
+        "name": "Circuit Breaker pattern (resource differentiation: independent providers require separate breaker state)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker"
+      },
+      {
+        "name": "Retry Pattern - Azure Architecture Center",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/retry"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "失败分型 + 结构化退避预算 + 每 provider 独立熔断",
+        "buys": "语义失败一次即止，重试只发生在真正瞬态的错误上",
+        "costs": "需要维护分类表与每 provider 的熔断状态，调参依赖真实错误分布"
+      },
+      {
+        "option": "fallback 只允许发生在首个流式 chunk 到达之前",
+        "buys": "对用户永远表现为未开始或已明确失败，不出现半截输出",
+        "costs": "流已开始后失去全部兜底能力，长输出的 provider 抖动直接透传给用户"
+      },
+      {
+        "option": "不做自动 failover，只做显式的人工切换开关",
+        "buys": "消除隐式的模型与策略替换，语义与合规责任清晰",
+        "costs": "可用性直接等于单 provider 可用性，需要值班流程与开关审计"
+      }
+    ],
+    "evidence_anchors": [
+      "重试与退避：grep 'retry' / 'retries' / 'backoff' / 'maxRetries' / 'attempt'",
+      "熔断与健康：grep 'circuit' / 'breaker' / 'halfOpen' / 'health' / 'degraded'",
+      "路由决策：grep 'fallback' / 'route' / 'primary' / 'secondary' / 'providerOrder'",
+      "限流与错误码处理：grep '429' / '503' / 'Retry-After' / 'rateLimit' / 'quota'",
+      "超时分层：grep 'timeout' / 'AbortSignal' / 'signal' / 'deadline'",
+      "流式失败边界：grep 'onError' / 'abort' / 'finishReason' 附近的 error 分支"
+    ],
+    "tags": {
+      "structure": ["sdk", "sync-call-chain"],
+      "symptom": ["retry-storm", "metastable-failure", "quota-exhaustion"],
+      "stack": ["node", "python"],
+      "store": ["none"],
+      "surface": ["llm-adapter", "probe", "config"]
+    },
+    "sources": [
+      {
+        "title": "Retry Storm Antipattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/",
+        "license": "attribution"
+      },
+      {
+        "title": "Circuit Breaker pattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
+        "license": "attribution"
+      },
+      {
+        "title": "Retry pattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/retry",
+        "license": "attribution"
+      },
+      {
+        "title": "Metastable Failures in the Wild - USENIX ;login: (Bronson et al., HotOS '21, DOI 10.1145/3458336.3465286)",
+        "url": "https://www.usenix.org/publications/loginonline/metastable-failures-wild",
+        "license": "attribution"
+      },
+      {
+        "title": "RFC 9110: HTTP Semantics (status code semantics and Retry-After)",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {"collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03"}
+  },
+  {
+    "lens": "MP-6",
+    "name": "响应与流式语义归一 (Response and Stream Semantics Normalization)",
+    "domain": "multi-provider-adaptation",
+    "trigger": "消费流式响应、统计 token 用量，或以 stop reason / finish reason 驱动 agent 循环时。",
+    "questions": [
+      "规范化结束原因枚举定义在哪个文件？给出枚举各成员所在行号。",
+      "每个 provider 的原始结束字符串各自映射到哪个枚举值？给出映射表行号。",
+      "未被映射的原始结束原因走哪个分支（报错、unknown 还是默认值）？给出那一行。",
+      "工具调用增量的分片规则在哪一行处理？它按 index 还是按 id 归并分片？",
+      "token 用量字段（input/output/total/cached）在缺失时的默认值写在哪一行？",
+      "流被中断时是否向事件流末写入一个明确的错误终止事件？给出写入处行号。"
+    ],
+    "failure_modes": [
+      {
+        "name": "CWE-394: Unexpected Status Code or Return Value",
+        "source": "https://cwe.mitre.org/data/definitions/394.html"
+      },
+      {
+        "name": "Chatty I/O antipattern",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/chatty-io/"
+      },
+      {
+        "name": "CWE-391: Unchecked Error Condition",
+        "source": "https://cwe.mitre.org/data/definitions/391.html"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "在适配层建立显式结束原因映射表，未映射值落到 unknown 并计数",
+        "buys": "规范化枚举成员少而稳定，未知值可观测而不是被静默折叠",
+        "costs": "新增厂商结束原因需要人工补表，否则 unknown 会积累"
+      },
+      {
+        "option": "把原始 finishReason 与 providerMetadata 一并透传给调用方",
+        "buys": "信息零损失，调用方可自行裁决厂商特有语义",
+        "costs": "调用方面对 N 套枚举，agent 循环里重新长出 provider 分支"
+      },
+      {
+        "option": "把流式事件按 chunk 直接转发给下游消费者",
+        "buys": "最低处理延迟，无需中间缓冲",
+        "costs": "每个消费者都要实现一遍分片归并与结束原因判断，放大错误路径"
+      }
+    ],
+    "evidence_anchors": [
+      "流式事件处理：grep 'text-delta' / 'tool-call' / 'reasoning' / 'data:' / 'event:'",
+      "增量分片归并：grep 'toolCallId' / 'tool_call_id' / 'index' / 'argsDelta' / 'input_json_delta'",
+      "结束原因：grep 'finishReason' / 'stop_reason' / 'stopReason' / 'end_turn' / 'max_tokens' / 'tool_use'",
+      "用量统计：grep 'usage' / 'promptTokens' / 'prompt_tokens' / 'completionTokens' / 'cached' / 'totalTokens'",
+      "流式 API 表面：grep 'text/event-stream' / 'ReadableStream' / 'toDataStreamResponse' / 'SSE'",
+      "流中断处理：grep 'onError' / 'abort' / 'cancel' / 'Controller'"
+    ],
+    "tags": {
+      "structure": ["event-driven", "sdk"],
+      "symptom": ["partial-json-tool-args", "orphan-tool-call", "tool-pairing-broken"],
+      "stack": ["node", "python"],
+      "store": ["none"],
+      "surface": ["llm-adapter", "stream", "observability"]
+    },
+    "sources": [
+      {
+        "title": "AI SDK UI: Stream Protocols (text stream vs data stream; chunk semantics)",
+        "url": "https://ai-sdk.dev/docs/ai-sdk-ui/stream-protocol",
+        "license": "permissive"
+      },
+      {
+        "title": "CWE-394: Unexpected Status Code or Return Value",
+        "url": "https://cwe.mitre.org/data/definitions/394.html",
+        "license": "permissive"
+      },
+      {
+        "title": "Chatty I/O antipattern - Azure Architecture Center",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/chatty-io/",
+        "license": "attribution"
+      },
+      {
+        "title": "CWE-391: Unchecked Error Condition",
+        "url": "https://cwe.mitre.org/data/definitions/391.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {"collected": "2026-09", "verified_by": "agent-bootstrap", "freshness": "2027-03"}
+  }
+]

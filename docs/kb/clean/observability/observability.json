@@ -1,0 +1,455 @@
+[
+  {
+    "lens": "OBS-1",
+    "name": "日志即事件流：字段契约、线索关联与泄漏边界 (Logs as Event Stream: Field Contract, Trace Correlation, and Leakage Boundary)",
+    "domain": "observability",
+    "path": "dsh-researcher/docs/kb/clean/observability/observability.json",
+    "trigger": "当你要审查任何写日志、审计事件或错误上报的代码路径时使用——先确认每条日志是不是带稳定字段名的事件记录，再确认它有没有把 trace_id 和用户身份一起写进去，最后确认它有没有把凭据或 PII 一起写进去。",
+    "questions": [
+      "日志出口是否只有一处、并且产出的是结构化 JSON 行（key=value 字段而非拼接字符串），字段名在同一服务内保持稳定？",
+      "每条请求级日志是否携带与入站 traceparent 同源的 trace_id 与 span_id 字段，使得一次交互的全部日志能被同一个 trace_id 串起来？",
+      "写日志的函数是否对事件类型、严重级别、用户身份、请求 ID 这些字段各有一个唯一来源（型别定义或常量枚举），而不是每个调用点各自拼字符串？",
+      "是否存在一个集中式的中转/脱敏函数，使 session_id、access_token、password、card/PAN 这类值在进入日志前就已经被替换为掩码或哈希？",
+      "每个服务/库模块是否存在一条日志量上限（级别阈值、采样比、配额或 ring buffer），使得单进程的日志输出量有确定上界？",
+      "日志调用是否对来自外部信任域的字段做了换行符与分隔符转义，使得一条事件不会在日志文件里被拆成多行、也不会伪造出额外字段？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Sensitive-data and secret exposure through logs (OWASP Logging Cheat Sheet, \"Data to exclude\")",
+        "source": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+      },
+      {
+        "name": "Log Injection (OWASP Logging Cheat Sheet, \"Attacks on Logs\")",
+        "source": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+      },
+      {
+        "name": "Improper Output Neutralization for Logs (CWE-117)",
+        "source": "https://cwe.mitre.org/data/definitions/117.html"
+      },
+      {
+        "name": "Security Logging and Monitoring Failures",
+        "source": "https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "每个服务自建 logger 与自由文本消息，日志格式由各调用点决定",
+        "buys": "改动局部化，开发者可以立刻写出想要的诊断信息，无需先定义字段契约",
+        "costs": "字段名各自漂移，跨服务聚合查询与告警无法写成稳定查询；脱敏责任散落在每个调用点，任何一处遗漏即形成泄漏面"
+      },
+      {
+        "option": "统一事件 schema + 单一中转函数（字段契约先于日志语句存在）",
+        "buys": "字段可被查询与告警直接依赖；脱敏、转义、trace 注入集中在一处，可被单点测试与审计",
+        "costs": "需要先维护 schema 与迁移成本；schema 变更要走兼容流程，临时调试需要绕开或扩展契约"
+      },
+      {
+        "option": "审计/安全事件走独立通道，与调试日志物理分离（不同 sink、不同保留期、不同访问控制）",
+        "buys": "安全事件不被调试日志的采样与级别开关影响；保留期与访问权限可分别设定，符合分层要求",
+        "costs": "两套管道与两套运维成本；关联调试与审计时需要靠 interaction id 关联，字段对齐需要额外纪律"
+      },
+      {
+        "option": "用 eBPF/内核级 tracepoint 或边车采集替代应用内日志语句",
+        "buys": "零代码改动即可获得 syscall/网络层事件，且应用无法篡改自身观测数据",
+        "costs": "拿不到应用语义（业务结果、校验失败原因、用户身份）；字段契约从代码转移到采集规则，仍需要治理"
+      }
+    ],
+    "evidence_anchors": [
+      "logging/settings/ 下的 LOGGING dict、handler/filter/formatter 定义与格式串是否声明 JSON",
+      "请求中间件、拦截器或装饰器里 trace_id/span_id 注入日志 contextvars 的位置",
+      "入站 header 解析 traceparent 的那几行，以及它是否把 trace-id 转写进日志 context",
+      "logger 或 log helper 的类型定义（.pyi / 结构体 / enum）中事件名与严重级别的枚举",
+      "名为 redact / scrub / mask / sanitize / anonymize / hash_pii 的函数及其被调用的位置与调用点数量",
+      "日志出口的采样比、级别默认值、配额或速率限制配置项",
+      "日志序列化前的转义实现（replace/newline escaping/encode 调用）",
+      "测试目录中针对日志字段存在性与 PII 不出现的断言或快照文件"
+    ],
+    "tags": {
+      "structure": ["log-event-schema", "field-contract", "structured-logging", "stdout-jsonl", "audit-channel-separation"],
+      "symptom": ["pii-leak", "secret-in-logs", "no-trace-correlation", "log-volume-spike", "multi-line-injection"],
+      "stack": ["python-logging", "structlog", "zap", "slog", "logback", "pino", "fluentd", "vector"],
+      "store": ["stdout", "opensearch", "elasticsearch", "loki", "clickhouse", "cloudwatch-logs", "s3-archive"],
+      "surface": ["middleware", "logger-factory", "redaction-helper", "ci-lint-rule"]
+    },
+    "sources": [
+      {
+        "title": "OWASP Cheat Sheet Series — Logging Cheat Sheet",
+        "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+        "license": "sharealike"
+      },
+      {
+        "title": "CWE-117: Improper Output Neutralization for Logs",
+        "url": "https://cwe.mitre.org/data/definitions/117.html",
+        "license": "attribution"
+      },
+      {
+        "title": "OWASP Top 10:2021 A09 — Security Logging and Monitoring Failures",
+        "url": "https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/",
+        "license": "sharealike"
+      },
+      {
+        "title": "OpenTelemetry Semantic Conventions — General logs attributes",
+        "url": "https://opentelemetry.io/docs/specs/semconv/general/logs/",
+        "license": "attribution"
+      },
+      {
+        "title": "NIST SP 800-92: Guide to Computer Security Log Management",
+        "url": "https://csrc.nist.gov/pubs/sp/800/92/final",
+        "license": "public_domain"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "OBS-2",
+    "name": "指标基数、分位数与饱和度信号 (Metric Cardinality, Percentiles, and Saturation Signals)",
+    "domain": "observability",
+    "path": "dsh-researcher/docs/kb/clean/observability/observability.json",
+    "trigger": "当你要确认系统的指标能否回答\"现在是不是饱和了、用户是不是在等\"时使用——重点查标签值的来源是否有界、延迟是否用了分位数、以及每个资源是否都有饱和度与错误计数。",
+    "questions": [
+      "每个服务的指标暴露端点、指标名前缀与 units 后缀在同一仓库内是否遵循同一命名约定？",
+      "所有标签值是否来自代码内枚举、白名单或取模映射，使得单个指标的序列数有一个可计算的上界？",
+      "是否存在一处显式标注的 capacity/limit 指标（线程池大小、连接池上限、队列容量、配额、cgroup limit），可与同资源的 used 指标相除？",
+      "延迟是否由 histogram 或 summary 记录并按分位数查询，且生产码路径中没有供告警使用的平均延迟聚合？",
+      "是否对每个被依赖的资源（CPU、内存、连接池、线程池、队列、线程/文件描述符容量）各暴露了 utilization、saturation、errors 三类指标？",
+      "是否为所有\"越接近上限越危险\"的资源保留了接近 100% 的观测桶（histogram 上界或 gauge 阈值），使得接近容量时数据仍然可分辨？"
+    ],
+    "failure_modes": [
+      {
+        "name": "High cardinality / metric and label naming failures",
+        "source": "https://prometheus.io/docs/practices/naming/"
+      },
+      {
+        "name": "Coordinated omission distorts latency measurement (Gil Tene, \"How NOT to Measure Latency\"; Schroeder/Wierman/Harchol-Balter, NSDI 2006)",
+        "source": "https://www.usenix.org/conference/nsdi-06/open-versus-closed-cautionary-tale"
+      },
+      {
+        "name": "USE Method coverage gap — resources without utilization/saturation/errors",
+        "source": "https://www.brendangregg.com/usemethod.html"
+      },
+      {
+        "name": "The Tail at Scale — tail latency amplification in fan-out",
+        "source": "https://doi.org/10.1145/2408776.2408794"
+      },
+      {
+        "name": "Metastable failure sustained by a retry/load feedback loop",
+        "source": "https://doi.org/10.1145/3458336.3465286"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把用户 ID / request ID / 原始 URL / 错误消息原文直接作为指标标签",
+        "buys": "按任意维度临时下钻，排查单个用户或单条请求时无需改代码",
+        "costs": "序列数随流量无界增长，监控存储与查询成本失控；抓取与规则求值变慢，最需要指标时恰恰查不出来"
+      },
+      {
+        "option": "标签值强制来自有界枚举或取模分桶（route 模板而非原始路径，code 而非消息）",
+        "buys": "序列数有确定上界，聚合与告警查询可长期稳定运行，成本可预测",
+        "costs": "丢失高维细节，临时下钻需要另走日志或追踪；新增维度要走枚举变更流程"
+      },
+      {
+        "option": "用 histogram 记录延迟并按分位数查询（配合原生直方图或可聚合桶）",
+        "buys": "跨实例可聚合的分位数，尾延迟可见，SLO 可直接由分位数定义",
+        "costs": "桶边界一旦选定就固定，边界选错则分位数误差大；序列数与存储高于纯计数器"
+      },
+      {
+        "option": "用 summary 在客户端直接产出分位数",
+        "buys": "分位数精度由客户端保证，不需要预先猜桶边界",
+        "costs": "分位数不可跨实例聚合，多副本取平均在统计上没有意义；无法事后按新窗口重算"
+      },
+      {
+        "option": "为每个资源补一对 used/capacity 指标并直接对饱和度阈值告警",
+        "buys": "把\"还有多久耗尽\"变成可查询的量，让告警在饱和之前触发而不是之后",
+        "costs": "需要为每个资源维护 limit 的真相来源；limit 变更（扩池、改配额）时指标必须同步更新，否则阈值失真"
+      }
+    ],
+    "evidence_anchors": [
+      "/metrics 暴露端点、metrics registry 初始化与各 counter/gauge/histogram 的声明处",
+      "每个指标名及其标签键列表（.labels(...) / WithLabelValues / attributes 调用点）",
+      "标签值的来源：route 模板常量、枚举、白名单 dict，或直接取 request.path / user.id / error.message",
+      "连接池 / 线程池 / 队列 / 信号量的构造参数（max_size、capacity、max_workers）与对应的 capacity 指标",
+      "histogram 桶边界定义与 summary 的 quantile 配置（LE / buckets / objectives）",
+      "USE 三元组的存在性：utilization gauge、saturation gauge（队列长度/等待数）、errors counter",
+      "PromQL 记录规则与告警规则文件中出现的 rate/avg/histogram_quantile 用法",
+      "仪表盘与 SLO 定义文件里引用的指标名，检查是否出现 *_avg 之类均值时间序列"
+    ],
+    "tags": {
+      "structure": ["metric-registry", "label-schema", "instrumentation", "histogram-buckets", "capacity-limit-pair"],
+      "symptom": ["cardinality-explosion", "mean-hides-tail", "no-saturation-signal", "dashboard-blank", "scrape-timeout"],
+      "stack": ["prometheus", "prom-client", "opentelemetry-metrics", "statsd", "micrometer", "victoriametrics"],
+      "store": ["prometheus-tsdb", "thanos", "mimir", "influxdb", "cloudwatch-metrics"],
+      "surface": ["metrics-endpoint", "recording-rules", "alert-rules", "grafana-dashboard"]
+    },
+    "sources": [
+      {
+        "title": "Prometheus — Metric and label naming",
+        "url": "https://prometheus.io/docs/practices/naming/",
+        "license": "attribution"
+      },
+      {
+        "title": "Prometheus — Instrumentation",
+        "url": "https://prometheus.io/docs/practices/instrumentation/",
+        "license": "attribution"
+      },
+      {
+        "title": "Prometheus — Histograms and summaries",
+        "url": "https://prometheus.io/docs/practices/histograms/",
+        "license": "attribution"
+      },
+      {
+        "title": "The USE Method (Brendan Gregg)",
+        "url": "https://www.brendangregg.com/usemethod.html",
+        "license": "attribution"
+      },
+      {
+        "title": "The Tail at Scale (Dean & Barroso, Communications of the ACM 2013)",
+        "url": "https://doi.org/10.1145/2408776.2408794",
+        "license": "attribution"
+      },
+      {
+        "title": "Open versus Closed: A Cautionary Tale (Schroeder, Wierman, Harchol-Balter, NSDI 2006)",
+        "url": "https://www.usenix.org/conference/nsdi-06/open-versus-closed-cautionary-tale",
+        "license": "public_domain"
+      },
+      {
+        "title": "OpenTelemetry — Metrics semantic conventions",
+        "url": "https://opentelemetry.io/docs/specs/semconv/general/metrics/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "OBS-3",
+    "name": "追踪上下文传播与异步边界 (Trace Context Propagation Across Async Boundaries)",
+    "domain": "observability",
+    "path": "dsh-researcher/docs/kb/clean/observability/observability.json",
+    "trigger": "当链路证据在某个跨界点突然断掉、或者某个消费者/定时任务/cron 的 span 看起来是孤儿时使用——逐个出口检查 traceparent 的四个字段是否被正确生成、传播与续接。",
+    "questions": [
+      "每个出口调用点是否把 traceparent 写成规范要求的四段格式 version-trace-id-parent-id-trace-flags，并同时传递 tracestate？",
+      "入站请求的 traceparent 是否先经解析校验（32 位小写十六进制 trace-id、16 位 parent-id、非全零）再被采信，并在格式不合规时重新开启一条新 trace？",
+      "异步边界（线程池提交、consumer 回调、消息队列 handler、重试与后台任务、定时/延迟任务）是否显式捕获入队时的上下文并在执行时重新 attach？",
+      "采样决策是否只做一次并向下游传播：调用方设置 sampled 位，被调用方尊重它而不是各自重新掷硬币？",
+      "trace-id 与 tracestate 是否只承载关联标识（不含 PII），且随机数生成器不依赖用户可识别信息作为种子？",
+      "是否存在一处文档化或代码化的 tracestate 长度上限（建议至少 512 字符）以及超限时按整条 entry 截断（优先移除超过 128 字符的 entry）的处理？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Broken traces from partial recording / vendor-specific collection decisions (W3C Trace Context, \"Sampled flag\")",
+        "source": "https://www.w3.org/TR/trace-context/"
+      },
+      {
+        "name": "Denial of monitoring — attacker-forced sampling via a public API that naively continues any trace",
+        "source": "https://www.w3.org/TR/trace-context/"
+      },
+      {
+        "name": "Information exposure and privacy risk in traceparent/tracestate",
+        "source": "https://www.w3.org/TR/trace-context/"
+      },
+      {
+        "name": "Missing/incorrect span context linkage across instrumentation boundaries (OpenTelemetry, Propagators Distribution)",
+        "source": "https://opentelemetry.io/docs/specs/otel/context/api-propagators/"
+      },
+      {
+        "name": "Gray failure — partial, asymptomatic degradation invisible to coarse health signals",
+        "source": "https://doi.org/10.1145/3102980.3103005"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "每跳都修改 traceparent 并作为参与方写入自己的 tracestate entry（participating）",
+        "buys": "每跳都有独立 parent-id，拓扑与责任边界清晰，可定位到具体一跳",
+        "costs": "每跳都在写 header，需要严格遵守 mutation 白名单；tracestate 增长快，容易触达长度上限被截断"
+      },
+      {
+        "option": "中间层只做透传（forwarding），不改 traceparent",
+        "buys": "实现最小、失败面最小；代理与网关不会破坏他人链路，符合规范对透传件的最小要求",
+        "costs": "中间层的耗时与故障在链路里不可见，成为盲区；排障时无法判断是链路哪一段引入的延迟"
+      },
+      {
+        "option": "在不可信边界重启 trace（regenerate trace-id/parent-id/flags）",
+        "buys": "切断跨信任域的关联，消除攻击者伪造 trace-id 造成关联污染与 tracing 账单膨胀的途径",
+        "costs": "跨边界的一次交互被拆成两条 trace，端到端 SLO 与归因需要显式拼接；重启点本身成为新的调试断点"
+      },
+      {
+        "option": "头部采样（头部决定并传播 sampled 位）",
+        "buys": "采集决策一次成型、全链路一致，采集成本可预测，且下游不必反查",
+        "costs": "在请求入口就必须决定，必然漏掉\"事后才发现重要\"的慢请求与错误请求；错误样本率低于错误率时排障无据"
+      },
+      {
+        "option": "尾部采样（先收集后按 trace 级条件筛选保留）",
+        "buys": "能按延迟与错误结果定向保留，用更小的存储换来更高的有效样本率",
+        "costs": "需要先缓冲整条 trace，采集器内存与状态成本上升；缓冲窗口长于最长 trace 时仍会丢样本"
+      }
+    ],
+    "evidence_anchors": [
+      "入站 header 解析处：traceparent / tracestate / X-B3-* / 自定义 header 的处理分支",
+      "HTTP 客户端拦截器、gRPC interceptor、消息生产者与消费者包装器中注入与提取上下文的代码",
+      "tracer provider 与 propagator 配置（CompositePropagator / TextMapPropagator 的注册列表）",
+      "线程池提交、asyncio.create_task、消息 handler 注册、重试装饰器这些跨界点的上下文捕获与 attach",
+      "采样器实现（AlwaysOn / TraceIdRatioBased / ParentBased）及其在根与被调方的组合方式",
+      "trace-id 生成实现（随机源、长度、是否为 trace-id 做哈希/内嵌）",
+      "trace/span 相关单测或集成测试中关于父子关系与跨进程传播的断言",
+      "错误响应体、日志消息与调试端点中是否出现过 traceparent / trace-id 原文"
+    ],
+    "tags": {
+      "structure": ["w3c-trace-context", "propagator-config", "span-hierarchy", "sampling-decision", "context-capture"],
+      "symptom": ["broken-trace", "orphan-span", "context-lost-on-async", "duplicate-span-ids", "sampling-mismatch"],
+      "stack": ["opentelemetry", "opentelemetry-python", "otel-collector", "jaeger", "zipkin", "tempo", "aws-xray"],
+      "store": ["jaeger-badger", "tempo-s3", "clickhouse-traces", "elastic-apm"],
+      "surface": ["http-client-interceptor", "message-consumer", "task-scheduler", "grpc-interceptor", "gateway"]
+    },
+    "sources": [
+      {
+        "title": "W3C Trace Context — Recommendation 23 November 2021",
+        "url": "https://www.w3.org/TR/trace-context/",
+        "license": "permissive"
+      },
+      {
+        "title": "OpenTelemetry — Propagators Distribution (Context API)",
+        "url": "https://opentelemetry.io/docs/specs/otel/context/api-propagators/",
+        "license": "attribution"
+      },
+      {
+        "title": "OpenTelemetry — Specifications overview",
+        "url": "https://opentelemetry.io/docs/specs/otel/",
+        "license": "attribution"
+      },
+      {
+        "title": "OpenTelemetry — Trace semantic conventions",
+        "url": "https://opentelemetry.io/docs/specs/semconv/general/trace/",
+        "license": "attribution"
+      },
+      {
+        "title": "Gray Failure: The Achilles' Heel of Cloud-Scale Systems (Huang et al., HotOS 2017)",
+        "url": "https://doi.org/10.1145/3102980.3103005",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "OBS-4",
+    "name": "健康语义、配置漂移与版本可见性 (Health Semantics, Config Drift, and Version Visibility)",
+    "domain": "observability",
+    "path": "dsh-researcher/docs/kb/clean/observability/observability.json",
+    "trigger": "当你要判断\"探针说的健康\"和\"用户感受到的可用\"是不是同一件事时使用——检查三探针是否检查了彼此不同的东西、配置是否在启动时被校验、以及线上跑的到底是哪个版本。",
+    "questions": [
+      "部署清单或 compose 文件是否为存活、就绪、启动三种探针各自配置了独立的路径与独立的 failureThreshold / periodSeconds / timeoutSeconds / initialDelaySeconds？",
+      "存活探针的检查内容是否只覆盖进程自身（事件循环、关键线程、死锁检测），而不把任何下游依赖包含在内？",
+      "就绪探针是否在依赖未就绪时返回非 2xx，并且其检查目标包含数据库连接、缓存与上游依赖，使得未就绪实例会被移出负载均衡？",
+      "启动探针的 failureThreshold × periodSeconds 是否覆盖了实测的最坏冷启动时间，使得冷启动慢的实例不会被存活探针抢先重启？",
+      "健康端点的执行是否只做轻量检查或是返回缓存状态，使得其耗时显著短于探针超时时间、也不会被反复探活放大成额外负载？",
+      "进程启动时是否对全部必需配置做一次集中校验（缺失键、类型错误、范围非法即快速失败），并且版本/构建信息在进程内只读一次、可从健康或版本端点读出？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Misuse of liveness probes: using them to check downstream dependencies causes cascading restarts",
+        "source": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+      },
+      {
+        "name": "Liveness probe failure triggering the kubelet restart policy and restart backoff",
+        "source": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/"
+      },
+      {
+        "name": "Divergent configuration across running instances — unversioned local config drifts per instance and per environment",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/external-configuration-store"
+      },
+      {
+        "name": "Health Endpoint Monitoring pattern failure modes (status-code-only checks, expensive checks, uncached endpoints, unsecured endpoints)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/health-endpoint-monitoring"
+      },
+      {
+        "name": "How Complex Systems Fail — catastrophes require multiple contributing causes; no single root cause",
+        "source": "https://how.complexsystems.fail/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "存活探针只查进程本身，就绪探针查依赖，启动探针给冷启动留窗口",
+        "buys": "探针语义各自独立：依赖抖动只影响流量分配而不触发重启，冷启动慢不会造成重启循环",
+        "costs": "需要三份配置并按实测冷启动时间与依赖超时校准；调参错误会静默退化成一种探针扛下全部职责"
+      },
+      {
+        "option": "存活探针也检查关键下游依赖（把依赖健康直接当成进程健康）",
+        "buys": "依赖故障时实例会被快速替换，看起来像是自愈了",
+        "costs": "依赖抖动会同时触发全部实例重启，把局部降级放大成整体不可用；重启风暴期间健康实例也被清除"
+      },
+      {
+        "option": "健康端点每次请求都实时探测全部依赖",
+        "buys": "状态永远是最新的，不存在缓存过期导致的误判",
+        "costs": "探活频率高时等于给自己加了一条稳定的额外负载；依赖变慢时探针先超时，实例被误判为不健康"
+      },
+      {
+        "option": "配置在进程启动时集中校验并快速失败，不提供热加载",
+        "buys": "非法配置在部署阶段暴露，运行期不存在\"一半新一半旧\"的中间态",
+        "costs": "任何配置变更都需要重启与滚动发布；紧急调整的响应变慢"
+      },
+      {
+        "option": "暴露只读的版本/构建信息端点（版本、commit、构建时间、配置摘要哈希）",
+        "buys": "线上版本可见、配置漂移可被比较与告警，灰度与回滚时可确认到底在跑什么",
+        "costs": "增加一个需要做访问控制与信息最小化的对外面；摘要哈希仍可能泄露配置结构的线索"
+      }
+    ],
+    "evidence_anchors": [
+      "k8s 部署清单 / Helm values / docker-compose 中的 livenessProbe、readinessProbe、startupProbe 三个块及其路径、端口、阈值、超时、initialDelaySeconds",
+      "/healthz、/livez、/readyz、/health/live、/health/ready 等路由的注册处与各自的实现函数",
+      "健康检查实现里被调用的依赖客户端（db ping、redis ping、上游 HTTP 调用）以及其超时设置",
+      "配置加载模块：settings/、config.py、env 解析、默认值定义、pydantic BaseSettings 或等价校验层",
+      "启动序列中读取版本/commit/构建时间的位置，以及 version/commit/build_info 端点的实现",
+      "Dockerfile 的 build args / LABEL，CI 流水线中的镜像 tag 与 --build-arg 注入点",
+      "多环境 values 文件（dev/staging/prod）之间的 diff，以及 secrets/configmap 挂载方式",
+      "探针相关的 e2e 或 manifest 校验测试，以及启动失败路径的测试用例"
+    ],
+    "tags": {
+      "structure": ["probe-separation", "config-validation", "build-metadata", "version-endpoint", "readonly-health"],
+      "symptom": ["restart-loop", "traffic-to-unready-pod", "slow-start-kill", "config-drift", "unknown-deployed-version"],
+      "stack": ["kubernetes", "kubelet", "helm", "terraform", "docker-compose", "pydantic-settings", "aspnetcore-healthchecks"],
+      "store": ["configmap", "secret", "vault", "ssm-parameter-store", "app-config"],
+      "surface": ["deployment-manifest", "probe-endpoint", "settings-module", "ci-pipeline", "version-endpoint"]
+    },
+    "sources": [
+      {
+        "title": "Kubernetes — Configure Liveness, Readiness and Startup Probes",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+        "license": "attribution"
+      },
+      {
+        "title": "Kubernetes — Pod Lifecycle (container probes and restart backoff)",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Health Endpoint Monitoring pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/health-endpoint-monitoring",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — External Configuration Store pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/external-configuration-store",
+        "license": "attribution"
+      },
+      {
+        "title": "How Complex Systems Fail (Richard I. Cook)",
+        "url": "https://how.complexsystems.fail/",
+        "license": "noncommercial"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  }
+]

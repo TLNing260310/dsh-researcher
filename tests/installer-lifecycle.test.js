@@ -51,18 +51,18 @@ const backupRoot = (dshHome) => path.join(dshHome, '.dsh-researcher', 'backups')
 const presetRoot = (dshHome) => path.join(dshHome, '.agent-presets')
 
 test('installer argument and exact DSH version parsing fail closed', () => {
-  assert.equal(VERIFIED_DSH, '0.1.1-rc.2')
-  assert.equal(parseDshVersion('DeepSeek Harness v0.1.1-rc.2'), VERIFIED_DSH)
-  assert.equal(parseDshVersion('dsh 0.1.1-rc.20'), '0.1.1-rc.20')
+  assert.equal(VERIFIED_DSH, '0.1.5-rc.2')
+  assert.equal(parseDshVersion('DeepSeek Harness v0.1.5-rc.2'), VERIFIED_DSH)
+  assert.equal(parseDshVersion('dsh 0.1.5-rc.20'), '0.1.5-rc.20')
   assert.equal(parseDshVersion('unknown'), null)
   const ambiguous = detectDsh({
-    cliResult: { status: 0, stdout: 'dsh 0.1.1-rc.2 (node 24.9.0)', stderr: '', error: null },
+    cliResult: { status: 0, stdout: 'dsh 0.1.5-rc.2 (node 24.9.0)', stderr: '', error: null },
     resolvedShim: null,
   })
   assert.equal(ambiguous.compatible, false)
   assert.match(ambiguous.detail, /multiple different semantic versions/)
   const splitStreamAmbiguous = detectDsh({
-    cliResult: { status: 0, stdout: 'dsh 0.1.1-rc.2', stderr: 'warning runtime 0.1.1-rc.20', error: null },
+    cliResult: { status: 0, stdout: 'dsh 0.1.5-rc.2', stderr: 'warning runtime 0.1.5-rc.20', error: null },
     resolvedShim: null,
   })
   assert.equal(splitStreamAmbiguous.compatible, false)
@@ -102,11 +102,11 @@ dshRuntimeTest('strict install refuses an unverified DSH before writes and dry-r
   assert.match(trustedPreview.stdout, /package metadata/)
   assert.equal(fs.existsSync(dshHome), false)
 
-  writeMetadata('@deepseek-ai/dsh', '0.1.1-rc.20')
+  writeMetadata('@deepseek-ai/dsh', '0.1.5-rc.20')
   const refused = runInstaller(dshHome, ['install', '--dry-run', '--dsh-package', packageFile])
   assert.equal(refused.status, 1)
   assert.match(refused.stderr, /Installation refused/)
-  assert.match(refused.stderr, /expected exactly 0\.1\.1-rc\.2/)
+  assert.match(refused.stderr, /expected exactly 0\.1\.5-rc\.2/)
   assert.equal(fs.existsSync(dshHome), false)
 
   const overridden = runInstaller(dshHome, ['install', '--dry-run', '--dsh-package', packageFile, '--allow-unsupported-dsh'])
@@ -212,7 +212,7 @@ dshRuntimeTest('source and final-stage preflights reject nested links before rep
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-source-tree-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const sources = {}
-  for (const name of ['researcher', 'governed', 'lib', 'schemas']) {
+  for (const name of ['researcher', 'governed', 'lib', 'schemas', 'kb']) {
     sources[name] = path.join(temp, name)
     fs.mkdirSync(sources[name])
   }
@@ -226,6 +226,8 @@ dshRuntimeTest('source and final-stage preflights reject nested links before rep
     }),
     /symbolic links or junctions/,
   )
+  // researcher, governed, then lib throws — so the two preset trees plus lib
+  // were inventoried and nothing after the failure was traversed.
   assert.equal(traversed, 3, 'source preflight must stop before copying after a nested-link failure')
 
   const dshHome = path.join(temp, 'dry-run-home')

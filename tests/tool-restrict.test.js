@@ -153,7 +153,17 @@ const makePluginHarness = () => {
     sandboxPolicy: {
       overrideOf() { return state.mode },
       resolve() { return { mode: state.mode, workspaceRoot: process.cwd() } },
-      setSandboxMode(_session, mode) { state.mode = mode },
+    },
+    // The real service exposes READS ONLY; `setSandboxMode` is a module-level
+    // export, not a method. A previous harness stub faked it on the service,
+    // which is why the production defect went undetected.
+    permissionPresets: {
+      names: ['read-only', 'workspace-write', 'danger-full-access'],
+      set(session, name) {
+        assert.equal(name, 'read-only')
+        state.mode = 'read-only'
+        state.policy = 'ask'
+      },
     },
     approval: {
       overrideOf() { return state.policy },

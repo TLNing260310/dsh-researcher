@@ -1,61 +1,128 @@
-# dsh-researcher — mature project introduction
+# dsh-researcher — project reality and evidence-gated completion
 
-## One sentence
+## In one sentence
 
-`dsh-researcher` helps an AI coding workflow recover what a project is, freeze what this task must achieve, and stop only when host-observed evidence says it is done.
+`dsh-researcher` is an experimental governance layer that helps AI coding workflows preserve what a project is, define what a task must achieve, and stop only when host-observed evidence says the work is done.
 
-## Short description
+## The 30-second explanation
 
-AI coding is no longer limited by how quickly a model can write code. The harder problem is continuity: a new session re-guesses why the system exists, local improvements cross old architecture boundaries, and neither the agent nor the person has a stable answer to “when should we stop?”
+AI coding agents are good at producing a plausible next change. They are less reliable at carrying project intent across sessions, respecting old architecture boundaries, and deciding when enough work has been done.
 
-`dsh-researcher` is an experimental Project Cognition and Goal Governance layer for DeepSeek Harness. It separates two jobs that ordinary Plan mode usually mixes together:
+`dsh-researcher` addresses those problems with two independent layers:
 
-- **Project Research** is designed to reconstruct project purpose, architecture, constraints, risks and unknowns in a constrained read-only session.
-- **Goal Governor** freezes the target state, MUST criteria, scope, budget and human gates, then lets the host—not assistant prose—derive `CONTINUE`, `NEEDS_HUMAN`, `DONE` or `STOPPED` from trusted events.
+- **Project Research and Project Cognition** reconstruct purpose, architecture, constraints, evidence, decisions, and unknowns. Research findings remain provisional until an owner reviews and promotes them into canonical project state.
+- **Goal Governor** freezes the target state, acceptance criteria, scope, budget, human gates, and stopping rules. The host derives `CONTINUE`, `NEEDS_HUMAN`, `DONE`, or `STOPPED` from trusted events instead of accepting the assistant's final message as proof.
 
-The two layers are independent. A user can try the Research preset without adopting Goal Contracts, and can use the portable Cognition/Goal CLI without claiming that every client already enforces the same runtime semantics.
+This is not another all-purpose coding agent. It is an advanced experimental alpha for maintainers who want owner-ratified, evidence-backed project facts and a verifiable definition of done.
 
-## The user story
+## Why it exists
 
-Imagine asking an agent to fix a timeout. The first patch looks plausible. Tests pass, so the agent also “cleans up” adjacent code. It changes a retry rule, then a public type, then the architecture that made the original system safe. None of those edits is obviously absurd in isolation. The failure is that the session never froze three things: why the project was designed this way, what the timeout task actually needed to achieve, and what evidence was sufficient to stop.
+A coding session can fail even when every individual edit looks reasonable. A new agent reinterprets why the repository exists, fixes the immediate symptom, cleans up adjacent code, weakens an old invariant, and then declares completion because the visible tests pass. Another session may continue polishing after the task was already satisfied because nobody defined a stopping condition.
 
-With `dsh-researcher`, the intended flow is different:
+The project separates questions that ordinary Plan mode often mixes together:
+
+| Layer | Question it answers |
+| --- | --- |
+| Plan or task list | What steps might we try next? |
+| Specification | What behavior do we intend to build or change? |
+| Agent memory | What did the agent previously observe? |
+| Project Cognition | What claims about the repository are trusted, why are they trusted, and when do they become stale? |
+| Goal Governor | What observable state counts as complete, who may prove it, and when must work stop? |
+
+A Plan can still be useful inside this workflow. It simply does not own project truth or the terminal decision.
+
+## How the two layers work
+
+### 1. Project Cognition: preserve project reality without automatic promotion
+
+The certified Researcher runs inside a constrained read-only session. It may collect evidence and prepare a handoff, but it cannot implement changes or approve its own conclusions.
 
 ```text
-recover project reality
-        ↓ owner reviews durable facts
-freeze target + boundaries + stop budget
-        ↓ agent executes
-host observes verifier calls and results
-        ↓
-CONTINUE / NEEDS_HUMAN / DONE / STOPPED
+read-only research
+  → provisional Research Session Ledger
+  → draft cognition revision
+  → owner review
+  → seal and exact-next install
+  → canonical .project-cognition/state.json
+  → generated PROJECT_COGNITION.md projection
 ```
 
-Project Cognition is not a bag of model memories. `.project-cognition/state.json` is the single canonical truth; the workflow never promotes session findings automatically. The certified Researcher is read-only, while promotion remains an owner-governance act: review a draft, seal/install the next revision and regenerate the projection. The CLI actor label and local compare-and-swap checks do not authenticate a human identity, so repository governance must keep that authority outside the model workflow.
+The JSON state is the sole normative truth. Markdown is a deterministic human-readable projection. Session findings never become project facts merely because a model wrote them confidently. The CLI actor label is not human authentication; repository governance must keep approval authority outside the model workflow.
 
-A Goal Contract is not another task list. A Plan answers “what steps might I take?” The contract answers “what observable state must exist, what must not change, who can prove it, and how much effort is allowed before we stop?” A frozen verifier is bound by tool name, full arguments and hash. The final assistant message is never enough on its own.
+### 2. Goal Governor: make completion an evidence decision
 
-## What a user can try today
+A Goal Contract records the intended result before execution begins: MUST criteria, boundaries, allowed effort, human approval gates, and approved verifiers. Verifier evidence is bound to the tool name, complete arguments, hashes, and host-observed result.
 
-- Install the `researcher` and `governed` presets with a dry-run, automatic backup, uninstall and rollback path.
-- Open an isolated Project Research session whose runtime certificate checks the read-only boundary before research begins.
-- Generate an external, review-first Cognition/Verifier/Goal scaffold without manually moving hashes and without silently approving anything.
-- Run a 60-second offline demo that starts real verifier child processes: confidence alone yields `CONTINUE`, exit code `1` yields `CONTINUE`, and matching exit code `0` after a bounded repair yields `DONE`.
-- Run all schemas, reducers, adversarial replay tests, package smoke and E1 preflight without a model call or network access.
+```text
+approved goal + frozen verifier registry
+  → agent executes
+  → host records calls, results, gates, usage, and repository state
+  → reducer replays the trusted event prefix
+  → CONTINUE | NEEDS_HUMAN | DONE | STOPPED
+```
 
-## Why this is still alpha
+Assistant prose is never sufficient evidence. A passing baseline can produce `ALREADY_SATISFIED`; a failing verifier keeps the task open; budget exhaustion produces `STOPPED`; contract, permission, or evidence drift produces `NEEDS_HUMAN`.
 
-The repository has evidence that its mechanisms exist and reject several classes of false evidence. It does **not** yet have evidence that the whole workflow improves real maintenance outcomes enough to justify its ceremony. Two local 14B Project Research probes also failed to produce a useful report; the runtime rejected unsafe or uncertified output, but safety was not the same thing as intelligence.
+## Who should consider it
 
-Accordingly, the honest maturity labels are:
+This project is most relevant when:
 
-- Project Research: **isolated trial**, with runtime safety evidence and mixed model outcomes.
-- Goal Governor: **advanced experimental**, with mechanical evidence, a frozen v1.4 partial live result, and v1.5 Live E1 still not run.
-- Long-term Project Cognition value: **hypothesis**.
-- Codex, Claude Code, Zed/Zcode and OpenClaw compatibility: **not delivered** until a second adapter passes conformance.
+- an unfamiliar or long-lived repository must be understood before a risky change;
+- project purpose and architecture need to survive across multiple agent sessions;
+- a wrong completion, silent scope expansion, or unbounded polishing would be costly;
+- a maintainer needs an auditable answer to “why is this considered done?”
 
-The next meaningful proof is not another feature. It is a legitimate Live E1 evidence bundle, followed by a small non-inferential user pilot and then a preregistered comparison. If those results do not show enough value, the project should remain a research prototype rather than expanding its claims.
+It is probably too heavy for a tiny bug, disposable script, routine CRUD change, or a workflow that does not need durable evidence. Users of Codex, Claude Code, OpenClaw, Zed/Zcode, or other clients should not install it expecting native support: the portable core exists, but no second client adapter has passed conformance.
 
-## Suggested GitHub About text
+## What can be tried today
 
-Read-only repository research, durable project memory, and evidence-gated definitions of done for AI coding agents. DSH adapter; experimental alpha.
+The portable project core requires Node.js `>=22.12.0`. The DSH trial is pinned to DeepSeek Harness `0.1.5-rc.2`, whose runtime requires Node.js `^22.19.0 || >=24.0.0`. Within those boundaries, a user can:
+
+- preview a GitHub-distributed installation and use its backup, uninstall, and rollback paths;
+- run the Project Research preset as an isolated read-only trial;
+- use `/researcher <question>` for one guarded research turn;
+- generate review-first Cognition, Verifier Registry, and Goal Contract drafts;
+- run an offline demo in which real verifier child processes—not assistant confidence—determine completion;
+- inspect deterministic replay, adversarial evidence rejection, package, and installer behavior;
+- run the offline checks and E1 preflight without a model call or network connection.
+
+The unscoped npm package named `dsh-researcher` belongs to another maintainer; this project is distributed from GitHub and its pinned release artifacts. The two governance layers are independent: trying Project Research does not require adopting Goal Contracts, and using the portable CLI does not imply that every client provides the same enforcement.
+
+Start with the [README](../README.md), use the [safe installation and recovery guide](./installation.md), and review the [five-minute Quickstart](./quickstart.md) before installing into a non-disposable repository.
+
+## Current maturity and evidence
+
+The honest description is **advanced experimental alpha**.
+
+| Area | Current status | What that means |
+| --- | --- | --- |
+| Canonical Cognition, hashes, revisions, projection, reducers, replay, installer lifecycle | **Repository tests pass** | The covered mechanical properties exist and reject the tested drift or forged-evidence paths. |
+| Project Research runtime boundary | **Isolated trial** | A tested DSH environment can become read-only and fail closed, but two local 14B probes did not produce a publishable report. Safety is not the same as answer quality. |
+| Goal Governor Live E1 | **Not proven** | Protocol v1.5 and the incomplete v1.6–v1.11 runs are preserved as invalid evidence. Protocol v1.12 is an offline scorer correction, and the live round is mechanically `STOPPED`. |
+| Outcome value | **Not proven** | No valid experiment yet shows that the ceremony reduces false completion, scope drift, or total human correction cost. |
+| Long-term Project Cognition value | **Hypothesis** | It still requires a separate longitudinal study. |
+| Multi-client portability | **Not proven** | Claude Code and Codex App Server have version-locked discovery records marked `HOLD`; neither is a delivered adapter or compatibility claim. |
+| Independent user experience | **Not measured** | No admitted external Pilot result exists yet. |
+
+Failed and invalid experiments remain part of the public record. A later scorer correction cannot rewrite an old result, and a new experiment may establish only a new claim. The authoritative status and its boundaries are maintained in [Validation Status](./validation-status.md) and the generated [Project Cognition](../PROJECT_COGNITION.md).
+
+## What would make it a proven product
+
+More features are not the next proof. The project has deliberately frozen the progression:
+
+```text
+fresh Gate 0
+  → complete six-track E1
+  → non-inferential independent user pilot
+  → preregistered E2 value comparison
+  → second-adapter conformance
+  → model × client E3
+```
+
+The current E1 live round is stopped. Another paid run requires a new owner-authorized proof plan, a new frozen protocol and candidate, and a complete fresh run rather than stitching together selected historical tracks. If E2 does not demonstrate sufficient net value, the responsible outcome is to keep the project as a research and governance toolkit instead of expanding its compatibility claims.
+
+## Short reusable description
+
+Read-only repository research, owner-ratified and staleable project cognition, and evidence-gated definitions of done for AI coding agents. DeepSeek Harness is the first adapter; outcome value and multi-client portability remain experimental.
+
+`dsh-researcher` is released under the [MIT License](../LICENSE), Copyright © 2026 TLNing260310. It may be used, copied, modified, merged, published, distributed, sublicensed, and sold when the copyright and license notices are preserved; the software is provided “as is,” without warranty.

@@ -221,9 +221,18 @@ const DELIVERABLES_GUIDANCE = {
 
 module.exports = {
   name: 'tool-restrict',
-  inject: ['tools', 'agents', 'sandboxPolicy', 'approval'],
+  inject: ['tools', 'agents', 'sandboxPolicy', 'approval', 'permissionPresets'],
   apply(ctx, config) {
     const mode = config && config.mode === 'compat' ? 'compat' : 'strict'
+    // The permission preset used to pin an un-pinned session to read-only. It is
+    // the ONLY supported write path for a session's sandbox mode:
+    // `ctx.sandboxPolicy` exposes reads only (`resolve`/`overrideOf`), while
+    // `setSandboxMode` is a module-level export of @deepseek-ai/dsh-sandbox-policy,
+    // not a service method. `permissionPresets.set()` records `permission/preset`
+    // and writes each changed knob through its own setter.
+    const readOnlyPreset = config && typeof config.readOnlyPermissionPreset === 'string' && config.readOnlyPermissionPreset.length > 0
+      ? config.readOnlyPermissionPreset
+      : 'read-only'
 
     // 1) Global-layer deny mask (TUI deployments where the tools are global).
     try {
@@ -245,9 +254,12 @@ module.exports = {
 
       if (sandboxOverride === undefined) {
         try {
-          ctx.sandboxPolicy.setSandboxMode(session, 'read-only')
+          ctx.permissionPresets.set(session, readOnlyPreset)
         } catch (error) {
-          throw new Error('environment preflight: cannot pin an un-pinned session to read-only: ' + (error && error.message ? error.message : String(error)))
+          throw new Error('environment preflight: cannot pin an un-pinned session to read-only via permission preset "' + readOnlyPreset + '": ' + (error && error.message ? error.message : String(error)))
+        }
+        if (ctx.sandboxPolicy.overrideOf(session) !== 'read-only') {
+          throw new Error('environment preflight: permission preset "' + readOnlyPreset + '" did not resolve the session sandbox to read-only')
         }
       }
 
@@ -367,7 +379,7 @@ module.exports = {
     // 2b) Terminal doctor gate. A tools.guard can deny the wrong first tool,
     // but DSH completes a step immediately when the model emits no tool call.
     // Intercept that separate terminal path: permit a real completed doctor
-    // verdict (SAFE may research; DEGRADED/UNSAFE may only explain and stop),
+    // verdict (SAFE may research; UNSAFE may only explain and stop),
     // otherwise inject one bounded correction step and then fail loudly.
     ctx.on('agent/turn-stopping', ({ agent }) => {
       if (!agent) return

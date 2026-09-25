@@ -5,8 +5,11 @@ const path = require('node:path')
 const MANIFEST_SCHEMA = 'dsh-researcher/goal-governor-e1/manifest/v2'
 const RUN_LOCK_SCHEMA = 'dsh-researcher/goal-governor-e1/run-lock/v2'
 const RUN_ARTIFACT_SCHEMA = 'dsh-researcher/goal-governor-e1/run-artifact/v2'
-const { VERIFIED_DSH } = require('../../lib/runtime-requirements.js')
-const REQUIRED_DSH_VERSION = VERIFIED_DSH
+const { FROZEN_E1_DSH } = require('../../lib/runtime-requirements.js')
+// The E1 evaluator validates against the FROZEN evaluation runtime, never the
+// product pin. These diverged at 0.1.1-rc.2 vs 0.1.5-rc.2; the value here is
+// unchanged and must never follow the product (invariant I4).
+const REQUIRED_DSH_VERSION = FROZEN_E1_DSH
 const TRUSTED_VERIFIER = Object.freeze({
   tool_name: 'e1_verify',
   arguments: Object.freeze({}),

@@ -66,7 +66,7 @@ For the change(s) under consideration (or the candidate change list): what break
 - 分类总表：`发现 | 分类 (BUILD / DON'T BUILD / INVESTIGATE) | 依据（引用）`。
 - Recommended action：`NONE` / `INVESTIGATE：先验证 X` / `BUILD：…`。
 - Before modifying：每个 BUILD 项的前提与"什么证据会改变分类"。
-- Handoff brief（交接包）：self-contained，包含 `research_handoff.json` 块（schema `dsh-researcher/handoff/v1`：`{ schema, run, certificate, build_items: [{ id, problem, evidence[], confidence, scope, do_not_touch[] }] }`）。JSON 是给 Plan Mode 的机器接口；Markdown 是其人类可读形式。Research 从不获得写能力——交接发生在会话之间、人类决策门之后。不写实现计划。
+- Handoff brief（交接包）：self-contained，包含 `research_handoff.json` 块（schema `dsh-researcher/handoff/v2`）。顶层携带 `cognition_ref` 与 `project`（purpose / value_proven / value_unproven / invariants / constraints / unknowns）；BUILD 项携带 `problem / desired_outcome / evidence / confidence / scope / non_goals / do_not_touch / acceptance_hints / cognition_refs`。JSON 是 Plan / Goal Contract 的机器输入，Markdown 是人类投影；它不是执行授权。Research 从不获得写能力——交接发生在人类决策门之前，不写实现计划、不批准合同。
 | 必须来自代码证据 | 允许推理（须标注） |
 |---|---|
 | 每项决策引用 Risk Map / 台账条目 | 优先级排序与时机判断 |

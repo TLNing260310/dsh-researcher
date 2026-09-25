@@ -11,12 +11,29 @@
 
 ## Stop AI coding agents from forgetting project reality—or declaring DONE without evidence
 
-`dsh-researcher` is an experimental governance layer for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It separates two jobs that ordinary Plan mode tends to mix:
+`dsh-researcher` is a DSH plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It separates three jobs that ordinary Plan mode tends to mix:
 
-- **Project Research** reconstructs purpose, architecture, constraints, risks, and unknowns inside a guarded read-only session.
+- **Project Research** reconstructs purpose, architecture, constraints, risks, and unknowns inside a guarded read-only session, from a curated library of architecture review lenses.
 - **Goal Governor** freezes the target, boundaries, budget, human gates, and definition of done; the host then derives the terminal state from trusted events instead of assistant prose.
+- **Research Entry** (`/research`) enters read-only research on demand from a normal coding session, carrying the conversation across. It stays inert otherwise.
 
 They are independent. You can trial Project Research without adopting Goal Contracts.
+
+### What this mode switches off, and why
+
+The developer's judgement is that **other tools compete for the attention budget**. So this mode closes them at all three levels, not just one:
+
+| Level | What is closed |
+|---|---|
+| Sandbox | The session runs `read-only`; writes are refused by the environment, not by discipline |
+| Tool descriptions | `write` and `edit` are replaced by always-refusing stubs; the write-oriented guidance sections are shadowed so they never enter the prompt |
+| Permissions | Approval is tightened to `never` — there is no escalation path, by design |
+
+There is no shell. The only subprocess capability is `git_read`, a fixed allowlist with no `-c`, no aliases, no pager and ignored global git config. The mode reads and reasons; it never executes.
+
+> **Environment requirements — read before installing.** Research mode is strict and fails closed. It requires DSH `0.1.5-rc.2` and Node `^22.19.0 || >=24.0.0`, and the session must start with **Read Only** permission. Anything else and the preset **refuses to start** rather than degrading. This is intentional: an environment that cannot be proven read-only cannot run this mode. See [Deployment and use requirements](./docs/deployment-requirements.md).
+
+> **What research mode does not yet do.** It has **no task-level attention routing yet** — that is planned, and we are collecting knowledge bases and mature prior art for it. Today its attention guidance comes from a fixed persona plus two skills. Do not describe this mode as adapting its review angle to the task.
 
 > **Honest maturity:** the mechanisms, installer lifecycle, adversarial replay, and offline E1 infrastructure are tested. A complete v1.5 live attempt ran but was **INVALID**; E1 conformance, net productivity gain, long-term Project Cognition value, and adapters beyond DSH remain **not proven**.
 
@@ -59,19 +76,30 @@ The final assistant message is never evidence. A MUST criterion is satisfied onl
 
 | Your situation | Use | Maturity |
 |---|---|---|
-| Taking over an unfamiliar repository or checking architecture before a risky change | **Project Research** | Isolated trial; read-only runtime boundary has a real DSH Web smoke |
+| Taking over an unfamiliar repository, or judging whether a change should happen at all | **Project Research** (`/research` or the preset) | Isolated trial; read-only runtime boundary has a real DSH Web smoke |
+| Wanting the review angles chosen for you | `/research <task>` in a normal coding session | Mechanism proven; lens selection quality unproven |
 | Checking one project fact during coding | `/researcher <question>` in Governed Coding | Isolated one-turn trial |
 | Freezing acceptance criteria, budgets, human gates, and stopping states | **Goal Governor** | Advanced alpha; mechanisms tested, outcome gain unproven |
 | A tiny bug, CRUD change, or disposable script | Ordinary Agent / Plan | This project is probably too heavy |
 | Codex, Claude Code, OpenClaw, Kiro, or Zed/Zcode without DSH | Do not install yet | Portable core exists; client adapters are not delivered |
 
+### Who this is for
+
+This project assumes a reader who can judge evidence. It is not a "install and forget" assistant:
+
+- You must be able to read evidence strength. Every claim carries `file:line`, a commit or a URL, plus an evidence tier (`C0`–`C4`) and a verdict (`Known` / `Likely` / `Claimed` / `Unknown` / `Contradicted`). The two axes are independent, and the combination table is in the [methodology skill](./researcher/skills/project-research-methodology/SKILL.md).
+- You must accept that research may produce **nothing** on a bad environment. The preset refuses to start rather than running degraded.
+- You must make the architecture decision yourself. This mode produces cognition and candidate directions, never execution authority.
+- You must accept a deliberately narrowed attention surface. No shell, no MCP tool surface, no write tools — in read-only research those are attention cost, not capability.
+
 ## Safe trial on DeepSeek Harness
 
 Requirements:
 
-- DeepSeek Harness target: `0.1.1-rc.2`; offline infrastructure is green, while the isolated Gate 0/live conformance result remains pending.
+- DeepSeek Harness target: `0.1.5-rc.2`; offline infrastructure is green, while the isolated Gate 0/live conformance result remains pending.
 - DSH runtime Node requirement: `^22.19.0 || >=24.0.0` (the portable project core remains `>=22.12.0`).
 - Node.js: `>=22.12.0`.
+- Research sessions must start with **Read Only** permission; the preset tightens approval to `never`, which the UI shows as Custom.
 - Use an isolated `DSH_HOME` and a non-critical repository copy first.
 
 This repository is **GitHub-distributed only**. The unscoped npm name `dsh-researcher` belongs to a different maintainer and repository. Do not use `npm install dsh-researcher`; use the pinned GitHub source or signed release assets below. The private scoped identity `@tlning260310/dsh-researcher` prevents accidental publication under the wrong identity; this is a DSH preset bundle plus Node governance library, not a native marketplace-plugin claim.
@@ -199,7 +227,7 @@ Spec Kit, OpenSpec, Kiro, Serena, Beads, and client-native Plan/Memory may be be
 
 ## Repository map
 
-- [Mature project introduction](./docs/project-introduction.md)
+- [Project introduction](./docs/project-introduction.md)
 - [Safe installation and recovery](./docs/installation.md)
 - [Five-minute Quickstart](./docs/quickstart.md)
 - [Validation Status](./docs/validation-status.md)
@@ -220,3 +248,26 @@ You do not need a polished report. The most useful signals are whether the demo 
 - Report security issues privately under [SECURITY.md](./SECURITY.md).
 
 Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5-v1.11 live attempts. All post-release results remain negative or incomplete evidence; v1.12 is an offline correction and E1 live is stopped. Outcome value and multi-client portability remain NOT PROVEN.
+
+## Acknowledgements and tribute
+
+The research-mode roadmap — **attention routing, injection discipline, and a curated lens library** — did not start from a blank page. Several DSH ecosystem projects have already explored this ground and published what they learned, including results that overturned their own initial designs. We read them, adopted what fit, and say so here.
+
+**We are grateful to the authors of these projects.** Thanks and respect to:
+
+| Project | What we learned from it |
+|---|---|
+| [**dsh-company-kb**](https://github.com/wu81313-lab/dsh-company-kb) | The explicit-invocation gate (sticky session state · trigger words with a negation window · path naming) — our first-level trigger follows the same principle. Its dual-FTS5 + RRF retrieval is the reference for our retrieval layer. Its refusal text, which tells the model **not to keep asking**, is a second line of defence against attention pollution. |
+| [**dsh-experience-memory**](https://github.com/Marquez807/dsh-experience-memory) | The **four-surface model** (automatic injection / unconditional one-line guidance / maintenance / tools and commands), and the discipline of leaving anything that reaches outside the store behind a **human** trigger. Its provenance audit — flag, never refuse — shaped our lens freshness rule. |
+| [**dsh-learn-wiki**](https://github.com/Dayi-Z/dsh-learn-wiki) | The single most useful finding we read: its trigger was changed from *retrieval miss* to *struggle*, because a miss is too cheap a signal (every new topic misses). **That published negative result overturned our first trigger design.** |
+| [**dsh-literature**](https://github.com/amphilagus/dsh-literature) | A dedicated preset carrying a dedicated tool set, unloaded everywhere else — the organisational pattern our scoped research entry uses. |
+| [**deepseek-harness**](https://github.com/deepseek-ai/deepseek-harness) | The runtime this project is a plugin for. |
+
+Two further projects informed our **thinking only** — no code, text, or data from them is included, because their licences are incompatible with this project's MIT distribution:
+
+- [**twiceshy**](https://github.com/dotts-h/twiceshy) (AGPL-3.0) — the principle that **an approximate-but-wrong experience must never be injected**, because injecting it actively harms the agent; the record shape `{symptom, scope, root cause, guard test}` independently converged on our six-field lens schema; and the push+pull hybrid channel.
+- [**dsh-context-mode**](https://github.com/icanfinish11/dsh-context-mode) (Elastic License 2.0) — confirmed by contrast that our bottleneck is **where attention lands**, not context capacity.
+
+**Governance borrowing is acknowledged explicitly**: the discipline of keeping capability-changing paths behind human triggers, of distinguishing "flag" from "refuse", and of publishing negative results rather than quietly replacing them, all come from the projects above. Where we diverge, we say why in the design notes.
+
+Full licence texts are in [`licenses/`](./licenses/); per-project attribution and the register of what is and is not incorporated are in [`THIRD-PARTY-NOTICES.md`](./THIRD-PARTY-NOTICES.md).

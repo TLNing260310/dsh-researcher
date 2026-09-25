@@ -12,12 +12,31 @@
 **让 AI coding 先理解项目现实，再冻结“什么算完成”，最后由证据而不是 Agent 的自信结束工作。**<br>
 *Recover project reality, freeze what “done” means, and let evidence—not agent confidence—stop the loop.*
 
-`dsh-researcher` 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的开源研究型扩展。它提供两个可以分开使用的产品层：
+`dsh-researcher` 是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的 DSH 插件。它把普通 Plan Mode 常常混在一起的三件事分开：
 
-- **Project Research**：现在即可隔离试用的制度性只读研究模式。
-- **Goal Governor**：更高级的目标与完成条件治理；工程机制已经实现，净生产力收益仍在验证。
+- **Project Research**：在制度性只读会话中重建项目的目的、架构、约束、风险与未知项，审查视角来自一个受策展的架构透镜库。
+- **Goal Governor**：冻结目标、边界、预算、人工 gate 与完成定义；终态由宿主从可信事件推导，而不是由 Agent 的文字宣布。
+- **Research Entry**（`/research`）：在普通编码会话中按需进入只读研究模式，并携带当前对话上下文。其余时间完全惰性。
 
-> **当前边界**：DSH adapter、只读运行时和离线验证设施已有机械测试与真实 Web smoke；v1.5 与不完整 v1.6-v1.11 均为 INVALID，v1.12 只做离线修正且 live round 已停止。长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。本项目不是“更聪明的 Agent”，也不承诺自动消除模型幻觉。
+三者可以分开使用。你可以只试用 Project Research，而不采纳 Goal Contract。
+
+### 这个模式关停了什么，以及为什么
+
+开发者的判断是：**其余工具会争夺注意力预算**。因此本模式在三个层级上全面关停，而不是只关一层：
+
+| 层级 | 关停内容 |
+|---|---|
+| 沙箱层 | 会话运行在 `read-only`；写入被**环境**拒绝，而不是靠纪律 |
+| 工具描述层 | `write` / `edit` 被替换为永拒桩；面向写入的引导段被同名遮蔽，**根本不进入 prompt** |
+| 权限层 | 审批被收紧为 `never`——按设计**不存在升级路径** |
+
+没有 shell。唯一的子进程能力是 `git_read`：固定白名单，无 `-c`、无 alias、无 pager，忽略全局 git 配置。本模式只读与推理，从不执行。
+
+> **环境要求——安装前必读。** 研究模式严格且 fail-closed：要求 DSH `0.1.5-rc.2`、Node `^22.19.0 || >=24.0.0`，且会话必须以 **Read Only** 权限启动。任一不满足，preset 会**拒绝启动**而不是降级运行。这是有意的：无法证明只读的环境，不能运行本模式。详见[部署与使用须知](./docs/deployment-requirements.md)。
+
+> **本模式当前还不能做什么。** 它**尚不具备按任务动态注入注意力的能力**——该能力正在规划中，正在搜集知识库与成熟项目做法。现阶段的注意力引导来自固定 persona 加两个技能文件。**不要向用户宣称本模式会随任务改变审查视角。**
+
+> **当前边界**：DSH adapter、只读运行时和离线验证设施已有机械测试与真实 Web smoke；v1.5 与不完整 v1.6-v1.11 均为 INVALID，v1.12 只做离线修正且 live round 已停止。长期维护收益、真实模型端到端成功率和其他客户端 adapter 尚未证明。本项目不是"更聪明的 Agent"，也不承诺自动消除模型幻觉。
 
 ## 你可能正遇到这个问题
 
@@ -68,6 +87,7 @@ Agent 的最终文字不是证据。只有与已批准 verifier 的工具名、�
 | 你的场景 | 建议 | 当前成熟度 |
 |---|---|---|
 | 接手陌生仓库、重构前核对架构、只想让 Agent 只读研究 | **Project Research** | 可隔离试用；安全边界有真实 DSH Web smoke |
+| 希望审查视角由系统代选 | 普通编码会话中运行 `/research <task>` | 机制已验证；透镜选择质量未验证 |
 | 编码中临时核对一个项目事实 | Governed Coding 中运行 `/researcher <question>` | 可隔离试用；一次只读 turn |
 | 需要冻结验收条件、预算、人工 gate 和停止状态 | **Goal Governor** | 高级 alpha；机制有测试，结果增益未证明 |
 | 一个明显的小 bug、简单 CRUD、一次性脚本 | 继续使用普通 Agent / Plan | 本项目通常过重 |
@@ -75,15 +95,25 @@ Agent 的最终文字不是证据。只有与已批准 verifier 的工具名、�
 
 Project Research 与 Goal Governor 并不捆绑。你可以只安装后试用前者，不创建任何 Goal Contract。
 
+### 本项目适合谁
+
+本项目假定使用者具备判断证据的能力。它不是"装上就能用"的助手：
+
+- **你必须能读懂证据强度。** 每条断言带 `file:line`、commit 或 URL，并同时标注证据层级（`C0`–`C4`）与裁决态（`Known` / `Likely` / `Claimed` / `Unknown` / `Contradicted`）。两者是**独立的两轴**，组合规则见[方法论技能](./researcher/skills/project-research-methodology/SKILL.md)中的可查表。
+- **你必须接受研究可能一个字也跑不出来。** 环境不符时 preset 直接拒绝启动，而不是降级运行。
+- **你必须自己下架构决定。** 本模式产出认知与候选方向，永不产出执行授权。
+- **你必须接受注意力面被刻意收窄。** 没有 shell、没有 MCP 工具面、没有写工具——在只读研究里，这些是注意力成本，不是能力。
+
 ## 安全试装
 
 > **分发身份说明**：本项目当前只通过固定 GitHub tag 或 GitHub Release 制品分发。npm 上未加 scope 的 `dsh-researcher` 属于另一位维护者和另一个仓库，请勿运行 `npm install dsh-researcher`。私有 scoped name `@tlning260310/dsh-researcher` 用于防止误发布；本项目的分发身份是 DSH preset bundle 加 Node 治理库，不宣称自己是原生 marketplace plugin。
 
 ### 前置条件
 
-- DeepSeek Harness 目标版本：`0.1.1-rc.2`；离线设施已通过，隔离 Gate 0/live conformance 仍待完成。
+- DeepSeek Harness 目标版本：`0.1.5-rc.2`；离线设施已通过，隔离 Gate 0/live conformance 仍待完成。
 - DSH 运行时 Node 要求：`^22.19.0 || >=24.0.0`（可移植项目核心仍为 `>=22.12.0`）。
 - Node.js：`>=22.12.0`。
+- 研究会话必须以 **Read Only** 权限启动；preset 会把审批收紧为 `never`（UI 显示为 Custom，这是预期的）。
 - 建议使用独立 `DSH_HOME` 和非关键仓库副本首次试用。
 - 当前版本：`0.8.0-alpha.9`，不承诺稳定 API。
 
@@ -249,7 +279,7 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 |---|---|
 | [安全安装与恢复](./docs/installation.md) | dry-run、安装、备份、卸载、回滚与制品校验 |
 | [五分钟 Quickstart](./docs/quickstart.md) | 从任务描述到可人工审核的 Goal 草稿 |
-| [成熟项目介绍](./docs/project-introduction.md) | 可复用的一句话、用户叙事、能力与诚实边界 |
+| [项目介绍（英文）](./docs/project-introduction.md) | 可复用的一句话、用户叙事、能力与诚实边界 |
 | [Validation Status](./docs/validation-status.md) | Validated / Unknown / Invalidated 的正式边界 |
 | [Project Cognition](./PROJECT_COGNITION.md) | 项目目的、不变量、已证/未证价值与下一证明 |
 | [架构](./docs/architecture.md) | runtime、portable core、权限面和信任边界 |
@@ -270,7 +300,30 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 ## Compatibility
 
-- DeepSeek Harness：目标版本 `0.1.1-rc.2`；不得在 Gate 0/live conformance 完成前写成“已经验证”。
+- DeepSeek Harness：目标版本 `0.1.5-rc.2`（见 `lib/runtime-requirements.js` 的 `VERIFIED_DSH`）；不得在 Gate 0/live conformance 完成前写成“已经验证”。
 - Node.js：`>=22.12.0`。
 - 当前已发布版本：`0.8.0-alpha.9`；它发布时 Live E1 尚未运行。发布后的 v1.5 与不完整 v1.6-v1.11 根结果均为 INVALID；v1.12 仅作离线修正，E1 live 已停止；结果价值与多客户端可移植性仍为 NOT PROVEN。
 - License：MIT。
+
+## 致谢与致敬
+
+研究模式的路线图——**注意力路由、注入纪律、透镜库**——不是从白纸开始的。DSH 生态中已有一批项目探索过这片区域，并且公开了他们的结论，其中还包括**推翻了自己初版设计**的实测结果。我们读了它们，采用了合适的部分，并在这里说明。
+
+**感谢并致敬以下项目的作者：**
+
+| 项目 | 我们学到了什么 |
+|---|---|
+| [**dsh-company-kb**](https://github.com/wu81313-lab/dsh-company-kb) | **显式调用门禁**（会话粘性 · 触发词 + 否定窗口 · 路径点名）——我们的第一级触发沿用同一原则。它的双 FTS5 + RRF 检索是我们检索层的参考实现。它的拒绝文本明确告诉模型**不要反复询问**，这是防注意力污染的第二道防线。 |
+| [**dsh-experience-memory**](https://github.com/Marquez807/dsh-experience-memory) | **四表面模型**（自动注入 / 无条件一行指引 / 维护 / 工具与命令），以及"够到库外的能力留在**人类**触发器之后"的纪律。它的 provenance audit——**只标记、从不拒绝**——决定了我们的透镜新鲜度规则。 |
+| [**dsh-learn-wiki**](https://github.com/Dayi-Z/dsh-learn-wiki) | 我们读到的最有用的一条结论：它的触发器从*检索未命中*改成了*挣扎*，因为未命中信号太廉价（任何新话题都会未命中）。**这条公开的负面结果推翻了我们的第一版触发设计。** |
+| [**dsh-literature**](https://github.com/amphilagus/dsh-literature) | 用专用 preset 承载专用工具集、其余场景一律不加载——我们作用域化研究入口沿用的组织方式。 |
+| [**deepseek-harness**](https://github.com/deepseek-ai/deepseek-harness) | 本项目的运行时宿主。 |
+
+另有两个项目**仅影响了我们的思考**——因其许可与本项目的 MIT 分发不兼容，**未包含其任何代码、文本或数据**：
+
+- [**twiceshy**](https://github.com/dotts-h/twiceshy)（AGPL-3.0）——"**绝不注入近似但错误的经验**"这一原则，因为注入它会主动损害 agent；其记录结构 `{症状, 适用范围, 根本原因, 防护测试}` 与我们的六字段透镜 schema **独立收敛**；以及推送 + 拉取的混合通道。
+- [**dsh-context-mode**](https://github.com/icanfinish11/dsh-context-mode)（Elastic License 2.0）——以反证确认了我们的瓶颈是**注意力落点**，不是上下文容量。
+
+**治理层面的借鉴也明确致谢**：把会改变能力的路径留在人类触发器之后、"标记"与"拒绝"的区分、以及**公开负面结果而不是悄悄替换**——这些纪律都来自上述项目。凡是我们做出不同选择的地方，都在设计文档里写明了理由。
+
+完整许可全文见 [`licenses/`](./licenses/)；逐项目的署名与"接入 / 未接入"登记见 [`THIRD-PARTY-NOTICES.md`](./THIRD-PARTY-NOTICES.md)。

@@ -1,0 +1,540 @@
+[
+  {
+    "lens": "SCH-1",
+    "name": "有界性与背压可证性 (Boundedness and Backpressure Provability)",
+    "domain": "scheduling",
+    "path": "dsh-researcher/docs/kb/clean/scheduling/scheduling.json",
+    "trigger": "当你要审查任何持有队列、缓冲区、批处理窗口或 in-flight 请求集合的代码路径时使用——先证明每个容器的容量有上界，再证明生产者会在上界处被减速或显式拒绝，而不是被静默吞掉。",
+    "questions": [
+      "每个队列、缓冲、channel 或线程池的构造点是否显式声明了容量上界（capacity / maxsize / bufferSize / maxConcurrentRequests），且该数值来自具名常量或配置项，使容量可被单点修改并读出？",
+      "队列达到上界时是否存在一条两行内可读的策略分支（阻塞提交、返回可重试错误、丢弃最旧、丢弃最新），且该分支与容量声明位于同一函数或同一配置块？",
+      "入站请求的提交路径是否在队列满时同步减速或失败（阻塞写、429/503 响应、对 RejectedExecution 的处理），使生产者速率被消费者速率反向约束、形成闭环？",
+      "请求入口是否有独立于队列容量的准入控制（信号量、令牌桶、RateLimiter、bulkhead 并发上限），且拒绝时返回带 Retry-After 的可重试状态？",
+      "进程内每个随请求增长的数据结构（map、缓存、待处理集合、session 表）是否带有上界或淘汰策略（max_entries、TTL、LRU），使内存上界与请求总量解耦？",
+      "队列深度或 in-flight 计数是否作为 gauge / histogram 暴露，且指标带队列名或槽位标签，使『当前深度 ÷ 容量』这个比值可以在运行期直接查询？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Allocation of Resources Without Limits or Throttling (CWE-770)",
+        "source": "https://cwe.mitre.org/data/definitions/770.html"
+      },
+      {
+        "name": "Uncontrolled Resource Consumption (CWE-400)",
+        "source": "https://cwe.mitre.org/data/definitions/400.html"
+      },
+      {
+        "name": "Metastable failure (Bronson et al., HotOS 2021): retry and queue amplification keeps the system stuck in a degraded state after the trigger is gone",
+        "source": "https://doi.org/10.1145/3458336.3465286"
+      },
+      {
+        "name": "Retry Storm antipattern: retries add load to an already saturated queue",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "无界内存队列，由消费者尽可能快地 drain",
+        "buys": "生产者永不阻塞、实现最简、没有拒绝语义要处理，短时突发被吸收",
+        "costs": "内存上界等于入站速率 × 积压时长，过载下以 OOM 而非降级收场；排队时延随深度线性上升且不可见"
+      },
+      {
+        "option": "有界队列 + 阻塞提交（把背压直接压回调用者）",
+        "buys": "内存有确定上界，过载信号沿调用链传回上游，超时成为唯一失败面",
+        "costs": "被阻塞的线程仍占用上游执行器槽位，饱和可能从队列转移到线程；必须为所有提交路径设定超时，否则形成新的无界等待"
+      },
+      {
+        "option": "有界队列 + 快速失败（拒绝并返回 429/503 + Retry-After）",
+        "buys": "过载立刻可见、延迟保持在低位、客户端可做退避，容量数字就是承诺",
+        "costs": "需要客户端配合退避，否则密集重试会放大瞬时负载；业务侧必须定义『被拒绝』对用户可见的语义"
+      },
+      {
+        "option": "外部持久化队列（日志/托管队列）作为缓冲层",
+        "buys": "进程内存与入站速率解耦，工作项可跨重启保留，积压成为可查询的持久状态",
+        "costs": "引入中间件的可用性、成本与运维面，端到端延迟增加一跳，积压需要独立的监控与清理策略"
+      }
+    ],
+    "evidence_anchors": [
+      "队列与线程池构造点：asyncio.Queue(maxsize=)、LinkedBlockingQueue(capacity)、make(chan T, N)、newFixedThreadPool、ThreadPoolExecutor(max_workers=)",
+      "连接池配置：pool_size / max_overflow / max_connections / maxConcurrentRequests / http.maxConnections",
+      "准入控制与限流中间件：RateLimiter、Semaphore、Bulkhead、max_inflight、tokens-per-second 类配置项",
+      "队列满分支：queue.Full、BlockingQueue.offer 返回值、RejectedExecutionHandler、drop-oldest / drop-newest 实现",
+      "缓存与内存容器上界：maxsize、max_entries、TTL、lru_cache(maxsize=)、手动 dict 缓存的清理点",
+      "入站服务器配置：backlog、max_connections、worker_connections、accept 队列深度、request queue depth",
+      "积压与过载指标：queue_depth、in_flight、pending_jobs、rejected_total 的定义与标签",
+      "压测脚本的施压方式：固定 offer 速率（开环）还是等上一响应返回再发（闭环）"
+    ],
+    "tags": {
+      "structure": ["bounded-queue", "backpressure", "admission-control", "worker-pool", "load-leveling"],
+      "symptom": ["oom", "unbounded-growth", "latency-creep", "no-overload-signal", "retry-amplification"],
+      "stack": ["asyncio", "java-threadpool", "go-channels", "tokio", "celery", "sidekiq", "kafka", "rabbitmq", "nginx", "gunicorn"],
+      "store": ["in-memory-queue", "redis-queue", "sqs", "kafka-topic", "postgres-table-as-queue"],
+      "surface": ["config-limits", "middleware", "pool-factory", "metrics-endpoint", "load-test-script"]
+    },
+    "sources": [
+      {
+        "title": "Reactive Streams — back-pressure semantics and bounded demand",
+        "url": "https://www.reactive-streams.org/",
+        "license": "permissive"
+      },
+      {
+        "title": "AWS Well-Architected Framework REL05-BP04 — Fail fast and limit queues",
+        "url": "https://docs.aws.amazon.com/wellarchitected/latest/framework/rel_mitigate_interaction_failure_limit_queues.html",
+        "license": "attribution"
+      },
+      {
+        "title": "CWE-770: Allocation of Resources Without Limits or Throttling",
+        "url": "https://cwe.mitre.org/data/definitions/770.html",
+        "license": "attribution"
+      },
+      {
+        "title": "CWE-400: Uncontrolled Resource Consumption",
+        "url": "https://cwe.mitre.org/data/definitions/400.html",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Queue-Based Load Leveling pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "SCH-2",
+    "name": "执行器与事件循环饱和 (Executor and Event-Loop Saturation)",
+    "domain": "scheduling",
+    "path": "dsh-researcher/docs/kb/clean/scheduling/scheduling.json",
+    "trigger": "当你怀疑吞吐停滞不是来自某一次失败、而是来自线程池或事件循环被占满时使用——先量每个资源的 utilization / saturation / errors 三个量，再确认阻塞调用有没有把事件循环线程劫走。",
+    "questions": [
+      "每个线程池、执行器或事件循环的构造点是否显式给出并行度上界（max_workers、corePoolSize/maximumPoolSize、GOMAXPROCS、worker concurrency），且该数值由配置或环境变量决定？",
+      "CPU 密集或同步阻塞调用（加密、压缩、图像/PDF 处理、同步数据库驱动、文件与 DNS I/O）是否被派发到专用执行器或线程池，而不是在事件循环线程内联执行？",
+      "每个请求是否声明了端到端时限（deadline / timeout / context.WithTimeout / AbortSignal），且该时限严格小于其上游时限，形成可用代码读出的递减链？",
+      "每个资源（线程池、事件循环、连接池）是否有可查询的 utilization、saturation、errors 三类信号（活跃线程数、队列深度、拒绝与超时计数）？",
+      "进程的 CPU 限额（cgroup quota、cpu.max、K8s resources.limits.cpu）是否被应用读取并用于设置自身并行度，使并行度与可用 CPU 对齐而不是与机器核数对齐？",
+      "长生命周期对象（HTTP client、数据库连接池、线程池、channel、序列化器）是否在进程级构造一次并被复用，而不是在每个请求或每次函数调用内新建？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Busy Front End antipattern: asynchronous work moved back onto the request-handling path",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/busy-front-end/"
+      },
+      {
+        "name": "Improper Instantiation antipattern: a shared, expensive client is created per request",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/"
+      },
+      {
+        "name": "Synchronous I/O antipattern: blocking calls on a thread that must stay responsive",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/synchronous-io/"
+      },
+      {
+        "name": "Coordinated omission (Schroeder, Wierman & Harchol-Balter, NSDI 2006): latency recorded only at achieved throughput hides queueing delay",
+        "source": "https://www.usenix.org/legacy/events/nsdi06/tech/full_papers/schroeder/schroeder.pdf"
+      },
+      {
+        "name": "Gray failure (Huang et al., HotOS 2017): a degraded component keeps looking healthy to its peers",
+        "source": "https://doi.org/10.1145/3102980.3103005"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "事件循环内联执行所有工作（严格单线程模型）",
+        "buys": "无锁、无上下文切换、状态一致性容易推理，调试路径最短",
+        "costs": "任何一次阻塞调用或 CPU 长任务都会冻结全部并发，吞吐被单核上限钉死且故障表现为整体卡死"
+      },
+      {
+        "option": "固定大小线程池 + 有界队列 + 每请求 deadline",
+        "buys": "并行度可预测、超时可回收槽位、过载可直接观测，容量数字与 SLO 对应",
+        "costs": "需要为每类工作分别选定池大小；超时值要沿调用链逐跳校准，池越多总线程数与内存越高"
+      },
+      {
+        "option": "把阻塞与 CPU 工作外化到独立 worker 进程或服务",
+        "buys": "请求路径不受 CPU 抖动影响，可独立扩缩容与限流，语言与库选择不受主服务约束",
+        "costs": "引入序列化、网络与部署成本，端到端延迟增加一跳，需要额外的失败与重试语义"
+      },
+      {
+        "option": "按容器 CPU 限额自适应并行度（读取 cgroup 后设定池大小）",
+        "buys": "并行度不超过配额，容器迁移到不同规格节点时行为稳定，减少 CPU throttling",
+        "costs": "依赖运行时可读的限额信息，需要回退默认值；自适应逻辑本身需要测试与观测，否则成为隐性配置"
+      }
+    ],
+    "evidence_anchors": [
+      "执行器构造：ThreadPoolExecutor(max_workers=)、newFixedThreadPool、tokio::runtime::Builder::worker_threads、GOMAXPROCS、UV_THREADPOOL_SIZE、WORKER_CONCURRENCY",
+      "事件循环内的阻塞调用：requests/urllib/http.client、fs.readFileSync、同步 DB 驱动、time.sleep、bcrypt/PBKDF2、PIL、subprocess.run 出现在 async def 或事件回调中",
+      "超时声明：timeout=、context.WithTimeout、AbortController、deadline、socket timeout、statement_timeout 的数值与嵌套关系",
+      "CPU 限额与并行度对齐逻辑：resources.limits.cpu、cpu.max、automaxprocs、GOMAXPROCS 的设置位置",
+      "共享客户端的单例位置：模块级常量、DI 容器注册、应用 lifespan/startup 钩子、连接池工厂",
+      "饱和指标：active_threads、pool_wait_seconds、queue_depth、executor_queued、container_cpu_cfs_throttled_seconds、rejected_total",
+      "USE 三问的落点：每个资源是否各有 utilization（busy/容量）、saturation（排队长度）、errors（拒绝与超时）三类指标",
+      "压测脚本的计时方式：是否记录『计划发送时间』而非『响应返回时间』，从而避免协调性遗漏"
+    ],
+    "tags": {
+      "structure": ["thread-pool", "event-loop", "worker-isolation", "deadline-chain", "client-reuse"],
+      "symptom": ["cpu-throttling", "latency-spike", "stalled-event-loop", "pool-exhaustion", "hidden-latency"],
+      "stack": ["asyncio", "nodejs", "java-executors", "go-runtime", "tokio", "gunicorn", "uvicorn", "celery"],
+      "store": ["cgroup-cpu-quota", "thread-local", "connection-pool"],
+      "surface": ["executor-factory", "startup-hook", "timeout-config", "metrics-endpoint", "load-test-script"]
+    },
+    "sources": [
+      {
+        "title": "Brendan Gregg — The USE Method (utilization, saturation, errors per resource)",
+        "url": "https://www.brendangregg.com/usemethod.html",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Busy Front End antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/busy-front-end/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Synchronous I/O antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/synchronous-io/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Improper Instantiation antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/",
+        "license": "attribution"
+      },
+      {
+        "title": "Kubernetes — Assign CPU Resources to Containers and Pods",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/assign-cpu-resource/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "SCH-3",
+    "name": "锁、共享可变状态与围栏租约 (Locks, Shared Mutable State, and Fenced Leases)",
+    "domain": "scheduling",
+    "path": "dsh-researcher/docs/kb/clean/scheduling/scheduling.json",
+    "trigger": "当你要审查多个执行流共享同一份可变数据、或跨进程持有锁与租约的代码时使用——重点看『先检查后写入』之间有没有同步点、加锁顺序能否读出、租约是否带单调 fencing token。",
+    "questions": [
+      "对共享可变状态的『先读后写』序列是否被放进同一临界区、同一事务或同一条原子语句（SETNX、compare-and-swap、UPDATE ... WHERE version = ?、SELECT ... FOR UPDATE），使检查与写入之间只有一个同步点？",
+      "多个锁与临界区之间的获取顺序是否能从代码中唯一读出（全局排序、单锁、或状态由单一线程/actor 拥有），使加锁依赖图不出现环？",
+      "跨进程或跨主机的租约是否携带单调递增的 fencing token（epoch、version、任期号、事务 ID），且被保护的下游写入端会校验该 token 并拒绝更旧的值？",
+      "锁等待与冲突是否有显式时限与错误处理：lock_timeout、statement_timeout、NOWAIT / SKIP LOCKED、死锁与序列化错误码（40P01 / 40001 / 55P03）在调用点被捕获并按策略重试？",
+      "临界区内的持锁时长是否被限制在单次短操作上（区内不含网络请求、文件 I/O、sleep、用户交互或大循环），使最长持锁时间可从代码估算？",
+      "共享状态是否有单一拥有者（单进程、单线程或 actor），其他执行流只能通过消息或事务访问，从而不需要细粒度加锁？"
+    ],
+    "failure_modes": [
+      {
+        "name": "CWE-362: Concurrent Execution Using Shared Resource with Improper Synchronization (Race Condition)",
+        "source": "https://cwe.mitre.org/data/definitions/362.html"
+      },
+      {
+        "name": "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition",
+        "source": "https://cwe.mitre.org/data/definitions/367.html"
+      },
+      {
+        "name": "CWE-833: Deadlock",
+        "source": "https://cwe.mitre.org/data/definitions/833.html"
+      },
+      {
+        "name": "CWE-667: Improper Locking",
+        "source": "https://cwe.mitre.org/data/definitions/667.html"
+      },
+      {
+        "name": "Non-fenced distributed lease: a paused holder resumes after lease expiry and writes concurrently with the new holder (see Jepsen analyses of coordination systems)",
+        "source": "https://jepsen.io/analyses"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "粗粒度全局锁（单锁保护全部共享状态）",
+        "buys": "死锁不可能出现、正确性论证最短、状态顺序天然一致，便于评审",
+        "costs": "并发度降到 1，长临界区直接成为吞吐上限，锁等待时间成为主要延迟来源"
+      },
+      {
+        "option": "细粒度锁 + 固定加锁顺序 + 锁等待超时",
+        "buys": "并发度高、可并行的临界区互不干扰、超时避免无限等待",
+        "costs": "每条新代码路径都必须遵守顺序纪律，纪律只存在于注释里时很容易被破坏；锁数量增加后调试与验证成本上升"
+      },
+      {
+        "option": "单写者 actor / 单线程事件循环，取消显式锁",
+        "buys": "无锁、状态转换可顺序回放、无需考虑加锁顺序，错误可复现",
+        "costs": "状态机必须完整覆盖所有输入；CPU 密集工作会阻塞该线程；跨进程时仍需外部一致性机制"
+      },
+      {
+        "option": "把一致性下沉到存储层：事务 + 唯一约束 + 条件更新（乐观并发）",
+        "buys": "无需手工锁、冲突在提交时暴露、天然跨进程，可用 SQL 断言验证",
+        "costs": "冲突时需要重试循环与幂等设计；热点行成为串行瓶颈，序列化失败率上升需要监控"
+      },
+      {
+        "option": "带 fencing token 的租约（存储层生成单调 epoch，写入端校验）",
+        "buys": "暂停或网络分区后的旧持有者写入会被下游拒绝，锁过期不再导致双写",
+        "costs": "需要下游协作校验 token，存储层要维护单调计数器，每次写入多带一个字段并增加一次比较分支"
+      }
+    ],
+    "evidence_anchors": [
+      "共享可变状态声明：模块级全局变量、单例对象、进程内缓存、static 字段、跨线程共享的 dict/list",
+      "先查后改模式：if not exists(...): create(...)、先 SELECT 再 UPDATE、read-modify-write、counter += 1 的连续行号",
+      "锁原语：threading.Lock / RLock 的获取顺序、sync.Mutex、ReentrantLock、SELECT ... FOR UPDATE、pg_advisory_lock、Redis SET NX、etcd/Consul 租约、K8s Lease",
+      "跨进程租约的 token 字段：fencing_token、epoch、leaderEpoch、term、version 的比较与拒绝分支",
+      "锁超时与死锁处理：lock_timeout、statement_timeout、NOWAIT、SKIP LOCKED、对 40P01 / 40001 的重试与退避",
+      "临界区内被调用的函数：HTTP 客户端、文件操作、队列发送、日志与 telemetry 上报、sleep 是否落在锁范围内",
+      "并发测试与断言：多线程/多进程测试、TSAN 或 race detector 配置、对共享状态最终值的断言",
+      "事务边界与隔离级别：BEGIN/COMMIT 的位置、isolation level 设置、autocommit 开关、连接归还点"
+    ],
+    "tags": {
+      "structure": ["mutex", "critical-section", "compare-and-swap", "lease-fencing", "transaction-boundary"],
+      "symptom": ["lost-update", "double-write", "deadlock", "lock-contention", "stale-leader"],
+      "stack": ["threading", "java-concurrency", "go-sync", "postgresql", "redis", "etcd", "zookeeper", "kubernetes-lease"],
+      "store": ["postgres-row-lock", "advisory-lock", "redis-key", "etcd-revision", "k8s-lease-object"],
+      "surface": ["repository-layer", "lock-helper", "leader-election", "migration-script", "concurrency-test"]
+    },
+    "sources": [
+      {
+        "title": "PostgreSQL Documentation — Explicit Locking (row locks, deadlock detection, advisory locks)",
+        "url": "https://www.postgresql.org/docs/current/explicit-locking.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL Documentation — Transaction Isolation (serialization failure handling)",
+        "url": "https://www.postgresql.org/docs/current/transaction-iso.html",
+        "license": "permissive"
+      },
+      {
+        "title": "CWE-362: Concurrent Execution Using Shared Resource with Improper Synchronization",
+        "url": "https://cwe.mitre.org/data/definitions/362.html",
+        "license": "attribution"
+      },
+      {
+        "title": "Kubernetes Documentation — Leases (time-bounded coordination primitives)",
+        "url": "https://kubernetes.io/docs/concepts/architecture/leases/",
+        "license": "attribution"
+      },
+      {
+        "title": "Jepsen — Analyses of distributed coordination systems",
+        "url": "https://jepsen.io/analyses",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "SCH-4",
+    "name": "调度公平性与队头阻塞 (Scheduling Fairness and Head-of-Line Blocking)",
+    "domain": "scheduling",
+    "path": "dsh-researcher/docs/kb/clean/scheduling/scheduling.json",
+    "trigger": "当共享资源池（连接池、线程池、并发上限）被多类工作或多租户共用时使用——重点看长任务会不会占满槽位、单租户能不能吃掉整池、排队有没有等待上限。",
+    "questions": [
+      "不同类别的工作负载（交互请求、批处理、后台重建、第三方调用）是否使用彼此独立的执行资源（独立池、独立队列、独立并发上限），使一类负载的积压不占用另一类的槽位？",
+      "共享资源（连接、信号量、池槽位、队列位置）的获取是否带有等待时限，超时后请求以降级结果或可重试错误返回，而不是无限期排队？",
+      "工作项是否按类别被公平调度（加权配额、优先级类、fair queueing、per-tenant 限流），使任意单个租户或键的吞吐存在可读出的配额上界？",
+      "长任务（秒级以上、批量扫描、导出、模型推理）是否有独立于交互请求的并发上限，且其调度不会阻塞同队列中更短的请求（优先级、抢占或分离队列）？",
+      "资源池容量与等待上限是否被显式声明（pool_size、max_overflow、max_wait、queue capacity），且这些数值之和被校验为不超过下游容量（如数据库 max_connections）？",
+      "是否存在自动终止走偏调用的策略（statement_timeout、idle_in_transaction_session_timeout、请求 deadline、最大执行时长），使单次调用不能长期占用池中槽位？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Noisy Neighbor antipattern: one tenant or workload consumes a disproportionate share of shared capacity",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/noisy-neighbor/"
+      },
+      {
+        "name": "Busy Database antipattern: excessive work offloaded onto the shared datastore",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/busy-database/"
+      },
+      {
+        "name": "Tail Latency Amplification (Dean & Barroso, The Tail at Scale): per-request fan-out turns a single slow component into a slow user request",
+        "source": "https://doi.org/10.1145/2408776.2408794"
+      },
+      {
+        "name": "TCP-level head-of-line blocking under stream multiplexing (RFC 9113, Section 1)",
+        "source": "https://www.rfc-editor.org/rfc/rfc9113.html"
+      },
+      {
+        "name": "Bulkhead pattern: partition capacity per dependency so one saturated dependency cannot consume the whole pool",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "单一共享连接池，所有工作类型先到先服务",
+        "buys": "实现最简、池利用率最高、无需为每类工作预估容量",
+        "costs": "长任务或热点租户能占满池并把延迟推给所有调用者；没有隔离就无法为交互请求承诺 SLO"
+      },
+      {
+        "option": "按工作类别拆分池（bulkhead）：交互池、批处理池、第三方调用池各自独立",
+        "buys": "故障与积压被限制在单一分区内，交互路径容量可承诺，影响面可预测",
+        "costs": "总连接数与内存上升、各池容量需分别预估、空闲池浪费容量且池间无法互相借用"
+      },
+      {
+        "option": "单池 + 优先级队列 + 每类加权配额（fair queueing）",
+        "buys": "容量可共享、短请求优先、可按租户设配额，硬件利用率高于硬分区",
+        "costs": "需要引入或实现公平调度器；优先级反转与饿死需要额外机制；排队时延分布更难预测"
+      },
+      {
+        "option": "排队带上限 + 快速失败或降级（等待超时返回缓存或部分结果）",
+        "buys": "延迟有上界、过载不转化为排队、用户体验可预期",
+        "costs": "需要定义降级语义与缓存新鲜度，部分成功的业务处理与对账复杂度上升"
+      },
+      {
+        "option": "把长任务迁移到外部作业系统（持久队列 + 专用 worker）",
+        "buys": "交互资源池完全不被长任务污染，长任务可独立扩缩容与限速",
+        "costs": "多一套运行时与运维面；任务状态与结果需要回传、对账与重试语义"
+      }
+    ],
+    "evidence_anchors": [
+      "池与上限配置：pool_size、max_overflow、pool_timeout、max_wait、semaphore permits、maxConcurrentRequests、concurrency",
+      "下游容量声明与对照：postgresql max_connections、statement_timeout、idle_in_transaction_session_timeout、Redis maxclients，以及应用侧池大小之和是否被校验",
+      "队列与优先级：priority class、weighted fair queueing、per-tenant quota、rate limit key、K8s PriorityClass 与 Request/Limit",
+      "长任务入口：批量端点、导出与报表任务、后台 job、模型推理调用，以及它们是否拥有独立队列",
+      "等待超时与拒绝分支：pool timeout、queue full、429/503 与 Retry-After 的返回点",
+      "重试与退避策略：retry count、backoff、jitter、Circuit Breaker 状态机（closed/open/half-open）",
+      "公平性与延迟指标：按租户或类别的 p99、队列等待直方图、池等待时间、超时计数",
+      "容量与压测脚本：是否以混合工作负载（长短任务、多租户）而不是单一请求类型施压"
+    ],
+    "tags": {
+      "structure": ["bulkhead", "priority-queue", "fair-scheduling", "connection-pool", "per-tenant-quota"],
+      "symptom": ["head-of-line-blocking", "noisy-neighbor", "pool-exhaustion", "unfair-latency", "starvation"],
+      "stack": ["hikaricp", "pgbouncer", "tokio", "java-executors", "nginx", "envoy", "kubernetes-scheduler", "celery"],
+      "store": ["postgres-connection-pool", "redis", "sqs", "kafka-partition"],
+      "surface": ["pool-config", "rate-limit-middleware", "priority-class", "metrics-endpoint", "capacity-test"]
+    },
+    "sources": [
+      {
+        "title": "Azure Architecture — Noisy Neighbor antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/noisy-neighbor/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Bulkhead pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Queue-Based Load Leveling pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling",
+        "license": "attribution"
+      },
+      {
+        "title": "PostgreSQL Documentation — Resource Consumption (statement and transaction timeouts)",
+        "url": "https://www.postgresql.org/docs/current/runtime-config-resource.html",
+        "license": "permissive"
+      },
+      {
+        "title": "RFC 9218 — Extensible Prioritization Scheme for HTTP (urgency and incremental scheduling signals)",
+        "url": "https://www.rfc-editor.org/rfc/rfc9218.html",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "SCH-5",
+    "name": "取消传播与优雅停机 (Cancellation Propagation and Graceful Shutdown)",
+    "domain": "scheduling",
+    "path": "dsh-researcher/docs/kb/clean/scheduling/scheduling.json",
+    "trigger": "当你要审查服务退出、滚动发布、请求超时或被用户中断时使用——重点看取消信号能否沿调用链到达 I/O 点、停机是否先摘流量再排空、被取消的工作是否释放资源。",
+    "questions": [
+      "每个入站请求的取消信号是否沿调用链向下传递（context.Context、AbortSignal、CancellationToken、deadline），并在下游 I/O 调用点被检查或以参数形式传入？",
+      "进程收到终止信号（SIGTERM / SIGINT）后是否先停止接受新工作（readiness 置为失败、关闭 listener、从负载均衡摘除），再等待在途工作完成，最后才强制退出？",
+      "优雅停机是否有一个小于编排层宽限期的显式上限（shutdown_timeout < terminationGracePeriodSeconds / stopTimeout / drain time），且存在超时后的强制终止路径？",
+      "取消或超时到达时，被中止的工作是否释放其占用的资源（连接归还池、锁释放、事务回滚、临时文件删除、消息位点确认策略），使资源计数回到基线？",
+      "后台循环、定时器、消费者与工作线程是否订阅同一个取消或停机信号并在其内退出，使进程在没有在途工作时能够及时结束？",
+      "停机与排空过程是否可观测（in-flight 计数、drain 耗时、被强制中止的工作数、telemetry 缓冲 flush 完成），使停机期间的数据丢失可以被发现？"
+    ],
+    "failure_modes": [
+      {
+        "name": "CWE-404: Improper Resource Shutdown or Release",
+        "source": "https://cwe.mitre.org/data/definitions/404.html"
+      },
+      {
+        "name": "Gray failure (Huang et al., HotOS 2017): a draining instance is still advertised as healthy to its peers",
+        "source": "https://doi.org/10.1145/3102980.3103005"
+      },
+      {
+        "name": "How Complex Systems Fail — Richard Cook: degraded-mode operation and the limits of operator/automation intervention",
+        "source": "https://how.complexsystems.fail/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "停机即断开（收到信号立刻退出，在途请求失败）",
+        "buys": "停机时间最短、实现最简、不需要排空状态机与就绪探针改造",
+        "costs": "每次发布都产生一批用户可见错误；未确认的消息与写入丢失，正确性依赖客户端重试与幂等"
+      },
+      {
+        "option": "排空式停机：摘流量 → 等待在途完成 → 退出（带超时上限）",
+        "buys": "发布期间错误率接近零，消息处理与写入有机会收尾，行为可解释",
+        "costs": "需要 readiness 与信号处理基础设施，每次部署耗时增加，必须处理超过宽限期的长在途请求"
+      },
+      {
+        "option": "把在途工作先持久化再退出（记录待办，重启后继续）",
+        "buys": "即使被强制终止也不丢工作，停机时间可以很短，发布与长任务解耦",
+        "costs": "需要幂等键与恢复逻辑、状态存储与对账；重复执行的风险必须靠去重与补偿处理"
+      },
+      {
+        "option": "由编排层强制终止并靠重试补偿（缩短宽限期）",
+        "buys": "应用内无需实现排空，行为由平台统一控制，实现最少",
+        "costs": "补偿逻辑必须完备，否则每次发布都产生数据不一致；无法区分可重试与不可重试的失败"
+      }
+    ],
+    "evidence_anchors": [
+      "信号处理：SIGTERM/SIGINT handler、signal.signal、process.on('SIGTERM')、graceful shutdown hook、BeforeStop/Stop 生命周期钩子",
+      "取消传播：context.Context 传递链、ctx.Done() 检查、AbortController/AbortSignal、CancellationToken、asyncio.CancelledError 处理、deadline 参数",
+      "停机时限：terminationGracePeriodSeconds、preStop hook、stopTimeout、shutdown_timeout、drain_timeout 与编排层宽限期的数值对照",
+      "readiness 与生命周期端点：readinessProbe、livenessProbe、/healthz、/readyz，以及停机开始时切换为非就绪的实现位置",
+      "资源释放路径：连接归还（close / return-to-pool）、锁释放（finally / with / defer）、事务回滚、临时文件清理、队列 ack 与 commit 的位置",
+      "后台任务与消费者循环的退出条件：while True 循环中的 stop flag、定时器取消、worker.stop() 实现、队列 drain 完成条件",
+      "在途计数与排空观测：in_flight / active_requests gauge、shutdown 日志与耗时、被强制 kill 的计数、telemetry flush 与 shutdown 调用",
+      "测试与脚本：是否存在发出 SIGTERM 后断言在途请求完成、进程按时退出的集成测试或脚本"
+    ],
+    "tags": {
+      "structure": ["cancellation-propagation", "graceful-shutdown", "drain-phase", "deadline-propagation", "resource-release"],
+      "symptom": ["hung-shutdown", "dropped-inflight-request", "leaked-connection", "zombie-worker", "telemetry-loss-on-exit"],
+      "stack": ["kubernetes", "systemd", "gunicorn", "uvicorn", "nodejs", "go-context", "java-shutdownhook", "tokio"],
+      "store": ["k8s-lease", "connection-pool", "kafka-consumer-group", "temp-files"],
+      "surface": ["signal-handler", "lifecycle-hook", "readiness-probe", "test-script", "metrics-endpoint"]
+    },
+    "sources": [
+      {
+        "title": "Kubernetes Documentation — Pod Lifecycle (termination, grace period, termination flow)",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/",
+        "license": "attribution"
+      },
+      {
+        "title": "Kubernetes Documentation — Container Lifecycle Hooks (preStop and postStart)",
+        "url": "https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/",
+        "license": "attribution"
+      },
+      {
+        "title": "OpenTelemetry Documentation — Context Propagation (carrying deadlines and cancellation across boundaries)",
+        "url": "https://opentelemetry.io/docs/concepts/context-propagation/",
+        "license": "attribution"
+      },
+      {
+        "title": "CWE-404: Improper Resource Shutdown or Release",
+        "url": "https://cwe.mitre.org/data/definitions/404.html",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture — Health Endpoint Monitoring pattern (readiness signalling for drain and failover)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/health-endpoint-monitoring",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  }
+]

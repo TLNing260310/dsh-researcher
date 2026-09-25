@@ -1,0 +1,474 @@
+[
+  {
+    "lens": "FR-1",
+    "name": "超时层级与 deadline 传播 (Timeout Hierarchy and Deadline Propagation)",
+    "domain": "failure-resilience",
+    "trigger": "当一次用户请求会穿过网关、服务、连接池、数据库与外部 API 多层跳点时使用；用来核查每一跳的显式超时与剩余时间预算是否对外层截止时间保持单调收缩。",
+    "questions": [
+      "客户端/网关入口的请求超时值在哪个配置键上显式声明（path:line）？",
+      "下游每一跳（HTTP 客户端、数据库、缓存、第三方 SDK）的超时值是显式设置还是取自框架默认值（path:line）？",
+      "框架的调用级超时是否把上游剩余时间作为上限，并且以单调收缩的方式逐跳传递（path:line）？",
+      "重试策略是否共享同一个总时间预算，从而让重试等待也受外层 deadline 约束（path:line）？",
+      "请求路径中是否存在嵌套重试循环，使某一次 SDK 重试的最坏耗时会超过调用方自己的超时（path:line）？",
+      "超时事件被单独计数并暴露为指标，可与被取消请求数、上游延迟直方图对照（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Metastable failure（重试、超时预算与负载互相维持，系统无法自行回到健康态）",
+        "source": "https://doi.org/10.1145/3458336.3465286"
+      },
+      {
+        "name": "Coordinated omission（压测目标速率下的排队延迟未被计入，超时预算因此被低估）",
+        "source": "https://www.usenix.org/publications/loginonline/metastable-failures-wild"
+      },
+      {
+        "name": "Timeout 模式（Azure Cloud Design Patterns：每跳显式超时与调用级时间预算）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/retry"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把完整剩余 deadline 放入请求元数据并逐跳扣减（context/deadline 传播），而不是每跳各自设置绝对值",
+        "buys": "超时在整条调用链上保持单调收缩，末跳失败时上游仍有时间返回可解释的降级结果",
+        "costs": "要求统一的时间源与元数据标准；跨语言、跨消息队列和批处理边界时传播链会断裂"
+      },
+      {
+        "option": "为每个出站依赖设置显式超时，并同时配置 circuit breaker 在持续超时时快速失败",
+        "buys": "慢依赖被快速切断，超时不再演化为资源堆积",
+        "costs": "阈值调参困难，过早打开会造成正常流量被拒并触发更高层重试"
+      },
+      {
+        "option": "在尾部延迟敏感场景对同一逻辑请求发起对冲请求（hedged request），超时后仍保留原请求",
+        "buys": "在 P99 被单个慢副本主导时显著降低尾部延迟",
+        "costs": "常态流量下额外消耗下游容量，若下游已接近饱和会放大过载"
+      }
+    ],
+    "evidence_anchors": [
+      "Kubernetes manifests 中的 timeoutSeconds / periodSeconds / terminationGracePeriodSeconds，用于对比探针周期与优雅退出预算",
+      "服务网格与网关路由配置（VirtualService / route timeout / retries.perTryTimeout），用于读取每跳显式超时",
+      "应用配置中的 requestTimeout / ReadTimeout / DialTimeout / command_timeout / connect_timeout 键",
+      "HTTP 客户端与数据库驱动构造点（client := &http.Client{Timeout: ...}、pool_timeout、statement_timeout）",
+      "中间件链上的 context.WithTimeout / AbortController / deadline 传递代码",
+      "超时与取消相关的指标名（*_timeout_total、*_deadline_exceeded_total、context canceled 日志）"
+    ],
+    "tags": {
+      "structure": ["timeout", "deadline-propagation", "retry", "middleware-chain", "client-instantiation"],
+      "symptom": ["latency-spike", "tail-latency", "cascading-timeout", "request-cancellation"],
+      "stack": ["http", "grpc", "kubernetes", "service-mesh", "sql-driver"],
+      "store": ["rdbms", "redis", "object-store"],
+      "surface": ["config", "code", "manifest", "metrics"]
+    },
+    "sources": [
+      {
+        "title": "Metastable Failures in Distributed Systems (HotOS 2021)",
+        "url": "https://doi.org/10.1145/3458336.3465286",
+        "license": "attribution"
+      },
+      {
+        "title": "RFC 9110: HTTP Semantics - 408 Request Timeout and timeout semantics",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "license": "permissive"
+      },
+      {
+        "title": "Azure Cloud Design Patterns - Retry pattern (timeouts and retry budgets)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/retry",
+        "license": "noncommercial"
+      },
+      {
+        "title": "gRPC - Deadlines guide",
+        "url": "https://grpc.io/docs/guides/deadlines/",
+        "license": "permissive"
+      },
+      {
+        "title": "Kubernetes - Pod Lifecycle (container probes and pod termination)",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "FR-2",
+    "name": "重试风暴与退避预算 (Retry Storm and Backoff Budget)",
+    "domain": "failure-resilience",
+    "trigger": "当失败路径上存在自动重试（客户端、网关、SDK、消息消费者、定时任务）时使用；用来核查退避是否带 jitter、重试总量是否有预算，以及重试带来的额外负载是否被计入容量模型。",
+    "questions": [
+      "重试延迟实现包含随机 jitter 分量（full jitter / decorrelated jitter），而不是固定的指数序列（path:line）？",
+      "在应用/网关/服务网格层之一存在对重试总量的上限——重试次数上限、重试比例预算或独立的重试并发池（path:line）？",
+      "重试仅在幂等操作上进行，或每次尝试携带幂等键 / 幂等令牌（path:line）？",
+      "重试决策按错误类型分类，只重试可瞬时恢复的错误（连接重置、5xx、限流），永久错误直接向上返回（path:line）？",
+      "客户端在实例失败或扩缩容时会刷新实例列表、并带有避免同时冲击单个实例的选择策略（path:line）？",
+      "重试次数与重试放大的流量被单独计数为指标，可与下游请求总量对比（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Retry Storm（Azure 反模式：大量瞬时重试压垮本已降级的服务，使其无法恢复）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/"
+      },
+      {
+        "name": "Metastable failure（重试是典型 sustaining effect：触发条件消失后系统仍停留在坏态）",
+        "source": "https://doi.org/10.1145/3458336.3465286"
+      },
+      {
+        "name": "Circuit Breaker 模式（用熔断限制失败调用的放大，给下游恢复窗口）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "带 jitter 的指数退避（exponential backoff with jitter）替代固定间隔或固定指数重试",
+        "buys": "打散失败客户端之间的重试到达时间，避免重试在同一时刻叠加到下游客量上",
+        "costs": "最坏等待时间变长，需要更大的端到端 deadline 预算；对延迟敏感的同步路径可能不可接受"
+      },
+      {
+        "option": "重试预算（retry budget / retry ratio）替代每个调用独立的最大重试次数",
+        "buys": "把重试产生的额外负载封顶为基线的固定比例，避免雪崩式放大",
+        "costs": "预算耗尽时合法重试被拒绝，需要额外的指标与容量模型来解释拒绝原因"
+      },
+      {
+        "option": "circuit breaker 或服务网格级的失败率驱动驱逐，替代无状态重试",
+        "buys": "下游持续失败时快速切断流量，把恢复时间留给下游",
+        "costs": "存在状态与误判风险，需要定义半开探测与恢复策略"
+      }
+    ],
+    "evidence_anchors": [
+      "重试循环实现（for attempt in range(max_retries)、tenacity/backoff/Polly/resilience4j 配置、grpc retry policy）",
+      "退避与 jitter 的常量与随机数调用点（base_delay、max_backoff、random.uniform）",
+      "幂等性证据：Idempotency-Key 头、去重表、upsert 语义、消费端 offset 提交位置",
+      "错误分类映射表（可重试状态码/错误码白名单，如 429/503/ECONNRESET）",
+      "客户端负载均衡与服务发现刷新配置（resolve 间隔、子集选择、会话保持）",
+      "重试相关指标与日志（retry_total、retries_exhausted、attempt 计数标签）"
+    ],
+    "tags": {
+      "structure": ["retry-loop", "exponential-backoff", "jitter", "circuit-breaker", "idempotency-key"],
+      "symptom": ["error-burst", "load-amplification", "slow-recovery", "metastable-state"],
+      "stack": ["http", "grpc", "sdk", "service-mesh", "queue-consumer"],
+      "store": ["rdbms", "kv-store"],
+      "surface": ["code", "config", "metrics", "logs"]
+    },
+    "sources": [
+      {
+        "title": "Azure Architecture - Retry Storm antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/",
+        "license": "noncommercial"
+      },
+      {
+        "title": "USENIX ;login: - Metastable Failures in the Wild (Bronson et al.)",
+        "url": "https://www.usenix.org/publications/loginonline/metastable-failures-wild",
+        "license": "permissive"
+      },
+      {
+        "title": "Metastable Failures in Distributed Systems (HotOS 2021), DOI 10.1145/3458336.3465286",
+        "url": "https://doi.org/10.1145/3458336.3465286",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Cloud Design Patterns - Circuit Breaker pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Amazon Builders' Library - Timeouts, retries, and backoff with jitter",
+        "url": "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+        "license": "noncommercial"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "FR-3",
+    "name": "舱壁隔离与共享池污染 (Bulkhead Isolation and Shared-Pool Contamination)",
+    "domain": "failure-resilience",
+    "trigger": "当多个依赖、租户或工作负载共用同一个连接池、线程池、事件循环或数据库实例时使用；用来核查一个慢消费者能否耗尽共享资源并拖垮无关功能。",
+    "questions": [
+      "每个下游依赖拥有自己的有界资源池（连接池、信号量、线程池、并发上限），而不是全进程共用一个池（path:line）？",
+      "连接池与工作线程池的上限被显式配置（pool_size / max_connections / max_workers / semaphore 容量），而不是使用框架默认值（path:line）？",
+      "从池中获取资源（acquire / borrow）的等待本身带有超时，使池耗尽表现为快速失败而不是无限排队（path:line）？",
+      "批量作业、报表、后台导入与在线请求路径使用相互隔离的资源池或独立的工作进程（path:line）？",
+      "按租户或 API key 维度的配额/限流存在，并且在共享资源之前生效（path:line）？",
+      "池饱和、等待时间与拒绝数被度量（pool_wait_seconds、in_use、pending、rejected）（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Noisy Neighbor（Azure 反模式：单一租户或工作负载消耗共享资源，使其他共置负载性能下降）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/noisy-neighbor/"
+      },
+      {
+        "name": "Gray failure（Huang et al., HotOS 2017：故障对部分观察者可见，对负载均衡与监控不可见，因而不会被隔离）",
+        "source": "https://doi.org/10.1145/3102980.3103005"
+      },
+      {
+        "name": "Bulkhead 模式（Azure Cloud Design Patterns：把元素隔离到独立池中，使一个失败不拖垮整体）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead"
+      },
+      {
+        "name": "Improper Instantiation（Azure 反模式：反复创建昂贵客户端导致连接池与端口资源被耗尽）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "按依赖拆分的连接/线程池加上有界信号量，替代单一共享池",
+        "buys": "一个慢依赖的排队不会消耗其他依赖的并发名额，故障被限制在单个舱壁内",
+        "costs": "总容量被各池上限之和约束，池划分过细会造成全局资源闲置"
+      },
+      {
+        "option": "把关键路径与尽力而为的工作负载分离到不同部署单元或不同数据库实例",
+        "buys": "批处理、分析和租户突发流量不再抢占在线请求的容量",
+        "costs": "运维成本与资源占用上升，需要跨单元的一致性方案"
+      },
+      {
+        "option": "对每租户施加配额/限流与并发上限，替代全局公平排队",
+        "buys": "把共享池的消耗速度限制在可解释的范围内，防止单租户吃掉整个池",
+        "costs": "需要租户身份贯穿调用链，配额误配会造成正常租户被限流"
+      }
+    ],
+    "evidence_anchors": [
+      "数据源与 HTTP 客户端构造点（HikariCP maximumPoolSize、pgx pool max_conns、http.Transport.MaxConnsPerHost）",
+      "连接获取与释放的调用点及是否配置 acquire/connection timeout",
+      "工作池与并发原语的容量（ThreadPoolExecutor、asyncio.Semaphore、worker pool size、queue 容量）",
+      "共享实例证据：多个服务指向同一数据库/缓存的地址与环境变量",
+      "后台任务、批处理、定时作业的独立部署或独立池配置",
+      "租户维度限流与配额配置（rate limit policy、quota、per-key 并发上限）"
+    ],
+    "tags": {
+      "structure": ["bulkhead", "connection-pool", "thread-pool", "semaphore", "tenant-quota"],
+      "symptom": ["pool-exhaustion", "noisy-neighbor", "partial-failure", "unfair-latency"],
+      "stack": ["http-client", "rdbms-driver", "runtime-scheduler", "kubernetes"],
+      "store": ["rdbms", "connection-pooler", "redis"],
+      "surface": ["config", "code", "manifest", "metrics"]
+    },
+    "sources": [
+      {
+        "title": "Azure Cloud Design Patterns - Bulkhead pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Azure Architecture - Noisy Neighbor antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/noisy-neighbor/",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Shockwave: Gray Failure (Huang et al., HotOS 2017), DOI 10.1145/3102980.3103005",
+        "url": "https://doi.org/10.1145/3102980.3103005",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture - Improper Instantiation antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/",
+        "license": "noncommercial"
+      },
+      {
+        "title": "PostgreSQL Documentation - Connections and Authentication (max_connections)",
+        "url": "https://www.postgresql.org/docs/current/runtime-config-connection.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "FR-4",
+    "name": "容量模型与排队 (Capacity Model and Queueing Under Load)",
+    "domain": "failure-resilience",
+    "trigger": "当需要判断系统在预期峰值或 1.5 倍峰值下会以何种方式失效时使用；用来核查并发与队列是被显式建模的，而不是把快速失败外包给无界队列和长时间超时。",
+    "questions": [
+      "服务容量以并发数或速率上界的形式被显式声明，而不是由无界排队与默认并发推导（path:line）？",
+      "请求队列有界（队列深度或等待上限有限），且满载时的行为被显式选择为拒绝或丢弃（path:line）？",
+      "存在按优先级或类型的 load shedding 规则，在过载时先拒绝低价值请求而非全部请求（path:line）？",
+      "负载生成器或压测配置覆盖了峰值速率，并记录被触发的上限告警（path:line）？",
+      "从排队到开始处理的等待时间以直方图度量，而不是只度量处理时间（path:line）？",
+      "排队的持久条目带有最大可见年龄或老化策略，超龄条目被丢弃或死信而不是无限累积（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Little's Law（并发 = 到达率 x 停留时间：用并发上界反推可持续吞吐）",
+        "source": "https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/"
+      },
+      {
+        "name": "利用率的非线性（utilization 逼近 1 时队列等待时间急剧上升，容量规划需保留余量）",
+        "source": "https://www.brendangregg.com/usemethod.html"
+      },
+      {
+        "name": "Insurmountable queue backlog（队列积压累积到即使过载消退也无法在可接受时间内排空）",
+        "source": "https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/"
+      },
+      {
+        "name": "Queue-Based Load Leveling（用有界队列与受控消费者平滑突发）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "以有界队列加优先级 load shedding，替代无界队列加长超时",
+        "buys": "过载时延迟保持有界，低价值请求被早期拒绝，为高价值请求保留容量",
+        "costs": "需要请求分类与 SLO 分级，被拒绝的流量需要可解释的错误契约"
+      },
+      {
+        "option": "用队列做负载均衡、把突发吸收到异步处理，替代在请求路径上同步排队",
+        "buys": "解耦生产者与消费者速率，突发不再直接转化为用户可见延迟",
+        "costs": "引入端到端额外延迟与至少一次投递语义，需要幂等消费者与积压老化策略"
+      },
+      {
+        "option": "按资源上限做准入控制与请求级分片，限制单节点的在途工作数",
+        "buys": "把单节点队列深度压在可预测范围内，避免内存与上下文切换成为瓶颈",
+        "costs": "需要准确估计单位工作成本，估计偏低会导致资源闲置"
+      }
+    ],
+    "evidence_anchors": [
+      "消息与任务队列配置（visibility timeout、maxReceiveCount、队列深度告警、死信队列定义）",
+      "限流与并发闸门配置（max concurrency、bulkhead 容量、连接池上限、rate limit 规则）",
+      "压测与负载生成脚本（k6/locust/JMeter 的 stage 与 target 速率）",
+      "指标与看板中的饱和度度量（utilization、queue_depth、pending、in_flight、队列等待直方图）",
+      "弹性伸缩策略与副本数上限（maxReplicas、目标利用率、队列长度触发器）",
+      "超时与排队组合证据（无界队列 + 大 timeout 的配置组合）"
+    ],
+    "tags": {
+      "structure": ["bounded-queue", "load-shedding", "admission-control", "autoscaling", "littles-law"],
+      "symptom": ["saturation", "queue-depth-growth", "latency-cliff", "timeout-at-scale"],
+      "stack": ["kubernetes", "message-queue", "api-gateway", "worker-pool"],
+      "store": ["queue", "rdbms", "object-store"],
+      "surface": ["config", "manifest", "metrics", "load-test"]
+    },
+    "sources": [
+      {
+        "title": "Amazon Builders' Library - Using load shedding to avoid overload",
+        "url": "https://aws.amazon.com/builders-library/using-load-shedding-to-avoid-overload/",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Amazon Builders' Library - Avoiding insurmountable queue backlogs",
+        "url": "https://aws.amazon.com/builders-library/avoiding-insurmountable-queue-backlogs/",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Brendan Gregg - The USE Method (utilization, saturation, errors)",
+        "url": "https://www.brendangregg.com/usemethod.html",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Cloud Design Patterns - Queue-Based Load Leveling pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Prometheus - Alerting practices (resource saturation and latency alerting)",
+        "url": "https://prometheus.io/docs/practices/alerting/",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "FR-5",
+    "name": "混沌演练与探针语义 (Chaos Drills and Probe Semantics)",
+    "domain": "failure-resilience",
+    "trigger": "当平台依赖存活探针、健康检查、就绪门控或滚动更新来自动恢复时使用；用来核查探针语义与故障演练是否会把局部降级放大为整批重启。",
+    "questions": [
+      "存活探针配置了 failureThreshold 与 periodSeconds 的组合，使重启发生在多个周期之后而不是一次抖动之后（path:line）？",
+      "存活探针与就绪探针检查不同的东西：存活探针只检查进程自身健康，就绪探针反映依赖可用性（path:line）？",
+      "存活探针的端点不访问外部依赖（数据库、缓存、下游 HTTP 服务），因此依赖变慢不会导致容器被重启（path:line）？",
+      "启动探针或较宽松的初始延迟设置到位，避免应用冷启动期间被判定为不健康（path:line）？",
+      "部署与伸缩过程按批次或比例推进（maxUnavailable / maxSurge / 分批滚动策略），不会让整个实例集合同时重建（path:line）？",
+      "演练或故障注入的证据存在（chaos 实验定义、game day 记录、故障演练脚本），并覆盖依赖超时或依赖不可用场景（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "How Complex Systems Fail - 18 条（#8 运行于退化状态、#12 操作者控制迁移、#14 变化带来新失败）",
+        "source": "https://how.complexsystems.fail/"
+      },
+      {
+        "name": "Liveness probe 误用（探针因下游依赖故障失败，kubelet 重启容器，故障被放大为全体重启）",
+        "source": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+      },
+      {
+        "name": "Health Endpoint Monitoring 模式（健康检查端点应区分 liveness 与依赖就绪语义）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/health-endpoint-monitoring"
+      },
+      {
+        "name": "Coordinated omission（演练只按目标速率观察，重启潮造成的排队与延迟被系统性漏计）",
+        "source": "https://www.usenix.org/publications/loginonline/metastable-failures-wild"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把依赖健康从存活探针移到就绪探针，让依赖故障摘除流量而不是重启容器",
+        "buys": "依赖变慢时实例保留在现场，流量切走，故障回到后仍可直接服务",
+        "costs": "就绪失败期间实例不接流量，需要足够的冗余副本与快速恢复路径"
+      },
+      {
+        "option": "默认进入降级模式（feature flag / 静态兜底）而非依赖驱动重启",
+        "buys": "依赖不可用时仍能返回部分结果，避免把依赖故障升级为可用性故障",
+        "costs": "需要定义并维护降级路径，兜底返回可能掩盖真实故障并需要单独告警"
+      },
+      {
+        "option": "用 canary 与分批滚动（含 disruption budget 与优先级抢占）替代全量同时变更",
+        "buys": "把变更与重启的影响限制在可观测的小比例实例内",
+        "costs": "发布流程变长，需要额外的流量切分与指标对比能力"
+      }
+    ],
+    "evidence_anchors": [
+      "Kubernetes Deployment/StatefulSet 的 probes 定义（livenessProbe/readinessProbe/startupProbe 的路径、端口、阈值）",
+      "探针端点实现（/healthz、/livez、/readyz handler 中是否调用数据库或下游客户端）",
+      "pod 生命周期设置（preStop hook、terminationGracePeriodSeconds、优雅退出处理）",
+      "滚动更新与可用性预算参数（strategy、maxUnavailable、maxSurge、PodDisruptionBudget、priorityClass）",
+      "混沌/演练资产（chaos-mesh 或 litmus 实验清单、game day runbook、fault injection 测试）",
+      "依赖与本地健康指标（probe_failure_total、restart 计数、container_last_seen 相关的告警规则）"
+    ],
+    "tags": {
+      "structure": ["liveness-probe", "readiness-probe", "graceful-shutdown", "rolling-update", "chaos-experiment"],
+      "symptom": ["cascading-restart", "fleet-wide-outage", "flapping-health", "cold-start-storm"],
+      "stack": ["kubernetes", "container-runtime", "ingress", "service-mesh"],
+      "store": ["rdbms", "redis", "config-store"],
+      "surface": ["manifest", "code", "runbook", "metrics"]
+    },
+    "sources": [
+      {
+        "title": "Kubernetes - Configure Liveness, Readiness and Startup Probes",
+        "url": "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+        "license": "permissive"
+      },
+      {
+        "title": "How Complex Systems Fail (Richard Cook)",
+        "url": "https://how.complexsystems.fail/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Cloud Design Patterns - Health Endpoint Monitoring pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/health-endpoint-monitoring",
+        "license": "noncommercial"
+      },
+      {
+        "title": "Kubernetes - Pod Lifecycle (container restart policy and probe semantics)",
+        "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/",
+        "license": "permissive"
+      },
+      {
+        "title": "USENIX ;login: - Metastable Failures in the Wild",
+        "url": "https://www.usenix.org/publications/loginonline/metastable-failures-wild",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  }
+]

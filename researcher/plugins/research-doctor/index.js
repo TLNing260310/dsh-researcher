@@ -3,8 +3,16 @@
 // "The worst failure of an AI agent is not making mistakes — it is being
 // unable to prove that it ran as designed." This tool turns the integrity
 // contract into a capability: it verifies the SIX runtime guarantees of the
-// researcher preset and renders a certificate with per-check PASS / WARN /
-// FAIL statuses and an overall SAFE / DEGRADED / UNSAFE verdict.
+// researcher preset and renders a certificate with per-check PASS / FAIL
+// statuses and an overall SAFE / UNSAFE verdict.
+//
+// The overall verdict is deliberately BINARY. An earlier revision advertised a
+// three-level SAFE / DEGRADED / UNSAFE scale, but no check ever emitted the
+// WARN status that was the only route to DEGRADED, so the level was
+// unreachable while still being advertised in this tool's description. It is
+// removed rather than kept as decoration: the research gate admits only SAFE
+// (see `recordDoctorVerdict`), so DEGRADED and UNSAFE already behaved
+// identically — the third level carried no capability difference.
 //
 // Checks:
 //   1. Preset binding  — composedPreset(agent.ctx) must be 'researcher'
@@ -18,8 +26,7 @@
 //                        process-execution primitive).
 //   6. Checkpoint      — research_checkpoint available.
 //   7. Replay          — the session log folds deterministically, and the
-//                        live state matches the folded log (WARN when
-//                        importState legitimately diverged).
+//                        live state matches the folded log.
 //
 // The tool is read-only: it writes nothing and only reads live runtime facts.
 
@@ -28,13 +35,15 @@ const toolRestrict = require('../tool-restrict/index.js')
 const { recordDoctorVerdict } = toolRestrict.__capability
 const { readPathVerdict } = toolRestrict.__test
 
+// Closed verdict set. Every check is binary, so the overall verdict is too:
+// any FAIL makes it UNSAFE, otherwise SAFE.
+const VERDICTS = Object.freeze(['SAFE', 'UNSAFE'])
+
 const certificateOverall = (checks) => {
-  let worst = 0
   for (const check of checks) {
-    if (check.status === 'FAIL') worst = 2
-    else if (check.status === 'WARN' && worst < 1) worst = 1
+    if (check.status === 'FAIL') return 'UNSAFE'
   }
-  return worst === 2 ? 'UNSAFE' : worst === 1 ? 'DEGRADED' : 'SAFE'
+  return 'SAFE'
 }
 
 const renderCertificate = (checks, meta) => {
@@ -116,7 +125,7 @@ module.exports = {
   apply(ctx) {
     const definition = {
       name: 'research_doctor',
-      description: 'Run the Researcher Runtime Certificate: verifies preset binding, read-only sandbox, never approval, refusing write/edit stubs, git_read as the only code surface, checkpoint availability, and session-log replay consistency. Returns per-check PASS/WARN/FAIL and an overall SAFE/DEGRADED/UNSAFE verdict. Read-only; writes nothing.',
+      description: 'Run the Researcher Runtime Certificate: verifies preset binding, read-only sandbox, never approval, refusing write/edit stubs, git_read as the only code surface, read-root confinement, checkpoint availability, and session-log replay consistency. Returns per-check PASS/FAIL and an overall SAFE/UNSAFE verdict. Read-only; writes nothing.',
       parameters: {
         type: 'object',
         properties: {},
@@ -189,5 +198,5 @@ module.exports = {
 
     ctx.tools.register(definition)
   },
-  __test: { renderCertificate, certificateHistory, certificateOverall, checkReplay },
+  __test: { renderCertificate, certificateHistory, certificateOverall, checkReplay, VERDICTS },
 }

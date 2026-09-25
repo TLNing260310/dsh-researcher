@@ -64,15 +64,39 @@ The evidence ladder C0–C4:
 | C3 Observed | Real execution evidence (CI logs, releases, benchmarks) | Public URL; local runs unavailable in read-only mode — say so |
 | C4 Externally verified | Independent third-party evidence | Registry/CVE/audit/benchmark/adoption, URL + date |
 
-Every claim additionally gets one **verdict**:
+Every claim additionally gets one **verdict**. Tier and verdict are **two independent axes** — the tier says *how strong the best evidence is*, the verdict says *what you are allowed to conclude from that evidence for THIS claim*. Do not collapse them into one scale.
 
-- **Known** — strong evidence (C2+ for behavioral claims).
-- **Likely** — partial evidence (C1, or C2 with gaps).
-- **Claimed** — only the project itself says so (stuck at C0).
-- **Unknown** — no evidence found.
-- **Contradicted** — evidence conflicts with the claim.
+### The two axes are not a ladder — use this table
 
-This verdict kills the most common LLM failure: mistaking author intent for project reality. Claim cards in the report carry both: `Status: C2 / Known`, `C0 / Contradicted`, etc.
+Find the claim's highest tier, then read the verdict off the row that matches its situation. "Behavioral" means the claim asserts what the system *does*; "structural" means it asserts what *exists*.
+
+| Situation | Tier | Verdict | Example |
+|---|---|---|---|
+| Only prose asserts it (README/docs/issue/commit/user description) | C0 | **Claimed** | "README says it retries with backoff" |
+| Prose asserts it, and the code path exists | C1 | **Likely** | "the retry loop is at `retry.js:41`" |
+| Code path exists and a test covers **that exact behavior** | C2 | **Known** (behavioral) | "`retry.test.js:88` asserts 3 attempts" |
+| Code path exists, but tests cover a different path/branch | C1 | **Likely** | "tests exist, none exercise the backoff" |
+| Real execution evidence (CI log, release, benchmark, public URL) | C3 | **Known** (behavioral) | "CI run #412 shows the backoff" |
+| Independent third-party evidence (registry/CVE/audit/adoption) | C4 | **Known** (behavioral) | "CVE-2024-3094, URL + date" |
+| No evidence found after a real search | — | **Unknown** | — |
+| Evidence conflicts with the claim | any | **Contradicted** | "docs say read-only; `write()` is called at `gc.js:12`" |
+| Evidence is silent — the search did not reach the area | — | **Unknown** | *not* Known, and *not* a finding |
+
+**Tier does not imply verdict.** These four combinations are the ones that get mislabeled most often:
+
+| Wrong | Why it is wrong | Right |
+|---|---|---|
+| "there are tests, so C2 / Known" | the tests do not exercise **this** claim | C1 / **Likely** |
+| "it is C2, so Known" | C2 is about *how the evidence was obtained*, not whether it settles *this* claim | read the assertions; if they do not match, Likely |
+| "it is C3, so C4" | C3 is your/CI observation; C4 needs an **independent** party | C3 / Known — and never claim C4 without an external URL |
+| "I did not look there, so Unknown = safe" | Unknown is an **unverified area**, and it is a legitimate output — but it is not evidence of absence | Unknown / Unknown, listed in the coverage gaps |
+
+**Two hard rules:**
+
+1. **A tier is the highest level you actually reached for that claim — not the highest level that exists somewhere in the project.** One tested module does not upgrade an untested claim.
+2. **If you cannot name the file:line, the commit, or the URL, the verdict is not Known.** "It is probably fine" is `Likely` at best; if nothing was read, it is `Unknown`.
+
+This is what kills the most common LLM failure: mistaking author intent for project reality. Claim cards in the report carry both axes: `Status: C2 / Known`, `C0 / Contradicted`, `C1 / Likely`.
 
 ## Module 3 — Tradeoff Scanner
 

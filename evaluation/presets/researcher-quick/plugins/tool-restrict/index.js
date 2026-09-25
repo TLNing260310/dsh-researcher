@@ -61,7 +61,54 @@
 // the session sandbox (read-only) and the approval policy (never) remain the
 // real enforcement. Start researcher sessions with read-only + never.
 
+const fs = require('node:fs')
+const path = require('node:path')
+
 const DENY = ['write', 'edit']
+const RESEARCHER_PRESETS = new Set(['researcher', 'researcher-quick', 'researcher-deep'])
+const doctorCapabilities = new WeakMap()
+const doctorVerdicts = new WeakMap()
+
+const TERMINAL_GATE_NOTICE = '[dsh-researcher] terminal gate: your previous assistant text was rejected as an uncertified draft because this session has no completed research_doctor result. Call research_doctor now. Do not answer in prose before the tool result.'
+const TERMINAL_GATE_FAILURE = '[dsh-researcher] terminal gate: refusing to complete this turn because the model produced assistant text twice without a completed research_doctor result.'
+
+const recordDoctorVerdict = (agent, overall) => {
+  if (!agent || (typeof agent !== 'object' && typeof agent !== 'function')) return
+  doctorVerdicts.set(agent, { overall, issuedAt: Date.now() })
+  if (overall === 'SAFE') {
+    doctorCapabilities.set(agent, { overall: 'SAFE', issuedAt: Date.now() })
+  } else {
+    doctorCapabilities.delete(agent)
+  }
+}
+
+const doctorCapabilityOf = (agent) => agent ? doctorCapabilities.get(agent) : undefined
+const doctorVerdictOf = (agent) => agent ? doctorVerdicts.get(agent) : undefined
+const revokeDoctorCapability = (agent) => {
+  if (!agent) return
+  doctorCapabilities.delete(agent)
+  doctorVerdicts.delete(agent)
+}
+
+const terminalGateDecision = (verdict, retries) => {
+  if (verdict && ['SAFE', 'DEGRADED', 'UNSAFE'].includes(verdict.overall)) return { kind: 'accept' }
+  if ((retries || 0) < 1) return { kind: 'retry', retries: (retries || 0) + 1 }
+  return { kind: 'reject', error: TERMINAL_GATE_FAILURE }
+}
+
+const makeTerminalGateMessage = () => Object.freeze({
+  id: crypto.randomUUID(),
+  role: 'user',
+  content: [Object.freeze({ type: 'text', text: TERMINAL_GATE_NOTICE })],
+  source: Object.freeze({
+    kind: 'plugin',
+    plugin: 'dsh-researcher/tool-restrict',
+    form: 'notice',
+    summary: 'Uncertified assistant draft rejected; research_doctor is required.',
+  }),
+})
+
+const isResearcherPreset = (id) => RESEARCHER_PRESETS.has(id)
 
 // Pure environment verdict used by both the creation-time preflight and the
 // execution-time guard (unit-testable).
@@ -78,13 +125,45 @@ const envVerdict = (mode, policy) => {
 const readOnlyDenial = (name) => 'Refused: research mode is strictly read-only; the "' + name + '" tool is disabled by the researcher preset, so no file can be created or modified in this session.'
 
 const DOCTOR_GATE_DENIAL = '[dsh-researcher] health gate: run research_doctor first — the Researcher Runtime Certificate must be SAFE before research begins (this is enforced, not a suggestion).'
+const READ_ROOT_DENIAL = '[dsh-researcher] read-root confinement: researcher filesystem tools may read only inside the session workspace. Parent, sibling, and external absolute paths are refused.'
+
+const canonicalExisting = (value) => {
+  try { return fs.realpathSync.native ? fs.realpathSync.native(value) : fs.realpathSync(value) } catch (error) { return path.resolve(value) }
+}
+
+// path.isAbsolute understands only the current host's path dialect. Treat a
+// foreign absolute path as absolute too, otherwise C:/outside becomes a
+// workspace-relative path on POSIX and can slip past the lexical check.
+const isPortableAbsolute = (value) => path.isAbsolute(value) || path.win32.isAbsolute(value) || path.posix.isAbsolute(value)
+
+const isWithin = (root, target) => {
+  const relative = path.relative(root, target)
+  return relative === '' || (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))
+}
+
+const readPathVerdict = (name, args, workspaceRoot) => {
+  const fields = name === 'read' || name === 'read_image' ? ['file_path'] : name === 'glob' || name === 'grep' ? ['path'] : []
+  if (fields.length === 0) return undefined
+  const lexicalRoot = path.resolve(workspaceRoot)
+  const canonicalRoot = canonicalExisting(lexicalRoot)
+  for (const field of fields) {
+    const value = args && args[field]
+    if (value === undefined && (name === 'glob' || name === 'grep')) continue
+    if (typeof value !== 'string' || /[\u0000-\u001f\u007f]/.test(value)) return READ_ROOT_DENIAL
+    if (isPortableAbsolute(value) && !path.isAbsolute(value)) return READ_ROOT_DENIAL
+    const lexical = path.resolve(lexicalRoot, value)
+    if (!isWithin(lexicalRoot, lexical)) return READ_ROOT_DENIAL
+    if (!isWithin(canonicalRoot, canonicalExisting(lexical))) return READ_ROOT_DENIAL
+  }
+  return undefined
+}
 
 // Pure guard decision machine (unit-tested): write/edit always denied; the
 // doctor itself ALWAYS runs (it must be able to report UNSAFE); every other
-// tool is denied until the doctor has run once, and is permanently denied
-// when the environment failed verification (fail-closed; the certificate
-// remains available as the explanation).
+// tool is denied until the doctor has actually PRODUCED a SAFE certificate.
+// Merely calling the tool is not a capability token.
 const decideGuard = (name, st, env) => {
+  st = st || { doctorCalled: false, doctorSafe: false }
   if (name === 'write' || name === 'edit') return { deny: readOnlyDenial(name), st }
   const envFailure = env !== undefined ? envVerdict(env.mode, env.policy) : undefined
   if (name === 'research_doctor') {
@@ -94,14 +173,17 @@ const decideGuard = (name, st, env) => {
         envVerified: envFailure === undefined,
         envFailed: envFailure !== undefined,
         doctorCalled: true,
+        doctorSafe: false,
       },
     }
   }
-  if (!st.doctorCalled) return { deny: DOCTOR_GATE_DENIAL, st }
   if (st.envFailed) {
     return { deny: '[dsh-researcher] environment failed verification — the Runtime Certificate is UNSAFE; fix the listed checks and start a new session. Run research_doctor again for the certificate details.', st }
   }
-  if (envFailure !== undefined) return { deny: envFailure, st }
+  if (envFailure !== undefined) {
+    return { deny: envFailure, st: { ...st, envVerified: false, envFailed: true, doctorSafe: false } }
+  }
+  if (!st.doctorSafe) return { deny: DOCTOR_GATE_DENIAL, st }
   return { deny: undefined, st }
 }
 
@@ -139,9 +221,18 @@ const DELIVERABLES_GUIDANCE = {
 
 module.exports = {
   name: 'tool-restrict',
-  inject: ['tools', 'agents', 'sandboxPolicy', 'approval'],
+  inject: ['tools', 'agents', 'sandboxPolicy', 'approval', 'permissionPresets'],
   apply(ctx, config) {
     const mode = config && config.mode === 'compat' ? 'compat' : 'strict'
+    // The permission preset used to pin an un-pinned session to read-only. It is
+    // the ONLY supported write path for a session's sandbox mode:
+    // `ctx.sandboxPolicy` exposes reads only (`resolve`/`overrideOf`), while
+    // `setSandboxMode` is a module-level export of @deepseek-ai/dsh-sandbox-policy,
+    // not a service method. `permissionPresets.set()` records `permission/preset`
+    // and writes each changed knob through its own setter.
+    const readOnlyPreset = config && typeof config.readOnlyPermissionPreset === 'string' && config.readOnlyPermissionPreset.length > 0
+      ? config.readOnlyPermissionPreset
+      : 'read-only'
 
     // 1) Global-layer deny mask (TUI deployments where the tools are global).
     try {
@@ -161,23 +252,36 @@ module.exports = {
       const sandboxOverride = ctx.sandboxPolicy.overrideOf(session)
       const approvalOverride = ctx.approval.overrideOf(session)
 
-      if (sandboxOverride === undefined || approvalOverride === undefined) {
+      if (sandboxOverride === undefined) {
         try {
-          ctx.sandboxPolicy.setSandboxMode(session, 'read-only')
-          ctx.approval.setPolicy(agent, 'never')
+          ctx.permissionPresets.set(session, readOnlyPreset)
         } catch (error) {
-          throw new Error('environment preflight: cannot pin an un-pinned session to read-only/never: ' + (error && error.message ? error.message : String(error)))
+          throw new Error('environment preflight: cannot pin an un-pinned session to read-only via permission preset "' + readOnlyPreset + '": ' + (error && error.message ? error.message : String(error)))
+        }
+        if (ctx.sandboxPolicy.overrideOf(session) !== 'read-only') {
+          throw new Error('environment preflight: permission preset "' + readOnlyPreset + '" did not resolve the session sandbox to read-only')
         }
       }
 
       const resolvedMode = ctx.sandboxPolicy.resolve({ session }).mode
-      const resolvedPolicy = ctx.approval.overrideOf(session)
       if (resolvedMode !== 'read-only') {
         throw new Error(
           '[dsh-researcher] environment preflight: session sandbox is "' + resolvedMode + '", the researcher preset requires "read-only". ' +
           'Create the session with the read-only permission preset; the preset refuses to run under writable environments.',
         )
       }
+      // DSH Web's Read Only access preset currently carries approval=ask.
+      // Researcher requires no escalation path, so tighten ask/undefined to
+      // never during both initial composition and post-creation recompose.
+      // This is a one-way authority reduction; writable sandboxes still fail.
+      if (approvalOverride !== 'never') {
+        try {
+          ctx.approval.setPolicy(agent, 'never')
+        } catch (error) {
+          throw new Error('environment preflight: cannot tighten approval policy to never: ' + (error && error.message ? error.message : String(error)))
+        }
+      }
+      const resolvedPolicy = ctx.approval.overrideOf(session)
       if (resolvedPolicy !== 'never') {
         throw new Error(
           '[dsh-researcher] environment preflight: session approval policy is "' + (resolvedPolicy === undefined ? 'unknown' : resolvedPolicy) + '", the researcher preset requires "never" ' +
@@ -190,13 +294,15 @@ module.exports = {
     const stubs = new WeakMap()
 
     const shadow = (agent) => {
+      const session = agent && agent.session
+      if (!session) throw new Error('agent has no live session')
+      // Re-check authority even when the stubs were attached earlier. DSH Web
+      // can change a session permission after a SAFE doctor result; an
+      // idempotent attachment must not turn into an idempotent security check.
+      verifyEnvironment(agent, session)
       if (stubs.has(agent)) return
       const disposers = []
       try {
-        const session = agent.session
-        if (!session) throw new Error('agent has no live session')
-        verifyEnvironment(agent, session)
-
         for (const name of DENY) {
           disposers.push(agent.ctx.tools.register(stubDefinition(name)))
         }
@@ -230,9 +336,13 @@ module.exports = {
       stubs.set(agent, disposers)
     }
 
+    const terminalGateRetries = new WeakMap()
+
     const release = (agent) => {
       const disposers = stubs.get(agent)
       stubs.delete(agent)
+      terminalGateRetries.delete(agent)
+      revokeDoctorCapability(agent)
       if (disposers) for (const dispose of disposers) dispose()
     }
 
@@ -243,6 +353,56 @@ module.exports = {
     ctx.on('agent/disposed', (payload) => {
       const agent = payload && payload.agent
       if (agent) release(agent)
+    })
+
+    // DSH Web creates a blank/standard agent and then re-links it to the
+    // selected preset. The standing preset is mounted before this durable
+    // event is appended, so install the agent-layer stubs at that boundary as
+    // well as at agent/created. Release them if a still-blank agent switches
+    // away before its first message.
+    ctx.on('agent-preset/selected', (sessionId, preset) => {
+      const agent = ctx.agents.get(sessionId)
+      if (!agent || !agent.ctx) return
+      if (isResearcherPreset(preset)) shadow(agent)
+      else release(agent)
+    })
+
+    // Some Web recompose paths publish the durable selection before the
+    // preset-scoped listener can resolve the live Agent. The first scoped
+    // pre-step is the authoritative fallback because it carries that Agent.
+    // Failures throw before the model request instead of degrading silently.
+    ctx.on('agent/pre-step', ({ agent }, next) => {
+      if (agent && agent.ctx) shadow(agent)
+      return next()
+    })
+
+    // 2b) Terminal doctor gate. A tools.guard can deny the wrong first tool,
+    // but DSH completes a step immediately when the model emits no tool call.
+    // Intercept that separate terminal path: permit a real completed doctor
+    // verdict (SAFE may research; UNSAFE may only explain and stop),
+    // otherwise inject one bounded correction step and then fail loudly.
+    ctx.on('agent/turn-stopping', ({ agent }) => {
+      if (!agent) return
+      // The terminal path may contain no tool call, so tools.guard cannot be
+      // its drift detector. Re-verify here and revoke stale certification
+      // before refusing a session whose permission changed after doctor.
+      try {
+        verifyEnvironment(agent, agent.session)
+      } catch (error) {
+        revokeDoctorCapability(agent)
+        throw error
+      }
+      const decision = terminalGateDecision(doctorVerdictOf(agent), terminalGateRetries.get(agent))
+      if (decision.kind === 'accept') {
+        terminalGateRetries.delete(agent)
+        return
+      }
+      if (decision.kind === 'retry') {
+        terminalGateRetries.set(agent, decision.retries)
+        agent.inject(makeTerminalGateMessage())
+        return
+      }
+      throw new Error(decision.error)
     })
 
     // 3) Execution-time guard (v0.4.4/v0.5.1/v0.6.0): layer-based, not
@@ -259,22 +419,38 @@ module.exports = {
       if (!agent) return name === 'write' || name === 'edit' ? readOnlyDenial(name) : undefined
       let st = guardStates.get(agent)
       if (st === undefined) {
-        st = { doctorCalled: false }
+        st = { doctorCalled: false, doctorSafe: false, envFailed: false }
         guardStates.set(agent, st)
       }
       let env
       try {
+        const policy = ctx.sandboxPolicy.resolve({ session: agent.session })
         env = {
-          mode: ctx.sandboxPolicy.resolve({ session: agent.session }).mode,
+          mode: policy.mode,
           policy: ctx.approval.overrideOf(agent.session),
+          workspaceRoot: policy.workspaceRoot,
         }
       } catch (error) {
         return '[dsh-researcher] environment preflight failed: ' + (error && error.message ? error.message : String(error))
       }
+      const readDenial = readPathVerdict(name, exec && exec.arguments, env.workspaceRoot)
+      if (readDenial !== undefined) return readDenial
+      if (name === 'research_doctor') {
+        // Re-running doctor revokes the old token until the new certificate
+        // has been fully computed and explicitly recorded as SAFE.
+        revokeDoctorCapability(agent)
+      } else {
+        const capability = doctorCapabilityOf(agent)
+        if (capability && capability.overall === 'SAFE') {
+          st = { ...st, doctorCalled: true, doctorSafe: true, envVerified: true, envFailed: false }
+        }
+      }
       const outcome = decideGuard(name, st, env)
+      if (outcome.st && outcome.st.envFailed) revokeDoctorCapability(agent)
       guardStates.set(agent, outcome.st)
       return outcome.deny
     })
   },
-  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, DOCTOR_GATE_DENIAL },
+  __capability: { recordDoctorVerdict, doctorCapabilityOf, doctorVerdictOf, revokeDoctorCapability },
+  __test: { envVerdict, stubDefinition, readOnlyDenial, decideGuard, readPathVerdict, terminalGateDecision, makeTerminalGateMessage, isResearcherPreset, DOCTOR_GATE_DENIAL, READ_ROOT_DENIAL, TERMINAL_GATE_NOTICE, TERMINAL_GATE_FAILURE, recordDoctorVerdict, doctorCapabilityOf, doctorVerdictOf, revokeDoctorCapability },
 }

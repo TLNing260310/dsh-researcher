@@ -1,0 +1,345 @@
+[
+  {
+    "lens": "EXT-1",
+    "name": "依赖方向与循环依赖 (Dependency Direction and Cycle Containment)",
+    "domain": "extensibility",
+    "trigger": "当你要评估分层/模块边界是否真的被代码结构强制，而不是只写在文档里的时候使用这条透镜。",
+    "questions": [
+      "领域层或核心层的 import 语句是否直接引用基础设施、框架或 SDK 模块（可在 src/domain/**、core/** 内用 grep 'from .*infra|from .*adapters|import .*client' 定位每个命中的 path:line）？",
+      "仓库里是否存在模块 A 的 import 图与模块 B 的 import 图互相包含的环（用 madge/depcruise 或按 path:line 逐条核对 import 边）？",
+      "构建配置（package.json / pyproject.toml / tsconfig.json / BUILD 文件）中是否声明了依赖方向约束，或 CI 里是否有一条会在违反时失败的架构 fitness 检查（可指出其 path:line）？",
+      "被最多文件 import 的那个模块（god module）是否同时承载了业务规则、I/O 与配置读取，其单一文件是否超过 800 行（wc -l 与 grep '^import' | wc -l 给出 path:line 证据）？",
+      "领域模型代码里是否出现了框架专属的注解或装饰器（如 @Entity、@Inject、@Controller、@pydantic 装饰器），可在领域目录内 grep 出具体 path:line？",
+      "是否存在一个模块的导出符号被两个以上互不相干的子系统引用，从而任何变更都会横向扩散（用被引用清单给出 path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "分层依赖倒置导致领域层被基础设施反向绑定 (Layered dependency inversion)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/"
+      },
+      {
+        "name": "循环依赖使单体模块无法独立编译、测试或替换 (Cyclic dependency)",
+        "source": "https://cwe.mitre.org/data/definitions/1120.html"
+      },
+      {
+        "name": "上帝模块把不相关的变更原因聚合成一个变更热点 (God module / high fan-in module)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "在领域层定义端口接口、由基础设施实现适配器（Ports & Adapters）",
+        "buys": "领域层不再 import 基础设施，方向由接口固定并可被测试替身替换",
+        "costs": "需要额外一层映射与接口维护，且必须为每个外部依赖写适配器"
+      },
+      {
+        "option": "在 CI 中加入依赖方向 fitness function（dependency-cruiser / import-linter / ArchUnit）并在违规时阻断合并",
+        "buys": "边界从口头约定变成每次提交都执行的机械约束，回归立刻可见",
+        "costs": "规则本身需要维护，误报时会阻塞正常重构，且需要为既有违规建基线"
+      },
+      {
+        "option": "用 Anti-Corruption Layer 隔离遗留或外部模型，禁止其类型穿透进领域层",
+        "buys": "外部契约变更被挡在转换层内，领域模型保持稳定",
+        "costs": "产生双份模型与翻译代码，短期重复度高、上手成本上升"
+      }
+    ],
+    "evidence_anchors": [
+      "src/domain/** 与 src/infra/** 的 import 语句",
+      "package.json / pyproject.toml / go.mod 中声明的模块与依赖",
+      ".dependency-cruiser.js、importlinter 配置、ArchUnit 测试类、madge 脚本",
+      "CI 工作流文件（.github/workflows/*.yml）中的架构检查步骤",
+      "被 import 次数最高的模块清单（fan-in 排行）",
+      "BUILD / Bazel / Nx 的 project 依赖声明"
+    ],
+    "tags": {
+      "structure": ["layered", "modular-monolith", "hexagonal", "typescript-project-references"],
+      "symptom": ["circular-import", "god-module", "untestable-domain", "change-amplification"],
+      "stack": ["nodejs", "typescript", "python", "jvm", "go"],
+      "store": ["not-applicable"],
+      "surface": ["import-graph", "build-config", "ci-gates"]
+    },
+    "sources": [
+      {
+        "title": "Azure Architecture Center — Cloud Design Patterns (Anti-Corruption Layer, Strangler Fig, Sidecar)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/",
+        "license": "attribution"
+      },
+      {
+        "title": "Microsoft Azure Architecture Center — N-tier architecture style (layer isolation, closed layers, dependency direction)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/n-tier",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Anti-patterns (Busy Front End, Noisy Neighbor, Improper Instantiation)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "EXT-2",
+    "name": "契约版本兼容 (Contract Versioning and Compatibility)",
+    "domain": "extensibility",
+    "trigger": "当某个模块、API 或 schema 被仓库之外的消费者依赖，而你要判断一次改动的兼容性成本的时候使用这条透镜。",
+    "questions": [
+      "被导出的枚举、常量表或判别字段，其消费方是否用穷尽 switch / match / 映射表处理，从而新增取值会落到显式分支之外（可在消费者侧 grep 'case ' / 'match ' 给出 path:line）？",
+      "包或 API 的版本号声明位置（package.json version、openapi info.version、CHANGELOG 首行）是否与该次改动的破坏性程度一致，破坏性变更是否伴随主版本号递增（给出 path:line）？",
+      "公开导出面上是否存在只被下游读而从未被上游断言的行为（响应字段顺序、错误文案、日志文本、空数组与 null 的取舍），可在测试快照或文档里指出 path:line？",
+      "是否存在 pre-1.0 或未发布标记的契约却被仓库外代码或独立服务消费（grep 版本范围 '^0\\.' 与消费者清单给出 path:line）？",
+      "规范文档里声明的稳定性等级（stable / experimental / deprecated）是否与被标记 deprecated 的符号在使用处一致，可在 path:line 核对？",
+      "是否有已废弃的字段或方法被删除的记录（CHANGELOG 或 migration 文档中的条目给出 path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "Hyrum's Law：接口的可观测行为成为事实契约 (Hyrum's Law)",
+        "source": "https://google.aip.dev/180"
+      },
+      {
+        "name": "新增枚举取值导致穷尽匹配型消费者失效 (Backwards compatibility: enum values)",
+        "source": "https://google.aip.dev/180"
+      },
+      {
+        "name": "主版本号未随破坏性变更递增，导致语义化版本契约失效 (SemVer 破坏性变更违规)",
+        "source": "https://semver.org/"
+      },
+      {
+        "name": "废弃标记长期保留而未真正移除，形成永不闭合的兼容面 (Deprecation debt)",
+        "source": "https://google.aip.dev/180"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把封闭枚举改为开放集合（新增未知值时安全降级：透传 unknown 而非抛错）",
+        "buys": "新增取值不再破坏下游消费者，服务端可独立演进",
+        "costs": "失去编译期穷尽性检查，需要额外的默认分支与监控来发现未处理取值"
+      },
+      {
+        "option": "引入 consumer-driven contract 测试（Pact 风格）在 CI 中验证提供方与消费方一致",
+        "buys": "兼容性破坏在合并前被机械发现，而非在生产环境由消费者发现",
+        "costs": "需要维护 broker 与每个消费者的契约定义，测试基础设施成本显著"
+      },
+      {
+        "option": "按 OpenTelemetry 式稳定性分级（experimental / stable / deprecated）标注每个扩展点并承诺各自的兼容策略",
+        "buys": "消费者能按等级判断升级风险，稳定面获得明确的不破坏承诺",
+        "costs": "需要逐项标注与审查，早期设计的错误更难通过破坏性改动修正"
+      },
+      {
+        "option": "在 Sidecar 或 ACL 层做版本适配，允许新旧契约并行一段时间",
+        "buys": "消费者可以分阶段迁移，破坏性发布不必一次性切换",
+        "costs": "需要同时维护两套契约与转换逻辑，运行期资源与认知负担翻倍"
+      }
+    ],
+    "evidence_anchors": [
+      "package.json / pyproject.toml / Cargo.toml 的 version 与依赖范围",
+      "openapi.yaml、*.proto、GraphQL schema、JSON Schema 的版本字段",
+      "CHANGELOG.md 与 migration / upgrade 指南",
+      "枚举与常量定义文件及其消费者中的 switch / match",
+      "consumer-driven contract 测试目录（pacts/、contracts/）",
+      "公开导出面清单（index.ts、__init__.py 的 __all__）",
+      "快照测试与 golden file（__snapshots__/、testdata/）"
+    ],
+    "tags": {
+      "structure": ["public-api", "schema-registry", "plugin-contract"],
+      "symptom": ["breaking-change", "enum-exhaustiveness", "silent-contract-widening", "deprecation-debt"],
+      "stack": ["nodejs", "typescript", "python", "protobuf", "openapi"],
+      "store": ["schema-migration"],
+      "surface": ["public-api", "release-versioning", "contract-tests"]
+    },
+    "sources": [
+      {
+        "title": "Semantic Versioning 2.0.0 Specification",
+        "url": "https://semver.org/",
+        "license": "attribution"
+      },
+      {
+        "title": "Google API Improvement Proposals — AIP-180: Backwards compatibility",
+        "url": "https://google.aip.dev/180",
+        "license": "permissive"
+      },
+      {
+        "title": "OpenTelemetry — Versioning and stability for OpenTelemetry clients (OTEP 0143)",
+        "url": "https://opentelemetry.io/docs/specs/otel/versioning-and-stability/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "EXT-3",
+    "name": "插件注册与生命周期 (Plugin Registration and Lifecycle)",
+    "domain": "extensibility",
+    "trigger": "当系统通过注册钩子、扩展清单或运行时装载来接入第三方或可选能力的时候使用这条透镜。",
+    "questions": [
+      "每个注册调用（use/register/hook/add_*/subscribe）是否有关联的注销或 dispose 调用，可在同一文件内指出两侧的 path:line？",
+      "同一插件被重复装载或同名注册冲突时，注册表的行为是否被显式定义并有测试覆盖（可在 registry 实现与测试中给出 path:line）？",
+      "插件初始化抛出异常时，宿主是否会捕获并降级，还是直接中断宿主启动（可在装载循环与错误处理分支给出 path:line）？",
+      "插件清单中声明的权限、hook 或 capability 是否与其代码实际调用的能力一致（对比 manifest 与 import 的 path:line）？",
+      "插件被卸载后是否仍留有定时器、事件订阅、全局单例改写或缓存写入（可在 teardown 路径与其遗漏处给出 path:line）？",
+      "插件的注册顺序是否影响最终行为，而顺序在任何配置或文档中被显式声明（可在配置文件与装载代码给出 path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "注册副作用不可逆导致反复装载时重复注册与状态泄漏 (Irreversible side effects)",
+        "source": "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/"
+      },
+      {
+        "name": "插件异常穿透宿主边界导致整体不可用 (Failure domain leakage)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/sidecar"
+      },
+      {
+        "name": "同名注册冲突与静默覆盖导致生效插件与配置不一致 (Registration collision)",
+        "source": "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把扩展点移到进程外 sidecar / webhook 边界，宿主只通过远程接口调用",
+        "buys": "插件故障与资源占用被边界隔离，宿主崩溃面显著收窄",
+        "costs": "引入网络跳数与新的失败模式（超时、序列化、部署耦合），延迟预算被消耗"
+      },
+      {
+        "option": "注册表采用 last-write-wins 的显式覆盖语义，并对冲突发出可观测告警",
+        "buys": "重复装载与同名注册的行为可预测且可审计",
+        "costs": "需要强制命名空间或显式优先级，覆盖时可能掩盖真正的配置错误"
+      },
+      {
+        "option": "装载事务化：初始化失败即回滚本次注册的全部副作用",
+        "buys": "宿主永远处于全有或全无的一致状态，重试安全",
+        "costs": "每个插件必须实现对称的 teardown，且需要为回滚路径编写测试"
+      },
+      {
+        "option": "用能力协商清单（capability manifest）限制插件可触达的 API 与资源",
+        "buys": "插件越权与误用被机械阻断，扩权需要显式声明与评审",
+        "costs": "清单与实现可能漂移，新增能力需要同步改清单与权限模型"
+      }
+    ],
+    "evidence_anchors": [
+      "插件注册表实现（registry、PluginManager、hook 注册函数）",
+      "插件条目与清单文件（plugin.json、manifest.yaml、entry_points）",
+      "装载与卸载路径、teardown / destroy / dispose 函数",
+      "插件相关的集成测试与重复装载测试",
+      "权限或 sandbox 配置（capabilities、permissions、rbac 片段）",
+      "事件总线订阅列表与 unsubscribe / off 调用点"
+    ],
+    "tags": {
+      "structure": ["plugin-host", "hook-registry", "extension-manifest"],
+      "symptom": ["double-registration", "leaked-subscription", "host-crash-by-plugin", "silent-override"],
+      "stack": ["nodejs", "typescript", "python", "kubernetes"],
+      "store": ["in-memory-registry"],
+      "surface": ["plugin-manifest", "lifecycle-hooks", "capability-negotiation"]
+    },
+    "sources": [
+      {
+        "title": "Kubernetes Documentation — Extensible Admission Controllers (MutatingAdmissionWebhook, failurePolicy, reinvocationPolicy)",
+        "url": "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Sidecar pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/sidecar",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "EXT-4",
+    "name": "扩展点与配置表面 (Extension Points and Configuration Surface)",
+    "domain": "extensibility",
+    "trigger": "当你想知道系统到底有哪些真实可替换的接缝，以及配置面是否已经变成债务的时候使用这条透镜。",
+    "questions": [
+      "仓库中只有一个实现的接口或抽象基类有哪些（列出定义处与唯一实现的 path:line）？",
+      "feature flag / 开关的总数是多少，其中是否存在超过两个发布周期仍未移除的条目（可在 flags 定义文件与 CHANGELOG 中给出 path:line）？",
+      "开关之间的依赖或互斥关系是否被编码成校验逻辑，从而非法组合会在启动时失败（可在配置校验处给出 path:line）？",
+      "代码能否在全部可选开关关闭、仅用默认配置时启动，其默认值是否在配置 schema 中显式声明（可在默认值与启动路径给出 path:line）？",
+      "是否存在跨请求复用的可变全局状态（模块级可变变量、单例缓存、全局 map），可在其定义与写入点给出 path:line？",
+      "每个公开扩展点是否有至少两个调用方或实现方，从而证明它是真实接缝而不是假想接缝（给出调用点 path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "单实现接口造成的假性扩展点（抽象成本换不来替换能力） (Speculative generality through single-implementation interfaces)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/sidecar"
+      },
+      {
+        "name": "长寿开关的配置债：默认值与已发布行为分叉且无人移除 (Feature gate debt)",
+        "source": "https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/"
+      },
+      {
+        "name": "跨请求共享的可变全局状态造成行为串扰与请求间污染 (Shared mutable state)",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把配置面收敛为一处带 schema 的声明（默认值、类型、来源优先级）并在启动时校验",
+        "buys": "非法与矛盾配置在启动即失败，配置项可枚举、可审计",
+        "costs": "初期需要迁移既有散落的读取点，且严格校验会让旧配置在升级时直接报错"
+      },
+      {
+        "option": "对 feature flag 设定到期日与负责人，到期自动创建移除任务",
+        "buys": "开关数量有上界，长期分支与组合爆炸被抑制",
+        "costs": "需要流程与看板纪律，紧急延长开关时需要额外审批"
+      },
+      {
+        "option": "只保留有第二个真实实现或第二个真实消费者的扩展点，其余内联",
+        "buys": "接缝数量与抽象层数与实际需求匹配，阅读与调试路径变短",
+        "costs": "未来第一次替换时需要一次重构，短期改动成本前移"
+      },
+      {
+        "option": "用 Strangler Fig 逐步把可扩展逻辑迁出核心，而非在核心内部继续堆开关",
+        "buys": "新旧路径可并行运行并逐步切换，核心复杂度不再单调增长",
+        "costs": "并行期需要路由层与双份监控，迁移未完成时两套逻辑都要维护"
+      }
+    ],
+    "evidence_anchors": [
+      "抽象基类、Protocol、interface 定义与其实现清单",
+      "feature flag 定义文件（flags.ts、feature_gates、LaunchDarkly 键清单）",
+      "配置 schema 与默认值（config.schema.json、settings.py、values.yaml）",
+      "环境变量读取点与 .env.example",
+      "模块级可变变量与全局单例定义",
+      "扩展点文档与 README 中的插件章节"
+    ],
+    "tags": {
+      "structure": ["extension-point", "config-surface", "feature-flags", "global-singleton"],
+      "symptom": ["flag-debt", "single-implementation-interface", "shared-mutable-state", "config-drift"],
+      "stack": ["nodejs", "typescript", "python", "kubernetes"],
+      "store": ["config-store", "global-cache"],
+      "surface": ["feature-flag", "config-schema", "extension-point"]
+    },
+    "sources": [
+      {
+        "title": "Kubernetes Documentation — Feature Gates (graduation, deprecation and removal of gates)",
+        "url": "https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Sidecar pattern (separate deployment, heterogeneous components)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/sidecar",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Anti-patterns (Improper Instantiation, Busy Front End, Noisy Neighbor)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  }
+]

@@ -1,0 +1,512 @@
+[
+  {
+    "lens": "ST-1",
+    "name": "模式演进安全网 (Schema Evolution Safety Net)",
+    "domain": "state-consistency",
+    "trigger": "当一次变更要修改既有表/集合的结构、约束或索引，而旧版本应用实例在发布窗口内仍在读写该结构时，用这条透镜。",
+    "questions": [
+      "迁移目录中的每个 DDL 文件是否标注了它属于 expand 阶段还是 contract 阶段（path:line）？",
+      "面对最热的那张表的 DDL 是否附带了与 ACCESS EXCLUSIVE 锁相关的注释、超时设置或变更窗口说明（path:line）？",
+      "旧应用版本能否在只存在新结构的情况下正常读写（即新列、新索引、新表对旧代码是否为可选路径，path:line）？",
+      "迁移执行框架是否会记录已应用版本、并在 DDL 失败时中止发布流水线（path:line）？",
+      "是否存在针对每张热表的回滚脚本或反向迁移文件，并在其中说明了它恢复的数据与结构范围（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "长时排他锁阻塞并发读写（DDL which requires a table rewrite, such as adding a column with a volatile DEFAULT; ADD COLUMN with a non-volatile DEFAULT avoids the rewrite）",
+        "source": "https://www.postgresql.org/docs/current/ddl-alter.html"
+      },
+      {
+        "name": "ALTER TABLE ... SET NOT NULL 立即全表校验，表数据必须已满足约束才能成功",
+        "source": "https://www.postgresql.org/docs/current/ddl-alter.html"
+      },
+      {
+        "name": "ACCESS EXCLUSIVE 锁阻断并发访问（DROP TABLE / TRUNCATE / REINDEX / CLUSTER / VACUUM FULL / REFRESH MATERIALIZED VIEW 以及多种 ALTER TABLE 变体获取该锁）",
+        "source": "https://www.postgresql.org/docs/current/explicit-locking.html"
+      },
+      {
+        "name": "CREATE INDEX 非并发构建获取 SHARE 锁并阻止并发数据修改（CREATE INDEX CONCURRENTLY 获取 SHARE UPDATE EXCLUSIVE）",
+        "source": "https://www.postgresql.org/docs/current/explicit-locking.html"
+      },
+      {
+        "name": "约束校验的 NOT NULL 强制方式与耗时（新增列可在之后用 ALTER COLUMN ... SET NOT NULL 补约束，该步骤需全表校验）",
+        "source": "https://www.postgresql.org/docs/current/ddl-constraints.html"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "Expand-Contract 两阶段模式（先加不破坏兼容的新列/新表/新索引，双写并回填，切换读路径，待旧实例全部下线后再删除旧结构）",
+        "buys": "把一次原子破坏性变更拆成若干次向后兼容的变更，旧二进制在任意中间状态都能继续服务",
+        "costs": "迁移周期从一次发布拉长到至少三次发布，期间存在双写与新旧并存的复杂度，需要额外的回填任务与清理脚本"
+      },
+      {
+        "option": "高并发场景改用 CREATE INDEX CONCURRENTLY 建索引，再单独执行约束校验步骤",
+        "buys": "避免构建索引期间的长时间 SHARE 锁，把「不可写窗口」降为可观测的较长构建时间",
+        "costs": "构建时间更长；失败会遗留 INVALID 索引需要人工清理；不能在同一个事务块里执行"
+      },
+      {
+        "option": "对涉及全表重写的列变更引入「影子列」：新增带默认值的列替代原地 ALTER TYPE",
+        "buys": "绕开表重写与随之而来的长时 ACCESS EXCLUSIVE 锁",
+        "costs": "存储与双写成本上升，应用侧需要一段时间同时维护两列并在迁移完成后强制切换读取"
+      }
+    ],
+    "evidence_anchors": [
+      "数据库迁移目录（migrations/、db/migrate/、alembic/versions/、flyway/sql/、liquibase/changelog/）中的 DDL 文件与文件名时间序",
+      "ORM 模型定义与模型字段声明（schema 的唯一事实来源是否与迁移文件一致）",
+      "部署/发布配置（这些 DDL 在容器启动时执行、由 Job 执行，还是需要人工审批后才执行）",
+      "连接池与语句超时配置、lock_timeout / statement_timeout 参数",
+      "CI 流水线配置中对迁移的前向/后向验证步骤与回滚脚本引用"
+    ],
+    "tags": {
+      "structure": ["migration", "ddl", "schema-registry", "two-phase-release"],
+      "symptom": ["migration-lock", "deploy-blocked", "rollback-missing", "partial-migration"],
+      "stack": ["postgresql", "orm", "flyway", "liquibase", "alembic", "rails-activerecord"],
+      "store": ["relational-db", "versioned-schema", "materialized-view"],
+      "surface": ["release-pipeline", "dba-runbook", "api-contract"]
+    },
+    "sources": [
+      {
+        "title": "PostgreSQL 18 Documentation — 5.6. Modifying Tables (ALTER TABLE)",
+        "url": "https://www.postgresql.org/docs/current/ddl-alter.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — 13.3. Explicit Locking (lock modes and conflicting lock matrix)",
+        "url": "https://www.postgresql.org/docs/current/explicit-locking.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — 5.5. Constraints (NOT NULL enforcement)",
+        "url": "https://www.postgresql.org/docs/current/ddl-constraints.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — ALTER TABLE command reference",
+        "url": "https://www.postgresql.org/docs/current/sql-altertable.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — CREATE INDEX command reference",
+        "url": "https://www.postgresql.org/docs/current/sql-createindex.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "ST-2",
+    "name": "事务边界与跨服务一致性 (Transaction Boundary and Cross-Service Consistency)",
+    "domain": "state-consistency",
+    "trigger": "当一个业务操作需要同时改变多个数据存储、或需要在提交本地事务的同时对外发布消息/调用远程服务时，用这条透镜。",
+    "questions": [
+      "本次变更影响的写路径中有哪些操作跨越了超过一个数据存储或服务的边界（path:line）？",
+      "跨边界的每一步是否在编排器中有对应的补偿动作定义，并且该定义与正向步骤写在同一处代码（path:line）？",
+      "正向步骤中哪些被显式标记为不可补偿、不可逆或点无返回点（path:line）？",
+      "状态变更的记录与事件/消息的发布是否由同一个本地事务覆盖，还是分成了两次独立提交（path:line）？",
+      "补偿或重试步骤本身是否被实现为可重复执行且带幂等键的命令（path:line）？",
+      "编排器是否持久化每一步的执行状态，使流程能在进程重启后从中断点续跑（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "补偿事务并非总能成功，可能使系统停留在不一致状态（Limitations of compensating transactions）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/saga"
+      },
+      {
+        "name": "Saga 本地数据库变更无法回滚，参与者各自提交到自己的数据库（Irreversible local database changes）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/saga"
+      },
+      {
+        "name": "补偿事务无法把数据恢复到操作开始时的状态且不一定按严格逆序撤销（A compensating transaction doesn't necessarily return the system data to its state at the start of the original operation）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/compensating-transaction"
+      },
+      {
+        "name": "补偿事务自身失败，需要可重复执行的幂等命令与从中断点恢复的进度记录（Compensating transactions don't always work）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/compensating-transaction"
+      },
+      {
+        "name": "Saga 跨服务缺乏内建隔离导致的丢失更新（Lost updates）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/saga"
+      },
+      {
+        "name": "准备事务在两阶段提交中保持锁定直到提交或回滚（a prepared transaction keeps holding locks until it is committed or rolled back）",
+        "source": "https://www.postgresql.org/docs/current/sql-prepare-transaction.html"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "把状态变更与待发消息写进同一个本地事务（同库 outbox 表或同分区事务批），再由派发器投递并标记",
+        "buys": "消除「已提交但消息丢失」的窗口，把跨服务一致性收敛成单库事务加可重放投递",
+        "costs": "需要额外的 outbox 表、派发器、清理任务与投递延迟的监控，端到端语义从同步变为最终一致"
+      },
+      {
+        "option": "为 saga 的补偿步骤增加语义锁（semantic lock）与可交换更新设计，而不是依赖数据库隔离",
+        "buys": "在不引入分布式事务的前提下降低丢失更新与脏读的发生面",
+        "costs": "需要应用层维护锁的释放路径与超时清理，设计复杂度转移到业务代码"
+      },
+      {
+        "option": "高风险、强一致要求的写路径收缩到单一服务、单一数据库事务内完成",
+        "buys": "直接使用 ACID 原子性与隔离级别，省掉补偿与编排的整套机制",
+        "costs": "限制服务拆分粒度，可能把本可独立演进的领域模型重新耦合在一起"
+      }
+    ],
+    "evidence_anchors": [
+      "包含多次 commit/rollback 或多次 savepoint 的写路径函数",
+      "发布事件/消息的代码与其所在事务范围（是否位于事务提交之前还是之后）",
+      "outbox / inbox / pending_events / event_log 等表定义与派发器实现",
+      "workflow / orchestrator / state machine 定义文件与状态持久化表",
+      "补偿动作实现（refund、cancel、revert、rollback 命名）与它们对应的正向步骤",
+      "重试与死信配置（max attempts、visibility timeout、DLQ 处理器）"
+    ],
+    "tags": {
+      "structure": ["transaction-boundary", "outbox", "saga", "orchestration", "choreography"],
+      "symptom": ["partial-commit", "orphan-event", "compensation-missing", "duplicate-side-effect"],
+      "stack": ["postgresql", "service-bus", "kafka", "rabbitmq", "temporal", "step-functions"],
+      "store": ["relational-db", "message-broker", "event-log"],
+      "surface": ["service-boundary", "async-messaging", "distributed-transaction"]
+    },
+    "sources": [
+      {
+        "title": "Azure Architecture Center — Saga distributed transactions pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/saga",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Compensating Transaction pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/compensating-transaction",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Implement the Transactional Outbox pattern by using Azure Cosmos DB",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/databases/guide/transactional-out-box-cosmos",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Choreography pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/choreography",
+        "license": "attribution"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — PREPARE TRANSACTION (two-phase commit, locks held until commit or rollback)",
+        "url": "https://www.postgresql.org/docs/current/sql-prepare-transaction.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "ST-3",
+    "name": "幂等性与投递语义 (Idempotency and Delivery Semantics)",
+    "domain": "state-consistency",
+    "trigger": "当消费端由 at-least-once 消息代理驱动、或某个写接口/回调会被客户端与网关自动重试时，用这条透镜。",
+    "questions": [
+      "每个写接口与消息消费器用来识别「同一次逻辑操作」的去重键定义在何处，并且该键在重投递时保持稳定（path:line）？",
+      "去重标记与业务副作用是否在同一个事务或同一次原子写中提交（path:line）？",
+      "去重键是否由数据存储的唯一约束兜底，而不是仅由应用先查后写来保证（path:line）？",
+      "补偿/重试路径是否把调用方传来的 Idempotency-Key 或业务键透传给下游服务（path:line）？",
+      "去重记录的保留时长配置是否明确长于代理的最大重投递窗口（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "先处理再单独记录去重键留下的失败窗口：进程在两次操作之间崩溃会带着已生效的副作用被重新投递（A check-then-process flow has a failure window）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer"
+      },
+      {
+        "name": "并发重复投递绕过仅检查存在性的判断，必须由数据存储的唯一约束成为唯一仲裁者（Guard against concurrent duplicates）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer"
+      },
+      {
+        "name": "检查后设置（check-then-set）在缓存中天然存在的竞态窗口，需要用原子条件写替代（Avoid check-then-set races in caches）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer"
+      },
+      {
+        "name": "去重记录生存周期短于死信重投递窗口导致的重复处理（Manage the lifecycle of deduplication records）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer"
+      },
+      {
+        "name": "把代理层的重复检测当作消费者幂等实现使用（Don't substitute broker deduplication for idempotent consumer logic）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer"
+      },
+      {
+        "name": "去重只清除重复但不保证顺序，消费者需要序号或版本以便拒绝陈旧消息（Account for message ordering）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "用带唯一约束的 upsert（INSERT ... ON CONFLICT）把「判重」与「写入」压成单条原子语句",
+        "buys": "彻底删除先查后写之间的失败窗口，并让并发重复写由数据库裁定",
+        "costs": "需要可唯一化的幂等键与相应索引，且 upsert 语义在冲突时改写已有行需要谨慎定义"
+      },
+      {
+        "option": "把 HTTP 写路径改为天然幂等的 PUT/绝对赋值语义，避免相对增量更新",
+        "buys": "重放同一请求不改变最终状态，省掉去重表与清理任务",
+        "costs": "要求接口按资源标识而非动作设计，对增量类业务（计数、扣减）需要额外的状态携带设计"
+      },
+      {
+        "option": "对无法加入本地事务的外部副作用使用两阶段记录（in-progress → completed）并在重投递时对账",
+        "buys": "把外部调用的不确定性变成可恢复、可干预的显式状态",
+        "costs": "需要处理长期停留在 in-progress 的陈旧记录的清理与人工介入流程"
+      }
+    ],
+    "evidence_anchors": [
+      "请求头 / 消息属性中 Idempotency-Key、MessageId、dedup_key、event_id 的读取与生成位置",
+      "去重表或 inbox 表定义（唯一索引、TTL、清理任务）",
+      "消费者入口处的 ack/nack、abandon、dead-letter 调用位置与顺序",
+      "重试中间件与代理配置（最大投递次数、锁/可见性超时、消息 TTL、会话或分区键）",
+      "上游 HTTP 客户端对 POST 的自动重试策略与超时配置"
+    ],
+    "tags": {
+      "structure": ["idempotency-key", "dedup-table", "at-least-once", "inbox", "outbox"],
+      "symptom": ["duplicate-charge", "double-processing", "replay-divergence", "dedup-expiry"],
+      "stack": ["http", "kafka", "service-bus", "rabbitmq", "sqs", "postgresql"],
+      "store": ["message-broker", "relational-db", "cache"],
+      "surface": ["public-api", "async-messaging", "webhook", "batch-job"]
+    },
+    "sources": [
+      {
+        "title": "Azure Architecture Center — Idempotent Consumer pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/idempotent-consumer",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Competing Consumers pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/competing-consumers",
+        "license": "attribution"
+      },
+      {
+        "title": "RFC 9110: HTTP Semantics — Section 9.2.2. Idempotent Methods",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html#name-idempotent-methods",
+        "license": "public_domain"
+      },
+      {
+        "title": "RFC 9110: HTTP Semantics — Section 9.2.1. Safe Methods",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html#name-safe-methods",
+        "license": "public_domain"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — INSERT (ON CONFLICT as an atomic alternative action)",
+        "url": "https://www.postgresql.org/docs/current/sql-insert.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "ST-4",
+    "name": "隔离级别与丢失更新 (Isolation Levels and Lost Updates)",
+    "domain": "state-consistency",
+    "trigger": "当同一行/同一聚合会被并发事务读改写，或者代码显式设置过事务隔离级别、用过 SELECT FOR UPDATE 时，用这条透镜。",
+    "questions": [
+      "每个显式设置隔离级别的位置（SET TRANSACTION、连接参数、ORM 事务装饰器）在代码中的具体路径与默认值是什么（path:line）？",
+      "写路径中哪些位置执行了「先 SELECT 算出新值、再 UPDATE 写回」的两步模式而没有加锁或版本条件（path:line）？",
+      "捕获序列化失败（SQLSTATE 40001）并整事务重试的逻辑写在哪个函数里（path:line）？",
+      "业务规则依赖跨行或多行一致读取时，是否使用了 SERIALIZABLE 或显式行锁来替代默认的读已提交（path:line）？",
+      "接受用户输入的长事务或等待外部调用的代码，是否把事务边界收窄到只包住必要的写操作（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "不可重复读：读已提交下同一事务内两次相同查询看到不同数据（Read Committed: nonrepeatable read possible）",
+        "source": "https://www.postgresql.org/docs/current/transaction-iso.html"
+      },
+      {
+        "name": "序列化异常：可串行化事务组提交结果不符合任何一次串行执行（serialization anomaly detected via read/write dependencies）",
+        "source": "https://www.postgresql.org/docs/current/transaction-iso.html"
+      },
+      {
+        "name": "并发更新导致的序列化失败：REPEATABLE READ 下报 could not serialize access due to concurrent update，应用必须中止并重试整个事务",
+        "source": "https://www.postgresql.org/docs/current/transaction-iso.html"
+      },
+      {
+        "name": "读已提交下单条命令看到不一致快照（an updating command can see an inconsistent snapshot）",
+        "source": "https://www.postgresql.org/docs/current/transaction-iso.html"
+      },
+      {
+        "name": "死锁与不确定的中止对象：不一致的加锁顺序使两个事务互相等待，PostgreSQL 自动中止其中一个（Deadlocks）",
+        "source": "https://www.postgresql.org/docs/current/explicit-locking.html"
+      },
+      {
+        "name": "长时间持有事务使锁无限期等待：只要未检测到死锁，加锁请求会无限等待（a transaction seeking a lock will wait indefinitely）",
+        "source": "https://www.postgresql.org/docs/current/explicit-locking.html"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "乐观并发控制：行上带版本列或 updated_at 条件更新，冲突时返回 409 并让调用方重试",
+        "buys": "在默认读已提交级别下就能表达「基于我读到的版本写入」，无需长事务与阻塞式锁",
+        "costs": "冲突率高时重试放大，需要在上层明确处理冲突返回与退避策略"
+      },
+      {
+        "option": "对热点行使用 SELECT ... FOR UPDATE / FOR NO KEY UPDATE 在事务内先行加锁",
+        "buys": "把并发读改写串行化，逻辑直观且不需要应用层重试循环",
+        "costs": "锁等待时间进入尾部延迟，持锁期间的其他写被阻塞，需要与短事务纪律配套"
+      },
+      {
+        "option": "整个事务升级到 SERIALIZABLE 并统一在框架层重放 40001",
+        "buys": "只要单事务单独执行正确，任意并发组合下要么正确提交要么整体失败，规则无需逐处加锁",
+        "costs": "谓词锁带来监控开销与更高的序列化失败率，必须全应用统一实现重试，否则错误会直接冒泡给用户"
+      }
+    ],
+    "evidence_anchors": [
+      "事务装饰器 / UnitOfWork / session.begin() 包装范围与其中包含的 I/O 调用",
+      "SQL 语句里的 FOR UPDATE / FOR SHARE / FOR NO KEY UPDATE 出现位置",
+      "读改写模式：先 SELECT 再在应用层计算再 UPDATE 的函数体",
+      "数据库错误处理中的 SQLSTATE 判断（40001 / 40P01 / 23505）与重试循环",
+      "连接池与事务配置（idle_in_transaction_session_timeout、语句超时、隔离级别参数）",
+      "ORM 模型上的 version / lock_version / @Version 字段与启用开关"
+    ],
+    "tags": {
+      "structure": ["isolation-level", "transaction-scope", "row-lock", "optimistic-concurrency", "retry-loop"],
+      "symptom": ["lost-update", "serialization-failure", "deadlock", "lock-wait-timeout", "stale-read"],
+      "stack": ["postgresql", "orm", "jpa", "sqlalchemy", "django-orm"],
+      "store": ["relational-db", "mvcc"],
+      "surface": ["hot-row", "api-write-path", "batch-job"]
+    },
+    "sources": [
+      {
+        "title": "PostgreSQL 18 Documentation — 13.2. Transaction Isolation (isolation level / phenomenon matrix)",
+        "url": "https://www.postgresql.org/docs/current/transaction-iso.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — 13.3. Explicit Locking (row-level locks and deadlocks)",
+        "url": "https://www.postgresql.org/docs/current/explicit-locking.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — 13.4. Data Consistency Checks at the Application Level",
+        "url": "https://www.postgresql.org/docs/current/applevel-consistency.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — Appendix A. PostgreSQL Error Codes (40001 serialization_failure)",
+        "url": "https://www.postgresql.org/docs/current/errcodes-appendix.html",
+        "license": "permissive"
+      },
+      {
+        "title": "PostgreSQL 18 Documentation — SET TRANSACTION command reference",
+        "url": "https://www.postgresql.org/docs/current/sql-set-transaction.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "ST-5",
+    "name": "缓存与副本一致性 (Cache and Replica Consistency)",
+    "domain": "state-consistency",
+    "trigger": "当读路径引入了缓存、物化视图、读副本或本地内存副本，而用户刚写完就立刻读回时，用这条透镜。",
+    "questions": [
+      "写路径里「更新主数据存储」与「失效或更新缓存项」两条语句的先后顺序在代码中的具体位置是什么（path:line）？",
+      "哪些读路径的缓存条目标注了 TTL 或过期策略，其数值来自哪一处配置（path:line）？",
+      "物化视图 / 汇总表 / 只读副本的刷新触发方式（定时任务、变更流、手工调用）定义在哪里（path:line）？",
+      "刷新新鲜度、缓存命中率或读副本延迟是否被采集为指标并在超出阈值时告警（path:line）？",
+      "用户写后立即读回的关键路径是否有绕过缓存或强制命中主库的实现（path:line）？"
+    ],
+    "failure_modes": [
+      {
+        "name": "缓存与数据存储之间不保证一致性：外部进程改动主数据后缓存直到重新加载才反映（Cache-Aside doesn't guarantee consistency between the data store and the cache）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      },
+      {
+        "name": "写后陈旧窗口：失效后到下一次读取之间，读者可能遇到缓存未命中或短暂读到旧值（Staleness after writes）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      },
+      {
+        "name": "私有本地缓存导致同一数据在多个实例间快速分叉（Local caching: different application instances can each have a copy）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside"
+      },
+      {
+        "name": "刷新信号丢失时视图静默返回陈旧结果（the view silently serves stale results）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/materialized-view"
+      },
+      {
+        "name": "物化视图刷新期间是否阻塞读取决定查询返回陈旧数据还是等待（whether the refresh operations block reads）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/materialized-view"
+      },
+      {
+        "name": "同步读写跨多个存储的 I/O 开销随请求扇出放大（Synchronous I/O antipattern）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/synchronous-io/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "写路径改为 write-through：同一写操作同时更新数据存储与缓存",
+        "buys": "写成功后立刻的读取即可看到新值，适合读多写少且要求写后读新鲜的路径",
+        "costs": "每次写都付出缓存写延迟与失败处理成本，缓存故障会反压写路径，需要明确降级策略"
+      },
+      {
+        "option": "读副本场景下把需要写后读新鲜的请求路由回主库（读己之写会话粘性或按请求头路由）",
+        "buys": "在不放弃读扩展的前提下，为关键用户路径恢复强一致读",
+        "costs": "主库读负载上升，需要区分请求类别的路由逻辑与会话状态传递"
+      },
+      {
+        "option": "物化视图刷新改为事件驱动增量刷新并显式暴露新鲜度指标",
+        "buys": "缩短陈旧窗口并把「视图多久没刷新」变成可观测、可告警的量",
+        "costs": "需要变更流管道、失败重放机制，以及刷新失败时的降级读取策略"
+      }
+    ],
+    "evidence_anchors": [
+      "缓存客户端封装（get/set/delete/invalidate 调用点）与其键命名规则",
+      "写路径中数据存储写与缓存失效语句的相对顺序",
+      "缓存中间件配置（TTL、淘汰策略、本地缓存与共享缓存的区分）",
+      "物化视图 / 汇总表定义与刷新调度任务、刷新失败处理分支",
+      "读副本连接配置与读请求路由规则（是否有主库回退路径）",
+      "新鲜度与命中率指标的埋点位置和告警规则文件"
+    ],
+    "tags": {
+      "structure": ["cache-aside", "write-through", "materialized-view", "read-replica"],
+      "symptom": ["stale-read", "post-write-staleness", "cache-miss-storm", "replica-lag"],
+      "stack": ["redis", "memcached", "postgresql", "cdn", "orm"],
+      "store": ["cache", "relational-db", "read-replica", "materialized-view"],
+      "surface": ["read-path", "api-write-path", "background-refresh", "dashboard"]
+    },
+    "sources": [
+      {
+        "title": "Azure Architecture Center — Cache-Aside pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Materialized View pattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/materialized-view",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Caching guidance (best practices)",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/best-practices/caching",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Write-through caching with Azure SQL Managed Instance and Azure Managed Redis",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/databases/architecture/write-through-caching-azure-sql-managed-redis",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Center — Synchronous I/O antipattern",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/synchronous-io/",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  }
+]

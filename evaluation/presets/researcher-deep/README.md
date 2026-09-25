@@ -58,17 +58,19 @@ HANDOFF           仅 BUILD 项交给 Plan（跨会话、经你的决策）
 - **证据分级 C0–C4**：Claimed / Implemented / Tested / Observed / Externally verified——README 说做到 ≠ 代码实现 ≠ 测试证明 ≠ 运行观察 ≠ 外部复现。
 - **裁决态**：每条主张给 Known / Likely / Claimed / Unknown / Contradicted——杜绝"把作者意图当项目现实"。
 - **研究状态（v0.3.0）**：`research_checkpoint` 工具维护主张台账与依赖图；新证据推翻旧判断时**局部失效 + 只重算脏节点**，不整管重跑、不重读已读文件；假设版本化演化，报告呈现轨迹。
-- **只读四层保证（v0.4.0 起自包含）**：环境预检（验证 sandbox=read-only + approval=never，选错配置**拒绝启动**，子会话自动收紧）｜write/edit 永拒桩 + 指引段遮蔽（工具层，fail-closed）｜沙箱 read-only（强制）｜审批 never（无升级通道）｜人格契约（行为约束）。只读是**机制**而非限制：能修复所见的 Agent 会滑向修复（goal drift），本模式被制度性禁止执行，token 全部花在理解、怀疑、比较与判断上。
+- **只读四层保证（v0.4.0 起自包含）**：环境预检（sandbox 必须 read-only；DSH Web 的 Read Only 所带 `approval=ask` 会被单向收紧到 never；writable 配置**拒绝运行**）｜write/edit 永拒桩 + 指引段遮蔽（工具层，fail-closed）｜沙箱 read-only（强制）｜审批 never（无升级通道）｜人格契约（行为约束）。每个 pre-step、工具调用与终止路径都会复验权限，doctor 后的权限漂移会撤销旧 capability。只读是**机制**而非限制。
 
 ## 用法
 
-1. 新建会话 → 预设 **项目研究 Project Research**；权限 `read-only` + 审批 `never`（当前 UI 显示为 custom 组合，是最严格组合）。
-2. 工作目录指向项目仓库，发送：**仓库说明 + 当前状态 + 你的困惑**。
+1. 新建会话 → 先选 `Read Only` → 再选 **项目研究 Project Research**。preset 自动把 approval 从 ask 收紧为 never；当前 UI 随后显示 `Custom`，这是 read-only + never 的最严格组合。
+2. 工作目录指向项目仓库，直接发送问题，或使用 `/researcher <问题>`；若要为后续执行建立完成标准，使用 `/researcher goal <任务>`，只生成待人工审批的 Goal Contract 草案。
 3. 验收：`write`/`edit` 显示为 "DISABLED in research mode" 永拒桩；会话前后 `git status --porcelain` 一致。
+
+本 preset 是持续且可自证的 certified Researcher Mode。Governed Coding preset 内也支持 `/researcher <问题>` 单次只读 turn 与 `/researcher on|off` guarded mode，但后者没有本 preset 的 OS sandbox Runtime Certificate，不能混称为同一级别证明。
 
 ## 报告
 
-十四节：执行摘要（含分类汇总）→ 方法（含自查摘要）→ **项目模型重建**（含 初始假设→反证→修正假设）→ 架构地图 → 实现水平 → **证据台账（claim 卡片含裁决）** → 宣传与实现差距 → **竞品矩阵 + GitHub 可复用候选清单** → 优势 → **问题与权衡（问题链 + 12 维度表）** → 未验证假设 → 候选改进点（预分类）→ **建议与分类（交接包仅含 BUILD 项）** → 置信度与自查附录。报告在对话中输出（只读不写盘），复制保存是你的动作。
+Project Cognition Report 使用 7 节用户层（Identity / Architecture / Critical Components / Decisions / Risks / Change Impact / Decision Memo）+ AI 内部证据附录。末尾 handoff v2 仅含 BUILD 项，同时携带 cognition hash、项目目的、已证明/未证明价值、不变量、约束、未知、desired outcomes 与 non-goals。报告在对话中输出（只读不写盘），复制或由 host 流程批准保存是你的动作。
 
 ## 参考框架与保留意见
 
@@ -82,8 +84,9 @@ researcher/
 ├── agent.cordis.yml                   # 组合：工具行 + persona + 限制行
 ├── plugins/tool-restrict/index.js     # 只读守卫：环境预检 + 永拒桩 + 指引段遮蔽
 ├── plugins/research-state/index.js    # 证据状态机：台账/依赖图/局部失效/会话日志重放
+├── plugins/goal-governor/index.js     # /researcher 入口 + portable Goal Governor 的 DSH host adapter
 ├── plugins/git-read/index.js          # 白名单只读 git 工具（唯一的子进程能力，无 shell）
 ├── skills/project-research-methodology/SKILL.md   # 六模块 + 十一部 + 自查清单
-├── skills/research-report-template/SKILL.md       # 十四节报告骨架
+├── skills/research-report-template/SKILL.md       # 七节 Project Cognition Report + 附录 A–D
 └── README.md
 ```

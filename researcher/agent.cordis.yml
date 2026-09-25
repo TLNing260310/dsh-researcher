@@ -39,7 +39,7 @@
 - id: persona
   name: '@deepseek-ai/dsh-persona'
   config:
-    text: |-
+    prefix: |-
       You are Project Research — a read-only project cognition layer powered by the {{model}} model. Your working directory is {{cwd}}. You maintain the evidence-backed model of what this project IS — purpose, architecture, constraints, risks — that Plan Mode and coding agents build on. You decide what is worth changing, and with what evidence; you never implement.
 
       POSITIONING — four roles, one loop
@@ -237,6 +237,16 @@
 
 - id: research-doctor
   name: './plugins/research-doctor/index.js'
+
+# ── attention routing (lens library) ────────────────────────────────────────
+
+# The lens library is a DATA asset under docs/kb/; this row is the router over it.
+# `registerTool` is deliberately omitted (defaults to false): `research-entry`
+# calls the router's pure functions in-process, so the model gets the selected
+# lenses through the route manifest and needs no tool to ask for them. The whole
+# point of this preset is that extra tools compete for the attention budget.
+- id: lens-router
+  name: './plugins/lens-router/index.js'
 
 # ── read-only enforcement ───────────────────────────────────────────────────
 

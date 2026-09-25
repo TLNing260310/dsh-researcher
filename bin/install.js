@@ -30,6 +30,11 @@ const INSTALL_SOURCES = {
   ...SOURCES,
   lib: path.join(REPOSITORY, 'lib'),
   schemas: path.join(REPOSITORY, 'schemas'),
+  // The lens library is the research mode's knowledge asset. It must travel with
+  // the preset: the router resolves it at `<preset>/docs/kb/clean`, and a preset
+  // shipped without it would start research with an empty corpus — a silent
+  // failure that looks like "no relevant lenses" rather than a broken install.
+  kb: path.join(REPOSITORY, 'docs', 'kb'),
 }
 const TARGETS = Object.fromEntries(TARGET_NAMES.map((name) => [name, path.join(TARGET_ROOT, name)]))
 const SNAPSHOT_SCHEMA = 'dsh-researcher/preset-backup/v1'
@@ -168,12 +173,12 @@ const validateSources = () => {
 }
 
 const validateInstallSourceTrees = (sources = INSTALL_SOURCES, inventoryFn = treeInventory) => {
-  for (const name of ['researcher', 'governed', 'lib', 'schemas']) assertPlainDirectory(sources[name], name + ' source', false)
+  for (const name of ['researcher', 'governed', 'lib', 'schemas', 'kb']) assertPlainDirectory(sources[name], name + ' source', false)
   for (const name of ['researcher', 'governed']) {
     if (!fs.existsSync(path.join(sources[name], 'agent.cordis.yml'))) fail('preset source is incomplete: ' + sources[name])
   }
   const inventories = {}
-  for (const name of ['researcher', 'governed', 'lib', 'schemas']) inventories[name] = inventoryFn(sources[name])
+  for (const name of ['researcher', 'governed', 'lib', 'schemas', 'kb']) inventories[name] = inventoryFn(sources[name])
   return { sources, inventories }
 }
 
@@ -651,6 +656,9 @@ const stageInstall = (sourceEvidence) => {
     fs.mkdirSync(portable, { recursive: true })
     copyVerifiedTree('lib', path.join(portable, 'lib'))
     copyVerifiedTree('schemas', path.join(portable, 'schemas'))
+    // The lens library ships INSIDE the preset, because the router resolves it
+    // relative to its own plugin directory (`<preset>/docs/kb/clean`).
+    copyVerifiedTree('kb', path.join(directory, 'researcher', 'docs', 'kb'))
     // Re-walk the final trees after composition so nested links introduced by
     // copy behavior or a concurrent source mutation cannot reach replacement.
     treeInventory(path.join(directory, 'researcher'))

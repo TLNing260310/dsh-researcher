@@ -1,6 +1,6 @@
 {
   "schema": "project-cognition/state/v1",
-  "revision": 37,
+  "revision": 39,
   "mission": {
     "purpose": "Preserve evidence-backed project intent and give AI-assisted software work an auditable definition of done, so locally reasonable edits do not accumulate into architecture or goal drift.",
     "intended_users": [
@@ -461,8 +461,8 @@
     {
       "id": "E21",
       "kind": "test",
-      "ref": "Protocol v1.12 live-stop enforcement on 2026-08-29: the machine-readable manifest and validator now state live_e1=STOPPED, and the outer runner rejects live mode with E1_LIVE_STOPPED before cost acknowledgement, case/run-lock/path parsing, output mutation, DSH startup, or model access. Offline preflight and adversarial tests cover acknowledged and unacknowledged invocations with zero model and network calls; this proves only enforcement of the stop state, not E1 conformance.",
-      "fingerprint": "ef7bcab833b3d6122ca0067544f8210d15bb5fc84e4534b3d425e76c95278c2a",
+      "ref": "Protocol v1.12 live-stop enforcement on 2026-08-29: the machine-readable manifest and validator now state live_e1=STOPPED, and the outer runner rejects live mode with E1_LIVE_STOPPED before cost acknowledgement, case/run-lock/path parsing, output mutation, DSH startup, or model access. Offline preflight and adversarial tests cover acknowledged and unacknowledged invocations with zero model and network calls; this proves only enforcement of the stop state, not E1 conformance. REVISION 38 (owner-authorized unfreeze): evaluation/goal-governor-e1/lib.js changed REQUIRED_DSH_VERSION from the shared VERIFIED_DSH constant to the dedicated FROZEN_E1_DSH constant, so the product runtime pin can move (0.1.1-rc.2 -> 0.1.5-rc.2) without rewriting this frozen E1 experimental condition. The E1 runtime pin itself is unchanged at 0.1.1-rc.2; only the constant that carries it was decoupled. Authorized by the repository owner on 2026-09-25. REVISION 38 (owner-authorized unfreeze): evaluation/goal-governor-e1/lib.js now takes REQUIRED_DSH_VERSION from the dedicated FROZEN_E1_DSH constant instead of the shared VERIFIED_DSH constant, so the installer/product runtime pin could move 0.1.1-rc.2 -> 0.1.5-rc.2 without rewriting this frozen E1 experimental condition. The E1 runtime pin itself is UNCHANGED at 0.1.1-rc.2; only the constant carrying it was decoupled. Authorized by the repository owner. REVISION 39 (owner-authorized unfreeze): evaluation/goal-governor-e1/lib.js now takes REQUIRED_DSH_VERSION from the dedicated FROZEN_E1_DSH constant instead of the shared VERIFIED_DSH constant, and tests/repository-consistency.test.js plus tests/helpers/e1-fixtures.js were aligned, so the installer/product runtime pin could move 0.1.1-rc.2 -> 0.1.5-rc.2 without rewriting the frozen E1 experimental condition. The E1 runtime pin itself is UNCHANGED at 0.1.1-rc.2; only the constant carrying it was decoupled. Authorized by the repository owner.",
+      "fingerprint": "bf4a6addbecbd815da43d48e5b4095077c30dca50c68a08f3a85c4fe718e68e8",
       "observed_at": "2026-08-29"
     }
   ],
@@ -579,5 +579,5 @@
       "evidence_refs": []
     }
   ],
-  "state_hash": "39ad949d52a05aa1d3c85aeab4b85b8afc1d1f73c40da6c485f7c4c1b4b6467c"
+  "state_hash": "4c3fb76f76bf4363c3be4a3a9a21db7c9f179e29d6bd1fd78a981328f1efa04f"
 }

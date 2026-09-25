@@ -1,0 +1,195 @@
+# 闭集标签词表（Tag Vocabulary）
+
+> **本文件由 `npm run kb:vocab` 从 `docs/kb/clean/**/*.json` 的实际用法固化生成，请勿手改。**
+>
+> 路由**只允许**从这里取值。新增标签是一次 schema 变更：先加透镜、再重跑 `kb:vocab`、然后审阅 diff。
+>
+> 词表不是先验设计出来的，而是**从首批 40 条透镜的实际用法收敛出来的**——比拍脑袋的粗粒度词表精确得多。
+
+## structure — 结构信号（权重 2）— 主要用于**域初筛**
+
+```
+admission-control  allowlist  artifact-registry  at-least-once
+audit-channel-separation  autoscaling  backpressure  bounded-queue
+build-metadata  bulkhead  cache-aside  cancellation-propagation
+capability-negotiation  capacity-limit-pair  chaos-experiment  choreography
+ci-pipeline  circuit-breaker  client-instantiation  client-reuse
+compare-and-swap  compatibility-shim  config-layer  config-surface
+config-validation  connection-pool  container-build  context-budget
+context-capture  critical-section  data-flow  ddl
+deadline-chain  deadline-propagation  dedup-table  drain-phase
+event-driven  event-loop  exponential-backoff  extension-manifest
+extension-point  fair-scheduling  feature-flags  field-contract
+global-singleton  graceful-shutdown  handshake  hexagonal
+histogram-buckets  hook-registry  http-client-wrapper  iac-manifest
+iam-policy  idempotency-key  inbox  instrumentation
+isolation-level  jitter  label-schema  layered
+lease-fencing  littles-law  liveness-probe  load-leveling
+load-shedding  lockfile  log-event-schema  long-lived-stream
+materialized-view  metric-registry  middleware-chain  migration
+modular-monolith  mrtr  multi-tenant  mutex
+network-policy  oauth  optimistic-concurrency  orchestration
+orm-scope  outbox  parser-config  per-tenant-quota
+plugin-contract  plugin-host  policy-engine  primitives
+priority-queue  probe-separation  prompt-cache  propagator-config
+protocol-version  public-api  query-builder  rbac
+read-replica  readiness-probe  readonly-health  resource-indicator
+resource-release  retry  retry-loop  rolling-update
+row-lock  saga  sampling-decision  sandbox
+sbom  schema-registry  schema-validation  scope
+sdk  secret-store-client  semaphore  service-mesh
+sidecar  span-hierarchy  stdio  stdout-jsonl
+streamable-http  structured-logging  sync-call-chain  tenant-quota
+thread-pool  timeout  token-audience  token-exchange
+tool-metadata  tool-registry  tool-selection  transaction-boundary
+transaction-scope  transport  trust-boundary  two-phase-release
+typescript-project-references  version-endpoint  w3c-trace-context  worker-isolation
+worker-pool  write-through
+```
+
+## symptom — 症状信号（权重 2）— 主要用于**选哪条透镜**
+
+```
+blocking-call  bola  breaking-change  broken-trace
+build-script-execution  cache-miss  cache-miss-storm  capability-lcd
+cardinality-explosion  cascading-restart  cascading-timeout  change-amplification
+circular-import  cold-start-storm  command-injection  compensation-missing
+config-drift  confused-deputy  connect-failure  consent-bypass
+context-lost-on-async  context-overflow  cpu-throttling  credential-in-logs
+cross-tenant-leak  dashboard-blank  data-exfiltration  deadlock
+dedup-expiry  definition-drift  deploy-blocked  deprecation-debt
+double-processing  double-registration  double-write  dropped-inflight-request
+duplicate-action  duplicate-charge  duplicate-side-effect  duplicate-span-ids
+enum-exhaustiveness  error-burst  flag-debt  flapping-health
+fleet-wide-outage  floating-version  god-module  half-open-connection
+hardcoded-credential  head-of-line-blocking  hidden-latency  host-crash-by-plugin
+hung-shutdown  idor  implicit-network-trust  insecure-deserialization
+latency-cliff  latency-creep  latency-growth  latency-spike
+lateral-movement  leaked-connection  leaked-subscription  load-amplification
+lock-contention  lock-wait-timeout  log-volume-spike  long-lived-token
+lost-update  mean-hides-tail  metastable-failure  metastable-state
+migration-lock  missing-authz  missing-lockfile  multi-line-injection
+no-overload-signal  no-rotation-path  no-saturation-signal  no-trace-correlation
+noisy-neighbor  notification-loss  oom  orphan-event
+orphan-span  orphan-tool-call  over-privileged-workload  partial-commit
+partial-failure  partial-json-tool-args  partial-migration  path-traversal
+pii-leak  pool-exhaustion  post-write-staleness  privilege-escalation
+prompt-injection  provider-leak  queue-depth-growth  quota-exhaustion
+replay-divergence  replica-lag  request-cancellation  restart-loop
+retry-amplification  retry-storm  rollback-missing  sampling-mismatch
+saturation  scrape-timeout  secret-in-logs  secret-in-repo
+serialization-failure  shared-mutable-state  silent-contract-widening  silent-degradation
+silent-field-drop  silent-override  single-implementation-interface  slow-recovery
+slow-start-kill  sqli  ssrf  stale-dependency
+stale-leader  stale-read  stalled-event-loop  starvation
+stream-loss  tail-latency  telemetry-loss-on-exit  timeout-at-scale
+token-leak  token-passthrough  tool-misselection  tool-pairing-broken
+traffic-to-unready-pod  type-mismatch  unauthenticated-admin-endpoint  unauthorized-access
+unbounded-growth  unfair-latency  unknown-deployed-version  unpinned-base-image
+unsigned-artifact  unsupported-feature  untestable-domain  version-mismatch
+version-skew  xxe  zombie-worker
+```
+
+## stack — 技术栈（权重 1）
+
+```
+alembic  api-gateway  aspnetcore-healthchecks  asyncio
+aws-iam  aws-xray  azure-rbac  cargo
+cdn  celery  container  container-runtime
+django  django-orm  docker  docker-compose
+envoy  etcd  express  fastapi
+fluentd  flyway  gcp-iam  github-actions
+go  go-channels  go-context  go-runtime
+go-sync  gradle  graphql  grpc
+gunicorn  helm  hikaricp  http
+http-client  ingress  istio  jaeger
+java  java-concurrency  java-executors  java-shutdownhook
+java-threadpool  jpa  json-rpc  json-schema
+jvm  kafka  kubelet  kubernetes
+kubernetes-lease  kubernetes-scheduler  linkerd  liquibase
+llm-agent  logback  maven  mcp
+memcached  message-queue  micrometer  nginx
+node  nodejs  npm  oauth2
+oidc  openapi  opentelemetry  opentelemetry-metrics
+opentelemetry-python  orm  otel-collector  pgbouncer
+php  pino  pip  pnpm
+poetry  postgres  postgresql  prom-client
+prometheus  prompt-assembly  protobuf  pydantic-settings
+python  python-logging  queue-consumer  rabbitmq
+rails  rails-activerecord  rdbms-driver  redis
+ruby  runtime-scheduler  sdk  service-bus
+service-mesh  sidekiq  slog  spiffe
+spring  sql-driver  sqlalchemy  sqs
+sse  statsd  step-functions  structlog
+subprocess  systemd  tempo  temporal
+terraform  threading  tokio  typescript
+uvicorn  vector  victoriametrics  worker-pool
+yarn  zap  zipkin  zookeeper
+```
+
+## store — 存储与中间件（权重 1）
+
+```
+advisory-lock  app-config  audit-log  aws-secrets-manager
+azure-keyvault  cache  cgroup-cpu-quota  clickhouse
+clickhouse-traces  cloudwatch-logs  cloudwatch-metrics  config
+config-store  configmap  connection-pool  connection-pooler
+container-registry  context-window  credential-store  dynamodb
+elastic-apm  elasticsearch  env-file  etcd-revision
+event-log  gcp-secret-manager  git-submodule  global-cache
+in-memory-queue  in-memory-registry  influxdb  jaeger-badger
+k8s-api  k8s-lease  k8s-lease-object  k8s-secret
+kafka-consumer-group  kafka-partition  kafka-topic  keychain
+kv-store  ldap  list-cache  loki
+materialized-view  maven-central  message-broker  metadata-service
+mimir  mongodb  mvcc  mysql
+none  not-applicable  npm-registry  object-storage
+object-store  opensearch  policy-store  postgres
+postgres-connection-pool  postgres-row-lock  postgres-table-as-queue  prometheus-tsdb
+pypi  queue  rdbms  read-replica
+redis  redis-key  redis-queue  relational-db
+s3-archive  schema-migration  secret  secret-store
+session-state  sqs  ssm-parameter-store  stdout
+sts  subscription-registry  temp-files  tempo-s3
+thanos  thread-local  token-cache  tool-registry
+vault  vendor-directory  versioned-schema
+```
+
+## surface — 接触面（权重 1）— 用于定位证据锚点
+
+```
+admin-ui  agent-loop  alert-rules  api-contract
+api-write-path  approval-ui  async-messaging  auth-flow
+background-refresh  batch-job  build-config  build-script
+capability-negotiation  capacity-test  ci-contract-test  ci-gates
+ci-lint-rule  ci-pipeline  ci-runner  cli
+client-init  code  concurrency-test  config
+config-file  config-limits  config-schema  container-image
+contract-tests  dashboard  dba-runbook  dependency-manifest
+deployment-manifest  distributed-transaction  executor-factory  extension-point
+feature-flag  file-upload  gateway  grafana-dashboard
+graphql  grpc  grpc-interceptor  hot-row
+http-client-interceptor  import-graph  internal-rpc  leader-election
+lifecycle-hook  lifecycle-hooks  llm-adapter  load-test
+load-test-script  lock-helper  logger-factory  logs
+manifest  mesh-east-west  message-consumer  message-queue
+metrics  metrics-endpoint  middleware  migration-script
+observability  plugin-manifest  pool-config  pool-factory
+priority-class  probe  probe-endpoint  prompt-assembly
+protocol-extension  public-api  push-notification  rate-limit-middleware
+read-path  readiness-probe  recording-rules  redaction-helper
+release-pipeline  release-process  release-versioning  repository-layer
+rest-api  result-parsing  retry-path  runbook
+runtime-env  server-init  server-middleware  server-onboarding
+service-boundary  settings-module  sidecar  signal-handler
+startup-hook  stream  task-scheduler  test-script
+timeout-config  tool-description  tool-dispatch  tool-listing
+tool-result  transport  upstream-call  version-endpoint
+webhook  xml-api
+```
+
+## 缺口域强制覆盖
+
+路由**必须**至少各选一条 `state-consistency` 与 `failure-resilience` 的透镜——这两个域是正向开发思维最容易漏掉的。
+
+**依据（实测故障分布）**：*Metastable Failures in the Wild*（USENIX ;login:, 2022）分析数百份公开事故报告、识别 21 起：**>50% 的 sustaining effect 是 retry policy，>55% 靠 load shedding 才恢复**；Dan Luu 统计约 **50% 的 global outage 由配置变更引起**；OSDI 2014 Yuan et al.：约 200 个 bug 中 48 个 critical failure，**92% 源于错误处理代码**。

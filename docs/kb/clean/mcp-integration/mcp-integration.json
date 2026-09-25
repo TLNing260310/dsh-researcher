@@ -1,0 +1,569 @@
+[
+  {
+    "lens": "MCP-1",
+    "name": "规范修订版与生命周期假设 (Spec Revision & Lifecycle Assumptions)",
+    "domain": "mcp-integration",
+    "trigger": "当仓库里出现 MCP 版本字符串、initialize 握手、或连接建立代码时，用来确认它绑定的是哪一版规范以及换版后哪些假设先碎。",
+    "questions": [
+      "代码或配置里声明的 MCP 协议版本字符串（如 2025-03-26 / 2025-06-18 / 2025-11-25 / 2026-07-28）能在文件与行号上指出来。",
+      "连接建立路径包含 initialize / notifications/initialized 握手，或已改为每请求携带 io.modelcontextprotocol/protocolVersion 的 _meta 字段。",
+      "依赖 initialize 返回值获取的 server capabilities，在无握手修订版下改由 server/discover 或每请求 _meta 获得。",
+      "处理了 UnsupportedProtocolVersionError，并实现了按服务器返回的版本清单降级重试。",
+      "存在向后兼容分支，使同一份代码能同时与握手时代（2025-11-25 及更早）与无握手时代服务器通信。",
+      "仓库内记录了所支持版本集合的取舍，并有可定位的文件说明旧版何时被移除。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Metastable failure（亚稳态故障：版本降级重试把负载钉在高位，缩容后无法自愈）",
+        "source": "https://doi.org/10.1145/3458336.3465286"
+      },
+      {
+        "name": "How Complex Systems Fail（复杂系统必然失败：握手移除后旧的启动/就绪顺序假设成为隐性单点）",
+        "source": "https://how.complexsystems.fail/"
+      },
+      {
+        "name": "Retry Storm（重试风暴：每个版本不匹配都放大成新一轮重连）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "锁定单一冻结修订版并在客户端硬编码版本字符串",
+        "buys": "行为可预测，测试矩阵最小，CI 可复现",
+        "costs": "每次上游发布都要人工跟进；无法与只支持新版或只支持旧版的第三方服务器互通"
+      },
+      {
+        "option": "实现多版本协商（_meta 声明版本 + UnsupportedProtocolVersionError 降级 + server/discover 预探测）",
+        "buys": "同时兼容握手时代与无握手时代服务器，换版期间不中断",
+        "costs": "需要在每条请求路径上传递版本上下文，能力探测逻辑翻倍"
+      },
+      {
+        "option": "把版本差异收敛到单一适配层（版本无关的内部接口 + 每版一个 translator）",
+        "buys": "业务代码不再感知协议修订，新增修订版只改一处",
+        "costs": "引入一层抽象与映射代码，最小公分母特性可能被抹平"
+      }
+    ],
+    "evidence_anchors": [
+      "MCP 客户端/服务器构造与传输初始化代码（版本字符串常量、initialize 调用点）",
+      "列出已支持协议版本的配置、枚举或 feature flag 文件",
+      "依赖 initialize 结果的会话对象与缓存结构",
+      "连接建立与就绪探针（startup probe / readiness probe）定义",
+      "集成测试与契约测试中出现的协议版本 fixture"
+    ],
+    "tags": {
+      "structure": ["protocol-version", "handshake", "capability-negotiation", "compatibility-shim"],
+      "symptom": ["connect-failure", "version-mismatch", "silent-degradation", "retry-amplification"],
+      "stack": ["mcp", "json-rpc", "sdk"],
+      "store": ["config", "session-state"],
+      "surface": ["client-init", "server-init", "ci-contract-test"]
+    },
+    "sources": [
+      {
+        "title": "MCP Specification — Key Changes 2026-07-28（移除 initialize 握手、移除 SSE 可续传、弃用 Roots/Sampling/Logging）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Versioning（修订版、特性生命周期、逐请求版本协商）",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/learn/versioning",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Key Changes 2025-11-25",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Key Changes 2025-06-18（移除 JSON-RPC batching、MCP-Protocol-Version 头）",
+        "url": "https://modelcontextprotocol.io/specification/2025-06-18/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Antipatterns — Retry Storm",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/retry-storm/",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "MCP-2",
+    "name": "原语与能力协商 (Primitives & Capability Negotiation)",
+    "domain": "mcp-integration",
+    "trigger": "当代码分发 tools/resources/prompts 原语、解析 structuredContent/outputSchema，或处理 MRTR 的 resultType/inputRequests 时使用。",
+    "questions": [
+      "能力声明结构（ClientCapabilities / ServerCapabilities）在文件与行号上可定位，且列出了本端真正支持的原语与扩展。",
+      "每个原语调用前检查对端能力标志，未声明的原语走降级路径而不是直接调用。",
+      "结果处理覆盖了必需的 resultType 字段，完整结果为 \"complete\"、需补充输入为 \"input_required\" 的分支都可定位。",
+      "MRTR 流程实现了 inputRequests 解析、inputResponses 回传，并在重试原请求时携带 requestState。",
+      "structuredContent 与 outputSchema 的解析路径存在，且对旧版服务器返回普通 content 块的情况有回退。",
+      "来自服务器的 capabilities 被视为不可信输入，未知或超范围的值被拒绝或忽略。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Circuit Breaker（断路器：对端能力缺失时持续打满而非快速失败）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker"
+      },
+      {
+        "name": "Synchronous I/O（同步 I/O 反模式：把 MRTR 多轮往返实现成阻塞等待）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/synchronous-io/"
+      },
+      {
+        "name": "CWE Top 25（不安全输入校验类弱点在能力与 schema 解析面复现）",
+        "source": "https://cwe.mitre.org/top25/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "只按规范必需的最小原语集实现，其余能力显式拒绝",
+        "buys": "攻击面与测试面最小，未知能力不会静默生效",
+        "costs": "放弃 structuredContent 与 MRTR 带来的类型化与交互收益，某些第三方服务器不可用"
+      },
+      {
+        "option": "全量能力探测并在运行时按 capabilities 动态拼装可用原语",
+        "buys": "对新服务器与新扩展自适应，无需人工维护兼容表",
+        "costs": "代码路径组合爆炸，缺陷难以复现，能力误读会直接变成越权调用"
+      },
+      {
+        "option": "把 outputSchema 当校验契约，在客户端对 structuredContent 做严格校验后再入库",
+        "buys": "下游消费者拿到的是已验证结构，schema 漂移立刻暴露而不是污染数据",
+        "costs": "每工具需要维护 schema 与校验开销，2020-12 组合关键字需要资源上限保护"
+      }
+    ],
+    "evidence_anchors": [
+      "客户端与服务器能力对象定义、能力枚举与默认值",
+      "tools/call 结果解析器（resultType 分支、content 与 structuredContent 分流）",
+      "outputSchema / inputSchema 定义文件与 JSON Schema 方言声明",
+      "MRTR 相关代码：inputRequests 处理、inputResponses 组装、requestState 透传",
+      "原语注册表与工具分发表"
+    ],
+    "tags": {
+      "structure": ["primitives", "capability-negotiation", "mrtr", "schema-validation"],
+      "symptom": ["unsupported-feature", "silent-degradation", "type-mismatch", "blocking-call"],
+      "stack": ["mcp", "json-schema", "json-rpc"],
+      "store": ["config", "tool-registry"],
+      "surface": ["tool-dispatch", "result-parsing", "protocol-extension"]
+    },
+    "sources": [
+      {
+        "title": "MCP Specification — Tools（structuredContent、outputSchema、resultType、input_required 结果）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Key Changes 2026-07-28（MRTR 取代服务器发起请求；resultType 必填；schema 放开至 JSON Schema 2020-12）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Key Changes 2025-06-18（新增结构化工具输出）",
+        "url": "https://modelcontextprotocol.io/specification/2025-06-18/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Patterns — Circuit Breaker",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
+        "license": "permissive"
+      },
+      {
+        "title": "CWE Top 25 Most Dangerous Software Weaknesses",
+        "url": "https://cwe.mitre.org/top25/",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "MCP-3",
+    "name": "传输与可续传性 (Transport & Resumability)",
+    "domain": "mcp-integration",
+    "trigger": "当系统选择 stdio 或 Streamable HTTP、依赖长连接推送，或代码里出现 Last-Event-ID / Mcp-Session-Id / SSE 时使用。",
+    "questions": [
+      "传输实现是 stdio 与 Streamable HTTP 之一，且 HTTP+SSE 旧传输的使用点在文件与行号上可确认。",
+      "每个 Streamable HTTP 请求携带 MCP-Protocol-Version 与 Mcp-Method / Mcp-Name 头，且 HeaderMismatch 错误被处理。",
+      "流中断后的处理是重新发起新请求（新 request ID），而不是依赖 Last-Event-ID 续传或消息重投。",
+      "长连接上配置了连接级超时与最大重试次数，且超时后不再无限重放同一请求。",
+      "服务器在流中途断开（含主动关闭）被当作正常可恢复事件处理，客户端据此决定重发或放弃。",
+      "服务器到客户端的变更通知走 subscriptions/listen 显式订阅通道，并按 subscriptionId 区分订阅。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Gray failure（灰度故障：连接看似存活但推送已失效，重发逻辑无从察觉）",
+        "source": "https://doi.org/10.1145/3102980.3103005"
+      },
+      {
+        "name": "Timeout（超时模式：缺省无超时的长连接把故障转成资源占用）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/patterns/timeout"
+      },
+      {
+        "name": "Metastable failure（亚稳态故障：断流后集中重发使系统停在拥塞态）",
+        "source": "https://doi.org/10.1145/3458336.3465286"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "本地服务器一律用 stdio，远程才用 Streamable HTTP",
+        "buys": "本地场景无网络传输面与认证面，攻击面与运维面同时缩小",
+        "costs": "无法多客户端共享同一服务器实例，横向扩展受限"
+      },
+      {
+        "option": "把订阅与请求做成短请求轮询，放弃长连接推送",
+        "buys": "无长连接与半开连接问题，故障即一次失败请求，易于观测与限流",
+        "costs": "变更延迟与请求量上升，需依赖 ttlMs / cacheScope 抑制轮询成本"
+      },
+      {
+        "option": "保留 subscriptions/listen 长连接，但为每条订阅加独立生命周期与心跳判定",
+        "buys": "保留近实时变更通知，同时把灰度故障限制在单条订阅",
+        "costs": "需要实现订阅级健康判定与重订阅，复杂度上升"
+      }
+    ],
+    "evidence_anchors": [
+      "传输层实现文件（stdio 进程 spawned 配置、HTTP 客户端、SSE 解析器）",
+      "请求头组装代码（MCP-Protocol-Version、Mcp-Method、Mcp-Name）",
+      "重连与重发逻辑、退避策略、最大重试常量",
+      "长连接超时、keepalive、连接池配置",
+      "命令执行与子进程管理代码中 stdio 服务器的启动参数与 stderr 处理"
+    ],
+    "tags": {
+      "structure": ["transport", "streamable-http", "stdio", "long-lived-stream"],
+      "symptom": ["stream-loss", "duplicate-action", "half-open-connection", "notification-loss"],
+      "stack": ["mcp", "sse", "http", "subprocess"],
+      "store": ["connection-pool", "subscription-registry"],
+      "surface": ["transport", "push-notification", "retry-path"]
+    },
+    "sources": [
+      {
+        "title": "MCP Specification — Key Changes 2026-07-28（移除协议级会话与 Mcp-Session-Id；移除 SSE 可续传与 Last-Event-ID；subscriptions/listen）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Key Changes 2025-06-18（MCP-Protocol-Version 头强制要求；移除 JSON-RPC batching）",
+        "url": "https://modelcontextprotocol.io/specification/2025-06-18/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Key Changes 2025-11-25（轮询 SSE 流、允许服务器主动断开、HTTP 403 处理 Origin 校验失败）",
+        "url": "https://modelcontextprotocol.io/specification/2025-11-25/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "Gray failure: The Achilles' Heel of Cloud-Scale Systems (HotOS 2017)",
+        "url": "https://doi.org/10.1145/3102980.3103005",
+        "license": "attribution"
+      },
+      {
+        "title": "Azure Architecture Patterns — Timeout",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/patterns/timeout",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "MCP-4",
+    "name": "授权与凭据边界 (Authorization & Credential Boundary)",
+    "domain": "mcp-integration",
+    "trigger": "当代码中出现 OAuth 流程、token 缓存、scope 请求、受保护资源元数据发现，或 MCP 服务器代为调用上游 API 时使用。",
+    "questions": [
+      "授权与令牌请求中携带了 resource 参数，把令牌绑定到目标资源（RFC 8707 Resource Indicators）。",
+      "受保护资源元数据按 RFC 9728 发现（WWW-Authenticate 与 .well-known 回退路径都可在代码中定位）。",
+      "MCP 服务器在处理请求前校验令牌受众，非本服务器受众的令牌被明确拒绝。",
+      "服务器对上游 API 使用独立签发的令牌，而非复用从 MCP 客户端收到的令牌。",
+      "PKCE 使用 S256，且在授权服务器元数据缺少 code_challenge_methods_supported 时拒绝继续。",
+      "持久化的客户端凭据按 issuer 标识分区存储，授权服务器变更时重新注册。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Confused Deputy（混淆代理：攻击者用偷来的授权码借代理权限换取令牌）",
+        "source": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+      },
+      {
+        "name": "Token Passthrough（令牌透传：服务端把客户端令牌原样转给上游，绕过受众校验）",
+        "source": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations.md"
+      },
+      {
+        "name": "Mix-Up Attack（混搭攻击：客户端把诚实授权服务器的授权码发给攻击者控制的授权服务器）",
+        "source": "https://www.rfc-editor.org/rfc/rfc9207"
+      },
+      {
+        "name": "CWE Top 25（凭据与授权校验缺失类弱点）",
+        "source": "https://cwe.mitre.org/top25/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "MCP 服务器只做资源服务器，完全不持有上游凭据",
+        "buys": "服务器不成为可被混淆的代理，令牌不离开授权链路",
+        "costs": "需要上游支持按用户授权，否则功能受限"
+      },
+      {
+        "option": "服务器作为上游 OAuth 客户端，为每次上游调用独立换取令牌",
+        "buys": "受众边界清晰，令牌泄露影响面被限制在单个上游",
+        "costs": "多一跳令牌交换与缓存管理，链路延迟与失败面增加"
+      },
+      {
+        "option": "用短时令牌 + 每请求受众校验 + 最小 scope，替代长时宽 scope 令牌",
+        "buys": "泄露令牌的时间窗与权限面同时缩小",
+        "costs": "刷新频率上升，需要可靠的刷新复用与并发去重"
+      }
+    ],
+    "evidence_anchors": [
+      "OAuth 客户端实现、授权码回调处理器、PKCE verifier 生成与校验",
+      "凭据持久化位置（配置文件、系统钥匙串、环境变量）与其键结构",
+      "服务器端令牌校验中间件（audience / issuer / scope 断言）",
+      "上游 API 调用封装（是否传入外部令牌、令牌来源）",
+      "scope 请求列表与 step-up 授权处理代码"
+    ],
+    "tags": {
+      "structure": ["oauth", "resource-indicator", "token-audience", "scope"],
+      "symptom": ["privilege-escalation", "token-leak", "unauthorized-access", "consent-bypass"],
+      "stack": ["mcp", "oauth2", "oidc", "http"],
+      "store": ["credential-store", "token-cache", "keychain"],
+      "surface": ["auth-flow", "server-middleware", "upstream-call"]
+    },
+    "sources": [
+      {
+        "title": "MCP Specification — Authorization Security Considerations（令牌受众绑定、禁令牌透传、PKCE、混搭攻击）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization/security-considerations.md",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Security Best Practices（Confused Deputy Problem、Token Passthrough、SSRF、State Handle Hijacking）",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+        "license": "attribution"
+      },
+      {
+        "title": "RFC 8707 — Resource Indicators for OAuth 2.0",
+        "url": "https://www.rfc-editor.org/rfc/rfc8707",
+        "license": "public_domain"
+      },
+      {
+        "title": "RFC 9728 — OAuth 2.0 Protected Resource Metadata",
+        "url": "https://www.rfc-editor.org/rfc/rfc9728",
+        "license": "public_domain"
+      },
+      {
+        "title": "RFC 9207 — OAuth 2.0 Authorization Server Issuer Identification",
+        "url": "https://www.rfc-editor.org/rfc/rfc9207",
+        "license": "public_domain"
+      },
+      {
+        "title": "CWE Top 25 Most Dangerous Software Weaknesses",
+        "url": "https://cwe.mitre.org/top25/",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "MCP-5",
+    "name": "第三方服务器可信度与提示注入 (Third-Party Server Trust & Prompt Injection)",
+    "domain": "mcp-integration",
+    "trigger": "当引入外部或社区来源的 MCP 服务器、把工具描述直接放进模型上下文，或把工具返回值回灌进对话时使用。",
+    "questions": [
+      "工具描述与 schema 在接入前被完整审阅，且以密码学哈希固定（pin）以便检测后续变更。",
+      "工具定义在每次执行前重新哈希并与固定值比对，不一致时拒绝执行。",
+      "工具返回值在进入模型上下文前被清洗或转义，`<IMPORTANT>`、`<system>` 一类指令样标签被剥离。",
+      "人类审批弹窗展示完整工具调用参数，且该 UI 无法被模型生成的文本绕过。",
+      "跨服务器隔离机制阻止工具遮蔽（tool shadowing），并有可定位的代码监控跨服务器数据流。",
+      "本地 MCP 服务器运行在沙箱或受限环境中，文件系统与网络访问被显式限定。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Tool Poisoning（工具投毒：描述、参数 schema 或返回值中隐藏指令操纵模型）",
+        "source": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html"
+      },
+      {
+        "name": "Rug Pull Attack（抽地毯：服务器在用户初次批准后修改工具定义使其转为恶意）",
+        "source": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html"
+      },
+      {
+        "name": "Tool Shadowing / Cross-Origin Escalation（工具遮蔽：恶意服务器借描述影响其他可信服务器工具的使用）",
+        "source": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html"
+      },
+      {
+        "name": "Confused Deputy（混淆代理：服务器以自身宽权限执行而非请求者权限）",
+        "source": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices"
+      },
+      {
+        "name": "Indirect Prompt Injection（间接提示注入：工具返回内容被当作指令执行）",
+        "source": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "允许清单（allowlist）+ 人工审批每个新服务器与每次工具定义变更",
+        "buys": "供应链面收敛到已审阅集合，rug pull 会在审批点暴露",
+        "costs": "接入速度慢，需要持续维护审阅人力与变更提醒"
+      },
+      {
+        "option": "工具定义哈希固定并对工具返回值做结构化抽取而非原始回灌",
+        "buys": "定义漂移可检测，返回值不再携带可执行指令形态",
+        "costs": "需要维护抽取层与非结构化内容的降级策略"
+      },
+      {
+        "option": "每服务器独立凭据与沙箱，敏感服务器（支付、认证、PII）与其他服务器物理隔离",
+        "buys": "单服务器被攻陷不扩散，跨服务器数据流被切断",
+        "costs": "部署与凭据管理成本上升，跨服务器工作流需要显式编排"
+      }
+    ],
+    "evidence_anchors": [
+      "MCP 服务器接入配置（命令、URL、来源与版本）与允许清单文件",
+      "工具定义哈希固定逻辑与执行前比对代码",
+      "工具返回值进入模型上下文前的清洗、转义、截断处理",
+      "审批 UI 代码与其展示的参数字段",
+      "沙箱配置（容器、chroot、文件系统与网络限制）与每服务器凭据定义"
+    ],
+    "tags": {
+      "structure": ["tool-metadata", "trust-boundary", "sandbox", "allowlist"],
+      "symptom": ["prompt-injection", "definition-drift", "data-exfiltration", "privilege-escalation"],
+      "stack": ["mcp", "llm-agent", "container"],
+      "store": ["tool-registry", "config", "audit-log"],
+      "surface": ["tool-description", "tool-result", "approval-ui", "server-onboarding"]
+    },
+    "sources": [
+      {
+        "title": "OWASP MCP (Model Context Protocol) Security Cheat Sheet（Tool Poisoning、Rug Pull、Tool Shadowing、Sandbox、Consent）",
+        "url": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html",
+        "license": "sharealike"
+      },
+      {
+        "title": "OWASP LLM Prompt Injection Prevention Cheat Sheet",
+        "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
+        "license": "sharealike"
+      },
+      {
+        "title": "MCP Security Best Practices（Confused Deputy、Token Passthrough、State Handle Hijacking、Local MCP Server Compromise）",
+        "url": "https://modelcontextprotocol.io/docs/2026-07-28/tutorials/security/security_best_practices",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Tools（工具为模型控制，人类应在回路中并可拒绝调用）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "license": "attribution"
+      },
+      {
+        "title": "CWE-506 Embedded Malicious Code（供应链与恶意代码嵌入）",
+        "url": "https://cwe.mitre.org/data/definitions/506.html",
+        "license": "permissive"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  },
+  {
+    "lens": "MCP-6",
+    "name": "工具集规模膨胀与上下文预算 (Tool-Set Sprawl & Context Budget)",
+    "domain": "mcp-integration",
+    "trigger": "当接入多个 MCP 服务器、工具总数达到数十上百，或发现模型选错工具、提示缓存命中率下降时使用。",
+    "questions": [
+      "全部工具定义的字符或 token 占用可被测量，并有可定位的预算上限常量或配置。",
+      "存在工具筛选或分域加载机制，按任务只把子集工具定义放进模型上下文。",
+      "tools/list 结果被缓存，且缓存使用结果携带的 ttlMs 与 cacheScope 字段决定复用范围。",
+      "服务器按确定性顺序返回工具列表，使客户端缓存与提示缓存可稳定命中。",
+      "工具名称遵循命名约定且在大工具集中保持唯一可辨，避免近似名互相竞争。",
+      "有度量记录每次请求注入的工具数量与选取命中率，可用于容量与回归判断。"
+    ],
+    "failure_modes": [
+      {
+        "name": "Chatty I/O（多轮琐碎交互：工具过多导致串行调用轮次膨胀）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/chatty-io/"
+      },
+      {
+        "name": "Extraneous Fetching（多余取数：把全部工具定义无差别拉入上下文）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/extraneous-fetching/"
+      },
+      {
+        "name": "Improper Instantiation（不当实例化：每次工具发现重建客户端与连接，放大工具膨胀成本）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/improper-instantiation/"
+      },
+      {
+        "name": "Azure Antipatterns — Noisy Neighbor（吵闹邻居：某服务器的大量工具挤占其他服务器的上下文预算）",
+        "source": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/noisy-neighbor/"
+      }
+    ],
+    "alternatives": [
+      {
+        "option": "静态选取固定工具子集并锁定版本",
+        "buys": "上下文占用稳定，提示缓存命中率高，行为可预测",
+        "costs": "新增能力需人工改配置，长尾工具永远不可达"
+      },
+      {
+        "option": "按任务或领域动态加载工具子集（工具检索 + 分域激活）",
+        "buys": "上下文只装当前需要的工具，可扩展到大量服务器",
+        "costs": "检索错选会直接导致工具缺失，需要额外的选择质量评估"
+      },
+      {
+        "option": "用工具网关聚合与命名空间化多个服务器，对模型暴露收窄后的统一面",
+        "buys": "屏蔽上游工具膨胀与命名冲突，集中施加策略",
+        "costs": "引入一跳与单点，网关本身成为容量与可用性瓶颈"
+      }
+    ],
+    "evidence_anchors": [
+      "提示词组装代码中注入工具定义的片段与其长度",
+      "工具注册表、工具数量上限与筛选配置",
+      "tools/list 结果缓存实现与 ttlMs / cacheScope 使用点",
+      "工具命名规范与名称生成逻辑",
+      "模型调用遥测：每次请求的工具数、token 用量、工具选择结果"
+    ],
+    "tags": {
+      "structure": ["tool-registry", "context-budget", "tool-selection", "prompt-cache"],
+      "symptom": ["context-overflow", "tool-misselection", "latency-growth", "cache-miss"],
+      "stack": ["mcp", "llm-agent", "prompt-assembly"],
+      "store": ["context-window", "tool-registry", "list-cache"],
+      "surface": ["prompt-assembly", "tool-listing", "gateway"]
+    },
+    "sources": [
+      {
+        "title": "MCP Specification — Key Changes 2026-07-28（工具列表确定性顺序以提升提示缓存命中；CacheableResult 的 ttlMs 与 cacheScope）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/changelog",
+        "license": "attribution"
+      },
+      {
+        "title": "MCP Specification — Tools（工具名规范与工具定义元数据结构）",
+        "url": "https://modelcontextprotocol.io/specification/2026-07-28/server/tools",
+        "license": "attribution"
+      },
+      {
+        "title": "OWASP MCP Security Cheat Sheet（LLM 同时看到所有服务器的工具描述；跨服务器攻击与隔离）",
+        "url": "https://cheatsheetseries.owasp.org/cheatsheets/MCP_Security_Cheat_Sheet.html",
+        "license": "sharealike"
+      },
+      {
+        "title": "Azure Architecture Antipatterns — Extraneous Fetching",
+        "url": "https://learn.microsoft.com/en-us/azure/architecture/antipatterns/extraneous-fetching/",
+        "license": "permissive"
+      },
+      {
+        "title": "Brendan Gregg — The USE Method（度量资源占用与饱和度的方法论）",
+        "url": "https://www.brendangregg.com/usemethod.html",
+        "license": "attribution"
+      }
+    ],
+    "provenance": {
+      "collected": "2026-09",
+      "verified_by": "agent-bootstrap",
+      "freshness": "2027-03"
+    }
+  }
+]

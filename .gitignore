@@ -8,3 +8,6 @@ coverage/
 *.log
 tmp/
 .tmp/
+# Local scratch: cognition revision drafts and other non-shipped working files.
+# The lens library under docs/kb/ IS shipped — do not ignore that.
+.cache/

@@ -41,7 +41,9 @@
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD-PARTY-NOTICES.md",
+    "licenses/"
   ],
   "scripts": {
     "demo": "node scripts/demo-governor.js",
@@ -62,7 +64,9 @@
     "eval:e1:score": "node evaluation/goal-governor-e1/score-e1.js",
     "eval:e1:live": "node evaluation/goal-governor-e1/run-e1.js --mode live",
     "release:artifacts": "node scripts/build-release-artifacts.js",
-    "check": "npm test && npm run doctor && npm run cognition:freshness && npm run adapter:discovery:check && npm run eval:e1:preflight"
+    "check": "npm test && npm run kb:vocab:check && npm run doctor && npm run cognition:freshness && npm run adapter:discovery:check && npm run eval:e1:preflight",
+    "kb:vocab": "node scripts/kb-vocab.js",
+    "kb:vocab:check": "node scripts/kb-vocab.js --check"
   },
   "keywords": [
     "deepseek-harness",
