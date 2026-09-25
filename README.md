@@ -7,8 +7,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Live E1: invalid](https://img.shields.io/badge/Live_E1-INVALID-red.svg)](./docs/validation-status.md)
 
-![dsh-researcher: project reality and evidence-gated done](./docs/assets/social-preview.png)
-
 ## Stop AI coding agents from forgetting project reality—or declaring DONE without evidence
 
 `dsh-researcher` is a DSH plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It separates three jobs that ordinary Plan mode tends to mix:
@@ -49,6 +47,30 @@ AI coding becomes unreliable across sessions, not only within one prompt:
 4. The person never froze a stopping condition, so neither side knows when to stop.
 
 A Plan says what steps may be attempted. This project records what is believed true, what must be achieved, who may prove it, and when work must stop.
+
+## What research mode is for
+
+The purpose is to put the model's attention on the changes that are worth making to **this** project, and to keep it there. Concretely, a research run is expected to:
+
+- name the project's actual purpose and the environment it really runs in;
+- find where it is drifting off its own architecture, and where a locally reasonable change would cross a boundary;
+- judge whether a proposed change is worth making at all, including changes to prompts and to context, and say what the modification would buy;
+- locate the mistakes this project is most likely to make next;
+- and, before concluding, **reverse the question**: what would have to be true for this reading to be wrong, and what would change if the architecture were different.
+
+Output is a structured report, not a conversation. Every factual claim carries a citation or is marked unverified; findings land in `BUILD` / `DON'T BUILD` / `INVESTIGATE`.
+
+A curated knowledge base of real experience from other projects is planned, to be selected and injected on demand so the model checks the angles that matter for the task at hand. It does not exist yet; see the honesty note above.
+
+## Who this is not for
+
+Stated plainly, because time is expensive:
+
+- **Not for chasing one code error.** If you know which line is wrong and want it fixed, use an ordinary agent. Research mode cannot write.
+- **Not for a model that agrees with everything.** The mode is built to disconfirm its own reading; an assistant that seeks approval will produce ceremony, not findings.
+- **Not for a task with no decision in it.** If nothing is in doubt, there is nothing to research.
+
+It is for two situations in particular: **meeting a project you have not worked in and needing its purpose, boundaries and real runtime aligned quickly**; and **having taken a project through many rounds of AI edits until it looks correct while quietly accumulating holes or no longer moving forward** — where the missing thing is not effort but a correct picture of what the project now is.
 
 ## See the mechanism in 60 seconds
 

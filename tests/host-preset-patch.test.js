@@ -64,11 +64,28 @@ test('patch is idempotent', (t) => {
 test('revert removes the block and restores the pre-patch bytes', (t) => {
   const root = makeRoot()
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
-  patch.patchHostPresets({ presetDir: root, dshHome: root, apply: true })
+  const patched = patch.patchHostPresets({ presetDir: root, dshHome: root, apply: true })
+  const backup = patched.targets.minimal.backup
+  assert.ok(fs.existsSync(backup), 'a backup is taken before patching')
   const manifest = patch.patchHostPresets({ presetDir: root, dshHome: root, apply: false })
   assert.equal(manifest.targets.minimal.action, 'reverted')
   assert.equal(read(root, 'minimal'), SHIPPED)
-  assert.ok(!fs.existsSync(manifest.targets.minimal.backup), 'the backup is cleaned up on revert')
+  assert.equal(manifest.targets.minimal.backupRemoved, true)
+  assert.ok(!fs.existsSync(backup), 'uninstall must not leave the backup as litter')
+  assert.ok(!fs.existsSync(patched.targets.standard.backup), 'and not for the other target either')
+})
+
+test('revert clears a stray backup even when the file carries no patch', (t) => {
+  // 上一次被中断的安装可能留下备份而文件已还原；那也是我们的垃圾，要一并带走。
+  const root = makeRoot()
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const backup = path.join(root, 'minimal', 'agent.cordis.yml' + patch.BACKUP_SUFFIX)
+  fs.writeFileSync(backup, SHIPPED)
+  const manifest = patch.patchHostPresets({ presetDir: root, dshHome: root, apply: false })
+  assert.equal(manifest.targets.minimal.action, 'not-patched')
+  assert.equal(manifest.targets.minimal.backupRemoved, true)
+  assert.ok(!fs.existsSync(backup))
+  assert.equal(read(root, 'minimal'), SHIPPED, 'the file itself is untouched')
 })
 
 test('revert is a no-op on an unpatched file', (t) => {

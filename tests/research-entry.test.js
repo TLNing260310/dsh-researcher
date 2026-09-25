@@ -320,6 +320,22 @@ test('the reason the tool guard exists is documented in the source', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', 'researcher', 'plugins', 'research-entry', 'index.js'), 'utf8')
   // permissionPresets only constrains the filesystem; shell writes pass through it.
   assert.match(source, /shell 里的写穿过 fs 沙箱/)
-  // and the in-session mode has no research persona — say so rather than hide it.
+  // the in-session mode has no research persona from the preset — say so, and say
+  // how the persona is supplied instead, rather than hiding the limitation.
   assert.match(source, /没有研究 persona/)
+})
+
+test('no preset-local plugin publishes a process-global service', () => {
+  // A row that publishes a service without an `isolate` realm is rejected at mount.
+  // This entry has to load in the host presets too, where a realm cannot be added,
+  // so the guarantee is that none of these rows provides anything process-global.
+  const pluginDir = path.join(__dirname, '..', 'researcher', 'plugins')
+  for (const entry of fs.readdirSync(pluginDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const file = path.join(pluginDir, entry.name, 'index.js')
+    if (!fs.existsSync(file)) continue
+    const source = fs.readFileSync(file, 'utf8')
+    assert.doesNotMatch(source, /ctx\.provide\s*\(/u, entry.name + ' publishes a process-global service via ctx.provide')
+    assert.doesNotMatch(source, /\bctx\.set\s*\(/u, entry.name + ' writes a service through ctx.set')
+  }
 })
