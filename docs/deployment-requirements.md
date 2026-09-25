@@ -45,6 +45,21 @@ $DSH_HOME/.agent-presets/governed          # 目标治理编码
 
 Web UI 选择顺序：**先选 "Read Only"，再选 "项目研究 Project Research"**。preset 会把审批收紧为 `never`，UI 上显示为 **Custom**——这是预期的，不是配置错误。
 
+### 在普通编码会话里使用 `/research`
+
+`/research` 需要所在的 preset 里有一行 `research-entry`。本项目不修改 DSH 随附的 preset，而是提供带该行的副本（复制到用户 preset 根即可）：
+
+| 命令 | 行为 |
+|---|---|
+| `/research <任务>` | **在会话内**进入只读研究，**主 agent 继续执行**。沙箱切只读，并装工具层守卫拒绝 shell 与写工具 |
+| `/research --session <任务>` | 派生一个独立的研究会话（完整认证形态，含 Runtime Certificate），代价是切换会话 |
+| `/research off` | 退出会话内研究模式，恢复进入前的权限 |
+| `/research status` | 查看当前沙箱、审批与透镜库路径 |
+
+**关于两层关闭**：会话内模式下，`permissionPresets` 只约束**文件系统**。它拦不住 `pwsh -c "Set-Content ..."`——shell 里的写会穿过 fs 沙箱。因此本模式**同时**在工具层拒绝 `write` / `edit` / `bash` / `pwsh` / `shell` / `terminal*` / `persistent*` / 子代理 / 工作流 / 代码执行。只切权限而不加这一层，会得到"看起来严格、实际可绕过"的治理。
+
+**会话内模式不提供研究 persona**，也没有 `research_doctor` / `research_checkpoint`——DSH 只在 agent 创建期应用 preset 的 per-agent 安装。需要完整认证形态时用 `--session`。
+
 ---
 
 ## 2. 本项目是什么 / 不是什么
