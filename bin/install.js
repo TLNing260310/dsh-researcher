@@ -852,6 +852,30 @@ const dshPackageRoot = (explicitPackage, resolvedShim) => {
   return undefined
 }
 
+// The host presets directory to patch, and whether that differs from the DSH
+// installation actually detected on this machine.
+//
+// `DSH_HOST_PRESETS_DIR` lets a test point the patch at its own temporary tree.
+// It is honoured only when it names an existing absolute path AND differs from
+// the detected installation; when it differs, the caller is patching a foreign
+// root, which `patchHostPresets` refuses unless that root is temporary. Without
+// both halves a stray or stale value silently redirects a write — which is how a
+// test once put a throwaway path into the user's own preset file.
+const hostPresetTarget = (packageRoot) => {
+  const detected = hostPresetDir(packageRoot)
+  const override = process.env.DSH_HOST_PRESETS_DIR
+  if (typeof override !== 'string' || override.length === 0 || !path.isAbsolute(override)) {
+    return { dir: detected, foreign: false }
+  }
+  try {
+    if (!fs.existsSync(override)) return { dir: detected, foreign: false }
+  } catch (error) {
+    return { dir: detected, foreign: false }
+  }
+  const differs = detected === undefined || path.resolve(override) !== path.resolve(detected)
+  return { dir: override, foreign: differs }
+}
+
 const hostPresetDir = (packageRoot) => (packageRoot === undefined
   ? undefined
   : path.join(packageRoot, 'node_modules', '@deepseek-ai', 'dsh-agent-presets', 'presets'))
@@ -895,7 +919,8 @@ const runInstall = (options) => {
     console.log('[DRY RUN] Would snapshot current targets and install both presets under ' + TARGET_ROOT)
     if (options.hostPresetPatch !== false) {
       const presetDir = hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
-      const preview = patchHostPresets({ presetDir, dshHome: DSH_HOME, apply: true, dryRun: true })
+      const target = hostPresetTarget(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
+      const preview = patchHostPresets({ presetDir: target.dir, dshHome: DSH_HOME, apply: true, dryRun: true, expectedPresetDir: hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)), allowForeignPresetDir: target.foreign })
       const plan = Object.entries(preview.targets).map(([name, record]) => name + '=' + record.action + (record.reason === null ? '' : '(' + record.reason + ')'))
       console.log('[DRY RUN] Would append the research-entry row to DSH presets: ' + (plan.length === 0 ? 'no host preset directory found' : plan.join(', ')))
     }
@@ -918,7 +943,8 @@ const runInstall = (options) => {
     if (options.hostPresetPatch === false) {
       console.log('Host preset patch: skipped (--no-host-preset-patch)')
     } else {
-      const manifest = patchHostPresets({ presetDir: hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)), dshHome: DSH_HOME, apply: true })
+      const target = hostPresetTarget(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
+      const manifest = patchHostPresets({ presetDir: target.dir, dshHome: DSH_HOME, apply: true, expectedPresetDir: hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)), allowForeignPresetDir: target.foreign })
       recordHostPatch(manifest)
       const touched = Object.entries(manifest.targets).filter(([, record]) => record.action === 'patched')
       if (touched.length === 0) {
@@ -980,10 +1006,16 @@ const runUninstall = (options) => {
     // Undo the host preset patch: without the researcher preset, the row this
     // installer appended would point at a plugin that no longer exists.
     const patchState = readHostPatchState()
+    const detectedDir = dshHomeForPatch
+    const recordedDir = patchState && typeof patchState.presetDir === 'string' ? patchState.presetDir : undefined
     const manifest = patchHostPresets({
-      presetDir: (patchState && patchState.presetDir) || dshHomeForPatch,
+      // Prefer the directory the install actually recorded, but still refuse a
+      // recorded path that is neither the detected installation nor temporary.
+      presetDir: recordedDir || detectedDir,
       dshHome: DSH_HOME,
       apply: false,
+      expectedPresetDir: detectedDir,
+      allowForeignPresetDir: recordedDir !== undefined && recordedDir !== detectedDir,
     })
     const reverted = Object.entries(manifest.targets).filter(([, record]) => record.action === 'reverted')
     if (reverted.length > 0) {

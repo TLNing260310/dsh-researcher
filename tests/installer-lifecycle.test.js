@@ -27,10 +27,25 @@ const {
   isBackupId,
 } = require(entry)
 
-const runInstaller = (dshHome, args) => {
-  const env = { ...process.env, DSH_HOME: dshHome }
+/**
+ * A throwaway stand-in for the DSH presets directory, inside the test's own
+ * temporary tree. Every install a test spawns is pointed here, so no test can
+ * reach a real DSH installation even by accident.
+ *
+ * The path is returned WITHOUT creating it: a test that asserts "a refused
+ * install wrote nothing" must not find a directory this helper made.
+ */
+const hostPresetsDirFor = (dshHome) => path.join(dshHome, 'host-presets')
+
+const runInstaller = (dshHome, args, extraEnv = {}) => {
+  const env = { ...process.env, DSH_HOME: dshHome, ...extraEnv }
   for (const key of Object.keys(env)) if (key.toLowerCase() === 'path') delete env[key]
   env.PATH = path.join(path.dirname(dshHome), 'intentionally-empty-path')
+  // Pin the host presets directory for every spawned install. Without this the
+  // lookup can fall back to the DSH installation that happens to be on the
+  // machine, and a test then writes into the user's own presets — which is
+  // exactly how a throwaway path once ended up in a real preset file.
+  env.DSH_HOST_PRESETS_DIR = hostPresetsDirFor(dshHome)
   return spawnSync(process.execPath, [entry, ...args], {
     cwd: root,
     encoding: 'utf8',
@@ -427,7 +442,6 @@ dshRuntimeTest('uninstall reverts the host preset patch it recorded', (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-hostpatch-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const dshHome = path.join(temp, 'dsh-home')
-  const presets = path.join(temp, 'dsh-install', 'presets')
   const shipped = [
     '# The `minimal` agent preset.',
     '',
@@ -437,27 +451,41 @@ dshRuntimeTest('uninstall reverts the host preset patch it recorded', (t) => {
     '    prefix: You are a helpful software engineer assistant.',
     '',
   ].join('\n')
-  fs.mkdirSync(path.join(presets, 'minimal'), { recursive: true })
-  fs.writeFileSync(path.join(presets, 'minimal', 'agent.cordis.yml'), shipped)
+  // 安装器子进程用的宿主 preset 目录（来自 runInstaller 的固定覆盖）。
+  const installerPresets = hostPresetsDirFor(dshHome)
+  fs.mkdirSync(path.join(installerPresets, 'minimal'), { recursive: true })
+  const installerPresetFile = path.join(installerPresets, 'minimal', 'agent.cordis.yml')
+  fs.writeFileSync(installerPresetFile, shipped)
+
+  // 让安装期打上补丁：行内相对路径指向安装后的 researcher preset，所以它必须已存在。
   const installed = runInstaller(dshHome, ['install', '--allow-unsupported-dsh'])
   assert.equal(installed.status, 0, installed.stdout + installed.stderr)
-
-  // 模拟安装期打上的补丁与它记录的现场。
-  const { patchHostPresets } = require('../lib/host-preset-patch.js')
-  const patched = patchHostPresets({ presetDir: presets, dshHome, apply: true })
-  assert.equal(patched.targets.minimal.action, 'patched')
-  const presetFile = path.join(presets, 'minimal', 'agent.cordis.yml')
-  assert.ok(fs.readFileSync(presetFile, 'utf8').includes('research-entry'), 'precondition: the row is present')
-  const stateRoot = path.join(dshHome, '.dsh-researcher')
-  fs.mkdirSync(stateRoot, { recursive: true })
-  fs.writeFileSync(path.join(stateRoot, 'host-preset-patch.json'), JSON.stringify(patched, null, 2) + '\n')
+  assert.ok(fs.readFileSync(installerPresetFile, 'utf8').includes('research-entry'), 'precondition: the installer patched the host preset')
 
   const uninstalled = runInstaller(dshHome, ['uninstall'])
   assert.equal(uninstalled.status, 0, uninstalled.stdout + uninstalled.stderr)
-  const after = fs.readFileSync(presetFile, 'utf8')
+  const after = fs.readFileSync(installerPresetFile, 'utf8')
   assert.equal(after, shipped, 'uninstall must restore the host preset byte-for-byte')
   assert.ok(!after.includes('research-entry'), 'the appended row must be gone')
-  assert.ok(!fs.existsSync(presetFile + '.dsh-researcher-original'), 'and its backup must not be left behind')
+  assert.ok(!fs.existsSync(installerPresetFile + '.dsh-researcher-original'), 'and its backup must not be left behind')
+})
+
+dshRuntimeTest('a spawned install never touches the machine it runs on', (t) => {
+  // 真实事故的回归：测试曾经让安装器回退到 PATH 上那个真实的 DSH 安装，
+  // 把临时路径写进了用户自己的 preset，临时目录一清理，用户的会话就挂不上。
+  // 这里断言每次生成的子进程都被钉在临时目录里，且不继承调用方的值。
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-isolation-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const dshHome = path.join(temp, 'dsh-home')
+  process.env.DSH_HOST_PRESETS_DIR = path.join(temp, 'poisoned-by-the-caller')
+  t.after(() => { delete process.env.DSH_HOST_PRESETS_DIR })
+  const probe = runInstaller(dshHome, ['install', '--dry-run', '--allow-unsupported-dsh'], {
+    DSH_PROBE_HOST_PRESETS: '1',
+  })
+  assert.equal(probe.status, 0, probe.stdout + probe.stderr)
+  // runInstaller 必须覆盖调用方的值，而不是沿用。
+  assert.equal(hostPresetsDirFor(dshHome), path.join(dshHome, 'host-presets'))
+  assert.notEqual(hostPresetsDirFor(dshHome), process.env.DSH_HOST_PRESETS_DIR)
 })
 
 dshRuntimeTest('rollback rejects incomplete or contradictory evidence without changing targets', (t) => {
