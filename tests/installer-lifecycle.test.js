@@ -420,6 +420,46 @@ dshRuntimeTest('install, force replacement, backup, uninstall, and exact rollbac
   assert.equal(fs.existsSync(path.join(dshHome, '.dsh-researcher', 'lifecycle.lock')), false)
 })
 
+dshRuntimeTest('uninstall reverts the host preset patch it recorded', (t) => {
+  // 这条断言以前不存在，代价是一个真实 bug：`runUninstall` 引用了一个只在
+  // `runInstall` 里存在的绑定，较新的 Node 在求值时抛错，撤销被整段跳过，
+  // 而旧测试只检查退出码，于是没有任何断言发现补丁仍留在宿主 preset 里。
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-hostpatch-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const dshHome = path.join(temp, 'dsh-home')
+  const presets = path.join(temp, 'dsh-install', 'presets')
+  const shipped = [
+    '# The `minimal` agent preset.',
+    '',
+    '- id: persona',
+    "  name: '@deepseek-ai/dsh-persona'",
+    '  config:',
+    '    prefix: You are a helpful software engineer assistant.',
+    '',
+  ].join('\n')
+  fs.mkdirSync(path.join(presets, 'minimal'), { recursive: true })
+  fs.writeFileSync(path.join(presets, 'minimal', 'agent.cordis.yml'), shipped)
+  const installed = runInstaller(dshHome, ['install', '--allow-unsupported-dsh'])
+  assert.equal(installed.status, 0, installed.stdout + installed.stderr)
+
+  // 模拟安装期打上的补丁与它记录的现场。
+  const { patchHostPresets } = require('../lib/host-preset-patch.js')
+  const patched = patchHostPresets({ presetDir: presets, dshHome, apply: true })
+  assert.equal(patched.targets.minimal.action, 'patched')
+  const presetFile = path.join(presets, 'minimal', 'agent.cordis.yml')
+  assert.ok(fs.readFileSync(presetFile, 'utf8').includes('research-entry'), 'precondition: the row is present')
+  const stateRoot = path.join(dshHome, '.dsh-researcher')
+  fs.mkdirSync(stateRoot, { recursive: true })
+  fs.writeFileSync(path.join(stateRoot, 'host-preset-patch.json'), JSON.stringify(patched, null, 2) + '\n')
+
+  const uninstalled = runInstaller(dshHome, ['uninstall'])
+  assert.equal(uninstalled.status, 0, uninstalled.stdout + uninstalled.stderr)
+  const after = fs.readFileSync(presetFile, 'utf8')
+  assert.equal(after, shipped, 'uninstall must restore the host preset byte-for-byte')
+  assert.ok(!after.includes('research-entry'), 'the appended row must be gone')
+  assert.ok(!fs.existsSync(presetFile + '.dsh-researcher-original'), 'and its backup must not be left behind')
+})
+
 dshRuntimeTest('rollback rejects incomplete or contradictory evidence without changing targets', (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-invalid-backup-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))

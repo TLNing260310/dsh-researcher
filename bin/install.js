@@ -949,6 +949,12 @@ const runBackup = (options) => {
 
 const runUninstall = (options) => {
   validateRuntimeRoots()
+  // Resolve the host preset directory the same way install does. The uninstall
+  // path never needed this before the host patch existed, and referring to the
+  // install-scoped `dsh` binding here is a ReferenceError — on runtimes that
+  // evaluate the operand instead of short-circuiting past it, the whole revert
+  // was skipped and the appended row stayed behind.
+  const dshHomeForPatch = hostPresetDir(dshPackageRoot(options.dshPackage, detectDsh({ explicitPackage: options.dshPackage }).resolvedShim))
   const before = targetStatuses()
   if (options.dryRun) {
     validatePresentTargetTrees(before)
@@ -975,7 +981,7 @@ const runUninstall = (options) => {
     // installer appended would point at a plugin that no longer exists.
     const patchState = readHostPatchState()
     const manifest = patchHostPresets({
-      presetDir: (patchState && patchState.presetDir) || hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)),
+      presetDir: (patchState && patchState.presetDir) || dshHomeForPatch,
       dshHome: DSH_HOME,
       apply: false,
     })
