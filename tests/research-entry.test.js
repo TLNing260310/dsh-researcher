@@ -64,7 +64,7 @@ test('the in-session preamble states the constraint and the exit path', () => {
 
 /** 构造一个最小可用的插件宿主，记录所有副作用以便断言。 */
 const makeHarness = (options = {}) => {
-  const calls = { setPermission: [], setPolicy: [], injected: [], guarded: 0, guardReleased: 0 }
+  const calls = { setPermission: [], setPolicy: [], injected: [], guarded: 0, guardReleased: 0, sections: [], sectionDisposed: 0 }
   let registered
   let guardFn
   let sandboxMode = options.sandboxMode || 'workspace-full'
@@ -77,6 +77,15 @@ const makeHarness = (options = {}) => {
           guardFn = fn
           return () => { calls.guardReleased += 1; guardFn = undefined }
         },
+      },
+      get(name) {
+        if (name !== 'systemPrompt') return undefined
+        return {
+          section(section) {
+            calls.sections.push(section)
+            return () => { calls.sectionDisposed += 1 }
+          },
+        }
       },
     },
     inject(message) { calls.injected.push(message) },
@@ -227,6 +236,77 @@ test('--session contains a setup failure and leaves the parent session untouched
   // 父会话的权限没有被改动
   assert.deepEqual(h.calls.setPermission, ['read-only'], 'only the child session may be switched')
   assert.equal(h.calls.guarded, 0, 'the parent session must not receive a guard')
+})
+
+// ── 人格遮蔽 ────────────────────────────────────────────────────────────────
+
+test('extractPersonaPrefix pulls the persona block out of a real preset file', () => {
+  const yaml = fs.readFileSync(path.join(__dirname, '..', 'researcher', 'agent.cordis.yml'), 'utf8')
+  const text = T.extractPersonaPrefix(yaml)
+  assert.equal(typeof text, 'string')
+  assert.ok(text.length > 1000, 'the shipped research persona is long; got ' + text.length)
+  assert.match(text, /Project Research/)
+  // 行首缩进被剥掉，正文不再是 YAML 块
+  assert.doesNotMatch(text, /^\s{4,}\S/m)
+})
+
+test('extractPersonaPrefix declines rather than guessing', () => {
+  assert.equal(T.extractPersonaPrefix(''), undefined)
+  assert.equal(T.extractPersonaPrefix('no persona here'), undefined)
+  assert.equal(T.extractPersonaPrefix('- id: persona\n  config:\n    prefix: |-\n'), undefined)
+  assert.equal(T.extractPersonaPrefix(undefined), undefined)
+})
+
+test('the fallback persona is short but keeps the read-only contract', () => {
+  assert.ok(T.IN_SESSION_PERSONA_FALLBACK.length > 100)
+  assert.match(T.IN_SESSION_PERSONA_FALLBACK, /只读/)
+  assert.match(T.IN_SESSION_PERSONA_FALLBACK, /BUILD/)
+  assert.match(T.IN_SESSION_PERSONA_FALLBACK, /不知道/)
+})
+
+test('the persona shadow targets the real DSH persona section names and orders', () => {
+  assert.equal(T.PERSONA_SECTION_NAME, 'deployment:persona-prefix')
+  assert.equal(T.PERSONA_SUFFIX_SECTION_NAME, 'deployment:persona-suffix')
+  assert.equal(T.PERSONA_PREFIX_ORDER, 0)
+  assert.equal(T.PERSONA_SUFFIX_ORDER, 10200)
+})
+
+test('entering research mode registers the persona shadow on the agent scope', async () => {
+  const h = makeHarness({ currentPreset: 'workspace-write', sandboxMode: 'workspace-full' })
+  const result = await invoke(h, '研究一下')
+  assert.equal(result.kind, 'success')
+  assert.match(result.text, /研究人格已启用/)
+  const sections = h.calls.sections
+  assert.equal(sections.length, 2, 'prefix and suffix sections must both be registered')
+  const prefix = sections.find((s) => s.name === 'deployment:persona-prefix')
+  const suffix = sections.find((s) => s.name === 'deployment:persona-suffix')
+  assert.ok(prefix && typeof prefix.text === 'function', 'the prefix text must be dynamic')
+  assert.ok(suffix && typeof suffix.text === 'function', 'the suffix text must be dynamic')
+  // 未进入研究模式的 agent 拿到空文本 —— 即"没有遮蔽"
+  assert.equal(prefix.text({ agent: {} }), '')
+  // 进入后的 agent 拿到研究人格
+  const rendered = prefix.text({ agent: h.agent })
+  assert.ok(rendered.length > 100)
+  assert.match(rendered, /Project Research/)
+  // 后缀在研究模式下被遮蔽为空
+  assert.equal(suffix.text({ agent: h.agent }), '')
+})
+
+test('exiting research mode turns the persona back off without re-registering', async () => {
+  const h = makeHarness({ currentPreset: 'workspace-write', sandboxMode: 'workspace-full' })
+  await invoke(h, '研究一下')
+  const sections = h.calls.sections.slice()
+  await invoke(h, 'off')
+  assert.equal(h.calls.sections.length, sections.length, 'exit must not register more sections')
+  const prefix = sections.find((s) => s.name === 'deployment:persona-prefix')
+  assert.equal(prefix.text({ agent: h.agent }), '', 'after exit the persona is off')
+})
+
+test('a second entry does not register a second persona shadow', async () => {
+  const h = makeHarness({ currentPreset: 'workspace-write', sandboxMode: 'workspace-full' })
+  await invoke(h, '第一次')
+  await invoke(h, '第二次')
+  assert.equal(h.calls.sections.length, 2)
 })
 
 // ── 源码不变量 ──────────────────────────────────────────────────────────────

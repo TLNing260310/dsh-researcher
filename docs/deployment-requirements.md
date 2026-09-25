@@ -47,18 +47,28 @@ Web UI 选择顺序：**先选 "Read Only"，再选 "项目研究 Project Resear
 
 ### 在普通编码会话里使用 `/research`
 
-`/research` 需要所在的 preset 里有一行 `research-entry`。本项目不修改 DSH 随附的 preset，而是提供带该行的副本（复制到用户 preset 根即可）：
+安装器会把 `research-entry` 这一行**追加到 DSH 自带的 `minimal` 与 `standard` preset**，因此普通会话里直接可用 `/research`。
 
 | 命令 | 行为 |
 |---|---|
-| `/research <任务>` | **在会话内**进入只读研究，**主 agent 继续执行**。沙箱切只读，并装工具层守卫拒绝 shell 与写工具 |
-| `/research --session <任务>` | 派生一个独立的研究会话（完整认证形态，含 Runtime Certificate），代价是切换会话 |
-| `/research off` | 退出会话内研究模式，恢复进入前的权限 |
+| `/research <任务>` | **在会话内**进入只读研究，**主 agent 继续执行**。沙箱切只读、装工具层守卫、**切换到研究人格**、注入 Route Manifest |
+| `/research --session <任务>` | 派生一个独立研究会话（完整认证形态，含 Runtime Certificate），代价是切换会话 |
+| `/research off` | 退出，恢复进入前的权限与人格 |
 | `/research status` | 查看当前沙箱、审批与透镜库路径 |
 
-**关于两层关闭**：会话内模式下，`permissionPresets` 只约束**文件系统**。它拦不住 `pwsh -c "Set-Content ..."`——shell 里的写会穿过 fs 沙箱。因此本模式**同时**在工具层拒绝 `write` / `edit` / `bash` / `pwsh` / `shell` / `terminal*` / `persistent*` / 子代理 / 工作流 / 代码执行。只切权限而不加这一层，会得到"看起来严格、实际可绕过"的治理。
+**关于 DSH preset 的改动（最小、可回滚）**：
 
-**会话内模式不提供研究 persona**，也没有 `research_doctor` / `research_checkpoint`——DSH 只在 agent 创建期应用 preset 的 per-agent 安装。需要完整认证形态时用 `--session`。
+- 只**追加一行**，用起止标记包起来；preset 原有的每一行都不动
+- 改动前会把原文件备份为 `agent.cordis.yml.dsh-researcher-original`
+- `dsh-researcher uninstall` 会**按标记移除**该行（不是三方合并）
+- 安装时可加 `--no-host-preset-patch` 完全跳过
+- DSH 升级会覆盖该文件，重跑安装即可重新追加
+
+**关于两层关闭**：会话内模式下，`permissionPresets` 只约束**文件系统**。它拦不住 `pwsh -c "Set-Content ..."`——shell 里的写会穿过 fs 沙箱。因此本模式**同时**在工具层拒绝 `write` / `edit` / `bash` / `pwsh` / `shell` / `terminal*` / `persistent*` / 子代理 / 工作流 / 代码执行。
+
+**关于研究人格**：会话内模式通过**遮蔽 `deployment:persona-prefix` 段落**切换人格——DSH 的段落文本可以是函数，每次组装时按当前 agent 求值，所以在**同一会话内**切换人格不需要重建 agent。人格正文从研究 preset 读取，避免两份文本漂移；读不到时退回内置精简版并如实告知。
+
+**会话内模式仍不提供** `research_doctor` 与 `research_checkpoint`（它们属于 preset 的 per-agent 安装，只在 agent 创建期生效）。需要完整认证形态时用 `--session`。
 
 ---
 

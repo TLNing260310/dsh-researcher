@@ -45,7 +45,7 @@ const fail = (message) => { throw new Error(message) }
 const usage = () => `dsh-researcher ${PACKAGE.version}
 
 Usage:
-  dsh-researcher [install] [--force] [--dry-run] [--allow-unsupported-dsh]
+  dsh-researcher [install] [--force] [--dry-run] [--allow-unsupported-dsh] [--no-host-preset-patch]
   dsh-researcher backup [--dry-run]
   dsh-researcher uninstall [--dry-run]
   dsh-researcher rollback [--backup-id <id>] [--dry-run]
@@ -77,6 +77,7 @@ const parseArguments = (argv) => {
     allowUnsupportedDsh: false,
     dshPackage: null,
     backupId: null,
+    hostPresetPatch: true,
     help: false,
     version: false,
   }
@@ -91,12 +92,13 @@ const parseArguments = (argv) => {
     }
     if (token === '--help' || token === '-h') { options.help = true; continue }
     if (token === '--version') { options.version = true; continue }
-    if (['--dry-run', '--force', '--allow-unsupported-dsh'].includes(token)) {
+    if (['--dry-run', '--force', '--allow-unsupported-dsh', '--no-host-preset-patch'].includes(token)) {
       if (seen.has(token)) fail('duplicate option: ' + token)
       seen.add(token)
       if (token === '--dry-run') options.dryRun = true
       if (token === '--force') options.force = true
       if (token === '--allow-unsupported-dsh') options.allowUnsupportedDsh = true
+      if (token === '--no-host-preset-patch') options.hostPresetPatch = false
       continue
     }
     if (token === '--backup-id') {
@@ -805,7 +807,75 @@ const printInstalledNextSteps = () => {
   console.log('  1. Certified research: select "Read Only", then "项目研究 Project Research"; the preset tightens approval to never (UI: Custom).')
   console.log('  2. Governed execution: select "目标治理编码 Governed Coding" and run /researcher run <approved-contract>.')
   console.log('  3. In Governed Coding, /researcher <question> is one read-only turn; /researcher on is persistent guarded mode.')
+  console.log('  4. In a normal session, /research <task> enters read-only research IN PLACE (no new session); /research off exits.')
 }
+
+// ── DSH host preset patch ───────────────────────────────────────────────────
+//
+// The in-place `/research` entry only works when the preset a session runs on
+// carries a `research-entry` row. The installer appends exactly that one row to
+// the two DSH presets people actually use, wrapped in markers so it is reversible
+// by a marker search rather than a merge. All of the decision logic — and every
+// refusal — lives in lib/host-preset-patch.js so it can be tested without running
+// an install.
+const { patchHostPresets, MARKER_BEGIN: HOST_PRESET_MARKER_BEGIN } = require('../lib/host-preset-patch.js')
+
+// Resolve the installed @deepseek-ai/dsh package root.
+//
+// There is no single reliable way to do this: the package may be reachable by
+// module resolution (nvm's global root), or only through the `dsh` shim that npm
+// writes, whose own directory carries `node_modules/@deepseek-ai/dsh`. The shim
+// is what the compatibility preflight already trusts, so it is the fallback here
+// too. Every attempt returns a candidate that is verified by the existence of the
+// presets directory, so a wrong guess is a no-op rather than a bad write.
+const dshPackageRoot = (explicitPackage, resolvedShim) => {
+  const candidates = []
+  if (typeof explicitPackage === 'string' && explicitPackage.length > 0) {
+    candidates.push(path.dirname(path.resolve(explicitPackage)))
+  }
+  const fromEnv = process.env.DSH_PACKAGE
+  if (typeof fromEnv === 'string' && fromEnv.length > 0) candidates.push(path.dirname(path.resolve(fromEnv)))
+  try {
+    candidates.push(path.dirname(require.resolve('@deepseek-ai/dsh/package.json', { paths: [REPOSITORY, process.cwd()] })))
+  } catch (error) { /* try the next route */ }
+  if (typeof resolvedShim === 'string' && resolvedShim.length > 0) {
+    candidates.push(path.join(path.dirname(resolvedShim), 'node_modules', '@deepseek-ai', 'dsh'))
+  }
+  try {
+    candidates.push(path.join(path.dirname(process.execPath), 'node_modules', '@deepseek-ai', 'dsh'))
+  } catch (error) { /* try the next route */ }
+  for (const candidate of candidates) {
+    try {
+      if (fs.existsSync(path.join(candidate, 'node_modules', '@deepseek-ai', 'dsh-agent-presets', 'presets'))) return candidate
+    } catch (error) { /* try the next route */ }
+  }
+  return undefined
+}
+
+const hostPresetDir = (packageRoot) => (packageRoot === undefined
+  ? undefined
+  : path.join(packageRoot, 'node_modules', '@deepseek-ai', 'dsh-agent-presets', 'presets'))
+
+const HOST_PATCH_STATE = 'host-preset-patch.json'
+
+const hostPatchStateFile = () => path.join(STATE_ROOT, HOST_PATCH_STATE)
+
+const recordHostPatch = (manifest) => {
+  try {
+    fs.mkdirSync(STATE_ROOT, { recursive: true })
+    fs.writeFileSync(hostPatchStateFile(), JSON.stringify(manifest, null, 2) + '\n')
+  } catch (error) { /* a failed note must not fail the install */ }
+}
+
+const readHostPatchState = () => {
+  try {
+    const stateFile = hostPatchStateFile()
+    return fs.existsSync(stateFile) ? JSON.parse(fs.readFileSync(stateFile, 'utf8')) : undefined
+  } catch (error) {
+    return undefined
+  }
+}
+
 
 const runInstall = (options) => {
   assertDshNodeSupported()
@@ -823,6 +893,12 @@ const runInstall = (options) => {
     validatePresentTargetTrees(before)
     console.log('[DRY RUN] DSH compatibility: ' + (dsh.compatible ? dsh.detail : 'unsupported override acknowledged: ' + dsh.detail))
     console.log('[DRY RUN] Would snapshot current targets and install both presets under ' + TARGET_ROOT)
+    if (options.hostPresetPatch !== false) {
+      const presetDir = hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
+      const preview = patchHostPresets({ presetDir, dshHome: DSH_HOME, apply: true, dryRun: true })
+      const plan = Object.entries(preview.targets).map(([name, record]) => name + '=' + record.action + (record.reason === null ? '' : '(' + record.reason + ')'))
+      console.log('[DRY RUN] Would append the research-entry row to DSH presets: ' + (plan.length === 0 ? 'no host preset directory found' : plan.join(', ')))
+    }
     console.log('[DRY RUN] No installer-owned paths were written.')
     return
   }
@@ -836,6 +912,22 @@ const runInstall = (options) => {
     console.log('Backup created: ' + backup.id)
     console.log('Installed "researcher" preset to ' + TARGETS.researcher)
     console.log('Installed "governed" preset to ' + TARGETS.governed)
+    // Host preset patch: appends the single `research-entry` row to the DSH presets
+    // people actually run, so `/research` works in a normal session. Reversible by
+    // marker; disabled with --no-host-preset-patch.
+    if (options.hostPresetPatch === false) {
+      console.log('Host preset patch: skipped (--no-host-preset-patch)')
+    } else {
+      const manifest = patchHostPresets({ presetDir: hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)), dshHome: DSH_HOME, apply: true })
+      recordHostPatch(manifest)
+      const touched = Object.entries(manifest.targets).filter(([, record]) => record.action === 'patched')
+      if (touched.length === 0) {
+        const reasons = Object.entries(manifest.targets).map(([name, record]) => name + '=' + record.action + (record.reason === null ? '' : '(' + record.reason + ')'))
+        console.log('Host preset patch: nothing to do — ' + reasons.join(', '))
+      } else {
+        for (const [name, record] of touched) console.log('Host preset patch: appended research-entry to "' + name + '" (' + record.file + ')')
+      }
+    }
     printInstalledNextSteps()
   })
 }
@@ -879,6 +971,18 @@ const runUninstall = (options) => {
     const stage = emptyStage()
     transactionalReplace(stage, { researcher: 'absent', governed: 'absent' }, backup)
     console.log('Backup created: ' + backup.id)
+    // Undo the host preset patch: without the researcher preset, the row this
+    // installer appended would point at a plugin that no longer exists.
+    const patchState = readHostPatchState()
+    const manifest = patchHostPresets({
+      presetDir: (patchState && patchState.presetDir) || hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)),
+      dshHome: DSH_HOME,
+      apply: false,
+    })
+    const reverted = Object.entries(manifest.targets).filter(([, record]) => record.action === 'reverted')
+    if (reverted.length > 0) {
+      for (const [name] of reverted) console.log('Host preset patch: removed research-entry from "' + name + '"')
+    }
     console.log('Uninstalled both managed presets. Roll back with: dsh-researcher rollback --backup-id ' + backup.id)
   })
 }

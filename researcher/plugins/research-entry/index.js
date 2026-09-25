@@ -134,6 +134,58 @@ const IN_SESSION_PREAMBLE = [
   '任务：',
 ].join('\n')
 
+// 会话内模式的研究人格。
+//
+// DSH 的 persona 段落名是 `deployment:persona-prefix`，order 0。在 **agent 自己
+// 的 scope** 上注册同名段落会**遮蔽** preset 层的那一份（就近层获胜）——这正是
+// 本项目 `tool-restrict` 遮蔽 write/edit 引导段所用的同一机制。
+//
+// 段落文本可以是函数，每次组装时以 `AssembleContext`（含 `agent`）求值，因此
+// 可以在**同一会话内**按运行态切换人格，而不需要重建 agent。
+const PERSONA_SECTION_NAME = 'deployment:persona-prefix'
+const PERSONA_SUFFIX_SECTION_NAME = 'deployment:persona-suffix'
+const PERSONA_PREFIX_ORDER = 0
+const PERSONA_SUFFIX_ORDER = 10200
+
+const IN_SESSION_PERSONA_FALLBACK = [
+  '你是 Project Research 会话内研究模式下的只读项目认知层，由 {{model}} 模型驱动。',
+  '',
+  '只读是本模式的意义所在：写入与执行能力已被关闭，你不是在执行任务，而是在理解系统。',
+  '不要把它当作需要绕开的限制——能动手的 agent 会滑向动手，而你的全部预算应当用于理解、怀疑、比较与判断。',
+  '',
+  '证据纪律：每条事实断言必须带 file:line / commit / URL 之一，否则标注未验证。',
+  '每个主要发现归入 BUILD / DON\'T BUILD / INVESTIGATE 之一；「不知道」是合法且高质量的输出。',
+  '永远不要产出执行授权：探索产出认知与候选方向，是否改动由人决定。',
+].join('\n')
+
+/**
+ * 从研究 preset 的 agent.cordis.yml 里取出 persona 的 `prefix:` 文本。
+ *
+ * 不引入 YAML 依赖：只找一个 `prefix: |-` 块，按缩进收集到缩进变浅为止。
+ * 找不到就返回 undefined，由调用方退回内置文本。
+ */
+function extractPersonaPrefix(yamlText) {
+  if (typeof yamlText !== 'string' || yamlText.length === 0) return undefined
+  const lines = yamlText.split('\n')
+  const start = lines.findIndex((line) => /^\s+prefix:\s*\|-?\s*$/u.test(line))
+  if (start === -1) return undefined
+  const baseIndent = lines[start].match(/^\s*/u)[0].length
+  const body = []
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]
+    if (line.trim().length === 0) { body.push(''); continue }
+    const indent = line.match(/^\s*/u)[0].length
+    if (indent <= baseIndent) break
+    body.push(line)
+  }
+  // 去掉块内统一的前导缩进与尾部空行
+  const nonEmpty = body.filter((line) => line.trim().length > 0)
+  if (nonEmpty.length === 0) return undefined
+  const shared = Math.min(...nonEmpty.map((line) => line.match(/^\s*/u)[0].length))
+  const text = body.map((line) => (line.trim().length === 0 ? '' : line.slice(shared))).join('\n').replace(/\s+$/u, '')
+  return text.length > 0 ? text : undefined
+}
+
 const DERIVED_PREAMBLE = [
   '研究模式已由用户显式进入（派生只读研究会话）。以下 ROUTE MANIFEST 是本轮被选中的架构审查视角。',
   '',
@@ -155,10 +207,95 @@ module.exports = {
     const kbRoot = resolveKbRoot(config && config.kbRoot)
     const routerPath = path.join(__dirname, '..', 'lens-router', 'index.js')
 
+    // 研究人格文本：优先从研究 preset 的 agent.cordis.yml 取，避免两份文本漂移。
+    // 取不到（preset 没装、格式变了）就退回内置文本，并如实降级——不让整个入口失败。
+    const personaSource = (() => {
+      const explicit = config && config.personaSource
+      const candidates = []
+      if (typeof explicit === 'string' && explicit.length > 0) candidates.push(explicit)
+      candidates.push(path.join(__dirname, '..', '..', 'agent.cordis.yml'))
+      candidates.push(path.join(__dirname, '..', '..', '..', 'researcher', 'agent.cordis.yml'))
+      for (const candidate of candidates) {
+        try {
+          if (!fs.existsSync(candidate)) continue
+          const text = extractPersonaPrefix(fs.readFileSync(candidate, 'utf8'))
+          if (text !== undefined) return { text, source: candidate }
+        } catch (error) { /* 试下一个 */ }
+      }
+      return { text: undefined, source: undefined }
+    })()
+    const personaPrefix = personaSource.text || IN_SESSION_PERSONA_FALLBACK
+
+    // 处于会话内研究模式的 agent。用 WeakSet 以免持有 agent 强引用。
+    const inSessionAgents = new WeakSet()
+    // 已为哪些 agent 注册过 persona 遮蔽（注册一次，靠运行态切换文本）。
+    const personaShadows = new WeakMap()
+
     // 会话 id → 会话内研究模式的现场（进入前的 permission preset + 守卫释放器）。
     const inSession = new Map()
     // 会话 id → 它派生出去、仍然存活的研究会话 id。
     const derived = new Map()
+
+    /**
+     * 在 **agent 自己的 scope** 上注册人格遮蔽。
+     *
+     * 遮蔽对象是 `deployment:persona-prefix`：DSH 的 persona 行注册同名段落，
+     * 就近层获胜，所以 agent 层的这一份会盖掉 preset 层的那一份。文本是函数，
+     * 每次组装时按 `AssembleContext.agent` 判断是否处于研究模式——**同一会话内
+     * 切换人格，不需要重建 agent**。
+     *
+     * 同时遮蔽 `deployment:persona-suffix` 为空：研究模式下不应再拼上编码 agent
+     * 的收尾段（例如 minimal 的 `complete: true` 人格）。
+     *
+     * 任何一步失败都返回错误而不抛出——人格是增强项，不能因为它让只读契约进不来。
+     */
+    const ensurePersonaShadow = (agent) => {
+      if (agent === undefined || agent === null || agent.ctx === undefined) {
+        return { ok: false, reason: 'agent has no scoped context' }
+      }
+      const existing = personaShadows.get(agent)
+      if (existing !== undefined) return existing
+
+      let systemPrompt
+      try {
+        systemPrompt = agent.ctx.get('systemPrompt')
+      } catch (error) {
+        systemPrompt = undefined
+      }
+      if (systemPrompt === undefined || typeof systemPrompt.section !== 'function') {
+        return { ok: false, reason: 'systemPrompt service unavailable to the agent scope' }
+      }
+
+      const disposers = []
+      try {
+        disposers.push(systemPrompt.section({
+          name: PERSONA_SECTION_NAME,
+          order: PERSONA_PREFIX_ORDER,
+          text: (assembly) => (assembly && inSessionAgents.has(assembly.agent) ? personaPrefix : ''),
+        }))
+        disposers.push(systemPrompt.section({
+          name: PERSONA_SUFFIX_SECTION_NAME,
+          order: PERSONA_SUFFIX_ORDER,
+          text: (assembly) => (assembly && inSessionAgents.has(assembly.agent) ? '' : undefined),
+        }))
+      } catch (error) {
+        for (const dispose of disposers) {
+          try { dispose() } catch (disposeError) { /* 尽力 */ }
+        }
+        return { ok: false, reason: String(error && error.message ? error.message : error) }
+      }
+
+      const record = {
+        ok: true,
+        release: () => {
+          for (const dispose of disposers) {
+            try { dispose() } catch (error) { /* 尽力 */ }
+          }
+        },
+      }
+      personaShadows.set(agent, record)
+      return record
+    }
 
     const readEnvironment = (session) => {
       try {
@@ -225,6 +362,7 @@ module.exports = {
       }
 
       let releaseGuard
+      let personaNote = '研究人格已启用。'
       try {
         // ① 会话级沙箱只读。这是**唯一受支持的写路径**；sandboxPolicy 只有读方法。
         ctx.permissionPresets.set(session, readOnlyPreset)
@@ -237,6 +375,11 @@ module.exports = {
           const name = execution && execution.name
           return isDeniedTool(name) ? IN_SESSION_DENIAL : undefined
         })
+        // ③ 人格遮蔽。注册一次即可，文本按运行态求值。
+        const shadow = ensurePersonaShadow(agent)
+        if (shadow.ok !== true) {
+          personaNote = '研究人格未启用（' + shadow.reason + '）；只读契约不受影响。'
+        }
       } catch (error) {
         // 回滚：守卫已装但后续失败时不能留下半个状态。
         if (typeof releaseGuard === 'function') {
@@ -247,6 +390,9 @@ module.exports = {
         }
         return { kind: 'error', text: '进入会话内研究模式失败，权限已回滚：' + String(error && error.message ? error.message : error) }
       }
+
+      // 打开人格：从这一步起，本 agent 的每一次组装都拿到研究人格。
+      inSessionAgents.add(agent)
 
       // ③ 注入 Route Manifest（透镜选择 + 检查问题，不含正文）。
       const built = buildManifest(task, repositoryRootOf(agent))
@@ -267,6 +413,7 @@ module.exports = {
           '会话内研究模式已启用，主 agent 继续执行。',
           renderGuarantee(guarantee),
           '写入与执行已关闭：沙箱只读 + 工具层拒绝 shell / 写工具。',
+          personaNote,
           '路由清单已注入本轮上下文。',
           '退出：/research off',
         ].join('\n'),
@@ -282,6 +429,8 @@ module.exports = {
         return { kind: 'success', text: '本会话当前不在会话内研究模式，无需退出。' }
       }
       inSession.delete(sessionId)
+      // 先关人格：否则退出后第一轮仍会带着研究人格。
+      inSessionAgents.delete(agent)
       let restored = 'unknown'
       try {
         if (typeof state.releaseGuard === 'function') state.releaseGuard()
@@ -427,8 +576,10 @@ module.exports = {
   },
   __test: {
     GUARANTEE_SANDBOX, GUARANTEE_CATALOG, GUARANTEE_DEGRADED,
-    guaranteeOf, renderGuarantee, resolveKbRoot, parseResearchInput, isDeniedTool,
+    guaranteeOf, renderGuarantee, resolveKbRoot, parseResearchInput, isDeniedTool, extractPersonaPrefix,
     IN_SESSION_PREAMBLE, DERIVED_PREAMBLE, IN_SESSION_DENIAL, USAGE,
+    IN_SESSION_PERSONA_FALLBACK, PERSONA_SECTION_NAME, PERSONA_SUFFIX_SECTION_NAME,
+    PERSONA_PREFIX_ORDER, PERSONA_SUFFIX_ORDER,
     DENIED_TOOL_NAMES, DENIED_TOOL_PREFIXES, RESEARCH_PRESET_FAMILY, MAX_DERIVED_RESEARCH,
   },
 }
