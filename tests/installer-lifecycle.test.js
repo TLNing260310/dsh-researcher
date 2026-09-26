@@ -68,18 +68,18 @@ const backupRoot = (dshHome) => path.join(dshHome, '.dsh-researcher', 'backups')
 const presetRoot = (dshHome) => path.join(dshHome, '.agent-presets')
 
 test('installer argument and exact DSH version parsing fail closed', () => {
-  assert.equal(VERIFIED_DSH, '0.1.5-rc.2')
-  assert.equal(parseDshVersion('DeepSeek Harness v0.1.5-rc.2'), VERIFIED_DSH)
+  assert.equal(VERIFIED_DSH, '0.1.5-rc.3')
+  assert.equal(parseDshVersion('DeepSeek Harness v0.1.5-rc.3'), VERIFIED_DSH)
   assert.equal(parseDshVersion('dsh 0.1.5-rc.20'), '0.1.5-rc.20')
   assert.equal(parseDshVersion('unknown'), null)
   const ambiguous = detectDsh({
-    cliResult: { status: 0, stdout: 'dsh 0.1.5-rc.2 (node 24.9.0)', stderr: '', error: null },
+    cliResult: { status: 0, stdout: 'dsh 0.1.5-rc.3 (node 24.9.0)', stderr: '', error: null },
     resolvedShim: null,
   })
   assert.equal(ambiguous.compatible, false)
   assert.match(ambiguous.detail, /multiple different semantic versions/)
   const splitStreamAmbiguous = detectDsh({
-    cliResult: { status: 0, stdout: 'dsh 0.1.5-rc.2', stderr: 'warning runtime 0.1.5-rc.20', error: null },
+    cliResult: { status: 0, stdout: 'dsh 0.1.5-rc.3', stderr: 'warning runtime 0.1.5-rc.20', error: null },
     resolvedShim: null,
   })
   assert.equal(splitStreamAmbiguous.compatible, false)
@@ -123,7 +123,7 @@ dshRuntimeTest('strict install refuses an unverified DSH before writes and dry-r
   const refused = runInstaller(dshHome, ['install', '--dry-run', '--dsh-package', packageFile])
   assert.equal(refused.status, 1)
   assert.match(refused.stderr, /Installation refused/)
-  assert.match(refused.stderr, /expected exactly 0\.1\.5-rc\.2/)
+  assert.match(refused.stderr, /expected exactly 0\.1\.5-rc\.3/)
   assert.equal(fs.existsSync(dshHome), false)
 
   const overridden = runInstaller(dshHome, ['install', '--dry-run', '--dsh-package', packageFile, '--allow-unsupported-dsh'])

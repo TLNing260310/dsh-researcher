@@ -7,7 +7,7 @@
 ## 支持边界
 
 - Node.js：`>=22.12.0`
-- 目标 DeepSeek Harness：精确版本 `0.1.5-rc.2`（隔离 Gate 0/live conformance 尚待完成）
+- 目标 DeepSeek Harness：精确版本 `0.1.5-rc.3`（隔离 Gate 0/live conformance 尚待完成）
 - DSH 运行时 Node：`^22.19.0 || >=24.0.0`；低于该范围的安装会 fail closed
 
 仓库仍以 Node `22.12.0` 验证 portable core。由于 pinned DSH 自身拒绝

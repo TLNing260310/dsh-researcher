@@ -110,7 +110,7 @@ Assistant prose is never sufficient evidence. A passing baseline produces `ALREA
 
 ## Installation and removal
 
-Requirements, in full, are in [Deployment and use requirements](./deployment-requirements.md). In short: DSH `0.1.5-rc.2`, Node `^22.19.0 || >=24.0.0`, and a session started with **Read Only** permission. Anything else and the preset refuses to start rather than degrading; an environment that cannot be proven read-only cannot run this mode.
+Requirements, in full, are in [Deployment and use requirements](./deployment-requirements.md). In short: DSH `0.1.5-rc.3`, Node `^22.19.0 || >=24.0.0`, and a session started with **Read Only** permission. Anything else and the preset refuses to start rather than degrading; an environment that cannot be proven read-only cannot run this mode.
 
 The installer writes two presets, and appends one row to the two DSH presets people actually run so `/research` works in a normal session. That patch is one appended block between markers, the original file is kept beside it, `--no-host-preset-patch` skips it, and uninstall removes it by marker search.
 

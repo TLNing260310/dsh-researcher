@@ -29,7 +29,7 @@ The developer's judgement is that **other tools compete for the attention budget
 
 There is no shell. The only subprocess capability is `git_read`, a fixed allowlist with no `-c`, no aliases, no pager and ignored global git config. The mode reads and reasons; it never executes.
 
-> **Environment requirements — read before installing.** Research mode is strict and fails closed. It requires DSH `0.1.5-rc.2` and Node `^22.19.0 || >=24.0.0`, and the session must start with **Read Only** permission. Anything else and the preset **refuses to start** rather than degrading. This is intentional: an environment that cannot be proven read-only cannot run this mode. See [Deployment and use requirements](./docs/deployment-requirements.md).
+> **Environment requirements — read before installing.** Research mode is strict and fails closed. It requires DSH `0.1.5-rc.3` and Node `^22.19.0 || >=24.0.0`, and the session must start with **Read Only** permission. Anything else and the preset **refuses to start** rather than degrading. This is intentional: an environment that cannot be proven read-only cannot run this mode. See [Deployment and use requirements](./docs/deployment-requirements.md).
 
 > **What research mode does not yet do.** It has **no task-level attention routing yet** — that is planned, and we are collecting knowledge bases and mature prior art for it. Today its attention guidance comes from a fixed persona plus two skills. Do not describe this mode as adapting its review angle to the task.
 
@@ -118,7 +118,7 @@ This project assumes a reader who can judge evidence. It is not a "install and f
 
 Requirements:
 
-- DeepSeek Harness target: `0.1.5-rc.2`; offline infrastructure is green, while the isolated Gate 0/live conformance result remains pending.
+- DeepSeek Harness target: `0.1.5-rc.3`; offline infrastructure is green, while the isolated Gate 0/live conformance result remains pending.
 - DSH runtime Node requirement: `^22.19.0 || >=24.0.0` (the portable project core remains `>=22.12.0`).
 - Node.js: `>=22.12.0`.
 - Research sessions must start with **Read Only** permission; the preset tightens approval to `never`, which the UI shows as Custom.

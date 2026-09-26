@@ -30,7 +30,7 @@
 
 没有 shell。唯一的子进程能力是 `git_read`：固定白名单，无 `-c`、无 alias、无 pager，忽略全局 git 配置。本模式只读与推理，从不执行。
 
-> **环境要求——安装前必读。** 研究模式严格且 fail-closed：要求 DSH `0.1.5-rc.2`、Node `^22.19.0 || >=24.0.0`，且会话必须以 **Read Only** 权限启动。任一不满足，preset 会**拒绝启动**而不是降级运行。这是有意的：无法证明只读的环境，不能运行本模式。详见[部署与使用须知](./docs/deployment-requirements.md)。
+> **环境要求——安装前必读。** 研究模式严格且 fail-closed：要求 DSH `0.1.5-rc.3`、Node `^22.19.0 || >=24.0.0`，且会话必须以 **Read Only** 权限启动。任一不满足，preset 会**拒绝启动**而不是降级运行。这是有意的：无法证明只读的环境，不能运行本模式。详见[部署与使用须知](./docs/deployment-requirements.md)。
 
 > **本模式当前还不能做什么。** 它**尚不具备按任务动态注入注意力的能力**——该能力正在规划中，正在搜集知识库与成熟项目做法。现阶段的注意力引导来自固定 persona 加两个技能文件。**不要向用户宣称本模式会随任务改变审查视角。**
 
@@ -132,7 +132,7 @@ Project Research 与 Goal Governor 并不捆绑。你可以只安装后试用前
 
 ### 前置条件
 
-- DeepSeek Harness 目标版本：`0.1.5-rc.2`；离线设施已通过，隔离 Gate 0/live conformance 仍待完成。
+- DeepSeek Harness 目标版本：`0.1.5-rc.3`；离线设施已通过，隔离 Gate 0/live conformance 仍待完成。
 - DSH 运行时 Node 要求：`^22.19.0 || >=24.0.0`（可移植项目核心仍为 `>=22.12.0`）。
 - Node.js：`>=22.12.0`。
 - 研究会话必须以 **Read Only** 权限启动；preset 会把审批收紧为 `never`（UI 显示为 Custom，这是预期的）。
@@ -322,7 +322,7 @@ Portable Core（Cognition / Goal / Verifier reducer、canonical JSON、schemas�
 
 ## Compatibility
 
-- DeepSeek Harness：目标版本 `0.1.5-rc.2`（见 `lib/runtime-requirements.js` 的 `VERIFIED_DSH`）；不得在 Gate 0/live conformance 完成前写成“已经验证”。
+- DeepSeek Harness：目标版本 `0.1.5-rc.3`（见 `lib/runtime-requirements.js` 的 `VERIFIED_DSH`）；不得在 Gate 0/live conformance 完成前写成“已经验证”。
 - Node.js：`>=22.12.0`。
 - 当前已发布版本：`0.8.0-alpha.10`；它发布时 Live E1 尚未运行。发布后的 v1.5 与不完整 v1.6-v1.11 根结果均为 INVALID；v1.12 仅作离线修正，E1 live 已停止；结果价值与多客户端可移植性仍为 NOT PROVEN。
 - License：MIT。
