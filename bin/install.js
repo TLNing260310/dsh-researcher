@@ -14,7 +14,7 @@ const { spawnSync } = require('node:child_process')
 const REPOSITORY = path.join(__dirname, '..')
 const PACKAGE = require(path.join(REPOSITORY, 'package.json'))
 const { VERIFIED_DSH, DSH_NODE_RANGE, assertDshNodeSupported } = require('../lib/runtime-requirements.js')
-const TARGET_NAMES = ['researcher', 'governed']
+const TARGET_NAMES = ['researcher', 'governed', 'runtime']
 const ACTIONS = new Set(['install', 'backup', 'uninstall', 'rollback'])
 const DSH_HOME = path.resolve(process.env.DSH_HOME || path.join(os.homedir(), '.dsh'))
 const TARGET_ROOT = path.join(DSH_HOME, '.agent-presets')
@@ -26,6 +26,26 @@ const SOURCES = {
   researcher: path.join(REPOSITORY, 'researcher'),
   governed: path.join(REPOSITORY, 'governed'),
 }
+// The parts in-session `/research` actually reads. They are copied to a target
+// OUTSIDE the preset root, so the command keeps working when the `researcher`
+// preset is not installed — removed, frozen, or never selected. A user who wants
+// the certified preset *and* the in-session entry point should not have to choose
+// between them, and should not lose `/research` by pruning a mode they do not use.
+//
+// The layout is not arbitrary: `research-entry` resolves its dependencies
+// relative to its own directory (`<runtime>/plugins/research-entry/`), so
+// `docs/kb/clean` and `agent.cordis.yml` and the sibling `lens-router` must sit
+// exactly one and two levels up from there, mirroring the preset tree.
+const RUNTIME_PARTS = [
+  { source: 'runtime-entry', to: 'plugins/research-entry' },
+  { source: 'runtime-router', to: 'plugins/lens-router' },
+  { source: 'runtime-kb', to: 'docs/kb' },
+]
+// A single file rather than a tree: `treeInventory` lists a directory, and the
+// persona is one file at the runtime root. It is still addressed through the
+// `sources` map so a caller that supplies its own source roots is honoured.
+const RUNTIME_PERSONA_SOURCE = path.join(REPOSITORY, 'researcher', 'agent.cordis.yml')
+const RUNTIME_PERSONA_TARGET = 'agent.cordis.yml'
 const INSTALL_SOURCES = {
   ...SOURCES,
   lib: path.join(REPOSITORY, 'lib'),
@@ -35,8 +55,22 @@ const INSTALL_SOURCES = {
   // shipped without it would start research with an empty corpus — a silent
   // failure that looks like "no relevant lenses" rather than a broken install.
   kb: path.join(REPOSITORY, 'docs', 'kb'),
+  // The same assets again, for the runtime target. They are inventoried under
+  // their own names so a source that moves under the runtime copy is caught the
+  // same way a moved preset source is.
+  'runtime-entry': path.join(REPOSITORY, 'researcher', 'plugins', 'research-entry'),
+  'runtime-router': path.join(REPOSITORY, 'researcher', 'plugins', 'lens-router'),
+  'runtime-kb': path.join(REPOSITORY, 'docs', 'kb'),
+  'runtime-persona': RUNTIME_PERSONA_SOURCE,
 }
-const TARGETS = Object.fromEntries(TARGET_NAMES.map((name) => [name, path.join(TARGET_ROOT, name)]))
+const TARGETS = {
+  researcher: path.join(TARGET_ROOT, 'researcher'),
+  governed: path.join(TARGET_ROOT, 'governed'),
+  // Deliberately NOT under TARGET_ROOT. The preset root holds agent presets; the
+  // runtime is the in-session entry point's code, and a preset root is a place
+  // users prune.
+  runtime: path.join(STATE_ROOT, 'runtime'),
+}
 const SNAPSHOT_SCHEMA = 'dsh-researcher/preset-backup/v1'
 const LOCK_SCHEMA = 'dsh-researcher/installer-lock/v1'
 
@@ -52,7 +86,7 @@ Usage:
 
 Lifecycle:
   install     Install both presets. Existing targets require --force.
-  backup      Snapshot the current researcher/governed target state.
+  backup      Snapshot the current managed target state.
   uninstall   Snapshot first, then remove both installed presets.
   rollback    Snapshot current state, then restore a complete backup.
 
@@ -66,6 +100,11 @@ Safety options:
   --backup-id <id>         Restore this backup instead of the newest one.
   --force                  Replace existing targets after taking a backup.
   --help                    Show this help.
+
+Diagnostics:
+  DSH_RESEARCHER_DEBUG=1   Print the stack when a failure is reported. The CLI
+                           prints only the message, which is right for users and
+                           wrong for whoever has to find the cause.
 `
 
 const parseArguments = (argv) => {
@@ -155,6 +194,13 @@ const ensurePlainDirectory = (target, label) => {
   assertPlainDirectory(target, label, false)
 }
 
+const assertPlainFile = (target, label) => {
+  const stat = lstatIfPresent(target)
+  if (!stat) fail(label + ' does not exist: ' + target)
+  if (stat.isSymbolicLink() || !stat.isFile()) fail(label + ' must be a real regular file, not a symlink, junction, or directory: ' + target)
+  return true
+}
+
 const validateRuntimeRoots = () => {
   assertPlainDirectory(DSH_HOME, 'DSH_HOME')
   assertPlainDirectory(TARGET_ROOT, 'preset root')
@@ -165,7 +211,10 @@ const validateRuntimeRoots = () => {
 }
 
 const validateSources = () => {
-  for (const name of TARGET_NAMES) {
+  // Only the PRESET targets have a preset source. `runtime` is assembled from
+  // several repository paths and is validated by `validateInstallSourceTrees`,
+  // so iterating TARGET_NAMES here asked for a source that does not exist.
+  for (const name of Object.keys(SOURCES)) {
     assertPlainDirectory(SOURCES[name], name + ' preset source', false)
     if (!fs.existsSync(path.join(SOURCES[name], 'agent.cordis.yml'))) {
       fail('preset source is incomplete: ' + SOURCES[name])
@@ -179,8 +228,15 @@ const validateInstallSourceTrees = (sources = INSTALL_SOURCES, inventoryFn = tre
   for (const name of ['researcher', 'governed']) {
     if (!fs.existsSync(path.join(sources[name], 'agent.cordis.yml'))) fail('preset source is incomplete: ' + sources[name])
   }
+  // Every runtime part is validated and inventoried on its own: the runtime is
+  // assembled from several places in the repository, so a single source-tree walk
+  // cannot see that one of them moved or changed under the copy.
+  for (const part of RUNTIME_PARTS) assertPlainDirectory(sources[part.source], part.source + ' source', false)
+  assertPlainFile(sources['runtime-persona'], 'runtime persona source')
   const inventories = {}
   for (const name of ['researcher', 'governed', 'lib', 'schemas', 'kb']) inventories[name] = inventoryFn(sources[name])
+  for (const part of RUNTIME_PARTS) inventories[part.source] = inventoryFn(sources[part.source])
+  inventories['runtime-persona'] = fileInventory(sources['runtime-persona'])
   return { sources, inventories }
 }
 
@@ -211,6 +267,18 @@ const treeInventory = (root, fsOps = fs) => {
 }
 
 const sameInventory = (left, right) => JSON.stringify(left) === JSON.stringify(right)
+
+/**
+ * One file's inventory entry, shaped like a `treeInventory` row.
+ *
+ * `treeInventory` lists a directory; the runtime's persona is a single file at
+ * the runtime root, and folding it into that walker would have meant inventing a
+ * synthetic directory to hold it.
+ */
+const fileInventory = (file, fsOps = fs) => {
+  const bytes = fsOps.readFileSync(file)
+  return { path: path.basename(file), type: 'file', size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') }
+}
 
 const validatePresentTargetTrees = (statuses) => {
   for (const name of TARGET_NAMES) {
@@ -562,7 +630,7 @@ const createBackup = (reason, dryRun = false) => {
     reason,
     package_version: PACKAGE.version,
     targets: statuses,
-    inventory: { researcher: [], governed: [] },
+    inventory: Object.fromEntries(TARGET_NAMES.map((name) => [name, []])),
   }
   if (dryRun) return manifest
 
@@ -661,10 +729,27 @@ const stageInstall = (sourceEvidence) => {
     // The lens library ships INSIDE the preset, because the router resolves it
     // relative to its own plugin directory (`<preset>/docs/kb/clean`).
     copyVerifiedTree('kb', path.join(directory, 'researcher', 'docs', 'kb'))
+    // The runtime target: the same assets `/research` reads in-session, assembled
+    // outside the preset root so the command does not depend on the `researcher`
+    // preset being present.
+    const runtime = path.join(directory, 'runtime')
+    fs.mkdirSync(runtime, { recursive: true })
+    for (const part of RUNTIME_PARTS) copyVerifiedTree(part.source, path.join(runtime, part.to))
+    const personaSource = sourceEvidence.sources['runtime-persona']
+    const personaExpected = sourceEvidence.inventories['runtime-persona']
+    const personaBefore = fileInventory(personaSource)
+    if (!sameInventory([personaBefore], [personaExpected])) fail('runtime-persona source changed after install preflight')
+    const personaTarget = path.join(runtime, RUNTIME_PERSONA_TARGET)
+    fs.copyFileSync(personaSource, personaTarget, fs.constants.COPYFILE_EXCL)
+    const personaAfter = fileInventory(personaSource)
+    if (!sameInventory([personaBefore], [personaAfter]) || !sameInventory([personaBefore], [fileInventory(personaTarget)])) {
+      fail('runtime-persona source or stage changed while the install was being prepared')
+    }
     // Re-walk the final trees after composition so nested links introduced by
     // copy behavior or a concurrent source mutation cannot reach replacement.
     treeInventory(path.join(directory, 'researcher'))
     treeInventory(path.join(directory, 'governed'))
+    treeInventory(runtime)
     return directory
   } catch (error) {
     fs.rmSync(directory, { recursive: true, force: true })
@@ -764,6 +849,14 @@ const replaceTargets = (stage, statuses, options = {}) => {
   }
   const rmSync = options.rmSync || fs.rmSync
   const renameSync = options.renameSync || fs.renameSync
+  // The runtime target lives under the installer's state root rather than beside
+  // the presets, so its parent is a different directory from `targetRoot`. It is
+  // created here, after every preflight, so a refusal still writes nothing.
+  for (const name of TARGET_NAMES) {
+    if (statuses[name] !== 'present') continue
+    const parent = path.dirname(targets[name])
+    if (!lstatIfPresent(parent)) fs.mkdirSync(parent, { recursive: true })
+  }
   for (const name of TARGET_NAMES) {
     if (lstatIfPresent(targets[name])) rmSync(targets[name], { recursive: true, force: false })
   }
@@ -978,10 +1071,11 @@ const runInstall = (options) => {
     if (hasPresentTarget(lockedBefore) && !options.force) fail('a target preset appeared before the install lock was acquired; use --force only after reviewing it')
     const backup = createBackup('pre-install')
     const stage = stageInstall(sourceEvidence)
-    transactionalReplace(stage, { researcher: 'present', governed: 'present' }, backup)
+    transactionalReplace(stage, { researcher: 'present', governed: 'present', runtime: 'present' }, backup)
     console.log('Backup created: ' + backup.id)
     console.log('Installed "researcher" preset to ' + TARGETS.researcher)
     console.log('Installed "governed" preset to ' + TARGETS.governed)
+    console.log('Installed the /research runtime to ' + TARGETS.runtime + ' (outside the preset root, so it survives removing the preset)')
     // Home patch layer: registers `/research` for EVERY profile from a file under
     // DSH_HOME, which no DSH upgrade overwrites. This replaced appending a row to
     // each shipped preset, which an upgrade silently erased. Disabled with
@@ -1035,23 +1129,23 @@ const runUninstall = (options) => {
   if (options.dryRun) {
     validatePresentTargetTrees(before)
     if (!hasPresentTarget(before)) {
-      console.log('Nothing to uninstall; both managed preset targets are already absent.')
+      console.log('Nothing to uninstall; every managed target is already absent.')
       console.log('[DRY RUN] No installer-owned paths were written.')
       return
     }
-    console.log('[DRY RUN] Would snapshot current targets, then remove ' + TARGETS.researcher + ' and ' + TARGETS.governed)
+    console.log('[DRY RUN] Would snapshot current targets, then remove ' + TARGETS.researcher + ', ' + TARGETS.governed + ' and ' + TARGETS.runtime)
     console.log('[DRY RUN] No installer-owned paths were written.')
     return
   }
   withLifecycleLock('uninstall', () => {
     const lockedBefore = targetStatuses()
     if (!hasPresentTarget(lockedBefore)) {
-      console.log('Nothing to uninstall; both managed preset targets became absent before the lock was acquired.')
+      console.log('Nothing to uninstall; every managed target became absent before the lock was acquired.')
       return
     }
     const backup = createBackup('pre-uninstall')
     const stage = emptyStage()
-    transactionalReplace(stage, { researcher: 'absent', governed: 'absent' }, backup)
+    transactionalReplace(stage, { researcher: 'absent', governed: 'absent', runtime: 'absent' }, backup)
     console.log('Backup created: ' + backup.id)
     // Undo the home patch layer: without the runtime, the entry this installer
     // registered would point at a plugin that no longer exists.
@@ -1082,7 +1176,7 @@ const runUninstall = (options) => {
       const reverted = Object.entries(manifest.targets).filter(([, record]) => record.action === 'reverted')
       for (const [name] of reverted) console.log('Legacy preset patch: removed research-entry from "' + name + '"')
     }
-    console.log('Uninstalled both managed presets. Roll back with: dsh-researcher rollback --backup-id ' + backup.id)
+    console.log('Uninstalled both managed presets and the /research runtime. Roll back with: dsh-researcher rollback --backup-id ' + backup.id)
   })
 }
 
@@ -1116,6 +1210,7 @@ const main = () => {
     if (options.action === 'rollback') runRollback(options)
   } catch (error) {
     process.stderr.write('dsh-researcher: ' + error.message + '\n')
+    if (process.env.DSH_RESEARCHER_DEBUG === '1') process.stderr.write(String(error.stack) + '\n')
     process.exitCode = 1
   }
 }

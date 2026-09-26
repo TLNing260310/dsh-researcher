@@ -229,11 +229,14 @@ dshRuntimeTest('source and final-stage preflights reject nested links before rep
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-source-tree-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const sources = {}
-  for (const name of ['researcher', 'governed', 'lib', 'schemas', 'kb']) {
+  for (const name of ['researcher', 'governed', 'lib', 'schemas', 'kb', 'runtime-entry', 'runtime-router', 'runtime-kb']) {
     sources[name] = path.join(temp, name)
     fs.mkdirSync(sources[name])
   }
   for (const name of ['researcher', 'governed']) fs.writeFileSync(path.join(sources[name], 'agent.cordis.yml'), 'name: fixture\n')
+  // The persona is a single file source, not a tree.
+  sources['runtime-persona'] = path.join(temp, 'runtime-persona.yml')
+  fs.writeFileSync(sources['runtime-persona'], 'name: fixture\n')
   let traversed = 0
   assert.throws(
     () => validateInstallSourceTrees(sources, (source) => {
@@ -267,14 +270,20 @@ test('cross-device stage is refused before any existing target is deleted', (t) 
   const dshHome = path.join(temp, 'dsh-home')
   const targetRoot = path.join(dshHome, '.agent-presets')
   const stage = path.join(dshHome, '.dsh-researcher', 'staging', 'candidate')
-  const targets = { researcher: path.join(targetRoot, 'researcher'), governed: path.join(targetRoot, 'governed') }
+  const targets = {
+    researcher: path.join(targetRoot, 'researcher'),
+    governed: path.join(targetRoot, 'governed'),
+    // The runtime target lives outside the preset root, under the installer's
+    // state root — the replacement machinery takes the map, so it must be here.
+    runtime: path.join(dshHome, '.dsh-researcher', 'runtime'),
+  }
   fs.mkdirSync(targets.researcher, { recursive: true })
   fs.mkdirSync(targets.governed, { recursive: true })
   fs.mkdirSync(stage, { recursive: true })
   fs.writeFileSync(path.join(targets.researcher, 'keep.txt'), 'do not delete\n')
   let removals = 0
   assert.throws(
-    () => replaceTargets(stage, { researcher: 'absent', governed: 'absent' }, {
+    () => replaceTargets(stage, { researcher: 'absent', governed: 'absent', runtime: 'absent' }, {
       dshHome,
       targetRoot,
       targets,
@@ -287,7 +296,7 @@ test('cross-device stage is refused before any existing target is deleted', (t) 
   assert.equal(fs.readFileSync(path.join(targets.researcher, 'keep.txt'), 'utf8'), 'do not delete\n')
 
   const expected = {
-    targets: { researcher: 'present', governed: 'present' },
+    targets: { researcher: 'present', governed: 'present', runtime: 'absent' },
     inventory: {
       researcher: treeInventory(targets.researcher),
       governed: treeInventory(targets.governed),
@@ -296,7 +305,7 @@ test('cross-device stage is refused before any existing target is deleted', (t) 
   fs.writeFileSync(path.join(targets.researcher, 'late-change.txt'), 'must not be lost\n')
   let driftRemovals = 0
   assert.throws(
-    () => replaceTargets(stage, { researcher: 'absent', governed: 'absent' }, {
+    () => replaceTargets(stage, { researcher: 'absent', governed: 'absent', runtime: 'absent' }, {
       dshHome,
       targetRoot,
       targets,
@@ -309,7 +318,7 @@ test('cross-device stage is refused before any existing target is deleted', (t) 
   assert.equal(fs.readFileSync(path.join(targets.researcher, 'late-change.txt'), 'utf8'), 'must not be lost\n')
 
   const expectedBeforeLink = {
-    targets: { researcher: 'present', governed: 'present' },
+    targets: { researcher: 'present', governed: 'present', runtime: 'absent' },
     inventory: {
       researcher: treeInventory(targets.researcher),
       governed: treeInventory(targets.governed),
@@ -320,7 +329,7 @@ test('cross-device stage is refused before any existing target is deleted', (t) 
   fs.symlinkSync(outside, path.join(targets.researcher, 'late-link'), process.platform === 'win32' ? 'junction' : 'dir')
   let linkedDriftRemovals = 0
   assert.throws(
-    () => replaceTargets(stage, { researcher: 'absent', governed: 'absent' }, {
+    () => replaceTargets(stage, { researcher: 'absent', governed: 'absent', runtime: 'absent' }, {
       dshHome,
       targetRoot,
       targets,
@@ -379,6 +388,44 @@ dshRuntimeTest('atomic lifecycle lock serializes writers and stale locks require
   assert.equal(fs.readFileSync(emptyLock, 'utf8'), stale)
 })
 
+dshRuntimeTest('the /research runtime is installed OUTSIDE the preset root and survives removing the preset', (t) => {
+  // `/research` used to be reachable only through the `researcher` preset, so a
+  // user who removed that mode — to keep the picker short, or to stop using the
+  // certified form — silently lost the in-session command too. Those are two
+  // different things and the installer now keeps them apart: the runtime is its
+  // own target under the installer's state root.
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-runtime-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const dshHome = path.join(temp, 'dsh-home')
+  const installed = runInstaller(dshHome, ['install', '--allow-unsupported-dsh'])
+  assert.equal(installed.status, 0, installed.stdout + installed.stderr)
+
+  const runtime = path.join(dshHome, '.dsh-researcher', 'runtime')
+  assert.equal(fs.existsSync(path.join(runtime, 'plugins', 'research-entry', 'index.js')), true)
+  assert.equal(fs.existsSync(path.join(runtime, 'plugins', 'lens-router', 'index.js')), true, 'the entry resolves lens-router as a sibling')
+  assert.equal(fs.existsSync(path.join(runtime, 'docs', 'kb', 'clean')), true, 'the lens corpus must travel with the runtime')
+  assert.equal(fs.existsSync(path.join(runtime, 'agent.cordis.yml')), true, 'and the persona the in-session mode reads')
+
+  // It must not live inside the preset root: that root is a place users prune.
+  assert.equal(runtime.startsWith(presetRoot(dshHome)), false, 'the runtime must not sit inside the preset root')
+
+  // The entry point points at the runtime, not at the preset.
+  const patchFile = path.join(dshHome, 'cordis.patch.yml')
+  const patchText = fs.readFileSync(patchFile, 'utf8')
+  assert.ok(patchText.includes('.dsh-researcher/runtime/plugins/research-entry/index.js'), 'the entry must address the runtime')
+  assert.equal(patchText.includes('.agent-presets/researcher/'), false, 'and must not fall back to the preset path')
+
+  // Removing the preset — how a user disables that mode — leaves the entry intact.
+  fs.rmSync(path.join(presetRoot(dshHome), 'researcher'), { recursive: true, force: true })
+  assert.equal(fs.existsSync(path.join(runtime, 'plugins', 'research-entry', 'index.js')), true, '/research survives removing the researcher preset')
+  assert.equal(fs.existsSync(path.join(runtime, 'docs', 'kb', 'clean')), true)
+
+  // Uninstall still removes it, so nothing is left behind.
+  const uninstalled = runInstaller(dshHome, ['uninstall'])
+  assert.equal(uninstalled.status, 0, uninstalled.stdout + uninstalled.stderr)
+  assert.equal(fs.existsSync(runtime), false, 'uninstall must remove the runtime target too')
+})
+
 dshRuntimeTest('install, force replacement, backup, uninstall, and exact rollback are reversible', { timeout: 120000 }, (t) => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-lifecycle-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
@@ -391,7 +438,7 @@ dshRuntimeTest('install, force replacement, backup, uninstall, and exact rollbac
   const initialBackup = backupIdFrom(installed.stdout)
   const initialManifest = JSON.parse(fs.readFileSync(path.join(backupRoot(dshHome), initialBackup, '.complete.json'), 'utf8'))
   assert.equal(initialManifest.schema, SNAPSHOT_SCHEMA)
-  assert.deepEqual(initialManifest.targets, { researcher: 'absent', governed: 'absent' })
+  assert.deepEqual(initialManifest.targets, { researcher: 'absent', governed: 'absent', runtime: 'absent' })
   assert.equal(fs.existsSync(path.join(researcher, 'agent.cordis.yml')), true)
   assert.equal(fs.existsSync(path.join(governed, 'agent.cordis.yml')), true)
 
