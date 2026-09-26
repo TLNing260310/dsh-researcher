@@ -810,15 +810,19 @@ const printInstalledNextSteps = () => {
   console.log('  4. In a normal session, /research <task> enters read-only research IN PLACE (no new session); /research off exits.')
 }
 
-// ── DSH host preset patch ───────────────────────────────────────────────────
+// ── where `/research` gets registered ───────────────────────────────────────
 //
-// The in-place `/research` entry only works when the preset a session runs on
-// carries a `research-entry` row. The installer appends exactly that one row to
-// the two DSH presets people actually use, wrapped in markers so it is reversible
-// by a marker search rather than a merge. All of the decision logic — and every
-// refusal — lives in lib/host-preset-patch.js so it can be tested without running
-// an install.
+// The install registers the entry in the HOME patch layer
+// (`$DSH_HOME/cordis.patch.yml`) via lib/home-patch.js. That file lives under the
+// user's DSH home, which no DSH upgrade touches, so the command survives an
+// upgrade with no repair step and nothing is written into the deployment.
+//
+// `lib/host-preset-patch.js` is kept for two reasons: an install that predates
+// the relocation still has its row inside the shipped presets, and both the
+// install and the uninstall migrate that away. Its decision logic — and every
+// refusal — is a separate module so the path can be tested without an install.
 const { patchHostPresets, MARKER_BEGIN: HOST_PRESET_MARKER_BEGIN } = require('../lib/host-preset-patch.js')
+const { patchHomeLayer } = require('../lib/home-patch.js')
 
 // Resolve the installed @deepseek-ai/dsh package root.
 //
@@ -867,11 +871,18 @@ const hostPresetTarget = (packageRoot) => {
   if (typeof override !== 'string' || override.length === 0 || !path.isAbsolute(override)) {
     return { dir: detected, foreign: false }
   }
-  try {
-    if (!fs.existsSync(override)) return { dir: detected, foreign: false }
-  } catch (error) {
-    return { dir: detected, foreign: false }
-  }
+  // An ABSENT override directory is still a decision, and the one a test always
+  // makes: it pins DSH_HOST_PRESETS_DIR to a throwaway path it has no reason to
+  // pre-create, because the assertions it cares about are "a refused install
+  // wrote nothing" and "the run stayed inside my temp tree".
+  //
+  // Falling back to the detected installation on ENOENT is what turned that into
+  // a production incident. The throwaway path silently became the real DSH
+  // presets; the install path was saved by its temporary-plugin-path guard, but
+  // the REVERT path has no such guard, so a spawned `uninstall` reverted the
+  // user's own patch and deleted its backup. The override therefore wins even
+  // when it does not exist yet — an absent directory makes `patchHostPresets`
+  // refuse, which is loud and harmless, where a silent redirect is neither.
   const differs = detected === undefined || path.resolve(override) !== path.resolve(detected)
   return { dir: override, foreign: differs }
 }
@@ -900,6 +911,43 @@ const readHostPatchState = () => {
   }
 }
 
+/**
+ * Remove the pre-relocation patch from the DSH installation, if one is present.
+ *
+ * The first installer form appended a `research-entry` row to each shipped
+ * preset's `agent.cordis.yml` and kept a `.dsh-researcher-original` backup beside
+ * it. Those rows still work, but they are exactly what a DSH upgrade erases, and
+ * the backup is litter inside the deployment's own tree. A current install
+ * therefore migrates away from that form instead of leaving both in place.
+ *
+ * Best-effort: a legacy patch that cannot be cleaned up must not fail an install
+ * that has already succeeded through the home patch layer.
+ * @returns a human-readable outcome, or undefined when there was nothing to do.
+ */
+const revertLegacyPresetPatch = (resolvedShim, options) => {
+  try {
+    const packageRoot = dshPackageRoot(options.dshPackage, resolvedShim)
+    const target = hostPresetTarget(packageRoot)
+    if (target.dir === undefined || !fs.existsSync(target.dir)) return undefined
+    // Same two-sided rule the install path used: `expectedPresetDir` is the
+    // detected installation, and a differing override is only allowed when it is
+    // itself temporary. Resolving this with a bare `hostPresetDir` is what once
+    // let a test's throwaway run reach the machine's real DSH install.
+    const manifest = patchHostPresets({
+      presetDir: target.dir,
+      dshHome: DSH_HOME,
+      apply: false,
+      expectedPresetDir: hostPresetDir(packageRoot),
+      allowForeignPresetDir: target.foreign,
+    })
+    const reverted = Object.entries(manifest.targets).filter(([, record]) => record.action === 'reverted')
+    if (reverted.length === 0) return 'none present'
+    return 'removed the old row from ' + reverted.map(([name]) => name).join(', ')
+  } catch (error) {
+    return 'could not inspect (' + (error && error.message ? error.message : String(error)) + ')'
+  }
+}
+
 
 const runInstall = (options) => {
   assertDshNodeSupported()
@@ -918,11 +966,8 @@ const runInstall = (options) => {
     console.log('[DRY RUN] DSH compatibility: ' + (dsh.compatible ? dsh.detail : 'unsupported override acknowledged: ' + dsh.detail))
     console.log('[DRY RUN] Would snapshot current targets and install both presets under ' + TARGET_ROOT)
     if (options.hostPresetPatch !== false) {
-      const presetDir = hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
-      const target = hostPresetTarget(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
-      const preview = patchHostPresets({ presetDir: target.dir, dshHome: DSH_HOME, apply: true, dryRun: true, expectedPresetDir: hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)), allowForeignPresetDir: target.foreign })
-      const plan = Object.entries(preview.targets).map(([name, record]) => name + '=' + record.action + (record.reason === null ? '' : '(' + record.reason + ')'))
-      console.log('[DRY RUN] Would append the research-entry row to DSH presets: ' + (plan.length === 0 ? 'no host preset directory found' : plan.join(', ')))
+      const preview = patchHomeLayer({ dshHome: DSH_HOME, apply: true, dryRun: true })
+      console.log('[DRY RUN] Would register /research in the home patch layer: ' + preview.action + (preview.reason === null ? '' : ' (' + preview.reason + ')') + ' -> ' + String(preview.file))
     }
     console.log('[DRY RUN] No installer-owned paths were written.')
     return
@@ -937,22 +982,27 @@ const runInstall = (options) => {
     console.log('Backup created: ' + backup.id)
     console.log('Installed "researcher" preset to ' + TARGETS.researcher)
     console.log('Installed "governed" preset to ' + TARGETS.governed)
-    // Host preset patch: appends the single `research-entry` row to the DSH presets
-    // people actually run, so `/research` works in a normal session. Reversible by
-    // marker; disabled with --no-host-preset-patch.
+    // Home patch layer: registers `/research` for EVERY profile from a file under
+    // DSH_HOME, which no DSH upgrade overwrites. This replaced appending a row to
+    // each shipped preset, which an upgrade silently erased. Disabled with
+    // --no-host-preset-patch.
     if (options.hostPresetPatch === false) {
-      console.log('Host preset patch: skipped (--no-host-preset-patch)')
+      console.log('Home patch layer: skipped (--no-host-preset-patch)')
     } else {
-      const target = hostPresetTarget(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim))
-      const manifest = patchHostPresets({ presetDir: target.dir, dshHome: DSH_HOME, apply: true, expectedPresetDir: hostPresetDir(dshPackageRoot(options.dshPackage, dsh && dsh.resolvedShim)), allowForeignPresetDir: target.foreign })
+      const manifest = patchHomeLayer({ dshHome: DSH_HOME, apply: true })
       recordHostPatch(manifest)
-      const touched = Object.entries(manifest.targets).filter(([, record]) => record.action === 'patched')
-      if (touched.length === 0) {
-        const reasons = Object.entries(manifest.targets).map(([name, record]) => name + '=' + record.action + (record.reason === null ? '' : '(' + record.reason + ')'))
-        console.log('Host preset patch: nothing to do — ' + reasons.join(', '))
+      if (manifest.action === 'patched') {
+        console.log('Home patch layer: registered /research in ' + manifest.file)
+      } else if (manifest.action === 'already-patched') {
+        console.log('Home patch layer: /research was already registered in ' + manifest.file)
       } else {
-        for (const [name, record] of touched) console.log('Host preset patch: appended research-entry to "' + name + '" (' + record.file + ')')
+        console.log('Home patch layer: nothing to do — ' + manifest.action + (manifest.reason === null ? '' : ' (' + manifest.reason + ')'))
       }
+      // A prior install patched the shipped presets. Those rows still work, but
+      // they are the form an upgrade erases and they leave a backup inside the
+      // DSH installation, so a current install cleans them up.
+      const legacy = revertLegacyPresetPatch(dsh && dsh.resolvedShim, options)
+      if (legacy !== undefined) console.log('Legacy preset patch: ' + legacy)
     }
     printInstalledNextSteps()
   })
@@ -1003,23 +1053,34 @@ const runUninstall = (options) => {
     const stage = emptyStage()
     transactionalReplace(stage, { researcher: 'absent', governed: 'absent' }, backup)
     console.log('Backup created: ' + backup.id)
-    // Undo the host preset patch: without the researcher preset, the row this
-    // installer appended would point at a plugin that no longer exists.
+    // Undo the home patch layer: without the runtime, the entry this installer
+    // registered would point at a plugin that no longer exists.
+    const homeManifest = patchHomeLayer({ dshHome: DSH_HOME, apply: false })
+    if (homeManifest.action === 'reverted') {
+      console.log('Home patch layer: removed /research from ' + homeManifest.file)
+    } else if (homeManifest.action === 'not-patched') {
+      console.log('Home patch layer: nothing to remove')
+    } else {
+      console.log('Home patch layer: ' + homeManifest.action + (homeManifest.reason === null ? '' : ' (' + homeManifest.reason + ')'))
+    }
+    // A pre-relocation install put the row inside the DSH installation instead.
+    // Clean that up too, or the shipped presets keep a row pointing at a plugin
+    // this uninstall just removed.
     const patchState = readHostPatchState()
     const detectedDir = dshHomeForPatch
     const recordedDir = patchState && typeof patchState.presetDir === 'string' ? patchState.presetDir : undefined
-    const manifest = patchHostPresets({
-      // Prefer the directory the install actually recorded, but still refuse a
-      // recorded path that is neither the detected installation nor temporary.
-      presetDir: recordedDir || detectedDir,
-      dshHome: DSH_HOME,
-      apply: false,
-      expectedPresetDir: detectedDir,
-      allowForeignPresetDir: recordedDir !== undefined && recordedDir !== detectedDir,
-    })
-    const reverted = Object.entries(manifest.targets).filter(([, record]) => record.action === 'reverted')
-    if (reverted.length > 0) {
-      for (const [name] of reverted) console.log('Host preset patch: removed research-entry from "' + name + '"')
+    if (detectedDir !== undefined || recordedDir !== undefined) {
+      const manifest = patchHostPresets({
+        // Prefer the directory the install actually recorded, but still refuse a
+        // recorded path that is neither the detected installation nor temporary.
+        presetDir: recordedDir || detectedDir,
+        dshHome: DSH_HOME,
+        apply: false,
+        expectedPresetDir: detectedDir,
+        allowForeignPresetDir: recordedDir !== undefined && recordedDir !== detectedDir,
+      })
+      const reverted = Object.entries(manifest.targets).filter(([, record]) => record.action === 'reverted')
+      for (const [name] of reverted) console.log('Legacy preset patch: removed research-entry from "' + name + '"')
     }
     console.log('Uninstalled both managed presets. Roll back with: dsh-researcher rollback --backup-id ' + backup.id)
   })
@@ -1081,4 +1142,6 @@ module.exports = {
   releaseLifecycleLock,
   withLifecycleLock,
   isBackupId,
+  hostPresetTarget,
+  hostPresetDir,
 }

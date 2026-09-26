@@ -25,6 +25,8 @@ const {
   acquireLifecycleLock,
   releaseLifecycleLock,
   isBackupId,
+  hostPresetTarget,
+  hostPresetDir,
 } = require(entry)
 
 /**
@@ -435,10 +437,14 @@ dshRuntimeTest('install, force replacement, backup, uninstall, and exact rollbac
   assert.equal(fs.existsSync(path.join(dshHome, '.dsh-researcher', 'lifecycle.lock')), false)
 })
 
-dshRuntimeTest('uninstall reverts the host preset patch it recorded', (t) => {
+dshRuntimeTest('uninstall reverts the entry point it registered, and install migrated off the old form', (t) => {
   // 这条断言以前不存在，代价是一个真实 bug：`runUninstall` 引用了一个只在
   // `runInstall` 里存在的绑定，较新的 Node 在求值时抛错，撤销被整段跳过，
   // 而旧测试只检查退出码，于是没有任何断言发现补丁仍留在宿主 preset 里。
+  //
+  // 撤销的载体后来变了：入口从「DSH 安装里的四个 preset」搬到 home patch 层
+  // （$DSH_HOME/cordis.patch.yml），因为前者会被 DSH 升级抹掉。断言随之改为
+  // 检查新载体，同时保留一条更重要的性质——**DSH 安装目录不再被写**。
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-installer-hostpatch-'))
   t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
   const dshHome = path.join(temp, 'dsh-home')
@@ -451,23 +457,44 @@ dshRuntimeTest('uninstall reverts the host preset patch it recorded', (t) => {
     '    prefix: You are a helpful software engineer assistant.',
     '',
   ].join('\n')
-  // 安装器子进程用的宿主 preset 目录（来自 runInstaller 的固定覆盖）。
+  // 一个模拟 DSH 安装里的 preset 目录，用来证明安装器不再往这里写。
   const installerPresets = hostPresetsDirFor(dshHome)
   fs.mkdirSync(path.join(installerPresets, 'minimal'), { recursive: true })
   const installerPresetFile = path.join(installerPresets, 'minimal', 'agent.cordis.yml')
   fs.writeFileSync(installerPresetFile, shipped)
 
-  // 让安装期打上补丁：行内相对路径指向安装后的 researcher preset，所以它必须已存在。
   const installed = runInstaller(dshHome, ['install', '--allow-unsupported-dsh'])
   assert.equal(installed.status, 0, installed.stdout + installed.stderr)
-  assert.ok(fs.readFileSync(installerPresetFile, 'utf8').includes('research-entry'), 'precondition: the installer patched the host preset')
 
+  // 1) 入口注册在 home patch 层。
+  const patchFile = path.join(dshHome, 'cordis.patch.yml')
+  assert.equal(fs.existsSync(patchFile), true, 'the installer registers /research in the home patch layer')
+  assert.ok(fs.readFileSync(patchFile, 'utf8').includes('research-entry'), 'precondition: the entry is registered')
+
+  // 2) DSH 安装里的 preset 一个字节都没被改——这正是升级不会再抹掉入口的原因。
+  assert.equal(fs.readFileSync(installerPresetFile, 'utf8'), shipped, 'the shipped preset must not be touched at all')
+  assert.equal(fs.existsSync(installerPresetFile + '.dsh-researcher-original'), false, 'and no backup is left inside the deployment')
+
+  // 3) 旧式补丁若存在，安装会被迁移掉。
+  const legacyPatched = shipped + '\n' + [
+    '# >>> dsh-researcher: research-entry (added by the installer) >>>',
+    '- id: research-entry',
+    "  name: 'C:/nonexistent/research-entry/index.js'",
+    '# <<< dsh-researcher: research-entry <<<',
+    '',
+  ].join('\n')
+  fs.writeFileSync(installerPresetFile, legacyPatched)
+  fs.writeFileSync(installerPresetFile + '.dsh-researcher-original', shipped)
+  const migrated = runInstaller(dshHome, ['install', '--force', '--allow-unsupported-dsh'])
+  assert.equal(migrated.status, 0, migrated.stdout + migrated.stderr)
+  assert.equal(fs.readFileSync(installerPresetFile, 'utf8'), shipped, 'a legacy patch is reverted byte-for-byte')
+  assert.equal(fs.existsSync(installerPresetFile + '.dsh-researcher-original'), false, 'and its backup is removed')
+
+  // 4) 卸载撤销它注册的东西，并带走文件本身。
   const uninstalled = runInstaller(dshHome, ['uninstall'])
   assert.equal(uninstalled.status, 0, uninstalled.stdout + uninstalled.stderr)
-  const after = fs.readFileSync(installerPresetFile, 'utf8')
-  assert.equal(after, shipped, 'uninstall must restore the host preset byte-for-byte')
-  assert.ok(!after.includes('research-entry'), 'the appended row must be gone')
-  assert.ok(!fs.existsSync(installerPresetFile + '.dsh-researcher-original'), 'and its backup must not be left behind')
+  assert.equal(fs.existsSync(patchFile), false, 'uninstall must remove the entry point it created')
+  assert.equal(fs.readFileSync(installerPresetFile, 'utf8'), shipped, 'and the shipped preset stays untouched')
 })
 
 dshRuntimeTest('a spawned install never touches the machine it runs on', (t) => {
@@ -479,13 +506,54 @@ dshRuntimeTest('a spawned install never touches the machine it runs on', (t) => 
   const dshHome = path.join(temp, 'dsh-home')
   process.env.DSH_HOST_PRESETS_DIR = path.join(temp, 'poisoned-by-the-caller')
   t.after(() => { delete process.env.DSH_HOST_PRESETS_DIR })
-  const probe = runInstaller(dshHome, ['install', '--dry-run', '--allow-unsupported-dsh'], {
-    DSH_PROBE_HOST_PRESETS: '1',
-  })
+  const probe = runInstaller(dshHome, ['install', '--dry-run', '--allow-unsupported-dsh'])
   assert.equal(probe.status, 0, probe.stdout + probe.stderr)
   // runInstaller 必须覆盖调用方的值，而不是沿用。
   assert.equal(hostPresetsDirFor(dshHome), path.join(dshHome, 'host-presets'))
   assert.notEqual(hostPresetsDirFor(dshHome), process.env.DSH_HOST_PRESETS_DIR)
+  // 子进程真正用的是哪一个目录 —— 断言输出，而不是断言本文件里的辅助函数。
+  // 旧版本只检查了上面的 hostPresetsDirFor()，那是测试自己算出来的值，无论
+  // 安装器选用什么都会通过：一条永远为真的断言，第二次事故就是它没抓住的。
+  //
+  // 打补丁的位置现在是 home patch 层（$DSH_HOME/cordis.patch.yml），它不再是
+  // DSH 安装里的某个 preset 目录——所以断言的是「没有写到别处」，而不是
+  // 「写到了哪个 preset 目录」。
+  assert.match(probe.stdout, /home patch layer/, 'the preview must name the home patch layer')
+  assert.doesNotMatch(probe.stdout, /poisoned-by-the-caller/, 'the caller value must not reach the child')
+})
+
+dshRuntimeTest('an absent host-preset override refuses instead of degrading to the detected install', (t) => {
+  // 第二次事故的回归。DSH_HOST_PRESETS_DIR 指向一个还不存在的目录时，
+  // 旧实现静默改用它「探测到」的真实 DSH 安装：install 路径被临时插件路径
+  // 守卫拦住，但 revert 路径没有那层守卫，于是 uninstall 撤销了用户真实的
+  // `/research` 行并删掉了备份。
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'dshr-host-preset-absent-'))
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }))
+  const dshHome = path.join(temp, 'dsh-home')
+  const override = path.join(temp, 'host-presets')
+
+  const saved = process.env.DSH_HOST_PRESETS_DIR
+  t.after(() => {
+    if (saved === undefined) delete process.env.DSH_HOST_PRESETS_DIR
+    else process.env.DSH_HOST_PRESETS_DIR = saved
+  })
+  process.env.DSH_HOST_PRESETS_DIR = override
+
+  // 一个真实存在的 DSH 安装形状，装在被探测的位置上。
+  const detectedRoot = path.join(temp, 'dsh-package')
+  const detectedPresets = path.join(detectedRoot, 'node_modules', '@deepseek-ai', 'dsh-agent-presets', 'presets')
+  fs.mkdirSync(path.join(detectedPresets, 'minimal'), { recursive: true })
+
+  const target = hostPresetTarget(detectedRoot)
+  assert.equal(target.dir, override, 'an override that does not exist yet must still win')
+  assert.notEqual(path.resolve(target.dir), path.resolve(detectedPresets), 'and must not become the detected install')
+  assert.equal(target.foreign, true, 'a differing override is a foreign target, which makes the patch refuse')
+  assert.equal(hostPresetDir(detectedRoot), detectedPresets, 'the detected directory itself is unchanged')
+
+  // 无覆盖时仍走探测结果——否则这条断言会把正常安装一起禁掉。
+  delete process.env.DSH_HOST_PRESETS_DIR
+  assert.equal(hostPresetTarget(detectedRoot).dir, detectedPresets)
+  assert.equal(hostPresetTarget(detectedRoot).foreign, false)
 })
 
 dshRuntimeTest('rollback rejects incomplete or contradictory evidence without changing targets', (t) => {

@@ -47,7 +47,7 @@ Web UI 选择顺序：**先选 "Read Only"，再选 "项目研究 Project Resear
 
 ### 在普通编码会话里使用 `/research`
 
-安装器会把 `research-entry` 这一行**追加到 DSH 自带的 `minimal` 与 `standard` preset**，因此普通会话里直接可用 `/research`。
+安装器把 `research-entry` 注册在 **`$DSH_HOME/cordis.patch.yml`（home patch 层）**，因此普通会话里直接可用 `/research`，**且 DSH 升级不会抹掉它**。
 
 | 命令 | 行为 |
 |---|---|
@@ -56,17 +56,32 @@ Web UI 选择顺序：**先选 "Read Only"，再选 "项目研究 Project Resear
 | `/research off` | 退出，恢复进入前的权限与人格 |
 | `/research status` | 查看当前沙箱、审批与透镜库路径 |
 
-**关于 DSH preset 的改动（最小、可回滚）**：
+**为什么写 home patch 层，而不是 DSH 自带的 preset**：
 
-- 只**追加一行**，用起止标记包起来；preset 原有的每一行都不动
-- 改动前会把原文件备份为 `agent.cordis.yml.dsh-researcher-original`
-- `dsh-researcher uninstall` 会**按标记移除**该行（不是三方合并）
-- 安装时可加 `--no-host-preset-patch` 完全跳过
-- DSH 升级会覆盖该文件，重跑安装即可重新追加
+早期实现把这一行**追加到 DSH 安装里的 `minimal` / `standard` preset**。那个位置有三个问题，最后一个造成过真实损坏：
+
+1. DSH 升级覆盖 `node_modules` 下的文件，`/research` 随之消失，必须重跑安装器
+2. 备份文件 `agent.cordis.yml.dsh-researcher-original` 落在**部署自己的目录**里，卸载不干净就是残留垃圾
+3. 撤销必须**重建**原始字节。那一版重建里有一句 `replace(/\n{3,}/gu, '\n\n')`，把 `cordis` preset 自身内容里的连续空行压掉了——**静默改动了 DSH 自带文件的一个字节**
+
+`$DSH_HOME/cordis.patch.yml` 是 DSH **应用于所有 profile 之上**的机器本地补丁层，位于用户 home，升级不碰：
+
+- 入口在升级后**自动存活**，不需要任何修复步骤
+- 不往部署目录里写一个字节，也不留备份
+- 撤销是对**我们自己拥有的一个文件**做标记查找，不是重写别人的文件
+
+`cordis.patch.yml` 由 `lib/home-patch.js` 维护：
+
+- 文件不存在则创建；内容是 DSH 模板的 `[]` 时**替换**该字面量（直接追加会产出 `[]\n- insert:`，是无效 YAML）
+- 文件已有其他条目时**追加**，原有内容逐字节保留
+- `dsh-researcher uninstall` 按标记移除；文件里只剩注释时**删除文件**而不是留下空壳
+- 安装时用 `--no-host-preset-patch` 可完全跳过
+
+**从旧形式迁移**：安装器会检测 DSH 安装里是否还留着旧式补丁行，有则按标记撤销并删掉备份，之后不再写入那里。旧形式仍然可用，但它正是升级会抹掉的那种，所以新安装会主动迁移掉。
 
 **关于两层关闭**：会话内模式下，`permissionPresets` 只约束**文件系统**。它拦不住 `pwsh -c "Set-Content ..."`——shell 里的写会穿过 fs 沙箱。因此本模式**同时**在工具层拒绝 `write` / `edit` / `bash` / `pwsh` / `shell` / `terminal*` / `persistent*` / 子代理 / 工作流 / 代码执行。
 
-**关于研究人格**：会话内模式通过**遮蔽 `deployment:persona-prefix` 段落**切换人格——DSH 的段落文本可以是函数，每次组装时按当前 agent 求值，所以在**同一会话内**切换人格不需要重建 agent。人格正文从研究 preset 读取，避免两份文本漂移；读不到时退回内置精简版并如实告知。
+**关于研究人格**：会话内模式通过**遮蔽 `deployment:persona-prefix` 段落**切换人格——DSH 的段落文本可以是函数，每次组装时按当前 agent 求值，所以在**同一会话内**切换人格不需要重建 agent。人格正文从 `<runtime>/agent.cordis.yml` 读取，避免两份文本漂移；读不到时退回内置精简版并如实告知。
 
 **会话内模式仍不提供** `research_doctor` 与 `research_checkpoint`（它们属于 preset 的 per-agent 安装，只在 agent 创建期生效）。需要完整认证形态时用 `--session`。
 

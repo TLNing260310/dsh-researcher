@@ -76,6 +76,18 @@ dshRuntimeTest('release tarball installs both presets and resolves the governed 
   const installerEnv = { ...process.env, DSH_HOME: dshHome }
   for (const key of Object.keys(installerEnv)) if (key.toLowerCase() === 'path') delete installerEnv[key]
   installerEnv.PATH = path.join(temp, 'intentionally-empty-path')
+  // Pin the host presets directory the same way tests/installer-lifecycle.test.js
+  // does. DSH_HOME alone is NOT isolation: the host-preset lookup resolves the
+  // DSH installation from the package root / PATH / execPath independently of
+  // DSH_HOME, so without this pin the installer reaches whatever DSH is on the
+  // machine. That is not hypothetical — this test ran `install` and a sibling
+  // `uninstall`, and the uninstall's revert found the machine's real presets and
+  // removed the user's own `/research` row and its backup.
+  //
+  // The directory is deliberately NOT created, so this run also asserts the
+  // refusal path: an override that does not exist must not degrade into the
+  // detected installation (see hostPresetTarget in bin/install.js).
+  installerEnv.DSH_HOST_PRESETS_DIR = path.join(dshHome, 'host-presets')
   const installer = run(process.execPath, [
     path.join(packageRoot, 'bin', 'install.js'),
     '--dsh-package', path.join(packageRoot, 'package.json'),
