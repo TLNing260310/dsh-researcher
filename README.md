@@ -129,13 +129,13 @@ This repository is **GitHub-distributed only**. The unscoped npm name `dsh-resea
 Preview every installer-owned change first:
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.9 --dry-run
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.10 --dry-run
 ```
 
 Install only after reviewing the preview:
 
 ```bash
-npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.9
+npx -y github:TLNing260310/dsh-researcher#v0.8.0-alpha.10
 ```
 
 The installer refuses unknown DSH versions and existing presets by default. Backup, force-upgrade, uninstall, rollback, and SHA-256-bound release installation are documented in [Safe installation and recovery](./docs/installation.md).
@@ -169,8 +169,8 @@ The real smoke proves the runtime boundary, not report quality. Two local 14B pr
 The Quickstart generates external Cognition, Verifier Registry, Goal Contract, and `REVIEW.md` drafts. It does not approve a goal or promote project facts for you.
 
 ```bash
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.9 project-cognition init .
-npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.9 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.10 project-cognition init .
+npx -y --package=github:TLNing260310/dsh-researcher#v0.8.0-alpha.10 project-cognition quickstart --root . --out ../my-goal-review --goal-id fix-login-timeout
 ```
 
 Review purpose, boundaries, MUST criteria, budget, and verifier definitions in the generated `REVIEW.md`, then follow its explicit approval commands. See the [five-minute Quickstart](./docs/quickstart.md).
@@ -269,7 +269,7 @@ You do not need a polished report. The most useful signals are whether the demo 
 - [Open a reproducible bug](https://github.com/TLNing260310/dsh-researcher/issues/new?template=bug-report.yml)
 - Report security issues privately under [SECURITY.md](./SECURITY.md).
 
-Current published release: `v0.8.0-alpha.9`, which shipped before the v1.5-v1.11 live attempts. All post-release results remain negative or incomplete evidence; v1.12 is an offline correction and E1 live is stopped. Outcome value and multi-client portability remain NOT PROVEN.
+Current published release: `v0.8.0-alpha.10`, which ships the on-demand `/research` entry point and the architecture lens library. The v1.5-v1.11 live attempts remain negative or incomplete evidence; v1.12 is an offline correction and E1 live is stopped. Outcome value and multi-client portability remain NOT PROVEN.
 
 ## Acknowledgements and tribute
 

@@ -1,6 +1,6 @@
 # Roadmap
 
-> 当前阶段（2026-08）：`0.8.0-alpha.9` 已发布并对齐 canonical truth 与发布身份。protocol v1.11 使用唯一 replacement：`resume-replay` 两进程到达宿主 `DONE`，但冻结 scorer 的 stage-one 特殊路径遗漏 runtime-goal scope，原结果 INVALID；其余五轨依停止规则未运行。v1.12 已离线修复 scorer，但不重评分旧结果，也不授权追加 paid E1。证据见 [v1.11](./evidence/e1-v1.11-live-results.md) 与 [Validation Status](./validation-status.md)。
+> 当前阶段（2026-08）：`0.8.0-alpha.10` 已发布并对齐 canonical truth 与发布身份。protocol v1.11 使用唯一 replacement：`resume-replay` 两进程到达宿主 `DONE`，但冻结 scorer 的 stage-one 特殊路径遗漏 runtime-goal scope，原结果 INVALID；其余五轨依停止规则未运行。v1.12 已离线修复 scorer，但不重评分旧结果，也不授权追加 paid E1。证据见 [v1.11](./evidence/e1-v1.11-live-results.md) 与 [Validation Status](./validation-status.md)。
 
 ## 路线纪律
 
